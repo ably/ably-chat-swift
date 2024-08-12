@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		212F95A72C6CAD9300420287 /* MockRealtime.swift in Sources */ = {isa = PBXBuildFile; fileRef = 212F95A62C6CAD9300420287 /* MockRealtime.swift */; };
 		21971DFF2C60D89C0074B8AE /* AblyChat in Frameworks */ = {isa = PBXBuildFile; productRef = 21971DFE2C60D89C0074B8AE /* AblyChat */; };
 		21F09AA02C60CAF00025AF73 /* AblyChatExampleApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21F09A9F2C60CAF00025AF73 /* AblyChatExampleApp.swift */; };
 		21F09AA22C60CAF00025AF73 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21F09AA12C60CAF00025AF73 /* ContentView.swift */; };
@@ -15,6 +16,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		212F95A62C6CAD9300420287 /* MockRealtime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockRealtime.swift; sourceTree = "<group>"; };
 		21F09A9C2C60CAF00025AF73 /* AblyChatExample.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AblyChatExample.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		21F09A9F2C60CAF00025AF73 /* AblyChatExampleApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AblyChatExampleApp.swift; sourceTree = "<group>"; };
 		21F09AA12C60CAF00025AF73 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -35,6 +37,14 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		212F95A52C6CAD7E00420287 /* Mocks */ = {
+			isa = PBXGroup;
+			children = (
+				212F95A62C6CAD9300420287 /* MockRealtime.swift */,
+			);
+			path = Mocks;
+			sourceTree = "<group>";
+		};
 		21971DFD2C60D89C0074B8AE /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
@@ -62,6 +72,7 @@
 		21F09A9E2C60CAF00025AF73 /* AblyChatExample */ = {
 			isa = PBXGroup;
 			children = (
+				212F95A52C6CAD7E00420287 /* Mocks */,
 				21F09A9F2C60CAF00025AF73 /* AblyChatExampleApp.swift */,
 				21F09AA12C60CAF00025AF73 /* ContentView.swift */,
 				21F09AA32C60CAF20025AF73 /* Assets.xcassets */,
@@ -152,6 +163,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				212F95A72C6CAD9300420287 /* MockRealtime.swift in Sources */,
 				21F09AA22C60CAF00025AF73 /* ContentView.swift in Sources */,
 				21F09AA02C60CAF00025AF73 /* AblyChatExampleApp.swift in Sources */,
 			);

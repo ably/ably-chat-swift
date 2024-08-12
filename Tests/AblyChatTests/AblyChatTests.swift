@@ -3,6 +3,6 @@ import XCTest
 
 final class AblyChatTests: XCTestCase {
     func testExample() throws {
-        XCTAssertNoThrow(AblyChatClient())
+        XCTAssertNoThrow(DefaultChatClient(realtime: MockRealtime(key: ""), clientOptions: ClientOptions()))
     }
 }

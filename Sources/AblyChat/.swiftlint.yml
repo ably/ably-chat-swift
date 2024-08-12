@@ -1,0 +1,3 @@
+opt_in_rules:
+  # Opt-in rules of type "idiomatic" that we’ve decided we want:
+  - explicit_acl

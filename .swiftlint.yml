@@ -77,7 +77,6 @@ opt_in_rules:
   # Opt-in rules of type "lint" that we’ve decided we want:
   - array_init
   - empty_xctest_method
-  - missing_docs
   - override_in_extension
   - yoda_condition
   - private_swiftui_state
