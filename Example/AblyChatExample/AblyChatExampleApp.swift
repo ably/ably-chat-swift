@@ -1,4 +1,3 @@
-import AblyChat
 import SwiftUI
 
 @main
