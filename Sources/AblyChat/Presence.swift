@@ -13,8 +13,8 @@ public protocol Presence: AnyObject, Sendable, EmitsDiscontinuities {
     func update(data: PresenceData) async throws
     func leave() async throws
     func leave(data: PresenceData) async throws
-    func subscribe(event: PresenceEventType) -> Subscription<PresenceEvent>
-    func subscribe(events: [PresenceEventType]) -> Subscription<PresenceEvent>
+    func subscribe(event: PresenceEventType) async -> Subscription<PresenceEvent>
+    func subscribe(events: [PresenceEventType]) async -> Subscription<PresenceEvent>
 }
 
 public struct PresenceMember: Sendable {

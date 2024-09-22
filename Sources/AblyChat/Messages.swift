@@ -1,7 +1,7 @@
 import Ably
 
 public protocol Messages: AnyObject, Sendable, EmitsDiscontinuities {
-    func subscribe(bufferingPolicy: BufferingPolicy) -> MessageSubscription
+    func subscribe(bufferingPolicy: BufferingPolicy) async -> MessageSubscription
     func get(options: QueryOptions) async throws -> any PaginatedResult<Message>
     func send(params: SendMessageParams) async throws -> Message
     var channel: ARTRealtimeChannelProtocol { get }

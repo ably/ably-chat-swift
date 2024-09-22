@@ -1,7 +1,7 @@
 import Ably
 
 public protocol Occupancy: AnyObject, Sendable, EmitsDiscontinuities {
-    func subscribe(bufferingPolicy: BufferingPolicy) -> Subscription<OccupancyEvent>
+    func subscribe(bufferingPolicy: BufferingPolicy) async -> Subscription<OccupancyEvent>
     func get() async throws -> OccupancyEvent
     var channel: ARTRealtimeChannelProtocol { get }
 }

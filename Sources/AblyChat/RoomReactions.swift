@@ -2,8 +2,8 @@ import Ably
 
 public protocol RoomReactions: AnyObject, Sendable, EmitsDiscontinuities {
     func send(params: SendReactionParams) async throws
-    func subscribe(bufferingPolicy: BufferingPolicy) -> Subscription<Reaction>
     var channel: ARTRealtimeChannelProtocol { get }
+    func subscribe(bufferingPolicy: BufferingPolicy) async -> Subscription<Reaction>
 }
 
 public struct SendReactionParams: Sendable {
