@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		21971DFF2C60D89C0074B8AE /* AblyChat in Frameworks */ = {isa = PBXBuildFile; productRef = 21971DFE2C60D89C0074B8AE /* AblyChat */; };
+		8436FC692CA0723C0013EDE5 /* AsyncAlgorithms in Frameworks */ = {isa = PBXBuildFile; productRef = 8436FC682CA0723C0013EDE5 /* AsyncAlgorithms */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -24,6 +25,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				21971DFF2C60D89C0074B8AE /* AblyChat in Frameworks */,
+				8436FC692CA0723C0013EDE5 /* AsyncAlgorithms in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -75,6 +77,7 @@
 			name = AblyChatExample;
 			packageProductDependencies = (
 				21971DFE2C60D89C0074B8AE /* AblyChat */,
+				8436FC682CA0723C0013EDE5 /* AsyncAlgorithms */,
 			);
 			productName = AblyChatExample;
 			productReference = 21F09A9C2C60CAF00025AF73 /* AblyChatExample.app */;
@@ -104,6 +107,9 @@
 				Base,
 			);
 			mainGroup = 21F09A932C60CAF00025AF73;
+			packageReferences = (
+				8436FC672CA0723C0013EDE5 /* XCRemoteSwiftPackageReference "swift-async-algorithms" */,
+			);
 			productRefGroup = 21F09A9D2C60CAF00025AF73 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -361,10 +367,26 @@
 		};
 /* End XCConfigurationList section */
 
+/* Begin XCRemoteSwiftPackageReference section */
+		8436FC672CA0723C0013EDE5 /* XCRemoteSwiftPackageReference "swift-async-algorithms" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/apple/swift-async-algorithms.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.0.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
 /* Begin XCSwiftPackageProductDependency section */
 		21971DFE2C60D89C0074B8AE /* AblyChat */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = AblyChat;
+		};
+		8436FC682CA0723C0013EDE5 /* AsyncAlgorithms */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8436FC672CA0723C0013EDE5 /* XCRemoteSwiftPackageReference "swift-async-algorithms" */;
+			productName = AsyncAlgorithms;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
