@@ -3,7 +3,7 @@ import Ably
 public protocol Occupancy: AnyObject, Sendable, EmitsDiscontinuities {
     func subscribe(bufferingPolicy: BufferingPolicy) async -> Subscription<OccupancyEvent>
     func get() async throws -> OccupancyEvent
-    var channel: ARTRealtimeChannelProtocol { get }
+    var channel: RealtimeChannelProtocol { get }
 }
 
 public struct OccupancyEvent: Sendable {

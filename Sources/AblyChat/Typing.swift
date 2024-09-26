@@ -5,7 +5,7 @@ public protocol Typing: AnyObject, Sendable, EmitsDiscontinuities {
     func get() async throws -> Set<String>
     func start() async throws
     func stop() async throws
-    var channel: ARTRealtimeChannelProtocol { get }
+    var channel: RealtimeChannelProtocol { get }
 }
 
 public struct TypingEvent: Sendable {
