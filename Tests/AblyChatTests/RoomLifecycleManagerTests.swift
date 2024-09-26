@@ -31,8 +31,8 @@ struct RoomLifecycleManagerTests {
         forTestingWhatHappensWhenCurrentlyIn current: RoomLifecycle? = nil,
         contributors: [RoomLifecycleManager<MockRoomLifecycleContributorChannel>.Contributor] = [],
         clock: SimpleClock = MockSimpleClock()
-    ) -> RoomLifecycleManager<MockRoomLifecycleContributorChannel> {
-        .init(
+    ) async -> RoomLifecycleManager<MockRoomLifecycleContributorChannel> {
+        await .init(
             testsOnly_current: current,
             contributors: contributors,
             logger: TestLogger(),
@@ -62,14 +62,14 @@ struct RoomLifecycleManagerTests {
     // @spec CHA-RS3
     @Test
     func current_startsAsInitialized() async {
-        let manager = createManager()
+        let manager = await createManager()
 
         #expect(await manager.current == .initialized)
     }
 
     @Test
     func error_startsAsNil() async {
-        let manager = createManager()
+        let manager = await createManager()
 
         #expect(await manager.error == nil)
     }
@@ -81,7 +81,7 @@ struct RoomLifecycleManagerTests {
     func attach_whenAlreadyAttached() async throws {
         // Given: A RoomLifecycleManager in the ATTACHED state
         let contributor = createContributor()
-        let manager = createManager(forTestingWhatHappensWhenCurrentlyIn: .attached, contributors: [contributor])
+        let manager = await createManager(forTestingWhatHappensWhenCurrentlyIn: .attached, contributors: [contributor])
 
         // When: `performAttachOperation()` is called on the lifecycle manager
         try await manager.performAttachOperation()
@@ -94,7 +94,7 @@ struct RoomLifecycleManagerTests {
     @Test
     func attach_whenReleasing() async throws {
         // Given: A RoomLifecycleManager in the RELEASING state
-        let manager = createManager(forTestingWhatHappensWhenCurrentlyIn: .releasing)
+        let manager = await createManager(forTestingWhatHappensWhenCurrentlyIn: .releasing)
 
         // When: `performAttachOperation()` is called on the lifecycle manager
         // Then: It throws a roomIsReleasing error
@@ -109,7 +109,7 @@ struct RoomLifecycleManagerTests {
     @Test
     func attach_whenReleased() async throws {
         // Given: A RoomLifecycleManager in the RELEASED state
-        let manager = createManager(forTestingWhatHappensWhenCurrentlyIn: .released)
+        let manager = await createManager(forTestingWhatHappensWhenCurrentlyIn: .released)
 
         // When: `performAttachOperation()` is called on the lifecycle manager
         // Then: It throws a roomIsReleased error
@@ -126,7 +126,7 @@ struct RoomLifecycleManagerTests {
         // Given: A RoomLifecycleManager, with a contributor on whom calling `attach()` will not complete until after the "Then" part of this test (the motivation for this is to suppress the room from transitioning to ATTACHED, so that we can assert its current state as being ATTACHING)
         let contributorAttachOperation = SignallableChannelOperation()
 
-        let manager = createManager(contributors: [createContributor(attachBehavior: contributorAttachOperation.behavior)])
+        let manager = await createManager(contributors: [createContributor(attachBehavior: contributorAttachOperation.behavior)])
         let statusChangeSubscription = await manager.onChange(bufferingPolicy: .unbounded)
         async let statusChange = statusChangeSubscription.first { _ in true }
 
@@ -148,7 +148,7 @@ struct RoomLifecycleManagerTests {
     func attach_attachesAllContributors_andWhenTheyAllAttachSuccessfully_transitionsToAttached() async throws {
         // Given: A RoomLifecycleManager, all of whose contributors’ calls to `attach` succeed
         let contributors = (1 ... 3).map { _ in createContributor(attachBehavior: .complete(.success)) }
-        let manager = createManager(contributors: contributors)
+        let manager = await createManager(contributors: contributors)
 
         let statusChangeSubscription = await manager.onChange(bufferingPolicy: .unbounded)
         async let attachedStatusChange = statusChangeSubscription.first { $0.current == .attached }
@@ -180,7 +180,7 @@ struct RoomLifecycleManagerTests {
             }
         }
 
-        let manager = createManager(contributors: contributors)
+        let manager = await createManager(contributors: contributors)
 
         let statusChangeSubscription = await manager.onChange(bufferingPolicy: .unbounded)
         async let maybeSuspendedStatusChange = statusChangeSubscription.first { $0.current == .suspended }
@@ -231,7 +231,7 @@ struct RoomLifecycleManagerTests {
             }
         }
 
-        let manager = createManager(contributors: contributors)
+        let manager = await createManager(contributors: contributors)
 
         let statusChangeSubscription = await manager.onChange(bufferingPolicy: .unbounded)
         async let maybeFailedStatusChange = statusChangeSubscription.first { $0.current == .failed }
@@ -282,7 +282,7 @@ struct RoomLifecycleManagerTests {
             ),
         ]
 
-        let manager = createManager(contributors: contributors)
+        let manager = await createManager(contributors: contributors)
 
         // When: `performAttachOperation()` is called on the lifecycle manager
         try? await manager.performAttachOperation()
@@ -324,7 +324,7 @@ struct RoomLifecycleManagerTests {
             ),
         ]
 
-        let manager = createManager(contributors: contributors)
+        let manager = await createManager(contributors: contributors)
 
         // When: `performAttachOperation()` is called on the lifecycle manager
         try? await manager.performAttachOperation()
@@ -340,7 +340,7 @@ struct RoomLifecycleManagerTests {
     func detach_whenAlreadyDetached() async throws {
         // Given: A RoomLifecycleManager in the DETACHED state
         let contributor = createContributor()
-        let manager = createManager(forTestingWhatHappensWhenCurrentlyIn: .detached, contributors: [contributor])
+        let manager = await createManager(forTestingWhatHappensWhenCurrentlyIn: .detached, contributors: [contributor])
 
         // When: `performDetachOperation()` is called on the lifecycle manager
         try await manager.performDetachOperation()
@@ -353,7 +353,7 @@ struct RoomLifecycleManagerTests {
     @Test
     func detach_whenReleasing() async throws {
         // Given: A RoomLifecycleManager in the RELEASING state
-        let manager = createManager(forTestingWhatHappensWhenCurrentlyIn: .releasing)
+        let manager = await createManager(forTestingWhatHappensWhenCurrentlyIn: .releasing)
 
         // When: `performDetachOperation()` is called on the lifecycle manager
         // Then: It throws a roomIsReleasing error
@@ -368,7 +368,7 @@ struct RoomLifecycleManagerTests {
     @Test
     func detach_whenReleased() async throws {
         // Given: A RoomLifecycleManager in the RELEASED state
-        let manager = createManager(forTestingWhatHappensWhenCurrentlyIn: .released)
+        let manager = await createManager(forTestingWhatHappensWhenCurrentlyIn: .released)
 
         // When: `performAttachOperation()` is called on the lifecycle manager
         // Then: It throws a roomIsReleased error
@@ -383,7 +383,7 @@ struct RoomLifecycleManagerTests {
     @Test
     func detach_whenFailed() async throws {
         // Given: A RoomLifecycleManager in the FAILED state
-        let manager = createManager(forTestingWhatHappensWhenCurrentlyIn: .failed)
+        let manager = await createManager(forTestingWhatHappensWhenCurrentlyIn: .failed)
 
         // When: `performAttachOperation()` is called on the lifecycle manager
         // Then: It throws a roomInFailedState error
@@ -400,7 +400,7 @@ struct RoomLifecycleManagerTests {
         // Given: A RoomLifecycleManager, with a contributor on whom calling `detach()` will not complete until after the "Then" part of this test (the motivation for this is to suppress the room from transitioning to DETACHED, so that we can assert its current state as being DETACHING)
         let contributorDetachOperation = SignallableChannelOperation()
 
-        let manager = createManager(contributors: [createContributor(detachBehavior: contributorDetachOperation.behavior)])
+        let manager = await createManager(contributors: [createContributor(detachBehavior: contributorDetachOperation.behavior)])
         let statusChangeSubscription = await manager.onChange(bufferingPolicy: .unbounded)
         async let statusChange = statusChangeSubscription.first { _ in true }
 
@@ -421,7 +421,7 @@ struct RoomLifecycleManagerTests {
     func detach_detachesAllContributors_andWhenTheyAllDetachSuccessfully_transitionsToDetached() async throws {
         // Given: A RoomLifecycleManager, all of whose contributors’ calls to `detach` succeed
         let contributors = (1 ... 3).map { _ in createContributor(detachBehavior: .complete(.success)) }
-        let manager = createManager(contributors: contributors)
+        let manager = await createManager(contributors: contributors)
 
         let statusChangeSubscription = await manager.onChange(bufferingPolicy: .unbounded)
         async let detachedStatusChange = statusChangeSubscription.first { $0.current == .detached }
@@ -458,7 +458,7 @@ struct RoomLifecycleManagerTests {
             createContributor(feature: .typing, detachBehavior: .success),
         ]
 
-        let manager = createManager(contributors: contributors)
+        let manager = await createManager(contributors: contributors)
 
         let statusChangeSubscription = await manager.onChange(bufferingPolicy: .unbounded)
         async let maybeFailedStatusChange = statusChangeSubscription.first { $0.current == .failed }
@@ -505,7 +505,7 @@ struct RoomLifecycleManagerTests {
         let contributor = createContributor(initialState: .attached, detachBehavior: .fromFunction(detachImpl))
         let clock = MockSimpleClock()
 
-        let manager = createManager(contributors: [contributor], clock: clock)
+        let manager = await createManager(contributors: [contributor], clock: clock)
 
         let statusChangeSubscription = await manager.onChange(bufferingPolicy: .unbounded)
         async let asyncLetStatusChanges = Array(statusChangeSubscription.prefix(2))
@@ -529,7 +529,7 @@ struct RoomLifecycleManagerTests {
     func release_whenAlreadyReleased() async {
         // Given: A RoomLifecycleManager in the RELEASED state
         let contributor = createContributor()
-        let manager = createManager(forTestingWhatHappensWhenCurrentlyIn: .released, contributors: [contributor])
+        let manager = await createManager(forTestingWhatHappensWhenCurrentlyIn: .released, contributors: [contributor])
 
         // When: `performReleaseOperation()` is called on the lifecycle manager
         await manager.performReleaseOperation()
@@ -543,7 +543,7 @@ struct RoomLifecycleManagerTests {
     func release_whenDetached() async throws {
         // Given: A RoomLifecycleManager in the DETACHED state
         let contributor = createContributor()
-        let manager = createManager(forTestingWhatHappensWhenCurrentlyIn: .detached, contributors: [contributor])
+        let manager = await createManager(forTestingWhatHappensWhenCurrentlyIn: .detached, contributors: [contributor])
 
         let statusChangeSubscription = await manager.onChange(bufferingPolicy: .unbounded)
         async let statusChange = statusChangeSubscription.first { _ in true }
@@ -563,7 +563,7 @@ struct RoomLifecycleManagerTests {
         // Given: A RoomLifecycleManager, with a contributor on whom calling `detach()` will not complete until after the "Then" part of this test (the motivation for this is to suppress the room from transitioning to RELEASED, so that we can assert its current state as being RELEASING)
         let contributorDetachOperation = SignallableChannelOperation()
 
-        let manager = createManager(contributors: [createContributor(detachBehavior: contributorDetachOperation.behavior)])
+        let manager = await createManager(contributors: [createContributor(detachBehavior: contributorDetachOperation.behavior)])
         let statusChangeSubscription = await manager.onChange(bufferingPolicy: .unbounded)
         async let statusChange = statusChangeSubscription.first { _ in true }
 
@@ -593,7 +593,7 @@ struct RoomLifecycleManagerTests {
             createContributor(initialState: .detached /* arbitrary non-FAILED */, detachBehavior: .complete(.success)),
         ]
 
-        let manager = createManager(contributors: contributors)
+        let manager = await createManager(contributors: contributors)
 
         let statusChangeSubscription = await manager.onChange(bufferingPolicy: .unbounded)
         async let releasedStatusChange = statusChangeSubscription.first { $0.current == .released }
@@ -633,7 +633,7 @@ struct RoomLifecycleManagerTests {
 
         let clock = MockSimpleClock()
 
-        let manager = createManager(contributors: [contributor], clock: clock)
+        let manager = await createManager(contributors: [contributor], clock: clock)
 
         // Then: When `performReleaseOperation()` is called on the manager
         await manager.performReleaseOperation()
@@ -653,7 +653,7 @@ struct RoomLifecycleManagerTests {
 
         let clock = MockSimpleClock()
 
-        let manager = createManager(contributors: [contributor], clock: clock)
+        let manager = await createManager(contributors: [contributor], clock: clock)
 
         let statusChangeSubscription = await manager.onChange(bufferingPolicy: .unbounded)
         async let releasedStatusChange = statusChangeSubscription.first { $0.current == .released }

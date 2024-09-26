@@ -33,8 +33,8 @@ internal actor RoomLifecycleManager<Channel: RoomLifecycleContributorChannel> {
         contributors: [Contributor],
         logger: InternalLogger,
         clock: SimpleClock
-    ) {
-        self.init(
+    ) async {
+        await self.init(
             current: nil,
             contributors: contributors,
             logger: logger,
@@ -48,8 +48,8 @@ internal actor RoomLifecycleManager<Channel: RoomLifecycleContributorChannel> {
             contributors: [Contributor],
             logger: InternalLogger,
             clock: SimpleClock
-        ) {
-            self.init(
+        ) async {
+            await self.init(
                 current: current,
                 contributors: contributors,
                 logger: logger,
@@ -63,7 +63,7 @@ internal actor RoomLifecycleManager<Channel: RoomLifecycleContributorChannel> {
         contributors: [Contributor],
         logger: InternalLogger,
         clock: SimpleClock
-    ) {
+    ) async {
         self.current = current ?? .initialized
         self.contributors = contributors
         self.logger = logger
