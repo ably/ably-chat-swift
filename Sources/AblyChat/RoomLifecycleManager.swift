@@ -58,9 +58,9 @@ internal actor RoomLifecycleManager<Contributor: RoomLifecycleContributor> {
     private struct ContributorAnnotations {
         private var storage: [Contributor.ID: ContributorAnnotation]
 
-        init(contributors: [Contributor]) {
+        init(contributors: [Contributor], pendingDiscontinuityEvents: [Contributor.ID: [ARTErrorInfo]]) {
             storage = contributors.reduce(into: [:]) { result, contributor in
-                result[contributor.id] = .init()
+                result[contributor.id] = .init(pendingDiscontinuityEvents: pendingDiscontinuityEvents[contributor.id] ?? [])
             }
         }
 
@@ -100,6 +100,7 @@ internal actor RoomLifecycleManager<Contributor: RoomLifecycleContributor> {
         await self.init(
             current: nil,
             hasOperationInProgress: nil,
+            pendingDiscontinuityEvents: [:],
             contributors: contributors,
             logger: logger,
             clock: clock
@@ -110,6 +111,7 @@ internal actor RoomLifecycleManager<Contributor: RoomLifecycleContributor> {
         internal init(
             testsOnly_current current: RoomLifecycle? = nil,
             testsOnly_hasOperationInProgress hasOperationInProgress: Bool? = nil,
+            testsOnly_pendingDiscontinuityEvents pendingDiscontinuityEvents: [Contributor.ID: [ARTErrorInfo]]? = nil,
             contributors: [Contributor],
             logger: InternalLogger,
             clock: SimpleClock
@@ -117,6 +119,7 @@ internal actor RoomLifecycleManager<Contributor: RoomLifecycleContributor> {
             await self.init(
                 current: current,
                 hasOperationInProgress: hasOperationInProgress,
+                pendingDiscontinuityEvents: pendingDiscontinuityEvents,
                 contributors: contributors,
                 logger: logger,
                 clock: clock
@@ -127,6 +130,7 @@ internal actor RoomLifecycleManager<Contributor: RoomLifecycleContributor> {
     private init(
         current: RoomLifecycle?,
         hasOperationInProgress: Bool?,
+        pendingDiscontinuityEvents: [Contributor.ID: [ARTErrorInfo]]?,
         contributors: [Contributor],
         logger: InternalLogger,
         clock: SimpleClock
@@ -134,7 +138,7 @@ internal actor RoomLifecycleManager<Contributor: RoomLifecycleContributor> {
         self.current = current ?? .initialized
         self.hasOperationInProgress = hasOperationInProgress ?? false
         self.contributors = contributors
-        contributorAnnotations = .init(contributors: contributors)
+        contributorAnnotations = .init(contributors: contributors, pendingDiscontinuityEvents: pendingDiscontinuityEvents ?? [:])
         self.logger = logger
         self.clock = clock
 
@@ -362,6 +366,23 @@ internal actor RoomLifecycleManager<Contributor: RoomLifecycleContributor> {
 
         // CHA-RL1g1
         changeStatus(to: .attached)
+
+        // CHA-RL1g2
+        await emitPendingDiscontinuityEvents()
+    }
+
+    /// Implements CHA-RL1g2’s emitting of pending discontinuity events.
+    private func emitPendingDiscontinuityEvents() async {
+        // Emit all pending discontinuity events
+        logger.log(message: "Emitting pending discontinuity events", level: .info)
+        for contributor in contributors {
+            for pendingDiscontinuityEvent in contributorAnnotations[contributor].pendingDiscontinuityEvents {
+                logger.log(message: "Emitting pending discontinuity event \(pendingDiscontinuityEvent) to contributor \(contributor)", level: .info)
+                await contributor.emitDiscontinuity(pendingDiscontinuityEvent)
+            }
+        }
+
+        contributorAnnotations.clearPendingDiscontinuityEvents()
     }
 
     /// Implements CHA-RL1h5’s "detach all channels that are not in the FAILED state".

@@ -30,12 +30,14 @@ struct RoomLifecycleManagerTests {
     private func createManager(
         forTestingWhatHappensWhenCurrentlyIn current: RoomLifecycle? = nil,
         forTestingWhatHappensWhenHasOperationInProgress hasOperationInProgress: Bool? = nil,
+        forTestingWhatHappensWhenHasPendingDiscontinuityEvents pendingDiscontinuityEvents: [MockRoomLifecycleContributor.ID: [ARTErrorInfo]]? = nil,
         contributors: [MockRoomLifecycleContributor] = [],
         clock: SimpleClock = MockSimpleClock()
     ) async -> RoomLifecycleManager<MockRoomLifecycleContributor> {
         await .init(
             testsOnly_current: current,
             testsOnly_hasOperationInProgress: hasOperationInProgress,
+            testsOnly_pendingDiscontinuityEvents: pendingDiscontinuityEvents,
             contributors: contributors,
             logger: TestLogger(),
             clock: clock
@@ -173,6 +175,40 @@ struct RoomLifecycleManagerTests {
 
         _ = try #require(await attachedStatusChange, "Expected status change to ATTACHED")
         try #require(await manager.current == .attached)
+    }
+
+    // @spec CHA-RL1g2
+    @Test
+    func attach_uponSuccess_emitsPendingDiscontinuityEvents() async throws {
+        // Given: A RoomLifecycleManager, all of whose contributors’ calls to `attach` succeed
+        let contributors = (1 ... 3).map { _ in createContributor(attachBehavior: .complete(.success)) }
+        let pendingDiscontinuityEvents: [MockRoomLifecycleContributor.ID: [ARTErrorInfo]] = [
+            contributors[1].id: [.init(domain: "SomeDomain", code: 123) /* arbitrary */ ],
+            contributors[2].id: [.init(domain: "SomeDomain", code: 456) /* arbitrary */ ],
+        ]
+        let manager = await createManager(
+            forTestingWhatHappensWhenHasPendingDiscontinuityEvents: pendingDiscontinuityEvents,
+            contributors: contributors
+        )
+
+        // When: `performAttachOperation()` is called on the lifecycle manager
+        try await manager.performAttachOperation()
+
+        // Then: It:
+        // - emits all pending discontinuities to its contributors
+        // - clears all pending discontinuity events (TODO: I assume this is the intended behaviour, but confirm; have asked in https://github.com/ably/specification/pull/200/files#r1781917231)
+        for contributor in contributors {
+            let expectedPendingDiscontinuityEvents = pendingDiscontinuityEvents[contributor.id] ?? []
+            let emitDiscontinuityArguments = await contributor.emitDiscontinuityArguments
+            try #require(emitDiscontinuityArguments.count == expectedPendingDiscontinuityEvents.count)
+            for (emitDiscontinuityArgument, expectedArgument) in zip(emitDiscontinuityArguments, expectedPendingDiscontinuityEvents) {
+                #expect(emitDiscontinuityArgument === expectedArgument)
+            }
+        }
+
+        for contributor in contributors {
+            #expect(await manager.testsOnly_pendingDiscontinuityEvents(for: contributor).isEmpty)
+        }
     }
 
     // @spec CHA-RL1h2
