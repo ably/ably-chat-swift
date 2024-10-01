@@ -16,7 +16,7 @@ struct DefaultRoomStatusTests {
 
     @Test
     func transition() async throws {
-        // Given: A RoomStatus
+        // Given: A DefaultRoomStatus
         let status = DefaultRoomStatus(logger: TestLogger())
         let originalState = await status.current
         let newState = RoomLifecycle.attached // arbitrary
