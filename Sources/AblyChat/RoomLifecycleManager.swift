@@ -13,15 +13,16 @@ internal protocol RoomLifecycleContributorChannel: Sendable {
     var errorReason: ARTErrorInfo? { get async }
 }
 
-internal actor RoomLifecycleManager<Channel: RoomLifecycleContributorChannel> {
-    /// A realtime channel that contributes to the room lifecycle.
-    internal struct Contributor {
-        /// The room feature that this contributor corresponds to. Used only for choosing which error to throw when a contributor operation fails.
-        internal var feature: RoomFeature
+/// A realtime channel that contributes to the room lifecycle.
+internal protocol RoomLifecycleContributor: Sendable {
+    associatedtype Channel: RoomLifecycleContributorChannel
 
-        internal var channel: Channel
-    }
+    /// The room feature that this contributor corresponds to. Used only for choosing which error to throw when a contributor operation fails.
+    var feature: RoomFeature { get }
+    var channel: Channel { get }
+}
 
+internal actor RoomLifecycleManager<Contributor: RoomLifecycleContributor> {
     internal private(set) var current: RoomLifecycle
     internal private(set) var error: ARTErrorInfo?
 

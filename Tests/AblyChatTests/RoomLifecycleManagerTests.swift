@@ -29,9 +29,9 @@ struct RoomLifecycleManagerTests {
 
     private func createManager(
         forTestingWhatHappensWhenCurrentlyIn current: RoomLifecycle? = nil,
-        contributors: [RoomLifecycleManager<MockRoomLifecycleContributorChannel>.Contributor] = [],
+        contributors: [MockRoomLifecycleContributor] = [],
         clock: SimpleClock = MockSimpleClock()
-    ) async -> RoomLifecycleManager<MockRoomLifecycleContributorChannel> {
+    ) async -> RoomLifecycleManager<MockRoomLifecycleContributor> {
         await .init(
             testsOnly_current: current,
             contributors: contributors,
@@ -45,7 +45,7 @@ struct RoomLifecycleManagerTests {
         feature: RoomFeature = .messages, // Arbitrarily chosen, its value only matters in test cases where we check which error is thrown
         attachBehavior: MockRoomLifecycleContributorChannel.AttachOrDetachBehavior? = nil,
         detachBehavior: MockRoomLifecycleContributorChannel.AttachOrDetachBehavior? = nil
-    ) -> RoomLifecycleManager<MockRoomLifecycleContributorChannel>.Contributor {
+    ) -> MockRoomLifecycleContributor {
         .init(
             feature: feature,
             channel: .init(
