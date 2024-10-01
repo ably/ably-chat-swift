@@ -3,7 +3,7 @@ import Testing
 
 struct DefaultRoomLifecycleTests {
     @Test
-    func current_startsAsInitialized() async {
+    func status_startsAsInitialized() async {
         let lifecycle = DefaultRoomLifecycle(logger: TestLogger())
         #expect(await lifecycle.status == .initialized)
     }

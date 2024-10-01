@@ -28,12 +28,12 @@ struct RoomLifecycleManagerTests {
     }
 
     private func createManager(
-        forTestingWhatHappensWhenCurrentlyIn current: RoomStatus? = nil,
+        forTestingWhatHappensWhenCurrentlyIn status: RoomStatus? = nil,
         contributors: [RoomLifecycleManager<MockRoomLifecycleContributorChannel>.Contributor] = [],
         clock: SimpleClock = MockSimpleClock()
     ) -> RoomLifecycleManager<MockRoomLifecycleContributorChannel> {
         .init(
-            testsOnly_current: current,
+            testsOnly_status: status,
             contributors: contributors,
             logger: TestLogger(),
             clock: clock
@@ -61,10 +61,10 @@ struct RoomLifecycleManagerTests {
     // @spec CHA-RS2a
     // @spec CHA-RS3
     @Test
-    func current_startsAsInitialized() async {
+    func status_startsAsInitialized() async {
         let manager = createManager()
 
-        #expect(await manager.current == .initialized)
+        #expect(await manager.status == .initialized)
     }
 
     @Test
@@ -136,7 +136,7 @@ struct RoomLifecycleManagerTests {
         // Then: It emits a status change to ATTACHING, and its current status is ATTACHING
         #expect(try #require(await statusChange).current == .attaching)
 
-        #expect(await manager.current == .attaching)
+        #expect(await manager.status == .attaching)
 
         // Post-test: Now that we’ve seen the ATTACHING status, allow the contributor `attach` call to complete
         contributorAttachOperation.complete(result: .success)
@@ -162,7 +162,7 @@ struct RoomLifecycleManagerTests {
         }
 
         _ = try #require(await attachedStatusChange, "Expected status change to ATTACHED")
-        try #require(await manager.current == .attached)
+        try #require(await manager.status == .attached)
     }
 
     // @spec CHA-RL1h2
@@ -195,7 +195,7 @@ struct RoomLifecycleManagerTests {
         // 3. the room attach operation fails with this same error
         let suspendedStatusChange = try #require(await maybeSuspendedStatusChange)
 
-        #expect(await manager.current == .suspended)
+        #expect(await manager.status == .suspended)
 
         var roomAttachError: Error?
         do {
@@ -245,7 +245,7 @@ struct RoomLifecycleManagerTests {
         // 3. the room attach operation fails with this same error
         let failedStatusChange = try #require(await maybeFailedStatusChange)
 
-        #expect(await manager.current == .failed)
+        #expect(await manager.status == .failed)
 
         var roomAttachError: Error?
         do {
@@ -409,7 +409,7 @@ struct RoomLifecycleManagerTests {
 
         // Then: It emits a status change to DETACHING, and its current status is DETACHING
         #expect(try #require(await statusChange).current == .detaching)
-        #expect(await manager.current == .detaching)
+        #expect(await manager.status == .detaching)
 
         // Post-test: Now that we’ve seen the DETACHING status, allow the contributor `detach` call to complete
         contributorDetachOperation.complete(result: .success)
@@ -435,7 +435,7 @@ struct RoomLifecycleManagerTests {
         }
 
         _ = try #require(await detachedStatusChange, "Expected status change to DETACHED")
-        #expect(await manager.current == .detached)
+        #expect(await manager.status == .detached)
     }
 
     // @spec CHA-RL2h1
@@ -553,7 +553,7 @@ struct RoomLifecycleManagerTests {
 
         // Then: The room release operation succeeds, the room transitions to RELEASED, and no attempt is made to detach a contributor (which we’ll consider as satisfying the spec’s requirement that the transition be "immediate")
         #expect(try #require(await statusChange).current == .released)
-        #expect(await manager.current == .released)
+        #expect(await manager.status == .released)
         #expect(await contributor.channel.detachCallCount == 0)
     }
 
@@ -572,7 +572,7 @@ struct RoomLifecycleManagerTests {
 
         // Then: It emits a status change to RELEASING, and its current status is RELEASING
         #expect(try #require(await statusChange).current == .releasing)
-        #expect(await manager.current == .releasing)
+        #expect(await manager.status == .releasing)
 
         // Post-test: Now that we’ve seen the RELEASING status, allow the contributor `detach` call to complete
         contributorDetachOperation.complete(result: .success)
@@ -614,7 +614,7 @@ struct RoomLifecycleManagerTests {
 
         _ = await releasedStatusChange
 
-        #expect(await manager.current == .released)
+        #expect(await manager.status == .released)
     }
 
     // @spec CHA-RL3f
@@ -673,6 +673,6 @@ struct RoomLifecycleManagerTests {
 
         _ = await releasedStatusChange
 
-        #expect(await manager.current == .released)
+        #expect(await manager.status == .released)
     }
 }
