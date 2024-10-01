@@ -22,7 +22,7 @@ internal actor RoomLifecycleManager<Channel: RoomLifecycleContributorChannel> {
         internal var channel: Channel
     }
 
-    internal private(set) var current: RoomLifecycle
+    internal private(set) var current: RoomStatus
     internal private(set) var error: ARTErrorInfo?
 
     private let logger: InternalLogger
@@ -44,7 +44,7 @@ internal actor RoomLifecycleManager<Channel: RoomLifecycleContributorChannel> {
 
     #if DEBUG
         internal init(
-            testsOnly_current current: RoomLifecycle? = nil,
+            testsOnly_current current: RoomStatus? = nil,
             contributors: [Contributor],
             logger: InternalLogger,
             clock: SimpleClock
@@ -59,7 +59,7 @@ internal actor RoomLifecycleManager<Channel: RoomLifecycleContributorChannel> {
     #endif
 
     private init(
-        current: RoomLifecycle?,
+        current: RoomStatus?,
         contributors: [Contributor],
         logger: InternalLogger,
         clock: SimpleClock
@@ -80,7 +80,7 @@ internal actor RoomLifecycleManager<Channel: RoomLifecycleContributorChannel> {
     }
 
     /// Updates ``current`` and ``error`` and emits a status change event.
-    private func changeStatus(to new: RoomLifecycle, error: ARTErrorInfo? = nil) {
+    private func changeStatus(to new: RoomStatus, error: ARTErrorInfo? = nil) {
         logger.log(message: "Transitioning from \(current) to \(new), error \(String(describing: error))", level: .info)
         let previous = current
         current = new
