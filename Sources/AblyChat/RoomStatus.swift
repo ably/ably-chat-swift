@@ -34,7 +34,6 @@ public struct RoomStatusChange: Sendable {
 
 internal actor DefaultRoomStatus: RoomStatus {
     internal private(set) var current: RoomLifecycle = .initialized
-    // TODO: populate this (https://github.com/ably-labs/ably-chat-swift/issues/28)
     internal private(set) var error: ARTErrorInfo?
 
     private let logger: InternalLogger
