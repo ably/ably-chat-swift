@@ -54,6 +54,10 @@ final class MockRealtimeChannel: NSObject, RealtimeChannelProtocol {
         fatalError("Not implemented")
     }
 
+    var properties: ARTChannelProperties {
+        fatalError("Not implemented")
+    }
+
     func attach() {
         fatalError("Not implemented")
     }
