@@ -154,7 +154,7 @@ struct Lint: AsyncParsableCommand {
 
     /// Checks that the SPM-managed Package.resolved matches the Xcode-managed one. (I still don’t fully understand _why_ there are two files).
     ///
-    /// Ignores the `originHash` property of the Packaged.resolved file, because this property seems to frequently be different between the SPM version and the Xcode version, and I don’t know enough about SPM to know what this property means or whether there’s a reproducible way to get them to match.
+    /// Ignores the `originHash` property of the Package.resolved file, because this property seems to frequently be different between the SPM version and the Xcode version, and I don’t know enough about SPM to know what this property means or whether there’s a reproducible way to get them to match.
     func comparePackageLockfiles() async throws {
         let lockfilePaths = ["Package.resolved", "AblyChat.xcworkspace/xcshareddata/swiftpm/Package.resolved"]
         let lockfileContents = try await withThrowingTaskGroup(of: Data.self) { group in
