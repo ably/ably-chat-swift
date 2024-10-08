@@ -96,6 +96,7 @@ struct Lint: AsyncParsableCommand {
     enum Error: Swift.Error {
         case malformedSwiftVersionFile
         case malformedPackageManifestFile
+        case malformedPackageLockfile
         case mismatchedVersions(swiftVersionFileVersion: String, packageManifestFileVersion: String)
         case packageLockfilesHaveDifferentContents(paths: [String])
     }
@@ -152,12 +153,14 @@ struct Lint: AsyncParsableCommand {
     }
 
     /// Checks that the SPM-managed Package.resolved matches the Xcode-managed one. (I still don’t fully understand _why_ there are two files).
+    ///
+    /// Ignores the `originHash` property of the Packaged.resolved file, because this property seems to frequently be different between the SPM version and the Xcode version, and I don’t know enough about SPM to know what this property means or whether there’s a reproducible way to get them to match.
     func comparePackageLockfiles() async throws {
         let lockfilePaths = ["Package.resolved", "AblyChat.xcworkspace/xcshareddata/swiftpm/Package.resolved"]
-        let lockfileContents = try await withThrowingTaskGroup(of: String.self) { group in
+        let lockfileContents = try await withThrowingTaskGroup(of: Data.self) { group in
             for lockfilePath in lockfilePaths {
                 group.addTask {
-                    try await loadUTF8StringFromFile(at: lockfilePath)
+                    try await loadDataFromFile(at: lockfilePath)
                 }
             }
 
@@ -166,13 +169,30 @@ struct Lint: AsyncParsableCommand {
             }
         }
 
-        if Set(lockfileContents).count > 1 {
+        // Remove the `originHash` property from the Package.resolved contents before comparing (for reasons described above).
+        let lockfileContentsWeCareAbout = try lockfileContents.map { data in
+            guard var dictionary = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+                throw Error.malformedPackageLockfile
+            }
+
+            dictionary.removeValue(forKey: "originHash")
+
+            // We use .sortedKeys to get a canonical JSON encoding for comparison.
+            return try JSONSerialization.data(withJSONObject: dictionary, options: .sortedKeys)
+        }
+
+        if Set(lockfileContentsWeCareAbout).count > 1 {
             throw Error.packageLockfilesHaveDifferentContents(paths: lockfilePaths)
         }
     }
 
-    private func loadUTF8StringFromFile(at path: String) async throws -> String {
+    private func loadDataFromFile(at path: String) async throws -> Data {
         let (data, _) = try await URLSession.shared.data(from: .init(filePath: path))
+        return data
+    }
+
+    private func loadUTF8StringFromFile(at path: String) async throws -> String {
+        let data = try await loadDataFromFile(at: path)
         return try String(data: data, encoding: .utf8)
     }
 }
