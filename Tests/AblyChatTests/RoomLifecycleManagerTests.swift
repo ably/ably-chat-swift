@@ -1,4 +1,4 @@
-import Ably
+@preconcurrency import Ably
 @testable import AblyChat
 import Testing
 
@@ -29,11 +29,15 @@ struct RoomLifecycleManagerTests {
 
     private func createManager(
         forTestingWhatHappensWhenCurrentlyIn current: RoomLifecycle? = nil,
-        contributors: [RoomLifecycleManager<MockRoomLifecycleContributorChannel>.Contributor] = [],
+        forTestingWhatHappensWhenHasOperationInProgress hasOperationInProgress: Bool? = nil,
+        forTestingWhatHappensWhenHasPendingDiscontinuityEvents pendingDiscontinuityEvents: [MockRoomLifecycleContributor.ID: [ARTErrorInfo]]? = nil,
+        contributors: [MockRoomLifecycleContributor] = [],
         clock: SimpleClock = MockSimpleClock()
-    ) -> RoomLifecycleManager<MockRoomLifecycleContributorChannel> {
-        .init(
+    ) async -> RoomLifecycleManager<MockRoomLifecycleContributor> {
+        await .init(
             testsOnly_current: current,
+            testsOnly_hasOperationInProgress: hasOperationInProgress,
+            testsOnly_pendingDiscontinuityEvents: pendingDiscontinuityEvents,
             contributors: contributors,
             logger: TestLogger(),
             clock: clock
@@ -45,7 +49,7 @@ struct RoomLifecycleManagerTests {
         feature: RoomFeature = .messages, // Arbitrarily chosen, its value only matters in test cases where we check which error is thrown
         attachBehavior: MockRoomLifecycleContributorChannel.AttachOrDetachBehavior? = nil,
         detachBehavior: MockRoomLifecycleContributorChannel.AttachOrDetachBehavior? = nil
-    ) -> RoomLifecycleManager<MockRoomLifecycleContributorChannel>.Contributor {
+    ) -> MockRoomLifecycleContributor {
         .init(
             feature: feature,
             channel: .init(
@@ -56,20 +60,28 @@ struct RoomLifecycleManagerTests {
         )
     }
 
+    /// Given a room lifecycle manager and a channel state change, this method will return once the manager has performed all of the side effects that it will perform as a result of receiving this state change. You can provide a function which will be called after ``waitForManager`` has started listening for the manager’s “state change handled” notifications.
+    func waitForManager(_ manager: RoomLifecycleManager<some RoomLifecycleContributor>, toHandleContributorStateChange stateChange: ARTChannelStateChange, during action: () async -> Void) async {
+        let subscription = await manager.testsOnly_subscribeToHandledContributorStateChanges()
+        async let handledSignal = subscription.first { $0 === stateChange }
+        await action()
+        _ = await handledSignal
+    }
+
     // MARK: - Initial state
 
     // @spec CHA-RS2a
     // @spec CHA-RS3
     @Test
     func current_startsAsInitialized() async {
-        let manager = createManager()
+        let manager = await createManager()
 
         #expect(await manager.current == .initialized)
     }
 
     @Test
     func error_startsAsNil() async {
-        let manager = createManager()
+        let manager = await createManager()
 
         #expect(await manager.error == nil)
     }
@@ -81,7 +93,7 @@ struct RoomLifecycleManagerTests {
     func attach_whenAlreadyAttached() async throws {
         // Given: A RoomLifecycleManager in the ATTACHED state
         let contributor = createContributor()
-        let manager = createManager(forTestingWhatHappensWhenCurrentlyIn: .attached, contributors: [contributor])
+        let manager = await createManager(forTestingWhatHappensWhenCurrentlyIn: .attached, contributors: [contributor])
 
         // When: `performAttachOperation()` is called on the lifecycle manager
         try await manager.performAttachOperation()
@@ -94,7 +106,7 @@ struct RoomLifecycleManagerTests {
     @Test
     func attach_whenReleasing() async throws {
         // Given: A RoomLifecycleManager in the RELEASING state
-        let manager = createManager(forTestingWhatHappensWhenCurrentlyIn: .releasing)
+        let manager = await createManager(forTestingWhatHappensWhenCurrentlyIn: .releasing)
 
         // When: `performAttachOperation()` is called on the lifecycle manager
         // Then: It throws a roomIsReleasing error
@@ -109,7 +121,7 @@ struct RoomLifecycleManagerTests {
     @Test
     func attach_whenReleased() async throws {
         // Given: A RoomLifecycleManager in the RELEASED state
-        let manager = createManager(forTestingWhatHappensWhenCurrentlyIn: .released)
+        let manager = await createManager(forTestingWhatHappensWhenCurrentlyIn: .released)
 
         // When: `performAttachOperation()` is called on the lifecycle manager
         // Then: It throws a roomIsReleased error
@@ -126,7 +138,7 @@ struct RoomLifecycleManagerTests {
         // Given: A RoomLifecycleManager, with a contributor on whom calling `attach()` will not complete until after the "Then" part of this test (the motivation for this is to suppress the room from transitioning to ATTACHED, so that we can assert its current state as being ATTACHING)
         let contributorAttachOperation = SignallableChannelOperation()
 
-        let manager = createManager(contributors: [createContributor(attachBehavior: contributorAttachOperation.behavior)])
+        let manager = await createManager(contributors: [createContributor(attachBehavior: contributorAttachOperation.behavior)])
         let statusChangeSubscription = await manager.onChange(bufferingPolicy: .unbounded)
         async let statusChange = statusChangeSubscription.first { _ in true }
 
@@ -148,7 +160,7 @@ struct RoomLifecycleManagerTests {
     func attach_attachesAllContributors_andWhenTheyAllAttachSuccessfully_transitionsToAttached() async throws {
         // Given: A RoomLifecycleManager, all of whose contributors’ calls to `attach` succeed
         let contributors = (1 ... 3).map { _ in createContributor(attachBehavior: .complete(.success)) }
-        let manager = createManager(contributors: contributors)
+        let manager = await createManager(contributors: contributors)
 
         let statusChangeSubscription = await manager.onChange(bufferingPolicy: .unbounded)
         async let attachedStatusChange = statusChangeSubscription.first { $0.current == .attached }
@@ -163,6 +175,40 @@ struct RoomLifecycleManagerTests {
 
         _ = try #require(await attachedStatusChange, "Expected status change to ATTACHED")
         try #require(await manager.current == .attached)
+    }
+
+    // @spec CHA-RL1g2
+    @Test
+    func attach_uponSuccess_emitsPendingDiscontinuityEvents() async throws {
+        // Given: A RoomLifecycleManager, all of whose contributors’ calls to `attach` succeed
+        let contributors = (1 ... 3).map { _ in createContributor(attachBehavior: .complete(.success)) }
+        let pendingDiscontinuityEvents: [MockRoomLifecycleContributor.ID: [ARTErrorInfo]] = [
+            contributors[1].id: [.init(domain: "SomeDomain", code: 123) /* arbitrary */ ],
+            contributors[2].id: [.init(domain: "SomeDomain", code: 456) /* arbitrary */ ],
+        ]
+        let manager = await createManager(
+            forTestingWhatHappensWhenHasPendingDiscontinuityEvents: pendingDiscontinuityEvents,
+            contributors: contributors
+        )
+
+        // When: `performAttachOperation()` is called on the lifecycle manager
+        try await manager.performAttachOperation()
+
+        // Then: It:
+        // - emits all pending discontinuities to its contributors
+        // - clears all pending discontinuity events (TODO: I assume this is the intended behaviour, but confirm; have asked in https://github.com/ably/specification/pull/200/files#r1781917231)
+        for contributor in contributors {
+            let expectedPendingDiscontinuityEvents = pendingDiscontinuityEvents[contributor.id] ?? []
+            let emitDiscontinuityArguments = await contributor.emitDiscontinuityArguments
+            try #require(emitDiscontinuityArguments.count == expectedPendingDiscontinuityEvents.count)
+            for (emitDiscontinuityArgument, expectedArgument) in zip(emitDiscontinuityArguments, expectedPendingDiscontinuityEvents) {
+                #expect(emitDiscontinuityArgument === expectedArgument)
+            }
+        }
+
+        for contributor in contributors {
+            #expect(await manager.testsOnly_pendingDiscontinuityEvents(for: contributor).isEmpty)
+        }
     }
 
     // @spec CHA-RL1h2
@@ -180,7 +226,7 @@ struct RoomLifecycleManagerTests {
             }
         }
 
-        let manager = createManager(contributors: contributors)
+        let manager = await createManager(contributors: contributors)
 
         let statusChangeSubscription = await manager.onChange(bufferingPolicy: .unbounded)
         async let maybeSuspendedStatusChange = statusChangeSubscription.first { $0.current == .suspended }
@@ -231,7 +277,7 @@ struct RoomLifecycleManagerTests {
             }
         }
 
-        let manager = createManager(contributors: contributors)
+        let manager = await createManager(contributors: contributors)
 
         let statusChangeSubscription = await manager.onChange(bufferingPolicy: .unbounded)
         async let maybeFailedStatusChange = statusChangeSubscription.first { $0.current == .failed }
@@ -282,7 +328,7 @@ struct RoomLifecycleManagerTests {
             ),
         ]
 
-        let manager = createManager(contributors: contributors)
+        let manager = await createManager(contributors: contributors)
 
         // When: `performAttachOperation()` is called on the lifecycle manager
         try? await manager.performAttachOperation()
@@ -324,7 +370,7 @@ struct RoomLifecycleManagerTests {
             ),
         ]
 
-        let manager = createManager(contributors: contributors)
+        let manager = await createManager(contributors: contributors)
 
         // When: `performAttachOperation()` is called on the lifecycle manager
         try? await manager.performAttachOperation()
@@ -340,7 +386,7 @@ struct RoomLifecycleManagerTests {
     func detach_whenAlreadyDetached() async throws {
         // Given: A RoomLifecycleManager in the DETACHED state
         let contributor = createContributor()
-        let manager = createManager(forTestingWhatHappensWhenCurrentlyIn: .detached, contributors: [contributor])
+        let manager = await createManager(forTestingWhatHappensWhenCurrentlyIn: .detached, contributors: [contributor])
 
         // When: `performDetachOperation()` is called on the lifecycle manager
         try await manager.performDetachOperation()
@@ -353,7 +399,7 @@ struct RoomLifecycleManagerTests {
     @Test
     func detach_whenReleasing() async throws {
         // Given: A RoomLifecycleManager in the RELEASING state
-        let manager = createManager(forTestingWhatHappensWhenCurrentlyIn: .releasing)
+        let manager = await createManager(forTestingWhatHappensWhenCurrentlyIn: .releasing)
 
         // When: `performDetachOperation()` is called on the lifecycle manager
         // Then: It throws a roomIsReleasing error
@@ -368,7 +414,7 @@ struct RoomLifecycleManagerTests {
     @Test
     func detach_whenReleased() async throws {
         // Given: A RoomLifecycleManager in the RELEASED state
-        let manager = createManager(forTestingWhatHappensWhenCurrentlyIn: .released)
+        let manager = await createManager(forTestingWhatHappensWhenCurrentlyIn: .released)
 
         // When: `performAttachOperation()` is called on the lifecycle manager
         // Then: It throws a roomIsReleased error
@@ -383,7 +429,7 @@ struct RoomLifecycleManagerTests {
     @Test
     func detach_whenFailed() async throws {
         // Given: A RoomLifecycleManager in the FAILED state
-        let manager = createManager(forTestingWhatHappensWhenCurrentlyIn: .failed)
+        let manager = await createManager(forTestingWhatHappensWhenCurrentlyIn: .failed)
 
         // When: `performAttachOperation()` is called on the lifecycle manager
         // Then: It throws a roomInFailedState error
@@ -400,7 +446,7 @@ struct RoomLifecycleManagerTests {
         // Given: A RoomLifecycleManager, with a contributor on whom calling `detach()` will not complete until after the "Then" part of this test (the motivation for this is to suppress the room from transitioning to DETACHED, so that we can assert its current state as being DETACHING)
         let contributorDetachOperation = SignallableChannelOperation()
 
-        let manager = createManager(contributors: [createContributor(detachBehavior: contributorDetachOperation.behavior)])
+        let manager = await createManager(contributors: [createContributor(detachBehavior: contributorDetachOperation.behavior)])
         let statusChangeSubscription = await manager.onChange(bufferingPolicy: .unbounded)
         async let statusChange = statusChangeSubscription.first { _ in true }
 
@@ -421,7 +467,7 @@ struct RoomLifecycleManagerTests {
     func detach_detachesAllContributors_andWhenTheyAllDetachSuccessfully_transitionsToDetached() async throws {
         // Given: A RoomLifecycleManager, all of whose contributors’ calls to `detach` succeed
         let contributors = (1 ... 3).map { _ in createContributor(detachBehavior: .complete(.success)) }
-        let manager = createManager(contributors: contributors)
+        let manager = await createManager(contributors: contributors)
 
         let statusChangeSubscription = await manager.onChange(bufferingPolicy: .unbounded)
         async let detachedStatusChange = statusChangeSubscription.first { $0.current == .detached }
@@ -458,7 +504,7 @@ struct RoomLifecycleManagerTests {
             createContributor(feature: .typing, detachBehavior: .success),
         ]
 
-        let manager = createManager(contributors: contributors)
+        let manager = await createManager(contributors: contributors)
 
         let statusChangeSubscription = await manager.onChange(bufferingPolicy: .unbounded)
         async let maybeFailedStatusChange = statusChangeSubscription.first { $0.current == .failed }
@@ -505,7 +551,7 @@ struct RoomLifecycleManagerTests {
         let contributor = createContributor(initialState: .attached, detachBehavior: .fromFunction(detachImpl))
         let clock = MockSimpleClock()
 
-        let manager = createManager(contributors: [contributor], clock: clock)
+        let manager = await createManager(contributors: [contributor], clock: clock)
 
         let statusChangeSubscription = await manager.onChange(bufferingPolicy: .unbounded)
         async let asyncLetStatusChanges = Array(statusChangeSubscription.prefix(2))
@@ -529,7 +575,7 @@ struct RoomLifecycleManagerTests {
     func release_whenAlreadyReleased() async {
         // Given: A RoomLifecycleManager in the RELEASED state
         let contributor = createContributor()
-        let manager = createManager(forTestingWhatHappensWhenCurrentlyIn: .released, contributors: [contributor])
+        let manager = await createManager(forTestingWhatHappensWhenCurrentlyIn: .released, contributors: [contributor])
 
         // When: `performReleaseOperation()` is called on the lifecycle manager
         await manager.performReleaseOperation()
@@ -543,7 +589,7 @@ struct RoomLifecycleManagerTests {
     func release_whenDetached() async throws {
         // Given: A RoomLifecycleManager in the DETACHED state
         let contributor = createContributor()
-        let manager = createManager(forTestingWhatHappensWhenCurrentlyIn: .detached, contributors: [contributor])
+        let manager = await createManager(forTestingWhatHappensWhenCurrentlyIn: .detached, contributors: [contributor])
 
         let statusChangeSubscription = await manager.onChange(bufferingPolicy: .unbounded)
         async let statusChange = statusChangeSubscription.first { _ in true }
@@ -563,7 +609,7 @@ struct RoomLifecycleManagerTests {
         // Given: A RoomLifecycleManager, with a contributor on whom calling `detach()` will not complete until after the "Then" part of this test (the motivation for this is to suppress the room from transitioning to RELEASED, so that we can assert its current state as being RELEASING)
         let contributorDetachOperation = SignallableChannelOperation()
 
-        let manager = createManager(contributors: [createContributor(detachBehavior: contributorDetachOperation.behavior)])
+        let manager = await createManager(contributors: [createContributor(detachBehavior: contributorDetachOperation.behavior)])
         let statusChangeSubscription = await manager.onChange(bufferingPolicy: .unbounded)
         async let statusChange = statusChangeSubscription.first { _ in true }
 
@@ -593,7 +639,7 @@ struct RoomLifecycleManagerTests {
             createContributor(initialState: .detached /* arbitrary non-FAILED */, detachBehavior: .complete(.success)),
         ]
 
-        let manager = createManager(contributors: contributors)
+        let manager = await createManager(contributors: contributors)
 
         let statusChangeSubscription = await manager.onChange(bufferingPolicy: .unbounded)
         async let releasedStatusChange = statusChangeSubscription.first { $0.current == .released }
@@ -633,7 +679,7 @@ struct RoomLifecycleManagerTests {
 
         let clock = MockSimpleClock()
 
-        let manager = createManager(contributors: [contributor], clock: clock)
+        let manager = await createManager(contributors: [contributor], clock: clock)
 
         // Then: When `performReleaseOperation()` is called on the manager
         await manager.performReleaseOperation()
@@ -653,7 +699,7 @@ struct RoomLifecycleManagerTests {
 
         let clock = MockSimpleClock()
 
-        let manager = createManager(contributors: [contributor], clock: clock)
+        let manager = await createManager(contributors: [contributor], clock: clock)
 
         let statusChangeSubscription = await manager.onChange(bufferingPolicy: .unbounded)
         async let releasedStatusChange = statusChangeSubscription.first { $0.current == .released }
@@ -674,5 +720,250 @@ struct RoomLifecycleManagerTests {
         _ = await releasedStatusChange
 
         #expect(await manager.current == .released)
+    }
+
+    // MARK: - Handling contributor UPDATE events
+
+    // @spec CHA-RL4a1
+    @Test
+    func contributorUpdate_withResumedTrue_doesNothing() async throws {
+        // Given: A RoomLifecycleManager
+        let contributor = createContributor()
+        let manager = await createManager(contributors: [contributor])
+
+        // When: A contributor emits an UPDATE event with `resumed` flag set to true
+        let contributorStateChange = ARTChannelStateChange(
+            current: .attached, // arbitrary
+            previous: .attached, // arbitrary
+            event: .update,
+            reason: ARTErrorInfo(domain: "SomeDomain", code: 123), // arbitrary
+            resumed: true
+        )
+
+        await waitForManager(manager, toHandleContributorStateChange: contributorStateChange) {
+            await contributor.channel.emitStateChange(contributorStateChange)
+        }
+
+        // Then: The manager does not record a pending discontinuity event for this contributor, nor does it call `emitDiscontinuity` on the contributor (this is my interpretation of "no action should be taken" in CHA-RL4a1; i.e. that the actions described in CHA-RL4a2 and CHA-RL4a3 shouldn’t happen) (TODO: get clarification; have asked in https://github.com/ably/specification/pull/200#discussion_r1777385499)
+        #expect(await manager.testsOnly_pendingDiscontinuityEvents(for: contributor).isEmpty)
+        #expect(await contributor.emitDiscontinuityArguments.isEmpty)
+    }
+
+    // @spec CHA-RL4a3
+    @Test
+    func contributorUpdate_withResumedFalse_withOperationInProgress_recordsPendingDiscontinuityEvent() async throws {
+        // Given: A RoomLifecycleManager, with a room lifecycle operation in progress
+        let contributor = createContributor()
+        let manager = await createManager(forTestingWhatHappensWhenHasOperationInProgress: true, contributors: [contributor])
+
+        // When: A contributor emits an UPDATE event with `resumed` flag set to false
+        let contributorStateChange = ARTChannelStateChange(
+            current: .attached, // arbitrary
+            previous: .attached, // arbitrary
+            event: .update,
+            reason: ARTErrorInfo(domain: "SomeDomain", code: 123), // arbitrary
+            resumed: false
+        )
+
+        await waitForManager(manager, toHandleContributorStateChange: contributorStateChange) {
+            await contributor.channel.emitStateChange(contributorStateChange)
+        }
+
+        // Then: The manager records a pending discontinuity event for this contributor, and this discontinuity event has error equal to the contributor UPDATE event’s `reason`
+        let pendingDiscontinuityEvents = await manager.testsOnly_pendingDiscontinuityEvents(for: contributor)
+        try #require(pendingDiscontinuityEvents.count == 1)
+
+        let pendingDiscontinuityEvent = pendingDiscontinuityEvents[0]
+        #expect(pendingDiscontinuityEvent === contributorStateChange.reason)
+    }
+
+    // @spec CHA-RL4a4
+    @Test
+    func contributorUpdate_withResumedTrue_withNoOperationInProgress_emitsDiscontinuityEvent() async throws {
+        // Given: A RoomLifecycleManager, with no room lifecycle operation in progress
+        let contributor = createContributor()
+        let manager = await createManager(forTestingWhatHappensWhenHasOperationInProgress: false, contributors: [contributor])
+
+        // When: A contributor emits an UPDATE event with `resumed` flag set to false
+        let contributorStateChange = ARTChannelStateChange(
+            current: .attached, // arbitrary
+            previous: .attached, // arbitrary
+            event: .update,
+            reason: ARTErrorInfo(domain: "SomeDomain", code: 123), // arbitrary
+            resumed: false
+        )
+
+        await waitForManager(manager, toHandleContributorStateChange: contributorStateChange) {
+            await contributor.channel.emitStateChange(contributorStateChange)
+        }
+
+        // Then: The manager calls `emitDiscontinuity` on the contributor, with error equal to the contributor UPDATE event’s `reason`
+        let emitDiscontinuityArguments = await contributor.emitDiscontinuityArguments
+        try #require(emitDiscontinuityArguments.count == 1)
+
+        let discontinuity = emitDiscontinuityArguments[0]
+        #expect(discontinuity === contributorStateChange.reason)
+    }
+
+    // @specPartial CHA-RL4b1 - I don’t know the meaning of "and the particular contributor has been attached previously" so haven’t implemented that part of the spec point (TODO: asked in https://github.com/ably/specification/pull/200/files#r1775552624)
+    @Test
+    func contributorAttachEvent_withResumeFalse_withOperationInProgress_recordsPendingDiscontinuityEvent() async throws {
+        // Given: A RoomLifecycleManager, with a room lifecycle operation in progress
+        let contributor = createContributor()
+        let manager = await createManager(forTestingWhatHappensWhenHasOperationInProgress: true, contributors: [contributor])
+
+        // When: A contributor emits an ATTACHED event with `resumed` flag set to false
+        let contributorStateChange = ARTChannelStateChange(
+            current: .attached,
+            previous: .attaching, // arbitrary
+            event: .attached,
+            reason: ARTErrorInfo(domain: "SomeDomain", code: 123), // arbitrary
+            resumed: false
+        )
+
+        await waitForManager(manager, toHandleContributorStateChange: contributorStateChange) {
+            await contributor.channel.emitStateChange(contributorStateChange)
+        }
+
+        // Then: The manager records a pending discontinuity event for this contributor, and this discontinuity event has error equal to the contributor ATTACHED event’s `reason`
+        let pendingDiscontinuityEvents = await manager.testsOnly_pendingDiscontinuityEvents(for: contributor)
+        try #require(pendingDiscontinuityEvents.count == 1)
+
+        let pendingDiscontinuityEvent = pendingDiscontinuityEvents[0]
+        #expect(pendingDiscontinuityEvent === contributorStateChange.reason)
+    }
+
+    // @specPartial CHA-RL4b5 - Haven’t implemented the part that refers to "transient disconnect timeouts"; TODO do this (https://github.com/ably-labs/ably-chat-swift/issues/48)
+    @Test
+    func contributorFailedEvent_withNoOperationInProgress() async throws {
+        // Given: A RoomLifecycleManager, with no room lifecycle operation in progress
+        let contributors = [
+            // TODO: The .success is currently arbitrary since the spec doesn’t say what to do if detach fails (have asked in https://github.com/ably/specification/pull/200#discussion_r1777471810)
+            createContributor(detachBehavior: .success),
+            createContributor(detachBehavior: .success),
+        ]
+        let manager = await createManager(forTestingWhatHappensWhenHasOperationInProgress: false, contributors: contributors)
+
+        let roomStatusSubscription = await manager.onChange(bufferingPolicy: .unbounded)
+        async let failedStatusChange = roomStatusSubscription.first { $0.current == .failed }
+
+        // When: A contributor emits an FAILED event
+        let contributorStateChange = ARTChannelStateChange(
+            current: .failed,
+            previous: .attached, // arbitrary
+            event: .failed,
+            reason: ARTErrorInfo(domain: "SomeDomain", code: 123), // arbitrary
+            resumed: false // arbitrary
+        )
+
+        await waitForManager(manager, toHandleContributorStateChange: contributorStateChange) {
+            await contributors[0].channel.emitStateChange(contributorStateChange)
+        }
+
+        // Then:
+        // - the room status transitions to failed, with the error of the status change being the `reason` of the contributor FAILED event
+        // - and it calls `detach` on all contributors
+        _ = try #require(await failedStatusChange)
+        #expect(await manager.current == .failed)
+
+        for contributor in contributors {
+            #expect(await contributor.channel.detachCallCount == 1)
+        }
+    }
+
+    // @specOneOf(1/2) CHA-RL4b8
+    @Test
+    func contributorAttachedEvent_withNoOperationInProgress_roomNotAttached_allContributorsAttached() async throws {
+        // Given: A RoomLifecycleManager, not in the ATTACHED state, all of whose contributors are in the ATTACHED state (to satisfy the condition of CHA-RL4b8; for the purposes of this test I don’t care that they’re in this state even _before_ the state change of the When)
+        let contributors = [
+            createContributor(initialState: .attached),
+            createContributor(initialState: .attached),
+        ]
+
+        let manager = await createManager(
+            forTestingWhatHappensWhenCurrentlyIn: .initialized, // arbitrary non-ATTACHED
+            forTestingWhatHappensWhenHasOperationInProgress: false,
+            contributors: contributors
+        )
+
+        let roomStatusSubscription = await manager.onChange(bufferingPolicy: .unbounded)
+        async let maybeAttachedRoomStatusChange = roomStatusSubscription.first { $0.current == .attached }
+
+        // When: A contributor emits a state change to ATTACHED
+        let contributorStateChange = ARTChannelStateChange(
+            current: .attached,
+            previous: .attaching, // arbitrary
+            event: .attached,
+            reason: ARTErrorInfo(domain: "SomeDomain", code: 123), // arbitrary
+            resumed: false // arbitrary
+        )
+
+        await contributors[0].channel.emitStateChange(contributorStateChange)
+
+        // Then: The room status transitions to ATTACHED
+        _ = try #require(await maybeAttachedRoomStatusChange)
+        #expect(await manager.current == .attached)
+    }
+
+    // @specOneOf(2/2) CHA-RL4b8 - Tests that the specified side effect doesn’t happen if part of the condition (i.e. all contributors now being ATTACHED) is not met
+    @Test
+    func contributorAttachedEvent_withNoOperationInProgress_roomNotAttached_notAllContributorsAttached() async throws {
+        // Given: A RoomLifecycleManager, not in the ATTACHED state, one of whose contributors is not in the ATTACHED state state (to simulate the condition of CHA-RL4b8 not being met; for the purposes of this test I don’t care that they’re in this state even _before_ the state change of the When)
+        let contributors = [
+            createContributor(initialState: .attached),
+            createContributor(initialState: .detached),
+        ]
+
+        let initialManagerState = RoomLifecycle.initialized // arbitrary non-ATTACHED
+        let manager = await createManager(
+            forTestingWhatHappensWhenCurrentlyIn: initialManagerState,
+            forTestingWhatHappensWhenHasOperationInProgress: false,
+            contributors: contributors
+        )
+
+        // When: A contributor emits a state change to ATTACHED
+        let contributorStateChange = ARTChannelStateChange(
+            current: .attached,
+            previous: .attaching, // arbitrary
+            event: .attached,
+            reason: ARTErrorInfo(domain: "SomeDomain", code: 123), // arbitrary
+            resumed: false // arbitrary
+        )
+
+        await waitForManager(manager, toHandleContributorStateChange: contributorStateChange) {
+            await contributors[0].channel.emitStateChange(contributorStateChange)
+        }
+
+        // Then: The room status does not change
+        #expect(await manager.current == initialManagerState)
+    }
+
+    // @specPartial CHA-RL4b9 - Haven’t implemented the part that refers to "transient disconnect timeouts"; TODO do this (https://github.com/ably-labs/ably-chat-swift/issues/48). Nor have I implemented "the room enters the RETRY loop"; TODO do this (https://github.com/ably-labs/ably-chat-swift/issues/51)
+    @Test
+    func contributorSuspendedEvent_withNoOperationInProgress() async throws {
+        // Given: A RoomLifecycleManager with no lifecycle operation in progress
+        let contributor = createContributor()
+        let manager = await createManager(forTestingWhatHappensWhenHasOperationInProgress: false, contributors: [contributor])
+
+        let roomStatusSubscription = await manager.onChange(bufferingPolicy: .unbounded)
+        async let maybeSuspendedRoomStatusChange = roomStatusSubscription.first { $0.current == .suspended }
+
+        // When: A contributor emits a state change to SUSPENDED
+        let contributorStateChange = ARTChannelStateChange(
+            current: .suspended,
+            previous: .attached, // arbitrary
+            event: .suspended,
+            reason: ARTErrorInfo(domain: "SomeDomain", code: 123), // arbitrary
+            resumed: false // arbitrary
+        )
+
+        await contributor.channel.emitStateChange(contributorStateChange)
+
+        // Then: The room transitions to SUSPENDED, and this state change has error equal to the contributor state change’s `reason`
+        let suspendedRoomStatusChange = try #require(await maybeSuspendedRoomStatusChange)
+        #expect(suspendedRoomStatusChange.error === contributorStateChange.reason)
+
+        #expect(await manager.current == .suspended)
+        #expect(await manager.error === contributorStateChange.reason)
     }
 }

@@ -40,6 +40,10 @@ let package = Package(
                     name: "Ably",
                     package: "ably-cocoa"
                 ),
+                .product(
+                    name: "AsyncAlgorithms",
+                    package: "swift-async-algorithms"
+                ),
             ]
         ),
         .testTarget(
