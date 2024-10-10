@@ -465,9 +465,13 @@ internal actor RoomLifecycleManager<Contributor: RoomLifecycleContributor> {
     /// - Note: Note that `RoomLifecycleManager` does not implement any sort of mutual exclusion mechanism that _enforces_ that one room lifecycle operation must wait for another (e.g. it is _not_ a queue); each operation needs to implement its own logic for whether it should proceed in the presence of other in-progress operations.
     ///
     /// - Parameters:
+    ///   - forcedOperationID: Forces the operation to have a given ID. In combination with the ``testsOnly_subscribeToOperationWaitEvents`` API, this allows tests to verify that one test-initiated operation is waiting for another test-initiated operation.
     ///   - body: The implementation of the operation to be performed. Once this function returns or throws an error, the operation is considered to have completed, and any waits for this operation’s completion initiated via ``waitForCompletionOfOperationWithID(_:waitingOperationID:)`` will complete.
-    private func performAnOperation<Failure: Error>(_ body: (UUID) async throws(Failure) -> Void) async throws(Failure) {
-        let operationID = UUID()
+    private func performAnOperation<Failure: Error>(
+        forcingOperationID forcedOperationID: UUID?,
+        _ body: (UUID) async throws(Failure) -> Void
+    ) async throws(Failure) {
+        let operationID = forcedOperationID ?? UUID()
         logger.log(message: "Performing operation \(operationID)", level: .debug)
         let result: Result<Void, Failure>
         do {
@@ -486,8 +490,11 @@ internal actor RoomLifecycleManager<Contributor: RoomLifecycleContributor> {
     // MARK: - ATTACH operation
 
     /// Implements CHA-RL1’s `ATTACH` operation.
-    internal func performAttachOperation() async throws {
-        try await performAnOperation { operationID in
+    ///
+    /// - Parameters:
+    ///   - forcedOperationID: Allows tests to force the operation to have a given ID. In combination with the ``testsOnly_subscribeToOperationWaitEvents`` API, this allows tests to verify that one test-initiated operation is waiting for another test-initiated operation.
+    internal func performAttachOperation(testsOnly_forcingOperationID forcedOperationID: UUID? = nil) async throws {
+        try await performAnOperation(forcingOperationID: forcedOperationID) { operationID in
             try await bodyOfAttachOperation(operationID: operationID)
         }
     }
@@ -586,8 +593,11 @@ internal actor RoomLifecycleManager<Contributor: RoomLifecycleContributor> {
     // MARK: - DETACH operation
 
     /// Implements CHA-RL2’s DETACH operation.
-    internal func performDetachOperation() async throws {
-        try await performAnOperation { operationID in
+    ///
+    /// - Parameters:
+    ///   - forcedOperationID: Allows tests to force the operation to have a given ID. In combination with the ``testsOnly_subscribeToOperationWaitEvents`` API, this allows tests to verify that one test-initiated operation is waiting for another test-initiated operation.
+    internal func performDetachOperation(testsOnly_forcingOperationID forcedOperationID: UUID? = nil) async throws {
+        try await performAnOperation(forcingOperationID: forcedOperationID) { operationID in
             try await bodyOfDetachOperation(operationID: operationID)
         }
     }
@@ -673,8 +683,11 @@ internal actor RoomLifecycleManager<Contributor: RoomLifecycleContributor> {
     // MARK: - RELEASE operation
 
     /// Implements CHA-RL3’s RELEASE operation.
-    internal func performReleaseOperation() async {
-        await performAnOperation { operationID in
+    ///
+    /// - Parameters:
+    ///   - forcedOperationID: Allows tests to force the operation to have a given ID. In combination with the ``testsOnly_subscribeToOperationWaitEvents`` API, this allows tests to verify that one test-initiated operation is waiting for another test-initiated operation.
+    internal func performReleaseOperation(testsOnly_forcingOperationID forcedOperationID: UUID? = nil) async {
+        await performAnOperation(forcingOperationID: forcedOperationID) { operationID in
             await bodyOfReleaseOperation(operationID: operationID)
         }
     }
