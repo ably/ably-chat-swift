@@ -51,7 +51,7 @@ internal actor RoomLifecycleManager<Contributor: RoomLifecycleContributor> {
 
     // MARK: - Variable properties
 
-    internal private(set) var current: RoomLifecycle
+    private var status: Status
     /// Manager state that relates to individual contributors, keyed by contributors’ ``Contributor.id``. Stored separately from ``contributors`` so that the latter can be a `let`, to make it clear that the contributors remain fixed for the lifetime of the manager.
     private var contributorAnnotations: ContributorAnnotations
     private var listenForStateChangesTask: Task<Void, Never>!
@@ -66,7 +66,7 @@ internal actor RoomLifecycleManager<Contributor: RoomLifecycleContributor> {
         clock: SimpleClock
     ) async {
         await self.init(
-            current: nil,
+            status: nil,
             hasOperationInProgress: nil,
             pendingDiscontinuityEvents: [:],
             contributors: contributors,
@@ -77,7 +77,7 @@ internal actor RoomLifecycleManager<Contributor: RoomLifecycleContributor> {
 
     #if DEBUG
         internal init(
-            testsOnly_current current: RoomLifecycle? = nil,
+            testsOnly_status status: Status? = nil,
             testsOnly_hasOperationInProgress hasOperationInProgress: Bool? = nil,
             testsOnly_pendingDiscontinuityEvents pendingDiscontinuityEvents: [Contributor.ID: [ARTErrorInfo]]? = nil,
             contributors: [Contributor],
@@ -85,7 +85,7 @@ internal actor RoomLifecycleManager<Contributor: RoomLifecycleContributor> {
             clock: SimpleClock
         ) async {
             await self.init(
-                current: current,
+                status: status,
                 hasOperationInProgress: hasOperationInProgress,
                 pendingDiscontinuityEvents: pendingDiscontinuityEvents,
                 contributors: contributors,
@@ -96,14 +96,14 @@ internal actor RoomLifecycleManager<Contributor: RoomLifecycleContributor> {
     #endif
 
     private init(
-        current: RoomLifecycle?,
+        status: Status?,
         hasOperationInProgress: Bool?,
         pendingDiscontinuityEvents: [Contributor.ID: [ARTErrorInfo]]?,
         contributors: [Contributor],
         logger: InternalLogger,
         clock: SimpleClock
     ) async {
-        self.current = current ?? .initialized
+        self.status = status ?? .initialized
         self.hasOperationInProgress = hasOperationInProgress ?? false
         self.contributors = contributors
         contributorAnnotations = .init(contributors: contributors, pendingDiscontinuityEvents: pendingDiscontinuityEvents ?? [:])
@@ -139,6 +139,43 @@ internal actor RoomLifecycleManager<Contributor: RoomLifecycleContributor> {
 
     deinit {
         listenForStateChangesTask.cancel()
+    }
+
+    // MARK: - Type for room status
+
+    internal enum Status: Equatable {
+        case initialized
+        case attaching
+        case attached
+        case detaching
+        case detached
+        case suspended(error: ARTErrorInfo)
+        case failed(error: ARTErrorInfo)
+        case releasing
+        case released
+
+        internal var toRoomLifecycle: RoomLifecycle {
+            switch self {
+            case .initialized:
+                .initialized
+            case .attaching:
+                .attaching
+            case .attached:
+                .attached
+            case .detaching:
+                .detaching
+            case .detached:
+                .detached
+            case let .suspended(error):
+                .suspended(error: error)
+            case let .failed(error):
+                .failed(error: error)
+            case .releasing:
+                .releasing
+            case .released:
+                .released
+            }
+        }
     }
 
     // MARK: - Types for contributor annotations
@@ -182,7 +219,11 @@ internal actor RoomLifecycleManager<Contributor: RoomLifecycleContributor> {
         }
     }
 
-    // MARK: - Room status changes
+    // MARK: - Room status and its changes
+
+    internal var current: RoomLifecycle {
+        status.toRoomLifecycle
+    }
 
     internal func onChange(bufferingPolicy: BufferingPolicy) -> Subscription<RoomStatusChange> {
         let subscription: Subscription<RoomStatusChange> = .init(bufferingPolicy: bufferingPolicy)
@@ -190,12 +231,12 @@ internal actor RoomLifecycleManager<Contributor: RoomLifecycleContributor> {
         return subscription
     }
 
-    /// Updates ``current`` and emits a status change event.
-    private func changeStatus(to new: RoomLifecycle) {
-        logger.log(message: "Transitioning from \(current) to \(new)", level: .info)
-        let previous = current
-        current = new
-        let statusChange = RoomStatusChange(current: current, previous: previous)
+    /// Updates ``status`` and emits a status change event.
+    private func changeStatus(to new: Status) {
+        logger.log(message: "Transitioning from \(status) to \(new)", level: .info)
+        let previous = status
+        status = new
+        let statusChange = RoomStatusChange(current: status.toRoomLifecycle, previous: previous.toRoomLifecycle)
         emitStatusChange(statusChange)
     }
 
@@ -271,7 +312,7 @@ internal actor RoomLifecycleManager<Contributor: RoomLifecycleContributor> {
 
                     contributorAnnotations[contributor].pendingDiscontinuityEvents.append(reason)
                 }
-            } else if current != .attached {
+            } else if status != .attached {
                 if await (contributors.async.map { await $0.channel.state }.allSatisfy { $0 == .attached }) {
                     // CHA-RL4b8
                     logger.log(message: "Now that all contributors are ATTACHED, transitioning room to ATTACHED", level: .info)
@@ -322,7 +363,7 @@ internal actor RoomLifecycleManager<Contributor: RoomLifecycleContributor> {
 
     /// Implements CHA-RL1’s `ATTACH` operation.
     internal func performAttachOperation() async throws {
-        switch current {
+        switch status {
         case .attached:
             // CHA-RL1a
             return
@@ -415,7 +456,7 @@ internal actor RoomLifecycleManager<Contributor: RoomLifecycleContributor> {
 
     /// Implements CHA-RL2’s DETACH operation.
     internal func performDetachOperation() async throws {
-        switch current {
+        switch status {
         case .detached:
             // CHA-RL2a
             return
@@ -461,7 +502,7 @@ internal actor RoomLifecycleManager<Contributor: RoomLifecycleContributor> {
                     }
 
                     // This check is CHA-RL2h2
-                    if !current.isFailed {
+                    if !status.toRoomLifecycle.isFailed {
                         changeStatus(to: .failed(error: error))
                     }
                 default:
@@ -496,7 +537,7 @@ internal actor RoomLifecycleManager<Contributor: RoomLifecycleContributor> {
 
     /// Implementes CHA-RL3’s RELEASE operation.
     internal func performReleaseOperation() async {
-        switch current {
+        switch status {
         case .released:
             // CHA-RL3a
             return
