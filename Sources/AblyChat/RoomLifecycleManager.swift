@@ -55,6 +55,7 @@ internal actor RoomLifecycleManager<Contributor: RoomLifecycleContributor> {
     private var listenForStateChangesTask: Task<Void, Never>!
     // TODO: clean up old subscriptions (https://github.com/ably-labs/ably-chat-swift/issues/36)
     private var subscriptions: [Subscription<RoomStatusChange>] = []
+    private var operationResultContinuations = OperationResultContinuations()
 
     // MARK: - Initializers and `deinit`
 
@@ -374,17 +375,96 @@ internal actor RoomLifecycleManager<Contributor: RoomLifecycleContributor> {
 
     /// Whether the room lifecycle manager currently has a room lifecycle operation in progress.
     ///
-    /// - Warning: I haven’t yet figured out the exact meaning of “has an operation in progress” — at what point is an operation considered to be no longer in progress? Is it the point at which the operation has updated the manager’s status to one that no longer indicates an in-progress operation (this is the meaning currently used by `hasOperationInProgress`)? Or is it the point at which the `perform*Operation` method for that operation exits? Does it matter? I’ve chosen to not think about this very much right now, but might need to revisit. See TODO against `emitPendingDiscontinuityEvents` in `performDetachOperation` for an example of something where these two notions of “has an operation in progress” are not equivalent.
+    /// - Warning: I haven’t yet figured out the exact meaning of “has an operation in progress” — at what point is an operation considered to be no longer in progress? Is it the point at which the operation has updated the manager’s status to one that no longer indicates an in-progress operation (this is the meaning currently used by `hasOperationInProgress`)? Or is it the point at which the `bodyOf*Operation` method for that operation exits (i.e. the point at which ``performAnOperation(_:)`` considers the operation to have completed)? Does it matter? I’ve chosen to not think about this very much right now, but might need to revisit. See TODO against `emitPendingDiscontinuityEvents` in `bodyOfDetachOperation` for an example of something where these two notions of “has an operation in progress” are not equivalent.
     private var hasOperationInProgress: Bool {
         status.operationID != nil
+    }
+
+    /// Stores bookkeeping information needed for allowing one operation to await the result of another.
+    private struct OperationResultContinuations {
+        typealias Continuation = CheckedContinuation<Void, Error>
+
+        private var operationResultContinuationsByOperationID: [UUID: [Continuation]] = [:]
+
+        mutating func addContinuation(_ continuation: Continuation, forResultOfOperationWithID operationID: UUID) {
+            operationResultContinuationsByOperationID[operationID, default: []].append(continuation)
+        }
+
+        mutating func removeContinuationsForResultOfOperationWithID(_ waitedOperationID: UUID) -> [Continuation] {
+            operationResultContinuationsByOperationID.removeValue(forKey: waitedOperationID) ?? []
+        }
+    }
+
+    /// Waits for the operation with ID `waitedOperationID` to complete, re-throwing any error thrown by that operation.
+    ///
+    /// Note that this method currently treats all waited operations as throwing. If you wish to wait for an operation that you _know_ to be non-throwing (which the RELEASE operation currently is) then you’ll need to call this method with `try!` or equivalent. (It might be possible to improve this in the future, but I didn’t want to put much time into figuring it out.)
+    ///
+    /// It is guaranteed that if you call this method from a manager-isolated method, and subsequently call ``operationWithID(_:,didCompleteWithResult:)`` from another manager-isolated method, then the call to this method will return.
+    ///
+    /// - Parameters:
+    ///   - waitedOperationID: The ID of the operation whose completion will be awaited.
+    ///   - waitingOperationID: The ID of the operation which is awaiting this result. Only used for logging.
+    private func waitForCompletionOfOperationWithID(
+        _ waitedOperationID: UUID,
+        waitingOperationID: UUID
+    ) async throws {
+        logger.log(message: "Operation \(waitingOperationID) started waiting for result of operation \(waitedOperationID)", level: .debug)
+
+        do {
+            try await withCheckedThrowingContinuation { (continuation: OperationResultContinuations.Continuation) in
+                // My “it is guaranteed” in the documentation for this method is really more of an “I hope that”, because it’s based on my pretty vague understanding of Swift concurrency concepts; namely, I believe that if you call this manager-isolated `async` method from another manager-isolated method, the initial synchronous part of this method — in particular the call to `addContinuation` below — will occur _before_ the call to this method suspends. (I think this can be roughly summarised as “calls to async methods on self don’t do actor hopping” but I could be completely misusing a load of Swift concurrency vocabulary there.)
+                operationResultContinuations.addContinuation(continuation, forResultOfOperationWithID: waitedOperationID)
+            }
+
+            logger.log(message: "Operation \(waitingOperationID) completed waiting for result of operation \(waitedOperationID), which completed successfully", level: .debug)
+        } catch {
+            logger.log(message: "Operation \(waitingOperationID) completed waiting for result of operation \(waitedOperationID), which threw error \(error)", level: .debug)
+        }
+    }
+
+    /// Operations should call this when they have completed, in order to complete any waits initiated by ``waitForCompletionOfOperationWithID(_:waitingOperationID:)``.
+    private func operationWithID(_ operationID: UUID, didCompleteWithResult result: Result<Void, Error>) {
+        logger.log(message: "Operation \(operationID) completed with result \(result)", level: .debug)
+        let continuationsToResume = operationResultContinuations.removeContinuationsForResultOfOperationWithID(operationID)
+
+        for continuation in continuationsToResume {
+            continuation.resume(with: result)
+        }
+    }
+
+    /// Executes a function that represents a room lifecycle operation.
+    ///
+    /// - Note: Note that `RoomLifecycleManager` does not implement any sort of mutual exclusion mechanism that _enforces_ that one room lifecycle operation must wait for another (e.g. it is _not_ a queue); each operation needs to implement its own logic for whether it should proceed in the presence of other in-progress operations.
+    ///
+    /// - Parameters:
+    ///   - body: The implementation of the operation to be performed. Once this function returns or throws an error, the operation is considered to have completed, and any waits for this operation’s completion initiated via ``waitForCompletionOfOperationWithID(_:waitingOperationID:)`` will complete.
+    private func performAnOperation<Failure: Error>(_ body: (UUID) async throws(Failure) -> Void) async throws(Failure) {
+        let operationID = UUID()
+        logger.log(message: "Performing operation \(operationID)", level: .debug)
+        let result: Result<Void, Failure>
+        do {
+            // My understanding (based on what the compiler allows me to do, and a vague understanding of how actors work) is that inside this closure you can write code as if it were a method on the manager itself — i.e. with synchronous access to the manager’s state. But I currently lack the Swift concurrency vocabulary to explain exactly why this is the case.
+            try await body(operationID)
+            result = .success(())
+        } catch {
+            result = .failure(error)
+        }
+
+        operationWithID(operationID, didCompleteWithResult: result.mapError { $0 })
+
+        try result.get()
     }
 
     // MARK: - ATTACH operation
 
     /// Implements CHA-RL1’s `ATTACH` operation.
     internal func performAttachOperation() async throws {
-        let operationID = UUID()
+        try await performAnOperation { operationID in
+            try await bodyOfAttachOperation(operationID: operationID)
+        }
+    }
 
+    private func bodyOfAttachOperation(operationID: UUID) async throws {
         switch status {
         case .attached:
             // CHA-RL1a
@@ -479,8 +559,12 @@ internal actor RoomLifecycleManager<Contributor: RoomLifecycleContributor> {
 
     /// Implements CHA-RL2’s DETACH operation.
     internal func performDetachOperation() async throws {
-        let operationID = UUID()
+        try await performAnOperation { operationID in
+            try await bodyOfDetachOperation(operationID: operationID)
+        }
+    }
 
+    private func bodyOfDetachOperation(operationID: UUID) async throws {
         switch status {
         case .detached:
             // CHA-RL2a
@@ -562,8 +646,12 @@ internal actor RoomLifecycleManager<Contributor: RoomLifecycleContributor> {
 
     /// Implements CHA-RL3’s RELEASE operation.
     internal func performReleaseOperation() async {
-        let operationID = UUID()
+        await performAnOperation { operationID in
+            await bodyOfReleaseOperation(operationID: operationID)
+        }
+    }
 
+    private func bodyOfReleaseOperation(operationID: UUID) async {
         switch status {
         case .released:
             // CHA-RL3a
