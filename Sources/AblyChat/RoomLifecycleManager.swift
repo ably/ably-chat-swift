@@ -514,6 +514,11 @@ internal actor RoomLifecycleManager<Contributor: RoomLifecycleContributor> {
             break
         }
 
+        // CHA-RL1d
+        if let currentOperationID = status.operationID {
+            try? await waitForCompletionOfOperationWithID(currentOperationID, waitingOperationID: operationID)
+        }
+
         // CHA-RL1e
         changeStatus(to: .attaching(attachOperationID: operationID))
 

@@ -125,6 +125,54 @@ struct RoomLifecycleManagerTests {
         }
     }
 
+    // @spec CHA-RL1d
+    @Test
+    func attach_ifOtherOperationInProgress_waitsForItToComplete() async throws {
+        // Given: A RoomLifecycleManager with a DETACH lifecycle operation in progress (the fact that it is a DETACH is not important; it is just an operation whose execution it is easy to prolong and subsequently complete, which is helpful for this test)
+        let contributorDetachOperation = SignallableChannelOperation()
+        let manager = await createManager(
+            contributors: [
+                createContributor(
+                    // Arbitrary, allows the ATTACH to eventually complete
+                    attachBehavior: .complete(.success),
+                    // This allows us to prolong the execution of the DETACH triggered in (1)
+                    detachBehavior: contributorDetachOperation.behavior
+                ),
+            ]
+        )
+
+        let detachOperationID = UUID()
+        let attachOperationID = UUID()
+
+        let statusChangeSubscription = await manager.onChange(bufferingPolicy: .unbounded)
+        // Wait for the manager to enter DETACHING; this our sign that the DETACH operation triggered in (1) has started
+        async let detachingStatusChange = statusChangeSubscription.first { $0.current == .detaching }
+
+        // (1) This is the "DETACH lifecycle operation in progress" mentioned in Given
+        async let _ = manager.performDetachOperation(testsOnly_forcingOperationID: detachOperationID)
+        _ = await detachingStatusChange
+
+        let operationWaitEventSubscription = await manager.testsOnly_subscribeToOperationWaitEvents()
+        async let attachedWaitingForDetachedEvent = operationWaitEventSubscription.first { operationWaitEvent in
+            operationWaitEvent == .init(waitingOperationID: attachOperationID, waitedOperationID: detachOperationID)
+        }
+
+        // When: `performAttachOperation()` is called on the lifecycle manager
+        async let attachResult: Void = manager.performAttachOperation(testsOnly_forcingOperationID: attachOperationID)
+
+        // Then:
+        // - the manager informs us that the ATTACH operation is waiting for the DETACH operation to complete
+        // - when the DETACH completes, the ATTACH operation proceeds (which we check here by verifying that it eventually completes) — note that (as far as I can tell) there is no way to test that the ATTACH operation would have proceeded _only if_ the DETACH had completed; the best we can do is allow the manager to tell us that that this is indeed what it’s doing (which is what we check for in the previous bullet)
+
+        _ = try #require(await attachedWaitingForDetachedEvent)
+
+        // Allow the DETACH to complete
+        contributorDetachOperation.complete(result: .success /* arbitrary */ )
+
+        // Check that ATTACH completes
+        try await attachResult
+    }
+
     // @spec CHA-RL1e
     @Test
     func attach_transitionsToAttaching() async throws {
