@@ -395,6 +395,27 @@ internal actor RoomLifecycleManager<Contributor: RoomLifecycleContributor> {
         }
     }
 
+    #if DEBUG
+        /// The manager emits an `OperationWaitEvent` each time one room lifecycle operation is going to wait for another to complete. These events are emitted to support testing of the manager; see ``testsOnly_subscribeToOperationWaitEvents``.
+        internal struct OperationWaitEvent: Equatable {
+            /// The ID of the operation which initiated the wait. It is waiting for the operation with ID ``waitedOperationID`` to complete.
+            internal var waitingOperationID: UUID
+            /// The ID of the operation whose completion will be awaited.
+            internal var waitedOperationID: UUID
+        }
+
+        // TODO: clean up old subscriptions (https://github.com/ably-labs/ably-chat-swift/issues/36)
+        /// Supports the ``testsOnly_subscribeToOperationWaitEvents()`` method.
+        private var operationWaitEventSubscriptions: [Subscription<OperationWaitEvent>] = []
+
+        /// Returns a subscription which emits an event each time one room lifecycle operation is going to wait for another to complete.
+        internal func testsOnly_subscribeToOperationWaitEvents() -> Subscription<OperationWaitEvent> {
+            let subscription = Subscription<OperationWaitEvent>(bufferingPolicy: .unbounded)
+            operationWaitEventSubscriptions.append(subscription)
+            return subscription
+        }
+    #endif
+
     /// Waits for the operation with ID `waitedOperationID` to complete, re-throwing any error thrown by that operation.
     ///
     /// Note that this method currently treats all waited operations as throwing. If you wish to wait for an operation that you _know_ to be non-throwing (which the RELEASE operation currently is) then you’ll need to call this method with `try!` or equivalent. (It might be possible to improve this in the future, but I didn’t want to put much time into figuring it out.)
@@ -414,6 +435,13 @@ internal actor RoomLifecycleManager<Contributor: RoomLifecycleContributor> {
             try await withCheckedThrowingContinuation { (continuation: OperationResultContinuations.Continuation) in
                 // My “it is guaranteed” in the documentation for this method is really more of an “I hope that”, because it’s based on my pretty vague understanding of Swift concurrency concepts; namely, I believe that if you call this manager-isolated `async` method from another manager-isolated method, the initial synchronous part of this method — in particular the call to `addContinuation` below — will occur _before_ the call to this method suspends. (I think this can be roughly summarised as “calls to async methods on self don’t do actor hopping” but I could be completely misusing a load of Swift concurrency vocabulary there.)
                 operationResultContinuations.addContinuation(continuation, forResultOfOperationWithID: waitedOperationID)
+
+                #if DEBUG
+                    let operationWaitEvent = OperationWaitEvent(waitingOperationID: waitingOperationID, waitedOperationID: waitedOperationID)
+                    for subscription in operationWaitEventSubscriptions {
+                        subscription.emit(operationWaitEvent)
+                    }
+                #endif
             }
 
             logger.log(message: "Operation \(waitingOperationID) completed waiting for result of operation \(waitedOperationID), which completed successfully", level: .debug)
