@@ -706,7 +706,12 @@ internal actor RoomLifecycleManager<Contributor: RoomLifecycleContributor> {
             // CHA-RL3b
             changeStatus(to: .released)
             return
-        case .releasing, .initialized, .attached, .attaching, .detaching, .suspended, .failed:
+        case let .releasing(releaseOperationID):
+            // CHA-RL3c
+            // See note on waitForCompletionOfOperationWithID for the current need for this force try
+            // swiftlint:disable:next force_try
+            return try! await waitForCompletionOfOperationWithID(releaseOperationID, waitingOperationID: operationID)
+        case .initialized, .attached, .attaching, .detaching, .suspended, .failed:
             break
         }
 

@@ -650,6 +650,52 @@ struct RoomLifecycleManagerTests {
         #expect(await contributor.channel.detachCallCount == 0)
     }
 
+    // @specPartial CHA-RL3c - This is marked as specPartial because at time of writing the spec point CHA-RL3c has been accidentally duplicated to specify two separate behaviours. TODO: change this one to @spec once spec fixed (see discussion in https://github.com/ably/specification/pull/200#discussion_r1763770348)
+    @Test
+    func release_whenReleasing() async throws {
+        // Given: A RoomLifecycleManager with a RELEASE lifecycle operation in progress, and hence in the RELEASING state
+        let contributorDetachOperation = SignallableChannelOperation()
+        let contributor = createContributor(
+            // This allows us to prolong the execution of the RELEASE triggered in (1)
+            detachBehavior: contributorDetachOperation.behavior
+        )
+        let manager = await createManager(contributors: [contributor])
+
+        let firstReleaseOperationID = UUID()
+        let secondReleaseOperationID = UUID()
+
+        let statusChangeSubscription = await manager.onChange(bufferingPolicy: .unbounded)
+        // Wait for the manager to enter RELEASING; this our sign that the DETACH operation triggered in (1) has started
+        async let releasingStatusChange = statusChangeSubscription.first { $0.current == .releasing }
+
+        // (1) This is the "RELEASE lifecycle operation in progress" mentioned in Given
+        async let _ = manager.performReleaseOperation(testsOnly_forcingOperationID: firstReleaseOperationID)
+        _ = await releasingStatusChange
+
+        let operationWaitEventSubscription = await manager.testsOnly_subscribeToOperationWaitEvents()
+        async let secondReleaseWaitingForFirstReleaseEvent = operationWaitEventSubscription.first { operationWaitEvent in
+            operationWaitEvent == .init(waitingOperationID: secondReleaseOperationID, waitedOperationID: firstReleaseOperationID)
+        }
+
+        // When: `performReleaseOperation()` is called on the lifecycle manager
+        async let secondReleaseResult: Void = manager.performReleaseOperation(testsOnly_forcingOperationID: secondReleaseOperationID)
+
+        // Then:
+        // - the manager informs us that the second RELEASE operation is waiting for first RELEASE operation to complete
+        // - when the first RELEASE completes, the second RELEASE operation also completes
+        // - the second RELEASE operation does not perform any side-effects (which we check here by confirming that the CHA-RL3d contributor detach only happened once, i.e. was only performed by the first RELEASE operation)
+
+        _ = try #require(await secondReleaseWaitingForFirstReleaseEvent)
+
+        // Allow the first RELEASE to complete
+        contributorDetachOperation.complete(result: .success)
+
+        // Check that the second RELEASE completes
+        await secondReleaseResult
+
+        #expect(await contributor.channel.detachCallCount == 1)
+    }
+
     // @specPartial CHA-RL3c - Haven’t implemented the part that refers to "transient disconnect timeouts"; TODO do this (https://github.com/ably-labs/ably-chat-swift/issues/48)
     @Test
     func release_transitionsToReleasing() async throws {
