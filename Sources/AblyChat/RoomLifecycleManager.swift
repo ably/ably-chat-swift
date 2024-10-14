@@ -41,55 +41,24 @@ internal protocol RoomLifecycleContributor: Identifiable, Sendable {
 }
 
 internal actor RoomLifecycleManager<Contributor: RoomLifecycleContributor> {
-    /// Stores manager state relating to a given contributor.
-    private struct ContributorAnnotation {
-        // TODO: Not clear whether there can be multiple or just one (asked in https://github.com/ably/specification/pull/200/files#r1781927850)
-        var pendingDiscontinuityEvents: [ARTErrorInfo] = []
-    }
+    // MARK: - Constant properties
 
-    internal private(set) var current: RoomLifecycle
     // TODO: This currently allows the the tests to inject a value in order to test the spec points that are predicated on whether “a channel lifecycle operation is in progress”. In https://github.com/ably-labs/ably-chat-swift/issues/52 we’ll set this property based on whether there actually is a lifecycle operation in progress.
     private let hasOperationInProgress: Bool
-    /// Manager state that relates to individual contributors, keyed by contributors’ ``Contributor.id``. Stored separately from ``contributors`` so that the latter can be a `let`, to make it clear that the contributors remain fixed for the lifetime of the manager.
-    private var contributorAnnotations: ContributorAnnotations
-
-    /// Provides a `Dictionary`-like interface for storing manager state about individual contributors.
-    private struct ContributorAnnotations {
-        private var storage: [Contributor.ID: ContributorAnnotation]
-
-        init(contributors: [Contributor], pendingDiscontinuityEvents: [Contributor.ID: [ARTErrorInfo]]) {
-            storage = contributors.reduce(into: [:]) { result, contributor in
-                result[contributor.id] = .init(pendingDiscontinuityEvents: pendingDiscontinuityEvents[contributor.id] ?? [])
-            }
-        }
-
-        /// It is a programmer error to call this subscript getter with a contributor that was not one of those passed to ``init(contributors:pendingDiscontinuityEvents)``.
-        subscript(_ contributor: Contributor) -> ContributorAnnotation {
-            get {
-                guard let annotation = storage[contributor.id] else {
-                    preconditionFailure("Expected annotation for \(contributor)")
-                }
-                return annotation
-            }
-
-            set {
-                storage[contributor.id] = newValue
-            }
-        }
-
-        mutating func clearPendingDiscontinuityEvents() {
-            storage = storage.mapValues { annotation in
-                var newAnnotation = annotation
-                newAnnotation.pendingDiscontinuityEvents = []
-                return newAnnotation
-            }
-        }
-    }
-
     private let logger: InternalLogger
     private let clock: SimpleClock
     private let contributors: [Contributor]
+
+    // MARK: - Variable properties
+
+    internal private(set) var current: RoomLifecycle
+    /// Manager state that relates to individual contributors, keyed by contributors’ ``Contributor.id``. Stored separately from ``contributors`` so that the latter can be a `let`, to make it clear that the contributors remain fixed for the lifetime of the manager.
+    private var contributorAnnotations: ContributorAnnotations
     private var listenForStateChangesTask: Task<Void, Never>!
+    // TODO: clean up old subscriptions (https://github.com/ably-labs/ably-chat-swift/issues/36)
+    private var subscriptions: [Subscription<RoomStatusChange>] = []
+
+    // MARK: - Initializers and `deinit`
 
     internal init(
         contributors: [Contributor],
@@ -172,20 +141,71 @@ internal actor RoomLifecycleManager<Contributor: RoomLifecycleContributor> {
         listenForStateChangesTask.cancel()
     }
 
-    #if DEBUG
-        internal func testsOnly_pendingDiscontinuityEvents(for contributor: Contributor) -> [ARTErrorInfo] {
-            contributorAnnotations[contributor].pendingDiscontinuityEvents
-        }
-    #endif
+    // MARK: - Types for contributor annotations
 
-    // TODO: clean up old subscriptions (https://github.com/ably-labs/ably-chat-swift/issues/36)
-    private var subscriptions: [Subscription<RoomStatusChange>] = []
+    /// Stores manager state relating to a given contributor.
+    private struct ContributorAnnotation {
+        // TODO: Not clear whether there can be multiple or just one (asked in https://github.com/ably/specification/pull/200/files#r1781927850)
+        var pendingDiscontinuityEvents: [ARTErrorInfo] = []
+    }
+
+    /// Provides a `Dictionary`-like interface for storing manager state about individual contributors.
+    private struct ContributorAnnotations {
+        private var storage: [Contributor.ID: ContributorAnnotation]
+
+        init(contributors: [Contributor], pendingDiscontinuityEvents: [Contributor.ID: [ARTErrorInfo]]) {
+            storage = contributors.reduce(into: [:]) { result, contributor in
+                result[contributor.id] = .init(pendingDiscontinuityEvents: pendingDiscontinuityEvents[contributor.id] ?? [])
+            }
+        }
+
+        /// It is a programmer error to call this subscript getter with a contributor that was not one of those passed to ``init(contributors:pendingDiscontinuityEvents)``.
+        subscript(_ contributor: Contributor) -> ContributorAnnotation {
+            get {
+                guard let annotation = storage[contributor.id] else {
+                    preconditionFailure("Expected annotation for \(contributor)")
+                }
+                return annotation
+            }
+
+            set {
+                storage[contributor.id] = newValue
+            }
+        }
+
+        mutating func clearPendingDiscontinuityEvents() {
+            storage = storage.mapValues { annotation in
+                var newAnnotation = annotation
+                newAnnotation.pendingDiscontinuityEvents = []
+                return newAnnotation
+            }
+        }
+    }
+
+    // MARK: - Room status changes
 
     internal func onChange(bufferingPolicy: BufferingPolicy) -> Subscription<RoomStatusChange> {
         let subscription: Subscription<RoomStatusChange> = .init(bufferingPolicy: bufferingPolicy)
         subscriptions.append(subscription)
         return subscription
     }
+
+    /// Updates ``current`` and emits a status change event.
+    private func changeStatus(to new: RoomLifecycle) {
+        logger.log(message: "Transitioning from \(current) to \(new)", level: .info)
+        let previous = current
+        current = new
+        let statusChange = RoomStatusChange(current: current, previous: previous)
+        emitStatusChange(statusChange)
+    }
+
+    private func emitStatusChange(_ change: RoomStatusChange) {
+        for subscription in subscriptions {
+            subscription.emit(change)
+        }
+    }
+
+    // MARK: - Handling contributor state changes
 
     #if DEBUG
         // TODO: clean up old subscriptions (https://github.com/ably-labs/ably-chat-swift/issues/36)
@@ -203,6 +223,10 @@ internal actor RoomLifecycleManager<Contributor: RoomLifecycleContributor> {
             let subscription = Subscription<ARTChannelStateChange>(bufferingPolicy: .unbounded)
             stateChangeHandledSubscriptions.append(subscription)
             return subscription
+        }
+
+        internal func testsOnly_pendingDiscontinuityEvents(for contributor: Contributor) -> [ARTErrorInfo] {
+            contributorAnnotations[contributor].pendingDiscontinuityEvents
         }
     #endif
 
@@ -294,20 +318,7 @@ internal actor RoomLifecycleManager<Contributor: RoomLifecycleContributor> {
         #endif
     }
 
-    /// Updates ``current`` and emits a status change event.
-    private func changeStatus(to new: RoomLifecycle) {
-        logger.log(message: "Transitioning from \(current) to \(new)", level: .info)
-        let previous = current
-        current = new
-        let statusChange = RoomStatusChange(current: current, previous: previous)
-        emitStatusChange(statusChange)
-    }
-
-    private func emitStatusChange(_ change: RoomStatusChange) {
-        for subscription in subscriptions {
-            subscription.emit(change)
-        }
-    }
+    // MARK: - ATTACH operation
 
     /// Implements CHA-RL1’s `ATTACH` operation.
     internal func performAttachOperation() async throws {
@@ -400,6 +411,8 @@ internal actor RoomLifecycleManager<Contributor: RoomLifecycleContributor> {
         }
     }
 
+    // MARK: - DETACH operation
+
     /// Implements CHA-RL2’s DETACH operation.
     internal func performDetachOperation() async throws {
         switch current {
@@ -478,6 +491,8 @@ internal actor RoomLifecycleManager<Contributor: RoomLifecycleContributor> {
         // CHA-RL2g
         changeStatus(to: .detached)
     }
+
+    // MARK: - RELEASE operation
 
     /// Implementes CHA-RL3’s RELEASE operation.
     internal func performReleaseOperation() async {
