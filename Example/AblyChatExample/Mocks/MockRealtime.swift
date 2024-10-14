@@ -14,6 +14,10 @@ final class MockRealtime: NSObject, RealtimeClientProtocol, Sendable {
     let channels = Channels()
 
     final class Channels: RealtimeChannelsProtocol {
+        func get(_: String, options _: ARTRealtimeChannelOptions) -> MockRealtime.Channel {
+            fatalError("Not implemented")
+        }
+
         func get(_: String) -> Channel {
             fatalError("Not implemented")
         }

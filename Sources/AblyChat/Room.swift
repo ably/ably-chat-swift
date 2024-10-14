@@ -20,6 +20,9 @@ public protocol Room: AnyObject, Sendable {
 internal actor DefaultRoom: Room {
     internal nonisolated let roomID: String
     internal nonisolated let options: RoomOptions
+    private let chatAPI: ChatAPI
+
+    public nonisolated let messages: any Messages
 
     // Exposed for testing.
     private nonisolated let realtime: RealtimeClient
@@ -33,16 +36,23 @@ internal actor DefaultRoom: Room {
     private let _status: DefaultRoomStatus
     private let logger: InternalLogger
 
-    internal init(realtime: RealtimeClient, roomID: String, options: RoomOptions, logger: InternalLogger) {
+    internal init(realtime: RealtimeClient, chatAPI: ChatAPI, roomID: String, options: RoomOptions, logger: InternalLogger) async throws {
         self.realtime = realtime
         self.roomID = roomID
         self.options = options
         self.logger = logger
         _status = .init(logger: logger)
-    }
+        self.chatAPI = chatAPI
 
-    public nonisolated var messages: any Messages {
-        fatalError("Not yet implemented")
+        guard let clientId = realtime.clientId else {
+            throw ARTErrorInfo.create(withCode: 40000, message: "Ensure your Realtime instance is initialized with a clientId.")
+        }
+
+        messages = await DefaultMessages(
+            chatAPI: chatAPI,
+            roomID: roomID,
+            clientID: clientId
+        )
     }
 
     public nonisolated var presence: any Presence {

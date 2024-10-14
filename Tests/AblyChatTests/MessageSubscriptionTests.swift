@@ -2,7 +2,7 @@
 import AsyncAlgorithms
 import Testing
 
-private final class MockPaginatedResult<T>: PaginatedResult {
+private final class MockPaginatedResult<T: Equatable>: PaginatedResult {
     var items: [T] { fatalError("Not implemented") }
 
     var hasNext: Bool { fatalError("Not implemented") }
@@ -16,6 +16,12 @@ private final class MockPaginatedResult<T>: PaginatedResult {
     var current: any AblyChat.PaginatedResult<T> { fatalError("Not implemented") }
 
     init() {}
+
+    static func == (lhs: MockPaginatedResult<T>, rhs: MockPaginatedResult<T>) -> Bool {
+        lhs.items == rhs.items &&
+            lhs.hasNext == rhs.hasNext &&
+            lhs.isLast == rhs.isLast
+    }
 }
 
 struct MessageSubscriptionTests {
@@ -32,7 +38,7 @@ struct MessageSubscriptionTests {
 
     @Test
     func emit() async {
-        let subscription = MessageSubscription(bufferingPolicy: .unbounded)
+        let subscription = MessageSubscription(bufferingPolicy: .unbounded) { _ in fatalError("Not implemented") }
 
         async let emittedElements = Array(subscription.prefix(2))
 

@@ -1,12 +1,13 @@
 @testable import AblyChat
 import Testing
 
+// The channel name of basketball::$chat::$chatMessages is passed in to these tests due to `DefaultRoom` kicking off the `DefaultMessages` initialization. This in turn needs a valid `roomId` or else the `MockChannels` class will throw an error as it would be expecting a channel with the name \(roomID)::$chat::$chatMessages to exist (where `roomId` is the property passed into `rooms.get`).
 struct DefaultRoomsTests {
     // @spec CHA-RC1a
     @Test
     func get_returnsRoomWithGivenID() async throws {
         // Given: an instance of DefaultRooms
-        let realtime = MockRealtime.create()
+        let realtime = MockRealtime.create(channels: .init(channels: [.init(name: "basketball::$chat::$chatMessages")]))
         let rooms = DefaultRooms(realtime: realtime, clientOptions: .init(), logger: TestLogger())
 
         // When: get(roomID:options:) is called
@@ -25,7 +26,7 @@ struct DefaultRoomsTests {
     @Test
     func get_returnsExistingRoomWithGivenID() async throws {
         // Given: an instance of DefaultRooms, on which get(roomID:options:) has already been called with a given ID
-        let realtime = MockRealtime.create()
+        let realtime = MockRealtime.create(channels: .init(channels: [.init(name: "basketball::$chat::$chatMessages")]))
         let rooms = DefaultRooms(realtime: realtime, clientOptions: .init(), logger: TestLogger())
 
         let roomID = "basketball"
@@ -43,7 +44,7 @@ struct DefaultRoomsTests {
     @Test
     func get_throwsErrorWhenOptionsDoNotMatch() async throws {
         // Given: an instance of DefaultRooms, on which get(roomID:options:) has already been called with a given ID and options
-        let realtime = MockRealtime.create()
+        let realtime = MockRealtime.create(channels: .init(channels: [.init(name: "basketball::$chat::$chatMessages")]))
         let rooms = DefaultRooms(realtime: realtime, clientOptions: .init(), logger: TestLogger())
 
         let roomID = "basketball"

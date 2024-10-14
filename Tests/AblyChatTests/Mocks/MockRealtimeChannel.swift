@@ -2,16 +2,24 @@ import Ably
 import AblyChat
 
 final class MockRealtimeChannel: NSObject, RealtimeChannelProtocol {
+    private let attachSerial: String?
+    private let channelSerial: String?
     private let _name: String?
+
+    var properties: ARTChannelProperties { .init(attachSerial: attachSerial, channelSerial: channelSerial) }
 
     init(
         name: String? = nil,
+        properties: ARTChannelProperties = .init(),
+        state _: ARTRealtimeChannelState = .suspended,
         attachResult: AttachOrDetachResult? = nil,
         detachResult: AttachOrDetachResult? = nil
     ) {
         _name = name
         self.attachResult = attachResult
         self.detachResult = detachResult
+        attachSerial = properties.attachSerial
+        channelSerial = properties.channelSerial
     }
 
     /// A threadsafe counter that starts at zero.
@@ -43,7 +51,7 @@ final class MockRealtimeChannel: NSObject, RealtimeChannelProtocol {
     }
 
     var state: ARTRealtimeChannelState {
-        fatalError("Not implemented")
+        .attached
     }
 
     var errorReason: ARTErrorInfo? {
@@ -51,10 +59,6 @@ final class MockRealtimeChannel: NSObject, RealtimeChannelProtocol {
     }
 
     var options: ARTRealtimeChannelOptions? {
-        fatalError("Not implemented")
-    }
-
-    var properties: ARTChannelProperties {
         fatalError("Not implemented")
     }
 
@@ -117,7 +121,7 @@ final class MockRealtimeChannel: NSObject, RealtimeChannelProtocol {
     }
 
     func subscribe(_: String, callback _: @escaping ARTMessageCallback) -> ARTEventListener? {
-        fatalError("Not implemented")
+        ARTEventListener()
     }
 
     func subscribe(_: String, onAttach _: ARTCallback?, callback _: @escaping ARTMessageCallback) -> ARTEventListener? {
@@ -145,7 +149,7 @@ final class MockRealtimeChannel: NSObject, RealtimeChannelProtocol {
     }
 
     func on(_: ARTChannelEvent, callback _: @escaping (ARTChannelStateChange) -> Void) -> ARTEventListener {
-        fatalError("Not implemented")
+        ARTEventListener()
     }
 
     func on(_: @escaping (ARTChannelStateChange) -> Void) -> ARTEventListener {
