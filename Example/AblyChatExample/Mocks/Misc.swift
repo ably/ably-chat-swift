@@ -37,6 +37,10 @@ final class MockMessagesPaginatedResult: PaginatedResult {
         self.roomID = roomID
         self.numberOfMockMessages = numberOfMockMessages
     }
+
+    static func == (_: MockMessagesPaginatedResult, _: MockMessagesPaginatedResult) -> Bool {
+        fatalError("Not implemented")
+    }
 }
 
 enum MockStrings {
