@@ -301,9 +301,10 @@ internal actor RoomLifecycleManager<Contributor: RoomLifecycleContributor> {
         /// A contributor state change is considered handled once the manager has performed all of the side effects that it will perform as a result of receiving this state change. Specifically, once:
         ///
         /// - the manager has recorded all pending discontinuity events provoked by the state change (you can retrieve these using ``testsOnly_pendingDiscontinuityEventsForContributor(at:)``)
-        /// - the manager has performed all status changes provoked by the state change
+        /// - the manager has performed all status changes provoked by the state change (this does _not_ include the case in which the state change provokes the creation of a transient disconnect timeout which subsequently provokes a status change; use ``testsOnly_subscribeToHandledTransientDisconnectTimeouts()`` to find out about those)
         /// - the manager has performed all contributor actions provoked by the state change, namely calls to ``RoomLifecycleContributorChannel.detach()`` or ``RoomLifecycleContributor.emitDiscontinuity(_:)``
         /// - the manager has recorded all transient disconnect timeouts provoked by the state change (you can retrieve this information using ``testsOnly_hasTransientDisconnectTimeout(for:) or ``testsOnly_idOfTransientDisconnectTimeout(for:)``)
+        /// - the manager has performed all transient disconnect timeout cancellations provoked by the state change (you can retrieve this information using ``testsOnly_hasTransientDisconnectTimeout(for:) or ``testsOnly_idOfTransientDisconnectTimeout(for:)``)
         internal func testsOnly_subscribeToHandledContributorStateChanges() -> Subscription<ARTChannelStateChange> {
             let subscription = Subscription<ARTChannelStateChange>(bufferingPolicy: .unbounded)
             stateChangeHandledSubscriptions.append(subscription)
@@ -318,8 +319,27 @@ internal actor RoomLifecycleManager<Contributor: RoomLifecycleContributor> {
             contributorAnnotations[contributor].hasTransientDisconnectTimeout
         }
 
+        internal var testsOnly_hasTransientDisconnectTimeoutForAnyContributor: Bool {
+            contributors.contains { testsOnly_hasTransientDisconnectTimeout(for: $0) }
+        }
+
         internal func testsOnly_idOfTransientDisconnectTimeout(for contributor: Contributor) -> UUID? {
             contributorAnnotations[contributor].transientDisconnectTimeout?.id
+        }
+
+        // TODO: clean up old subscriptions (https://github.com/ably-labs/ably-chat-swift/issues/36)
+        /// Supports the ``testsOnly_subscribeToHandledTransientDisconnectTimeouts()`` method.
+        private var transientDisconnectTimeoutHandledSubscriptions: [Subscription<UUID>] = []
+
+        /// Returns a subscription which emits the IDs of the transient disconnect timeouts that have been handled by the manager.
+        ///
+        /// A transient disconnect timeout is considered handled once the manager has performed all of the side effects that it will perform as a result of creating this timeout. Specifically, once:
+        ///
+        /// - the manager has performed all status changes provoked by the completion of this timeout (which may be none, if the timeout gets cancelled)
+        internal func testsOnly_subscribeToHandledTransientDisconnectTimeouts() -> Subscription<UUID> {
+            let subscription = Subscription<UUID>(bufferingPolicy: .unbounded)
+            transientDisconnectTimeoutHandledSubscriptions.append(subscription)
+            return subscription
         }
     #endif
 
@@ -364,11 +384,16 @@ internal actor RoomLifecycleManager<Contributor: RoomLifecycleContributor> {
 
                     contributorAnnotations[contributor].pendingDiscontinuityEvents.append(reason)
                 }
-            } else if status != .attached {
-                if await (contributors.async.map { await $0.channel.state }.allSatisfy { $0 == .attached }) {
-                    // CHA-RL4b8
-                    logger.log(message: "Now that all contributors are ATTACHED, transitioning room to ATTACHED", level: .info)
-                    changeStatus(to: .attached)
+            } else {
+                // CHA-RL4b10
+                clearTransientDisconnectTimeouts(for: contributor)
+
+                if status != .attached {
+                    if await (contributors.async.map { await $0.channel.state }.allSatisfy { $0 == .attached }) {
+                        // CHA-RL4b8
+                        logger.log(message: "Now that all contributors are ATTACHED, transitioning room to ATTACHED", level: .info)
+                        changeStatus(to: .attached)
+                    }
                 }
             }
         case .failed:
@@ -379,6 +404,7 @@ internal actor RoomLifecycleManager<Contributor: RoomLifecycleContributor> {
                     preconditionFailure("FAILED state change event should have a reason")
                 }
 
+                clearTransientDisconnectTimeouts()
                 changeStatus(to: .failed(error: reason))
 
                 // TODO: CHA-RL4b5 is a bit unclear about how to handle failure, and whether they can be detached concurrently (asked in https://github.com/ably/specification/pull/200/files#r1777471810)
@@ -398,6 +424,8 @@ internal actor RoomLifecycleManager<Contributor: RoomLifecycleContributor> {
                     preconditionFailure("SUSPENDED state change event should have a reason")
                 }
 
+                clearTransientDisconnectTimeouts()
+
                 changeStatus(to: .suspended(error: reason))
             }
         case .attaching:
@@ -411,10 +439,20 @@ internal actor RoomLifecycleManager<Contributor: RoomLifecycleContributor> {
                         try await clock.sleep(timeInterval: 5)
                     } catch {
                         logger.log(message: "Transient disconnect timeout \(transientDisconnectTimeout.id) for \(contributor) was interrupted, error \(error)", level: .debug)
+
+                        #if DEBUG
+                            emitTransientDisconnectTimeoutHandledEventForTimeoutWithID(transientDisconnectTimeout.id)
+                        #endif
+
+                        return
                     }
                     logger.log(message: "Transient disconnect timeout \(transientDisconnectTimeout.id) for \(contributor) completed", level: .debug)
                     contributorAnnotations[contributor].transientDisconnectTimeout = nil
                     changeStatus(to: .attachingDueToContributorStateChange(error: stateChange.reason))
+
+                    #if DEBUG
+                        emitTransientDisconnectTimeoutHandledEventForTimeoutWithID(transientDisconnectTimeout.id)
+                    #endif
                 }
             }
         default:
@@ -427,6 +465,31 @@ internal actor RoomLifecycleManager<Contributor: RoomLifecycleContributor> {
                 subscription.emit(stateChange)
             }
         #endif
+    }
+
+    #if DEBUG
+        private func emitTransientDisconnectTimeoutHandledEventForTimeoutWithID(_ id: UUID) {
+            logger.log(message: "Emitting transient disconnect timeout handled event for \(id)", level: .debug)
+            for subscription in transientDisconnectTimeoutHandledSubscriptions {
+                subscription.emit(id)
+            }
+        }
+    #endif
+
+    private func clearTransientDisconnectTimeouts(for contributor: Contributor) {
+        guard let transientDisconnectTimeout = contributorAnnotations[contributor].transientDisconnectTimeout else {
+            return
+        }
+
+        logger.log(message: "Clearing transient disconnect timeout \(transientDisconnectTimeout.id) for \(contributor)", level: .debug)
+        transientDisconnectTimeout.task?.cancel()
+        contributorAnnotations[contributor].transientDisconnectTimeout = nil
+    }
+
+    private func clearTransientDisconnectTimeouts() {
+        for contributor in contributors {
+            clearTransientDisconnectTimeouts(for: contributor)
+        }
     }
 
     // MARK: - Operation handling
@@ -614,6 +677,9 @@ internal actor RoomLifecycleManager<Contributor: RoomLifecycleContributor> {
             }
         }
 
+        // CHA-RL1g3
+        clearTransientDisconnectTimeouts()
+
         // CHA-RL1g1
         changeStatus(to: .attached)
 
@@ -684,6 +750,7 @@ internal actor RoomLifecycleManager<Contributor: RoomLifecycleContributor> {
         }
 
         // CHA-RL2e
+        clearTransientDisconnectTimeouts()
         changeStatus(to: .detaching(detachOperationID: operationID))
 
         // CHA-RL2f
@@ -774,6 +841,7 @@ internal actor RoomLifecycleManager<Contributor: RoomLifecycleContributor> {
         }
 
         // CHA-RL3l
+        clearTransientDisconnectTimeouts()
         changeStatus(to: .releasing(releaseOperationID: operationID))
 
         // CHA-RL3d
