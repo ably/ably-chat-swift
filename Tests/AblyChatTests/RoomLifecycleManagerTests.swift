@@ -32,6 +32,8 @@ struct RoomLifecycleManagerTests {
         private let continuation: AsyncStream<Void>.Continuation
 
         /// When this behavior is set as a ``MockSimpleClock``’s `sleepBehavior`, calling ``complete(result:)`` will cause the corresponding `sleep(timeInterval:)` to complete with the result passed to that method.
+        ///
+        /// ``sleep(timeInterval:)`` will respond to task cancellation by throwing `CancellationError`.
         let behavior: MockSimpleClock.SleepBehavior
 
         init() {
@@ -39,7 +41,8 @@ struct RoomLifecycleManagerTests {
             self.continuation = continuation
 
             behavior = .fromFunction {
-                await (stream.first { _ in true })!
+                await (stream.first { _ in true }) // this will return if we yield to the continuation or if the Task is cancelled
+                try Task.checkCancellation()
             }
         }
 
@@ -86,6 +89,14 @@ struct RoomLifecycleManagerTests {
     func waitForManager(_ manager: RoomLifecycleManager<some RoomLifecycleContributor>, toHandleContributorStateChange stateChange: ARTChannelStateChange, during action: () async -> Void) async {
         let subscription = await manager.testsOnly_subscribeToHandledContributorStateChanges()
         async let handledSignal = subscription.first { $0 === stateChange }
+        await action()
+        _ = await handledSignal
+    }
+
+    /// Given a room lifecycle manager and the ID of a transient disconnect timeout, this method will return once the manager has performed all of the side effects that it will perform as a result of creating that timeout. You can provide a function which will be called after ``waitForManager`` has started listening for the manager’s “transient disconnect timeout handled” notifications.
+    func waitForManager(_ manager: RoomLifecycleManager<some RoomLifecycleContributor>, toHandleTransientDisconnectTimeoutWithID id: UUID, during action: () async -> Void) async {
+        let subscription = await manager.testsOnly_subscribeToHandledTransientDisconnectTimeouts()
+        async let handledSignal = subscription.first { $0 == id }
         await action()
         _ = await handledSignal
     }
@@ -274,6 +285,23 @@ struct RoomLifecycleManagerTests {
         for contributor in contributors {
             #expect(await manager.testsOnly_pendingDiscontinuityEvents(for: contributor).isEmpty)
         }
+    }
+
+    // @spec CHA-RL1g3
+    @Test
+    func attach_uponSuccess_clearsTransientDisconnectTimeouts() async throws {
+        // Given: A RoomLifecycleManager, all of whose contributors’ calls to `attach` succeed
+        let contributors = (1 ... 3).map { _ in createContributor(attachBehavior: .complete(.success)) }
+        let manager = await createManager(
+            forTestingWhatHappensWhenHasTransientDisconnectTimeoutForTheseContributorIDs: [contributors[1].id],
+            contributors: contributors
+        )
+
+        // When: `performAttachOperation()` is called on the lifecycle manager
+        try await manager.performAttachOperation()
+
+        // Then: It clears all transient disconnect timeouts
+        #expect(await !manager.testsOnly_hasTransientDisconnectTimeoutForAnyContributor)
     }
 
     // @spec CHA-RL1h2
@@ -511,22 +539,29 @@ struct RoomLifecycleManagerTests {
         }
     }
 
-    // @specPartial CHA-RL2e - Haven’t implemented the part that refers to "transient disconnect timeouts"; TODO do this (https://github.com/ably-labs/ably-chat-swift/issues/48)
+    // @spec CHA-RL2e
     @Test
     func detach_transitionsToDetaching() async throws {
         // Given: A RoomLifecycleManager, with a contributor on whom calling `detach()` will not complete until after the "Then" part of this test (the motivation for this is to suppress the room from transitioning to DETACHED, so that we can assert its current state as being DETACHING)
         let contributorDetachOperation = SignallableChannelOperation()
 
-        let manager = await createManager(contributors: [createContributor(detachBehavior: contributorDetachOperation.behavior)])
+        let contributor = createContributor(detachBehavior: contributorDetachOperation.behavior)
+
+        let manager = await createManager(
+            // We set a transient disconnect timeout, just so we can check that it gets cleared, as the spec point specifies
+            forTestingWhatHappensWhenHasTransientDisconnectTimeoutForTheseContributorIDs: [contributor.id],
+            contributors: [contributor]
+        )
         let statusChangeSubscription = await manager.onChange(bufferingPolicy: .unbounded)
         async let statusChange = statusChangeSubscription.first { _ in true }
 
         // When: `performDetachOperation()` is called on the lifecycle manager
         async let _ = try await manager.performDetachOperation()
 
-        // Then: It emits a status change to DETACHING, and its current state is DETACHING
+        // Then: It emits a status change to DETACHING, its current state is DETACHING, and it clears transient disconnect timeouts
         #expect(try #require(await statusChange).current == .detaching)
         #expect(await manager.current == .detaching)
+        #expect(await !manager.testsOnly_hasTransientDisconnectTimeoutForAnyContributor)
 
         // Post-test: Now that we’ve seen the DETACHING state, allow the contributor `detach` call to complete
         contributorDetachOperation.complete(result: .success)
@@ -720,22 +755,29 @@ struct RoomLifecycleManagerTests {
         #expect(await contributor.channel.detachCallCount == 1)
     }
 
-    // @specPartial CHA-RL3l - Haven’t implemented the part that refers to "transient disconnect timeouts"; TODO do this (https://github.com/ably-labs/ably-chat-swift/issues/48)
+    // @spec CHA-RL3l
     @Test
     func release_transitionsToReleasing() async throws {
         // Given: A RoomLifecycleManager, with a contributor on whom calling `detach()` will not complete until after the "Then" part of this test (the motivation for this is to suppress the room from transitioning to RELEASED, so that we can assert its current state as being RELEASING)
         let contributorDetachOperation = SignallableChannelOperation()
 
-        let manager = await createManager(contributors: [createContributor(detachBehavior: contributorDetachOperation.behavior)])
+        let contributor = createContributor(detachBehavior: contributorDetachOperation.behavior)
+
+        let manager = await createManager(
+            // We set a transient disconnect timeout, just so we can check that it gets cleared, as the spec point specifies
+            forTestingWhatHappensWhenHasTransientDisconnectTimeoutForTheseContributorIDs: [contributor.id],
+            contributors: [contributor]
+        )
         let statusChangeSubscription = await manager.onChange(bufferingPolicy: .unbounded)
         async let statusChange = statusChangeSubscription.first { _ in true }
 
         // When: `performReleaseOperation()` is called on the lifecycle manager
         async let _ = await manager.performReleaseOperation()
 
-        // Then: It emits a status change to RELEASING, and its current state is RELEASING
+        // Then: It emits a status change to RELEASING, its current state is RELEASING, and it clears transient disconnect timeouts
         #expect(try #require(await statusChange).current == .releasing)
         #expect(await manager.current == .releasing)
+        #expect(await !manager.testsOnly_hasTransientDisconnectTimeoutForAnyContributor)
 
         // Post-test: Now that we’ve seen the RELEASING state, allow the contributor `detach` call to complete
         contributorDetachOperation.complete(result: .success)
@@ -959,7 +1001,7 @@ struct RoomLifecycleManagerTests {
         #expect(pendingDiscontinuityEvent === contributorStateChange.reason)
     }
 
-    // @specPartial CHA-RL4b5 - Haven’t implemented the part that refers to "transient disconnect timeouts"; TODO do this (https://github.com/ably-labs/ably-chat-swift/issues/48)
+    // @spec CHA-RL4b5
     @Test
     func contributorFailedEvent_withNoOperationInProgress() async throws {
         // Given: A RoomLifecycleManager, with no room lifecycle operation in progress
@@ -967,9 +1009,15 @@ struct RoomLifecycleManagerTests {
             // TODO: The .success is currently arbitrary since the spec doesn’t say what to do if detach fails (have asked in https://github.com/ably/specification/pull/200#discussion_r1777471810)
             createContributor(detachBehavior: .success),
             createContributor(detachBehavior: .success),
+            createContributor(detachBehavior: .success),
         ]
         let manager = await createManager(
             forTestingWhatHappensWhenCurrentlyIn: .initialized, // case arbitrary, just care that no operation is in progress
+            forTestingWhatHappensWhenHasTransientDisconnectTimeoutForTheseContributorIDs: [
+                // Give 2 of the 3 contributors a transient disconnect timeout, so we can test that _all_ such timeouts get cleared (as the spec point specifies), not just those for the FAILED contributor
+                contributors[0].id,
+                contributors[1].id,
+            ],
             contributors: contributors
         )
 
@@ -992,12 +1040,15 @@ struct RoomLifecycleManagerTests {
         // Then:
         // - the room status transitions to failed, with the error of the status change being the `reason` of the contributor FAILED event
         // - and it calls `detach` on all contributors
+        // - it clears all transient disconnect timeouts
         _ = try #require(await failedStatusChange)
         #expect(await manager.current.isFailed)
 
         for contributor in contributors {
             #expect(await contributor.channel.detachCallCount == 1)
         }
+
+        #expect(await !manager.testsOnly_hasTransientDisconnectTimeoutForAnyContributor)
     }
 
     // @spec CHA-RL4b6
@@ -1081,6 +1132,89 @@ struct RoomLifecycleManagerTests {
         #expect(await !manager.testsOnly_hasTransientDisconnectTimeout(for: contributor))
     }
 
+    // @specOneOf(1/2) CHA-RL4b10
+    @Test
+    func contributorAttachedEvent_withNoOperationInProgress_clearsTransientDisconnectTimeouts() async throws {
+        // Given: A RoomLifecycleManager, with no room lifecycle operation in progress
+        let contributorThatWillEmitAttachedStateChange = createContributor()
+        let contributors = [
+            contributorThatWillEmitAttachedStateChange,
+            createContributor(),
+            createContributor(),
+        ]
+        let manager = await createManager(
+            forTestingWhatHappensWhenCurrentlyIn: .initialized, // case arbitrary, just care that no operation is in progress
+            forTestingWhatHappensWhenHasTransientDisconnectTimeoutForTheseContributorIDs: [
+                // Give 2 of the 3 contributors a transient disconnect timeout, so we can test that only the timeout for the ATTACHED contributor gets cleared, not all of them
+                contributorThatWillEmitAttachedStateChange.id,
+                contributors[1].id,
+            ],
+            contributors: contributors
+        )
+
+        // When: A contributor emits a state change to ATTACHED
+        let contributorAttachedStateChange = ARTChannelStateChange(
+            current: .attached,
+            previous: .attaching, // arbitrary
+            event: .attached,
+            reason: nil // arbitrary
+        )
+
+        await waitForManager(manager, toHandleContributorStateChange: contributorAttachedStateChange) {
+            await contributorThatWillEmitAttachedStateChange.channel.emitStateChange(contributorAttachedStateChange)
+        }
+
+        // Then: The manager clears any transient disconnect timeout for that contributor
+        #expect(await !manager.testsOnly_hasTransientDisconnectTimeout(for: contributorThatWillEmitAttachedStateChange))
+        // check the timeout for the other contributors didn’t get cleared
+        #expect(await manager.testsOnly_hasTransientDisconnectTimeout(for: contributors[1]))
+    }
+
+    // @specOneOf(2/2) CHA-RL4b10 - This test is more elaborate than contributorAttachedEvent_withNoOperationInProgress_clearsTransientDisconnectTimeouts; instead of telling the manager to pretend that it has a transient disconnect timeout, we create a proper one by fulfilling the conditions of CHA-RL4b7, and we then fulfill the conditions of CHA-RL4b10 and check that the _side effects_ of the transient disconnect timeout (i.e. the state change) do not get performed. This is the _only_ test in which we go to these lengths to confirm that a transient disconnect timeout is truly cancelled; I think it’s enough to check it properly only once and then use simpler ways of checking it in other tests.
+    @Test
+    func contributorAttachedEvent_withNoOperationInProgress_clearsTransientDisconnectTimeouts_checkThatSideEffectsNotPerformed() async throws {
+        // Given: A RoomLifecycleManager, with no operation in progress, with a transient disconnect timeout
+        let contributor = createContributor()
+        let sleepOperation = SignallableSleepOperation()
+        let clock = MockSimpleClock(sleepBehavior: sleepOperation.behavior)
+        let initialManagerStatus = RoomLifecycleManager<MockRoomLifecycleContributor>.Status.initialized // arbitrary no-operation-in-progress
+        let manager = await createManager(
+            forTestingWhatHappensWhenCurrentlyIn: initialManagerStatus,
+            contributors: [contributor],
+            clock: clock
+        )
+        let contributorStateChange = ARTChannelStateChange(
+            current: .attaching,
+            previous: .detached, // arbitrary
+            event: .attaching,
+            reason: nil // arbitrary
+        )
+        async let maybeClockSleepArgument = clock.sleepCallArgumentsAsyncSequence.first { _ in true }
+        // We create a transient disconnect timeout by fulfilling the conditions of CHA-RL4b7
+        await waitForManager(manager, toHandleContributorStateChange: contributorStateChange) {
+            await contributor.channel.emitStateChange(contributorStateChange)
+        }
+        try #require(await maybeClockSleepArgument != nil)
+
+        let transientDisconnectTimeoutID = try #require(await manager.testsOnly_idOfTransientDisconnectTimeout(for: contributor))
+
+        // When: A contributor emits a state change to ATTACHED, and we wait for the manager to inform us that any side effects that the transient disconnect timeout may cause have taken place
+        let contributorAttachedStateChange = ARTChannelStateChange(
+            current: .attached,
+            previous: .attaching, // arbitrary
+            event: .attached,
+            reason: nil // arbitrary
+        )
+
+        await waitForManager(manager, toHandleTransientDisconnectTimeoutWithID: transientDisconnectTimeoutID) {
+            await contributor.channel.emitStateChange(contributorAttachedStateChange)
+        }
+
+        // Then: The manager’s status remains unchanged. In particular, it has not changed to ATTACHING, meaning that the CHA-RL4b7 side effect has not happened and hence that the transient disconnect timeout was properly cancelled
+        #expect(await manager.current == initialManagerStatus.toRoomLifecycle)
+        #expect(await !manager.testsOnly_hasTransientDisconnectTimeoutForAnyContributor)
+    }
+
     // @specOneOf(1/2) CHA-RL4b8
     @Test
     func contributorAttachedEvent_withNoOperationInProgress_roomNotAttached_allContributorsAttached() async throws {
@@ -1146,14 +1280,24 @@ struct RoomLifecycleManagerTests {
         #expect(await manager.current == initialManagerStatus.toRoomLifecycle)
     }
 
-    // @specPartial CHA-RL4b9 - Haven’t implemented the part that refers to "transient disconnect timeouts"; TODO do this (https://github.com/ably-labs/ably-chat-swift/issues/48). Nor have I implemented "the room enters the RETRY loop"; TODO do this (https://github.com/ably-labs/ably-chat-swift/issues/51)
+    // @specPartial CHA-RL4b9 - Haven’t implemented "the room enters the RETRY loop"; TODO do this (https://github.com/ably-labs/ably-chat-swift/issues/51)
     @Test
     func contributorSuspendedEvent_withNoOperationInProgress() async throws {
         // Given: A RoomLifecycleManager with no lifecycle operation in progress
-        let contributor = createContributor()
+        let contributorThatWillEmitStateChange = createContributor()
+        let contributors = [
+            contributorThatWillEmitStateChange,
+            createContributor(),
+            createContributor(),
+        ]
         let manager = await createManager(
             forTestingWhatHappensWhenCurrentlyIn: .initialized, // case arbitrary, just care that no operation is in progress
-            contributors: [contributor]
+            // Give 2 of the 3 contributors a transient disconnect timeout, so we can test that _all_ such timeouts get cleared (as the spec point specifies), not just those for the SUSPENDED contributor
+            forTestingWhatHappensWhenHasTransientDisconnectTimeoutForTheseContributorIDs: [
+                contributorThatWillEmitStateChange.id,
+                contributors[1].id,
+            ],
+            contributors: [contributorThatWillEmitStateChange]
         )
 
         let roomStatusSubscription = await manager.onChange(bufferingPolicy: .unbounded)
@@ -1169,12 +1313,18 @@ struct RoomLifecycleManagerTests {
             resumed: false // arbitrary
         )
 
-        await contributor.channel.emitStateChange(contributorStateChange)
+        await waitForManager(manager, toHandleContributorStateChange: contributorStateChange) {
+            await contributorThatWillEmitStateChange.channel.emitStateChange(contributorStateChange)
+        }
 
-        // Then: The room transitions to SUSPENDED, and this state change has error equal to the contributor state change’s `reason`
+        // Then:
+        // - The room transitions to SUSPENDED, and this state change has error equal to the contributor state change’s `reason`
+        // - All transient disconnect timeouts are cancelled
         let suspendedRoomStatusChange = try #require(await maybeSuspendedRoomStatusChange)
         #expect(suspendedRoomStatusChange.error === contributorStateChangeReason)
 
         #expect(await manager.current == .suspended(error: contributorStateChangeReason))
+
+        #expect(await !manager.testsOnly_hasTransientDisconnectTimeoutForAnyContributor)
     }
 }

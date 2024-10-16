@@ -7,7 +7,7 @@ actor MockSimpleClock: SimpleClock {
 
     enum SleepBehavior {
         case success
-        case fromFunction(@Sendable () async -> Void)
+        case fromFunction(@Sendable () async throws -> Void)
     }
 
     init(sleepBehavior: SleepBehavior? = nil) {
@@ -32,7 +32,7 @@ actor MockSimpleClock: SimpleClock {
         case .success:
             break
         case let .fromFunction(function):
-            await function()
+            try await function()
         }
     }
 }
