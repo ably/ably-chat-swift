@@ -64,7 +64,9 @@ actor MockRoom: Room {
 
     nonisolated lazy var occupancy: any Occupancy = MockOccupancy(clientID: clientID, roomID: roomID)
 
-    nonisolated lazy var status: any RoomStatus = MockRoomStatus(clientID: clientID, roomID: roomID)
+    var status: RoomStatus = .initialized
+
+    private var mockSubscriptions: [MockSubscription<RoomStatusChange>] = []
 
     func attach() async throws {
         fatalError("Not yet implemented")
@@ -72,6 +74,18 @@ actor MockRoom: Room {
 
     func detach() async throws {
         fatalError("Not yet implemented")
+    }
+
+    private func createSubscription() -> MockSubscription<RoomStatusChange> {
+        let subscription = MockSubscription<RoomStatusChange>(randomElement: {
+            RoomStatusChange(current: [.attached, .attached, .attached, .attached, .attaching(error: nil), .attaching(error: nil), .suspended(error: .createUnknownError())].randomElement()!, previous: .attaching(error: nil))
+        }, interval: 8)
+        mockSubscriptions.append(subscription)
+        return subscription
+    }
+
+    func onStatusChange(bufferingPolicy _: BufferingPolicy) async -> Subscription<RoomStatusChange> {
+        .init(mockAsyncSequence: createSubscription())
     }
 }
 
@@ -392,32 +406,5 @@ actor MockOccupancy: Occupancy {
 
     func subscribeToDiscontinuities() -> Subscription<ARTErrorInfo> {
         fatalError("Not yet implemented")
-    }
-}
-
-actor MockRoomStatus: RoomStatus {
-    let clientID: String
-    let roomID: String
-
-    var current: RoomLifecycle
-
-    private var mockSubscriptions: [MockSubscription<RoomStatusChange>] = []
-
-    init(clientID: String, roomID: String) {
-        self.clientID = clientID
-        self.roomID = roomID
-        current = .initialized
-    }
-
-    private func createSubscription() -> MockSubscription<RoomStatusChange> {
-        let subscription = MockSubscription<RoomStatusChange>(randomElement: {
-            RoomStatusChange(current: [.attached, .attached, .attached, .attached, .attaching(error: nil), .attaching(error: nil), .suspended(error: .createUnknownError())].randomElement()!, previous: .attaching(error: nil))
-        }, interval: 8)
-        mockSubscriptions.append(subscription)
-        return subscription
-    }
-
-    func onChange(bufferingPolicy _: BufferingPolicy) async -> Subscription<RoomStatusChange> {
-        .init(mockAsyncSequence: createSubscription())
     }
 }

@@ -1,7 +1,7 @@
 import Ably
 import AblyChat
 
-extension RoomLifecycle {
+extension RoomStatus {
     var error: ARTErrorInfo? {
         switch self {
         case let .failed(error):
