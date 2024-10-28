@@ -264,7 +264,7 @@ internal actor RoomLifecycleManager<Contributor: RoomLifecycleContributor> {
 
     // MARK: - Room status and its changes
 
-    internal var current: RoomStatus {
+    internal var roomStatus: RoomStatus {
         status.toRoomStatus
     }
 
