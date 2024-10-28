@@ -8,12 +8,6 @@ struct DefaultRoomStatusTests {
         #expect(await status.current == .initialized)
     }
 
-    @Test()
-    func error_startsAsNil() async {
-        let status = DefaultRoomStatus(logger: TestLogger())
-        #expect(await status.error == nil)
-    }
-
     @Test
     func transition() async throws {
         // Given: A DefaultRoomStatus

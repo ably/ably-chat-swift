@@ -400,7 +400,6 @@ actor MockRoomStatus: RoomStatus {
     let roomID: String
 
     var current: RoomLifecycle
-    var error: ARTErrorInfo?
 
     private var mockSubscriptions: [MockSubscription<RoomStatusChange>] = []
 

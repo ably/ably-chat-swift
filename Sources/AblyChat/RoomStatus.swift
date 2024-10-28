@@ -58,7 +58,6 @@ public struct RoomStatusChange: Sendable {
 
 internal actor DefaultRoomStatus: RoomStatus {
     internal private(set) var current: RoomLifecycle = .initialized
-    internal private(set) var error: ARTErrorInfo?
 
     private let logger: InternalLogger
 
