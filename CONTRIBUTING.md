@@ -85,7 +85,7 @@ func test3 { … }
 func test4 { … }
 ```
 
-In [#46](https://github.com/ably-labs/ably-chat-swift/issues/46), we’ll write a script that uses these tags to generate a report about how much of the feature spec we’ve implemented.
+You can run `swift run BuildTool spec-coverage` to generate a report about how many spec points have been implemented and/or tested. This script is also run in CI by the `spec-coverage` job. This script will currently only detect a spec point attribution tag if it’s written exactly as shown above; that is, in a `//` comment with a single space between each component of the tag.
 
 #### Marking a spec point as untested
 

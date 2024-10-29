@@ -31,6 +31,10 @@ let package = Package(
             url: "https://github.com/apple/swift-async-algorithms",
             from: "1.0.1"
         ),
+        .package(
+            url: "https://github.com/JanGorman/Table.git",
+            from: "1.1.1"
+        ),
     ],
     targets: [
         .target(
@@ -66,6 +70,10 @@ let package = Package(
                 .product(
                     name: "AsyncAlgorithms",
                     package: "swift-async-algorithms"
+                ),
+                .product(
+                    name: "Table",
+                    package: "Table"
                 ),
             ]
         ),
