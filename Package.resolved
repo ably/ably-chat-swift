@@ -1,5 +1,5 @@
 {
-  "originHash" : "48d264bc362ab438d94b78732ce83d1971c3a1264d089085edd3814083479fc6",
+  "originHash" : "f00ee2e8c80adfe8d72deb089738cdb967aeae43e71837f90d99fc602728fe45",
   "pins" : [
     {
       "identity" : "ably-cocoa",
@@ -53,6 +53,15 @@
       "state" : {
         "revision" : "3d2dc41a01f9e49d84f0a3925fb858bed64f702d",
         "version" : "1.1.2"
+      }
+    },
+    {
+      "identity" : "table",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/JanGorman/Table.git",
+      "state" : {
+        "revision" : "7b8521c3b1078ba0b347964aec7c503cd6f1ff40",
+        "version" : "1.1.1"
       }
     }
   ],

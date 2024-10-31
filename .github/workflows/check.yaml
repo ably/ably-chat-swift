@@ -38,6 +38,21 @@ jobs:
 
       - run: swift run BuildTool lint
 
+  spec-coverage:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # This step can be removed once the runners’ default version of Xcode is 16 or above
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: 16
+
+      - name: Spec coverage
+        run: swift run BuildTool spec-coverage
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   generate-matrices:
     runs-on: macos-latest
     outputs:
@@ -116,6 +131,7 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - lint
+      - spec-coverage
       - check-spm
       - check-xcode
       - check-example-app
