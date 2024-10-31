@@ -16,11 +16,13 @@ final actor MockRoomLifecycleContributorChannel: RoomLifecycleContributorChannel
 
     init(
         initialState: ARTRealtimeChannelState,
+        initialErrorReason: ARTErrorInfo?,
         attachBehavior: AttachOrDetachBehavior?,
         detachBehavior: AttachOrDetachBehavior?,
         subscribeToStateBehavior: SubscribeToStateBehavior?
     ) {
         state = initialState
+        errorReason = initialErrorReason
         self.attachBehavior = attachBehavior
         self.detachBehavior = detachBehavior
         self.subscribeToStateBehavior = subscribeToStateBehavior ?? .justAddSubscription

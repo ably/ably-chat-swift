@@ -71,6 +71,7 @@ struct DefaultRoomLifecycleManagerTests {
 
     private func createContributor(
         initialState: ARTRealtimeChannelState = .initialized,
+        initialErrorReason: ARTErrorInfo? = nil,
         feature: RoomFeature = .messages, // Arbitrarily chosen, its value only matters in test cases where we check which error is thrown
         attachBehavior: MockRoomLifecycleContributorChannel.AttachOrDetachBehavior? = nil,
         detachBehavior: MockRoomLifecycleContributorChannel.AttachOrDetachBehavior? = nil,
@@ -80,6 +81,7 @@ struct DefaultRoomLifecycleManagerTests {
             feature: feature,
             channel: .init(
                 initialState: initialState,
+                initialErrorReason: initialErrorReason,
                 attachBehavior: attachBehavior,
                 detachBehavior: detachBehavior,
                 subscribeToStateBehavior: subscribeToStateBehavior
@@ -881,6 +883,394 @@ struct DefaultRoomLifecycleManagerTests {
         _ = await releasedStatusChange
 
         #expect(await manager.roomStatus == .released)
+    }
+
+    // MARK: - RETRY operation
+
+    // @specOneOf(1/2) CHA-RL5a
+    @Test
+    func retry_detachesAllContributorsExceptForTriggering() async throws {
+        // Given: A RoomLifecycleManager
+        let contributors = [
+            createContributor(
+                attachBehavior: .success, // Not related to this test, just so that the subsequent CHA-RL5f attachment cycle completes
+
+                // Not related to this test, just so that the subsequent CHA-RL5d wait-for-ATTACHED completes
+                subscribeToStateBehavior: .addSubscriptionAndEmitStateChange(
+                    .init(
+                        current: .attached,
+                        previous: .attaching, // arbitrary
+                        event: .attached,
+                        reason: .createUnknownError() // Not related to this test, just to avoid a crash in CHA-RL4b1 handling of this state change
+                    )
+                )
+            ),
+            createContributor(
+                attachBehavior: .success, // Not related to this test, just so that the subsequent CHA-RL5f attachment cycle completes
+                detachBehavior: .success
+            ),
+            createContributor(
+                attachBehavior: .success, // Not related to this test, just so that the subsequent CHA-RL5f attachment cycle completes
+                detachBehavior: .success
+            ),
+        ]
+
+        let manager = await createManager(contributors: contributors)
+
+        // When: `performRetryOperation(triggeredByContributor:errorForSuspendedStatus:)` is called on the manager
+        await manager.performRetryOperation(triggeredByContributor: contributors[0], errorForSuspendedStatus: .createUnknownError() /* arbitrary */ )
+
+        // Then: The manager calls `detach` on all contributors except that which triggered the RETRY (I’m using this, combined with the CHA-RL5b and CHA-RL5c tests, as a good-enough way of checking that a CHA-RL2f detachment cycle happened)
+        #expect(await contributors[0].channel.detachCallCount == 0)
+        #expect(await contributors[1].channel.detachCallCount == 1)
+        #expect(await contributors[2].channel.detachCallCount == 1)
+    }
+
+    // @specOneOf(2/2) CHA-RL5a - Verifies that, when the RETRY operation triggers a CHA-RL2f detachment cycle, the retry behaviour of CHA-RL2h3 is performed.
+    @Test
+    func retry_ifDetachFailsDueToNonFailedChannelState_retries() async throws {
+        // Given: A RoomLifecycleManager, whose contributor at index 1 has an implementation of `detach()` which:
+        // - throws an error and transitions the contributor to a non-FAILED state the first time it’s called
+        // - succeeds the second time it’s called
+        let detachImpl = { @Sendable (callCount: Int) -> MockRoomLifecycleContributorChannel.AttachOrDetachBehavior in
+            if callCount == 1 {
+                return .completeAndChangeState(.failure(.createUnknownError() /* arbitrary */ ), newState: .attached /* this is what CHA-RL2h3 mentions as being the only non-FAILED state that would happen in this situation in reality */ )
+            } else {
+                return .success
+            }
+        }
+
+        let contributors = [
+            createContributor(
+                attachBehavior: .success, // Not related to this test, just so that the subsequent CHA-RL5f attachment cycle completes
+
+                // Not related to this test, just so that the subsequent CHA-RL5d wait-for-ATTACHED completes
+                subscribeToStateBehavior: .addSubscriptionAndEmitStateChange(
+                    .init(
+                        current: .attached,
+                        previous: .attaching, // arbitrary
+                        event: .attached,
+                        reason: .createUnknownError() // Not related to this test, just to avoid a crash in CHA-RL4b1 handling of this state change
+                    )
+                )
+            ),
+            createContributor(
+                attachBehavior: .success, // Not related to this test, just so that the subsequent CHA-RL5f attachment cycle completes
+                detachBehavior: .fromFunction(detachImpl)
+            ),
+            createContributor(
+                attachBehavior: .success, // Not related to this test, just so that the subsequent CHA-RL5f attachment cycle completes
+                detachBehavior: .success
+            ),
+        ]
+
+        let clock = MockSimpleClock()
+
+        let manager = await createManager(contributors: contributors, clock: clock)
+
+        // When: `performRetryOperation(triggeredByContributor:errorForSuspendedStatus:)` is called on the manager, triggered by a contributor that isn’t that at index 1
+        await manager.performRetryOperation(triggeredByContributor: contributors[0], errorForSuspendedStatus: .createUnknownError() /* arbitrary */ )
+
+        // Then: The manager calls `detach` in sequence on all contributors except that which triggered the RETRY, stopping upon one of these `detach` calls throwing an error, then sleeps for 250ms, then performs these `detach` calls again
+
+        // (Note that for simplicity of the test I’m not actually making assertions about the sequence in which events happen here)
+        #expect(await contributors[0].channel.detachCallCount == 0)
+        #expect(await contributors[1].channel.detachCallCount == 2)
+        #expect(await contributors[2].channel.detachCallCount == 1)
+        #expect(await clock.sleepCallArguments == [0.25])
+    }
+
+    // @spec CHA-RL5c
+    @Test
+    func retry_ifDetachFailsDueToFailedChannelState_transitionsToFailed() async throws {
+        // Given: A RoomLifecycleManager, whose contributor at index 1 has an implementation of `detach()` which throws an error and transitions the contributor to the FAILED state
+        let contributor1DetachError = ARTErrorInfo.createUnknownError() // arbitrary
+
+        let contributors = [
+            // Features arbitrarily chosen, just need to be distinct in order to make assertions about errors later
+            createContributor(feature: .messages),
+            createContributor(
+                feature: .presence,
+                detachBehavior: .completeAndChangeState(.failure(contributor1DetachError), newState: .failed)
+            ),
+            createContributor(
+                feature: .typing,
+                detachBehavior: .success
+            ),
+        ]
+
+        let manager = await createManager(contributors: contributors)
+
+        let roomStatusSubscription = await manager.onChange(bufferingPolicy: .unbounded)
+        async let maybeFailedStatusChange = roomStatusSubscription.failedElements().first { _ in true }
+
+        // When: `performRetryOperation(triggeredByContributor:errorForSuspendedStatus:)` is called on the manager, triggered by the contributor at index 0
+        await manager.performRetryOperation(triggeredByContributor: contributors[0], errorForSuspendedStatus: .createUnknownError() /* arbitrary */ )
+
+        // Then:
+        // 1. (This is basically just testing the behaviour of CHA-RL2h1 again, plus the fact that we don’t try to detach the channel that triggered the RETRY) The manager calls `detach` in sequence on all contributors except that which triggered the RETRY, and enters the FAILED status, the associated error for this status being the *DetachmentFailed code corresponding to contributor 1’s feature, and its `cause` is contributor 1’s `errorReason`
+        // 2. the RETRY operation is terminated (which we confirm here by checking that it has not attempted to attach any of the contributors, which shows us that CHA-RL5f didn’t happen)
+        #expect(await contributors[0].channel.detachCallCount == 0)
+        #expect(await contributors[1].channel.detachCallCount == 1)
+        #expect(await contributors[2].channel.detachCallCount == 1)
+
+        let roomStatus = await manager.roomStatus
+        let failedStatusChange = try #require(await maybeFailedStatusChange)
+
+        #expect(roomStatus.isFailed)
+        for error in [roomStatus.error, failedStatusChange.error] {
+            #expect(isChatError(error, withCode: .presenceDetachmentFailed, cause: contributor1DetachError))
+        }
+
+        for contributor in contributors {
+            #expect(await contributor.channel.attachCallCount == 0)
+        }
+    }
+
+    // swiftlint:disable type_name
+    /// Describes how a contributor will end up in one of the states that CHA-RL5d expects it to end up in.
+    enum CHA_RL5d_JourneyToState {
+        // swiftlint:enable type_name
+        case transitionsToState
+        case alreadyInState
+    }
+
+    // @spec CHA-RL5e
+    @Test(arguments: [CHA_RL5d_JourneyToState.transitionsToState, .alreadyInState])
+    func retry_whenTriggeringContributorEndsUpFailed_terminatesOperation(journeyToState: CHA_RL5d_JourneyToState) async throws {
+        // Given: A RoomLifecycleManager, with a contributor that:
+        // - (if test argument journeyToState is .transitionsToState) emits a state change to FAILED after subscribeToState() is called on it
+        // - (if test argument journeyToState is .alreadyInState) is already FAILED (it would be more realistic for it to become FAILED _during_ the CHA-RL5a detachment cycle, but that would be more awkward to mock, so this will do)
+        let contributorFailedReason = ARTErrorInfo.createUnknownError() // arbitrary
+
+        let contributors = [
+            createContributor(
+                initialState: ({
+                    switch journeyToState {
+                    case .alreadyInState:
+                        .failed
+                    case .transitionsToState:
+                        .suspended // arbitrary
+                    }
+                })(),
+                initialErrorReason: ({
+                    switch journeyToState {
+                    case .alreadyInState:
+                        contributorFailedReason
+                    case .transitionsToState:
+                        nil
+                    }
+                })(),
+
+                detachBehavior: .success, // Not related to this test, just so that the CHA-RL5a detachment cycle completes
+
+                subscribeToStateBehavior: ({
+                    switch journeyToState {
+                    case .alreadyInState:
+                        return nil
+                    case .transitionsToState:
+                        let contributorFailedStateChange = ARTChannelStateChange(
+                            current: .failed,
+                            previous: .attaching, // arbitrary
+                            event: .failed,
+                            reason: contributorFailedReason
+                        )
+
+                        return .addSubscriptionAndEmitStateChange(contributorFailedStateChange)
+                    }
+                })()
+            ),
+            createContributor(
+                detachBehavior: .success // Not related to this test, just so that the CHA-RL5a detachment cycle completes
+            ),
+        ]
+
+        let manager = await createManager(
+            contributors: contributors
+        )
+
+        let roomStatusSubscription = await manager.onChange(bufferingPolicy: .unbounded)
+        async let maybeFailedStatusChange = roomStatusSubscription.failedElements().first { _ in true }
+
+        // When: `performRetryOperation(triggeredByContributor:errorForSuspendedStatus:)` is called on the manager, triggered by the aforementioned contributor
+        await manager.performRetryOperation(triggeredByContributor: contributors[0], errorForSuspendedStatus: .createUnknownError() /* arbitrary */ )
+
+        // Then:
+        // 1. The room transitions to (and remains in) FAILED, and its error is:
+        //    - (if test argument journeyToState is .transitionsToState) that associated with the contributor state change
+        //    - (if test argument journeyToState is .alreadyInState) the channel’s `errorReason`
+        // 2. The RETRY operation terminates (to confirm this, we check that the room has not attempted to attach any of the contributors, indicating that we have not proceeded to the CHA-RL5f attachment cycle)
+
+        let failedStatusChange = try #require(await maybeFailedStatusChange)
+
+        let roomStatus = await manager.roomStatus
+        #expect(roomStatus.isFailed)
+
+        for error in [failedStatusChange.error, roomStatus.error] {
+            #expect(error === contributorFailedReason)
+        }
+
+        for contributor in contributors {
+            #expect(await contributor.channel.attachCallCount == 0)
+        }
+    }
+
+    // @specOneOf(1/3) CHA-RL5f - Tests the first part of CHA-RL5f, namely the transition to ATTACHING once the triggering channel becomes ATTACHED.
+    @Test(arguments: [CHA_RL5d_JourneyToState.transitionsToState, .alreadyInState])
+    func retry_whenTriggeringContributorEndsUpAttached_proceedsToAttachmentCycle(journeyToState: CHA_RL5d_JourneyToState) async throws {
+        // Given: A RoomLifecycleManager, with a contributor that:
+        // - (if test argument journeyToState is .transitionsToState) emits a state change to ATTACHED after subscribeToState() is called on it
+        // - (if test argument journeyToState is .alreadyInState) is already ATTACHED (it would be more realistic for it to become ATTACHED _during_ the CHA-RL5a detachment cycle, but that would be more awkward to mock, so this will do)
+        let contributors = [
+            createContributor(
+                initialState: ({
+                    switch journeyToState {
+                    case .alreadyInState:
+                        .attached
+                    case .transitionsToState:
+                        .suspended // arbitrary
+                    }
+                })(),
+
+                attachBehavior: .success, // Not related to this test, just so that the subsequent CHA-RL5f attachment cycle completes
+
+                subscribeToStateBehavior: ({
+                    switch journeyToState {
+                    case .alreadyInState:
+                        return nil
+                    case .transitionsToState:
+                        let contributorAttachedStateChange = ARTChannelStateChange(
+                            current: .attached,
+                            previous: .attaching, // arbitrary
+                            event: .attached,
+                            reason: .createUnknownError() // Not related to this test, just to avoid a crash in CHA-RL4b1 handling of this state change
+                        )
+
+                        return .addSubscriptionAndEmitStateChange(contributorAttachedStateChange)
+                    }
+                })()
+            ),
+            createContributor(
+                attachBehavior: .success, // Not related to this test, just so that the subsequent CHA-RL5f attachment cycle completes
+                detachBehavior: .success // Not related to this test, just so that the CHA-RL5a detachment cycle completes
+            ),
+        ]
+
+        let manager = await createManager(
+            contributors: contributors
+        )
+
+        let roomStatusSubscription = await manager.onChange(bufferingPolicy: .unbounded)
+        async let maybeAttachingStatusChange = roomStatusSubscription.attachingElements().first { _ in true }
+
+        // When: `performRetryOperation(triggeredByContributor:errorForSuspendedStatus:)` is called on the manager, triggered by the aforementioned contributor
+        await manager.performRetryOperation(triggeredByContributor: contributors[0], errorForSuspendedStatus: .createUnknownError() /* arbitrary */ )
+
+        // Then: The room transitions to ATTACHING, and the RETRY operation continues (to confirm this, we check that the room has attempted to attach all of the contributors, indicating that we have proceeded to the CHA-RL5f attachment cycle)
+        let attachingStatusChange = try #require(await maybeAttachingStatusChange)
+        // The spec doesn’t mention an error for the ATTACHING status change, so I’ll assume there shouldn’t be one
+        #expect(attachingStatusChange.error == nil)
+
+        for contributor in contributors {
+            #expect(await contributor.channel.attachCallCount == 1)
+        }
+    }
+
+    // @specOneOf(2/3) CHA-RL5f - Tests the case where the CHA-RL1e attachment cycle succeeds
+    @Test
+    func retry_whenAttachmentCycleSucceeds() async throws {
+        // Given: A RoomLifecycleManager, with contributors on all of whom calling `attach()` succeeds (i.e. conditions for a CHA-RL1e attachment cycle to succeed)
+        let contributors = [
+            createContributor(
+                attachBehavior: .success,
+                subscribeToStateBehavior: .addSubscriptionAndEmitStateChange(
+                    .init(
+                        current: .attached,
+                        previous: .attaching, // arbitrary
+                        event: .attached,
+                        reason: .createUnknownError() // Not related to this test, just to avoid a crash in CHA-RL4b1 handling of this state change
+                    )
+                ) // Not related to this test, just so that the CHA-RL5d wait completes
+            ),
+            createContributor(
+                attachBehavior: .success,
+                detachBehavior: .success // Not related to this test, just so that the CHA-RL5a detachment cycle completes
+            ),
+            createContributor(
+                attachBehavior: .success,
+                detachBehavior: .success // Not related to this test, just so that the CHA-RL5a detachment cycle completes
+            ),
+        ]
+
+        let manager = await createManager(
+            contributors: contributors
+        )
+
+        let roomStatusSubscription = await manager.onChange(bufferingPolicy: .unbounded)
+        async let attachedStatusChange = roomStatusSubscription.first { $0.current == .attached }
+
+        // When: `performRetryOperation(triggeredByContributor:errorForSuspendedStatus:)` is called on the manager
+        await manager.performRetryOperation(triggeredByContributor: contributors[0], errorForSuspendedStatus: .createUnknownError() /* arbitrary */ )
+
+        // Then: The room performs a CHA-RL1e attachment cycle (we sufficiently satisfy ourselves of this fact by checking that it’s attempted to attach all of the channels), transitions to ATTACHED, and the RETRY operation completes
+        for contributor in contributors {
+            #expect(await contributor.channel.attachCallCount == 1)
+        }
+
+        _ = try #require(await attachedStatusChange)
+        #expect(await manager.roomStatus == .attached)
+    }
+
+    // @specOneOf(3/3) CHA-RL5f - Tests the case where the CHA-RL1e attachment cycle fails
+    @Test
+    func retry_whenAttachmentCycleFails() async throws {
+        // Given: A RoomLifecycleManager, with a contributor on whom calling `attach()` fails, putting the contributor into the FAILED state (i.e. conditions for a CHA-RL1e attachment cycle to fail)
+        let contributorAttachError = ARTErrorInfo.createUnknownError() // arbitrary
+
+        let contributors = [
+            createContributor(
+                attachBehavior: .success,
+                detachBehavior: .success, // So that the detach performed by CHA-RL1h5’s rollback of the attachment cycle succeeds
+                subscribeToStateBehavior: .addSubscriptionAndEmitStateChange(
+                    .init(
+                        current: .attached,
+                        previous: .attaching, // arbitrary
+                        event: .attached,
+                        reason: .createUnknownError() // Not related to this test, just to avoid a crash in CHA-RL4b1 handling of this state change
+                    )
+                ) // Not related to this test, just so that the CHA-RL5d wait completes
+            ),
+            createContributor(
+                attachBehavior: .completeAndChangeState(.failure(contributorAttachError), newState: .failed),
+                detachBehavior: .success // Not related to this test, just so that the CHA-RL5a detachment cycle completes
+            ),
+            createContributor(
+                attachBehavior: .success,
+                detachBehavior: .success // So that the CHA-RL5a detachment cycle completes (not related to this test) and so that the detach performed by CHA-RL1h5’s rollback of the attachment cycle succeeds
+            ),
+        ]
+
+        let manager = await createManager(
+            contributors: contributors
+        )
+
+        let roomStatusSubscription = await manager.onChange(bufferingPolicy: .unbounded)
+        async let failedStatusChange = roomStatusSubscription.failedElements().first { _ in true }
+
+        // When: `performRetryOperation(triggeredByContributor:errorForSuspendedStatus:)` is called on the manager
+        await manager.performRetryOperation(triggeredByContributor: contributors[0], errorForSuspendedStatus: .createUnknownError() /* arbitrary */ )
+
+        // Then: The room performs a CHA-RL1e attachment cycle (we sufficiently satisfy ourselves of this fact by checking that it’s attempted to attach all of the channels up to and including the one for which attachment fails, and subsequently detached all channels except for the FAILED one), transitions to FAILED, and the RETRY operation completes
+        #expect(await contributors[0].channel.attachCallCount == 1)
+        #expect(await contributors[1].channel.attachCallCount == 1)
+        #expect(await contributors[2].channel.attachCallCount == 0)
+
+        #expect(await contributors[0].channel.detachCallCount == 1) // from CHA-RL1h5’s rollback of the attachment cycle
+        #expect(await contributors[1].channel.detachCallCount == 1) // from CHA-RL5a detachment cycle
+        #expect(await contributors[2].channel.detachCallCount == 2) // from CHA-RL5a detachment cycle and CHA-RL1h5’s rollback of the attachment cycle
+
+        _ = try #require(await failedStatusChange)
+        #expect(await manager.roomStatus.isFailed)
     }
 
     // MARK: - Handling contributor UPDATE events
