@@ -157,7 +157,7 @@ internal actor RoomLifecycleManager<Contributor: RoomLifecycleContributor> {
         case releasing(releaseOperationID: UUID)
         case released
 
-        internal var toRoomLifecycle: RoomLifecycle {
+        internal var toRoomStatus: RoomStatus {
             switch self {
             case .initialized:
                 .initialized
@@ -264,8 +264,8 @@ internal actor RoomLifecycleManager<Contributor: RoomLifecycleContributor> {
 
     // MARK: - Room status and its changes
 
-    internal var current: RoomLifecycle {
-        status.toRoomLifecycle
+    internal var roomStatus: RoomStatus {
+        status.toRoomStatus
     }
 
     internal func onChange(bufferingPolicy: BufferingPolicy) -> Subscription<RoomStatusChange> {
@@ -279,7 +279,7 @@ internal actor RoomLifecycleManager<Contributor: RoomLifecycleContributor> {
         logger.log(message: "Transitioning from \(status) to \(new)", level: .info)
         let previous = status
         status = new
-        let statusChange = RoomStatusChange(current: status.toRoomLifecycle, previous: previous.toRoomLifecycle)
+        let statusChange = RoomStatusChange(current: status.toRoomStatus, previous: previous.toRoomStatus)
         emitStatusChange(statusChange)
     }
 
@@ -779,7 +779,7 @@ internal actor RoomLifecycleManager<Contributor: RoomLifecycleContributor> {
                     }
 
                     // This check is CHA-RL2h2
-                    if !status.toRoomLifecycle.isFailed {
+                    if !status.toRoomStatus.isFailed {
                         changeStatus(to: .failed(error: error))
                     }
                 default:

@@ -11,10 +11,22 @@ public protocol Room: AnyObject, Sendable {
     var typing: any Typing { get }
     // To access this property if occupancy is not enabled for the room is a programmer error, and will lead to `fatalError` being called.
     var occupancy: any Occupancy { get }
-    var status: any RoomStatus { get }
+    // TODO: change to `status`
+    var status: RoomStatus { get async }
+    func onStatusChange(bufferingPolicy: BufferingPolicy) async -> Subscription<RoomStatusChange>
     func attach() async throws
     func detach() async throws
     var options: RoomOptions { get }
+}
+
+public struct RoomStatusChange: Sendable {
+    public var current: RoomStatus
+    public var previous: RoomStatus
+
+    public init(current: RoomStatus, previous: RoomStatus) {
+        self.current = current
+        self.previous = previous
+    }
 }
 
 internal actor DefaultRoom: Room {
@@ -33,7 +45,9 @@ internal actor DefaultRoom: Room {
         }
     #endif
 
-    private let _status: DefaultRoomStatus
+    internal private(set) var status: RoomStatus = .initialized
+    // TODO: clean up old subscriptions (https://github.com/ably-labs/ably-chat-swift/issues/36)
+    private var statusSubscriptions: [Subscription<RoomStatusChange>] = []
     private let logger: InternalLogger
 
     internal init(realtime: RealtimeClient, chatAPI: ChatAPI, roomID: String, options: RoomOptions, logger: InternalLogger) async throws {
@@ -41,7 +55,6 @@ internal actor DefaultRoom: Room {
         self.roomID = roomID
         self.options = options
         self.logger = logger
-        _status = .init(logger: logger)
         self.chatAPI = chatAPI
 
         guard let clientId = realtime.clientId else {
@@ -71,10 +84,6 @@ internal actor DefaultRoom: Room {
         fatalError("Not yet implemented")
     }
 
-    internal nonisolated var status: any RoomStatus {
-        _status
-    }
-
     /// Fetches the channels that contribute to this room.
     private func channels() -> [any RealtimeChannelProtocol] {
         [
@@ -95,7 +104,7 @@ internal actor DefaultRoom: Room {
                 throw error
             }
         }
-        await _status.transition(to: .attached)
+        transition(to: .attached)
     }
 
     public func detach() async throws {
@@ -107,6 +116,24 @@ internal actor DefaultRoom: Room {
                 throw error
             }
         }
-        await _status.transition(to: .detached)
+        transition(to: .detached)
+    }
+
+    // MARK: - Room status
+
+    internal func onStatusChange(bufferingPolicy: BufferingPolicy) -> Subscription<RoomStatusChange> {
+        let subscription: Subscription<RoomStatusChange> = .init(bufferingPolicy: bufferingPolicy)
+        statusSubscriptions.append(subscription)
+        return subscription
+    }
+
+    /// Sets ``status`` to the given status, and emits a status change to all subscribers added via ``onStatusChange(bufferingPolicy:)``.
+    internal func transition(to newStatus: RoomStatus) {
+        logger.log(message: "Transitioning to \(newStatus)", level: .debug)
+        let statusChange = RoomStatusChange(current: newStatus, previous: status)
+        status = newStatus
+        for subscription in statusSubscriptions {
+            subscription.emit(statusChange)
+        }
     }
 }
