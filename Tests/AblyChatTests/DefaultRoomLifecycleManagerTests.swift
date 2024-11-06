@@ -5,25 +5,25 @@ import Testing
 struct DefaultRoomLifecycleManagerTests {
     // MARK: - Test helpers
 
-    /// A mock implementation of a realtime channel’s `attach` or `detach` operation. Its ``complete(result:)`` method allows you to signal to the mock that the mocked operation should complete with a given result.
+    /// A mock implementation of a realtime channel’s `attach` or `detach` operation. Its ``complete(behavior:)`` method allows you to signal to the mock that the mocked operation should perform a given behavior (e.g. complete with a given result).
     final class SignallableChannelOperation: Sendable {
-        private let continuation: AsyncStream<MockRoomLifecycleContributorChannel.AttachOrDetachResult>.Continuation
+        private let continuation: AsyncStream<MockRoomLifecycleContributorChannel.AttachOrDetachBehavior>.Continuation
 
-        /// When this behavior is set as a ``MockRealtimeChannel``’s `attachBehavior` or `detachBehavior`, calling ``complete(result:)`` will cause the corresponding channel operation to complete with the result passed to that method.
+        /// When this behavior is set as a ``MockRealtimeChannel``’s `attachBehavior` or `detachBehavior`, calling ``complete(behavior:)`` will cause the corresponding channel operation to perform the behavior passed to that method.
         let behavior: MockRoomLifecycleContributorChannel.AttachOrDetachBehavior
 
         init() {
-            let (stream, continuation) = AsyncStream.makeStream(of: MockRoomLifecycleContributorChannel.AttachOrDetachResult.self)
+            let (stream, continuation) = AsyncStream.makeStream(of: MockRoomLifecycleContributorChannel.AttachOrDetachBehavior.self)
             self.continuation = continuation
 
             behavior = .fromFunction { _ in
-                await (stream.first { _ in true })!
+                await stream.first { _ in true }!
             }
         }
 
-        /// Causes the async function embedded in ``behavior`` to return with the given result.
-        func complete(result: MockRoomLifecycleContributorChannel.AttachOrDetachResult) {
-            continuation.yield(result)
+        /// Causes the async function embedded in ``behavior`` to return with the given behavior.
+        func complete(behavior: MockRoomLifecycleContributorChannel.AttachOrDetachBehavior) {
+            continuation.yield(behavior)
         }
     }
 
@@ -202,7 +202,7 @@ struct DefaultRoomLifecycleManagerTests {
         _ = try #require(await attachedWaitingForDetachedEvent)
 
         // Allow the DETACH to complete
-        contributorDetachOperation.complete(result: .success /* arbitrary */ )
+        contributorDetachOperation.complete(behavior: .success /* arbitrary */ )
 
         // Check that ATTACH completes
         try await attachResult
@@ -227,7 +227,7 @@ struct DefaultRoomLifecycleManagerTests {
         #expect(await manager.roomStatus == .attaching(error: nil))
 
         // Post-test: Now that we’ve seen the ATTACHING status, allow the contributor `attach` call to complete
-        contributorAttachOperation.complete(result: .success)
+        contributorAttachOperation.complete(behavior: .success)
     }
 
     // @spec CHA-RL1f
@@ -445,7 +445,7 @@ struct DefaultRoomLifecycleManagerTests {
         //     - and for whom subsequently calling `detach` will fail on the first attempt and succeed on the second
         // 1. a channel for whom calling `attach` will fail, putting it in the FAILED state (we won’t make any assertions about this channel; it’s just to trigger the room’s channel detach behaviour)
 
-        let detachResult = { @Sendable (callCount: Int) async -> MockRoomLifecycleContributorChannel.AttachOrDetachResult in
+        let detachResult = { @Sendable (callCount: Int) async -> MockRoomLifecycleContributorChannel.AttachOrDetachBehavior in
             if callCount == 1 {
                 return .failure(.create(withCode: 123, message: ""))
             } else {
@@ -564,7 +564,7 @@ struct DefaultRoomLifecycleManagerTests {
         #expect(await !manager.testsOnly_hasTransientDisconnectTimeoutForAnyContributor)
 
         // Post-test: Now that we’ve seen the DETACHING status, allow the contributor `detach` call to complete
-        contributorDetachOperation.complete(result: .success)
+        contributorDetachOperation.complete(behavior: .success)
     }
 
     // @spec CHA-RL2f
@@ -648,7 +648,7 @@ struct DefaultRoomLifecycleManagerTests {
         //
         // - the first two times `detach` is called, it throws an error, leaving it in the ATTACHED state
         // - the third time `detach` is called, it succeeds
-        let detachImpl = { @Sendable (callCount: Int) async -> MockRoomLifecycleContributorChannel.AttachOrDetachResult in
+        let detachImpl = { @Sendable (callCount: Int) async -> MockRoomLifecycleContributorChannel.AttachOrDetachBehavior in
             if callCount < 3 {
                 return .failure(ARTErrorInfo(domain: "SomeDomain", code: 123)) // exact error is unimportant
             }
@@ -747,7 +747,7 @@ struct DefaultRoomLifecycleManagerTests {
         _ = try #require(await secondReleaseWaitingForFirstReleaseEvent)
 
         // Allow the first RELEASE to complete
-        contributorDetachOperation.complete(result: .success)
+        contributorDetachOperation.complete(behavior: .success)
 
         // Check that the second RELEASE completes
         await secondReleaseResult
@@ -780,7 +780,7 @@ struct DefaultRoomLifecycleManagerTests {
         #expect(await !manager.testsOnly_hasTransientDisconnectTimeoutForAnyContributor)
 
         // Post-test: Now that we’ve seen the RELEASING status, allow the contributor `detach` call to complete
-        contributorDetachOperation.complete(result: .success)
+        contributorDetachOperation.complete(behavior: .success)
     }
 
     // @spec CHA-RL3d
@@ -828,7 +828,7 @@ struct DefaultRoomLifecycleManagerTests {
         // Given: A DefaultRoomLifecycleManager, with a contributor for which:
         // - the first two times that `detach()` is called, it fails, leaving the contributor in a non-FAILED state
         // - the third time that `detach()` is called, it succeeds
-        let detachImpl = { @Sendable (callCount: Int) async -> MockRoomLifecycleContributorChannel.AttachOrDetachResult in
+        let detachImpl = { @Sendable (callCount: Int) async -> MockRoomLifecycleContributorChannel.AttachOrDetachBehavior in
             if callCount < 3 {
                 return .failure(ARTErrorInfo(domain: "SomeDomain", code: 123)) // exact error is unimportant
             }
@@ -1009,7 +1009,7 @@ struct DefaultRoomLifecycleManagerTests {
         #expect(pendingDiscontinuityEvent === contributorStateChange.reason)
 
         // Teardown: Allow performDetachOperation() call to complete
-        contributorDetachOperation.complete(result: .success)
+        contributorDetachOperation.complete(behavior: .success)
     }
 
     // @specOneOf(2/2) CHA-RL4b1 - Tests the case where the contributor has not been attached previously

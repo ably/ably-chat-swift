@@ -39,7 +39,7 @@ final actor MockRoomLifecycleContributorChannel: RoomLifecycleContributorChannel
 
     enum AttachOrDetachBehavior {
         /// Receives an argument indicating how many times (including the current call) the method for which this is providing a mock implementation has been called.
-        case fromFunction(@Sendable (Int) async -> AttachOrDetachResult)
+        case fromFunction(@Sendable (Int) async -> AttachOrDetachBehavior)
         case complete(AttachOrDetachResult)
         case completeAndChangeState(AttachOrDetachResult, newState: ARTRealtimeChannelState)
 
@@ -76,7 +76,9 @@ final actor MockRoomLifecycleContributorChannel: RoomLifecycleContributorChannel
         let result: AttachOrDetachResult
         switch behavior {
         case let .fromFunction(function):
-            result = await function(callCount)
+            let behavior = await function(callCount)
+            try await performBehavior(behavior, callCount: callCount)
+            return
         case let .complete(completeResult):
             result = completeResult
         case let .completeAndChangeState(completeResult, newState):
