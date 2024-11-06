@@ -650,7 +650,7 @@ struct RoomLifecycleManagerTests {
         #expect(await contributor.channel.detachCallCount == 0)
     }
 
-    // @specPartial CHA-RL3c - This is marked as specPartial because at time of writing the spec point CHA-RL3c has been accidentally duplicated to specify two separate behaviours. TODO: change this one to @spec once spec fixed (see discussion in https://github.com/ably/specification/pull/200#discussion_r1763770348)
+    // @spec CHA-RL3c
     @Test
     func release_whenReleasing() async throws {
         // Given: A RoomLifecycleManager with a RELEASE lifecycle operation in progress, and hence in the RELEASING state
@@ -696,7 +696,7 @@ struct RoomLifecycleManagerTests {
         #expect(await contributor.channel.detachCallCount == 1)
     }
 
-    // @specPartial CHA-RL3c - Haven’t implemented the part that refers to "transient disconnect timeouts"; TODO do this (https://github.com/ably-labs/ably-chat-swift/issues/48)
+    // @specPartial CHA-RL3l - Haven’t implemented the part that refers to "transient disconnect timeouts"; TODO do this (https://github.com/ably-labs/ably-chat-swift/issues/48)
     @Test
     func release_transitionsToReleasing() async throws {
         // Given: A RoomLifecycleManager, with a contributor on whom calling `detach()` will not complete until after the "Then" part of this test (the motivation for this is to suppress the room from transitioning to RELEASED, so that we can assert its current state as being RELEASING)

@@ -715,7 +715,7 @@ internal actor RoomLifecycleManager<Contributor: RoomLifecycleContributor> {
             break
         }
 
-        // CHA-RL3c
+        // CHA-RL3l
         changeStatus(to: .releasing(releaseOperationID: operationID))
 
         // CHA-RL3d

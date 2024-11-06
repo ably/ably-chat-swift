@@ -51,7 +51,7 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
 
         // (CHA-M4c) When a realtime message with name set to message.created is received, it is translated into a message event, which contains a type field with the event type as well as a message field containing the Message Struct. This event is then broadcast to all subscribers.
         // (CHA-M4d) If a realtime message with an unknown name is received, the SDK shall silently discard the message, though it may log at DEBUG or TRACE level.
-        // (CHA-M5d) Incoming realtime events that are malformed (unknown field should be ignored) shall not be emitted to subscribers.
+        // (CHA-M5k) Incoming realtime events that are malformed (unknown field should be ignored) shall not be emitted to subscribers.
         channel.subscribe(MessageEvent.created.rawValue) { message in
             Task {
                 // TODO: Revisit errors thrown as part of https://github.com/ably-labs/ably-chat-swift/issues/32
