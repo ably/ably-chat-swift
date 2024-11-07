@@ -3,30 +3,15 @@ import Ably
 import Testing
 
 struct DefaultMessagesTests {
-    // @spec CHA-M1
-    @Test
-    func init_channelNameIsSetAsMessagesChannelName() async throws {
-        // clientID value is arbitrary
-
-        // Given
-        let realtime = MockRealtime.create(channels: .init(channels: [.init(name: "basketball::$chat::$chatMessages")]))
-        let chatAPI = ChatAPI(realtime: realtime)
-
-        // When
-        let defaultMessages = await DefaultMessages(chatAPI: chatAPI, roomID: "basketball", clientID: "clientId")
-
-        // Then
-        await #expect(defaultMessages.channel.name == "basketball::$chat::$chatMessages")
-    }
-
     @Test
     func subscribe_whenChannelIsAttachedAndNoChannelSerial_throwsError() async throws {
         // roomId and clientId values are arbitrary
 
         // Given
-        let realtime = MockRealtime.create(channels: .init(channels: [.init(name: "basketball::$chat::$chatMessages")]))
+        let realtime = MockRealtime.create()
         let chatAPI = ChatAPI(realtime: realtime)
-        let defaultMessages = await DefaultMessages(chatAPI: chatAPI, roomID: "basketball", clientID: "clientId")
+        let channel = MockRealtimeChannel()
+        let defaultMessages = await DefaultMessages(channel: channel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId")
 
         // Then
         await #expect(throws: ARTErrorInfo.create(withCode: 40000, status: 400, message: "channel is attached, but channelSerial is not defined"), performing: {
@@ -40,11 +25,10 @@ struct DefaultMessagesTests {
         // Message response of succcess with no items, and roomId are arbitrary
 
         // Given
-        let realtime = MockRealtime.create(
-            channels: .init(channels: [.init(name: "basketball::$chat::$chatMessages")])
-        ) { (MockHTTPPaginatedResponse.successGetMessagesWithNoItems, nil) }
+        let realtime = MockRealtime.create { (MockHTTPPaginatedResponse.successGetMessagesWithNoItems, nil) }
         let chatAPI = ChatAPI(realtime: realtime)
-        let defaultMessages = await DefaultMessages(chatAPI: chatAPI, roomID: "basketball", clientID: "clientId")
+        let channel = MockRealtimeChannel()
+        let defaultMessages = await DefaultMessages(channel: channel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId")
 
         // Then
         await #expect(throws: Never.self, performing: {
@@ -60,21 +44,15 @@ struct DefaultMessagesTests {
         // all setup values here are arbitrary
 
         // Given
-        let realtime = MockRealtime.create(
-            channels: .init(
-                channels: [
-                    .init(
-                        name: "basketball::$chat::$chatMessages",
-                        properties: .init(
-                            attachSerial: "001",
-                            channelSerial: "001"
-                        )
-                    ),
-                ]
-            )
-        ) { (MockHTTPPaginatedResponse.successGetMessagesWithNoItems, nil) }
+        let realtime = MockRealtime.create { (MockHTTPPaginatedResponse.successGetMessagesWithNoItems, nil) }
         let chatAPI = ChatAPI(realtime: realtime)
-        let defaultMessages = await DefaultMessages(chatAPI: chatAPI, roomID: "basketball", clientID: "clientId")
+        let channel = MockRealtimeChannel(
+            properties: .init(
+                attachSerial: "001",
+                channelSerial: "001"
+            )
+        )
+        let defaultMessages = await DefaultMessages(channel: channel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId")
         let subscription = try await defaultMessages.subscribe(bufferingPolicy: .unbounded)
         let expectedPaginatedResult = PaginatedResultWrapper<Message>(
             paginatedResponse: MockHTTPPaginatedResponse.successGetMessagesWithNoItems,

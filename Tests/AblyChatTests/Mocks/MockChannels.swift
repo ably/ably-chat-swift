@@ -8,16 +8,12 @@ final class MockChannels: RealtimeChannelsProtocol, Sendable {
         self.channels = channels
     }
 
-    func get(_ name: String) -> MockRealtimeChannel {
+    func get(_ name: String, options _: ARTRealtimeChannelOptions) -> MockRealtimeChannel {
         guard let channel = (channels.first { $0.name == name }) else {
             fatalError("There is no mock channel with name \(name)")
         }
 
         return channel
-    }
-
-    func get(_ name: String, options _: ARTRealtimeChannelOptions) -> MockRealtimeChannel {
-        get(name)
     }
 
     func exists(_: String) -> Bool {
