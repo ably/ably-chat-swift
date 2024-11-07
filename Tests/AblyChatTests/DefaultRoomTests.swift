@@ -153,7 +153,7 @@ struct DefaultRoomTests {
     // MARK: - Room status
 
     @Test
-    func current_startsAsInitialized() async throws {
+    func status_startsAsInitialized() async throws {
         let channelsList = [
             MockRealtimeChannel(name: "basketball::$chat::$chatMessages"),
             MockRealtimeChannel(name: "basketball::$chat::$typingIndicators"),
