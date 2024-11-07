@@ -170,7 +170,7 @@ struct ChatAPITests {
                     clientID: "random",
                     roomID: roomId,
                     text: "hello",
-                    createdAt: nil,
+                    createdAt: .init(timeIntervalSince1970: 1_730_943_049.269),
                     metadata: [:],
                     headers: [:]
                 ),
