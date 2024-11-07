@@ -17,6 +17,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
 
       # This step can be removed once the runners’ default version of Xcode is 16 or above
       - uses: maxim-lobanov/setup-xcode@v1
@@ -42,6 +44,8 @@ jobs:
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
 
       # This step can be removed once the runners’ default version of Xcode is 16 or above
       - uses: maxim-lobanov/setup-xcode@v1
@@ -59,6 +63,8 @@ jobs:
       matrix: ${{ steps.generation-step.outputs.matrix }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
 
       # This step can be removed once the runners’ default version of Xcode is 16 or above
       - uses: maxim-lobanov/setup-xcode@v1
@@ -78,6 +84,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
       - uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: ${{ matrix.tooling.xcodeVersion }}
@@ -97,6 +105,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
       - uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: ${{ matrix.tooling.xcodeVersion }}
@@ -115,6 +125,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
       - uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: ${{ matrix.tooling.xcodeVersion }}

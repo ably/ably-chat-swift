@@ -1,2 +1,5 @@
 # Don’t try and format the asset catalogue JSON files, which are managed by Xcode
 *.xcassets/
+
+# Submodules
+Tests/AblyChatTests/ably-common

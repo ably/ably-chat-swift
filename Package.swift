@@ -58,6 +58,9 @@ let package = Package(
                     name: "AsyncAlgorithms",
                     package: "swift-async-algorithms"
                 ),
+            ],
+            resources: [
+                .copy("ably-common"),
             ]
         ),
         .executableTarget(
