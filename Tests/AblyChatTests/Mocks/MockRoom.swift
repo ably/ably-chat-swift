@@ -1,10 +1,13 @@
 @testable import AblyChat
 
-actor MockRoom: Room {
+actor MockRoom: InternalRoom {
     let options: RoomOptions
+    private(set) var releaseCallCount = 0
+    let releaseImplementation: (@Sendable () async -> Void)?
 
-    init(options: RoomOptions) {
+    init(options: RoomOptions, releaseImplementation: (@Sendable () async -> Void)? = nil) {
         self.options = options
+        self.releaseImplementation = releaseImplementation
     }
 
     nonisolated var roomID: String {
@@ -45,5 +48,13 @@ actor MockRoom: Room {
 
     func detach() async throws {
         fatalError("Not implemented")
+    }
+
+    func release() async {
+        releaseCallCount += 1
+        guard let releaseImplementation else {
+            fatalError("releaseImplementation must be set before calling `release`")
+        }
+        await releaseImplementation()
     }
 }

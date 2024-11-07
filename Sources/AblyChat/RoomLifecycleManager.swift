@@ -43,6 +43,7 @@ internal protocol RoomLifecycleContributor: Identifiable, Sendable {
 internal protocol RoomLifecycleManager: Sendable {
     func performAttachOperation() async throws
     func performDetachOperation() async throws
+    func performReleaseOperation() async
     var roomStatus: RoomStatus { get async }
     func onChange(bufferingPolicy: BufferingPolicy) async -> Subscription<RoomStatusChange>
 }
@@ -864,11 +865,19 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
 
     // MARK: - RELEASE operation
 
+    internal func performReleaseOperation() async {
+        await _performReleaseOperation(forcingOperationID: nil)
+    }
+
+    internal func performReleaseOperation(testsOnly_forcingOperationID forcedOperationID: UUID? = nil) async {
+        await _performReleaseOperation(forcingOperationID: forcedOperationID)
+    }
+
     /// Implements CHA-RL3’s RELEASE operation.
     ///
     /// - Parameters:
     ///   - forcedOperationID: Allows tests to force the operation to have a given ID. In combination with the ``testsOnly_subscribeToOperationWaitEvents`` API, this allows tests to verify that one test-initiated operation is waiting for another test-initiated operation.
-    internal func performReleaseOperation(testsOnly_forcingOperationID forcedOperationID: UUID? = nil) async {
+    internal func _performReleaseOperation(forcingOperationID forcedOperationID: UUID? = nil) async {
         await performAnOperation(forcingOperationID: forcedOperationID) { operationID in
             await bodyOfReleaseOperation(operationID: operationID)
         }

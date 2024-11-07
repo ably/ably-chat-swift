@@ -19,6 +19,11 @@ public protocol Room: AnyObject, Sendable {
     var options: RoomOptions { get }
 }
 
+/// A ``Room`` that exposes additional functionality for use within the SDK.
+internal protocol InternalRoom: Room {
+    func release() async
+}
+
 public struct RoomStatusChange: Sendable, Equatable {
     public var current: RoomStatus
     public var previous: RoomStatus
@@ -30,7 +35,7 @@ public struct RoomStatusChange: Sendable, Equatable {
 }
 
 internal protocol RoomFactory: Sendable {
-    associatedtype Room: AblyChat.Room
+    associatedtype Room: AblyChat.InternalRoom
 
     func createRoom(realtime: RealtimeClient, chatAPI: ChatAPI, roomID: String, options: RoomOptions, logger: InternalLogger) async throws -> Room
 }
@@ -50,7 +55,7 @@ internal final class DefaultRoomFactory: Sendable, RoomFactory {
     }
 }
 
-internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>: Room where LifecycleManagerFactory.Contributor == DefaultRoomLifecycleContributor {
+internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>: InternalRoom where LifecycleManagerFactory.Contributor == DefaultRoomLifecycleContributor {
     internal nonisolated let roomID: String
     internal nonisolated let options: RoomOptions
     private let chatAPI: ChatAPI
@@ -61,6 +66,7 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
     private nonisolated let realtime: RealtimeClient
 
     private let lifecycleManager: any RoomLifecycleManager
+    private let channels: [RoomFeature: any RealtimeChannelProtocol]
 
     private let logger: InternalLogger
 
@@ -75,7 +81,7 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
             throw ARTErrorInfo.create(withCode: 40000, message: "Ensure your Realtime instance is initialized with a clientId.")
         }
 
-        let channels = Self.createChannels(roomID: roomID, realtime: realtime)
+        channels = Self.createChannels(roomID: roomID, realtime: realtime)
         let contributors = Self.createContributors(channels: channels)
 
         lifecycleManager = await lifecycleManagerFactory.createManager(
@@ -128,6 +134,15 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
 
     public func detach() async throws {
         try await lifecycleManager.performDetachOperation()
+    }
+
+    internal func release() async {
+        await lifecycleManager.performReleaseOperation()
+
+        // CHA-RL3h
+        for channel in channels.values {
+            realtime.channels.release(channel.name)
+        }
     }
 
     // MARK: - Room status

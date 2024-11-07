@@ -3,6 +3,8 @@ import Testing
 
 // The channel name of basketball::$chat::$chatMessages is passed in to these tests due to `DefaultRoom` kicking off the `DefaultMessages` initialization. This in turn needs a valid `roomId` or else the `MockChannels` class will throw an error as it would be expecting a channel with the name \(roomID)::$chat::$chatMessages to exist (where `roomId` is the property passed into `rooms.get`).
 struct DefaultRoomsTests {
+    // MARK: - Get a room
+
     // @spec CHA-RC1a
     @Test
     func get_returnsRoomWithGivenID() async throws {
@@ -77,5 +79,44 @@ struct DefaultRoomsTests {
 
         // Then: It throws an inconsistentRoomOptions error
         #expect(isChatError(caughtError, withCode: .inconsistentRoomOptions))
+    }
+
+    // MARK: - Release a room
+
+    // @spec CHA-RC1d
+    // @spec CHA-RC1e
+    @Test
+    func release() async throws {
+        // Given: an instance of DefaultRooms, on which get(roomID:options:) has already been called with a given ID
+        let realtime = MockRealtime.create(channels: .init(channels: [
+            .init(name: "basketball::$chat::$chatMessages"),
+        ]))
+        let options = RoomOptions()
+        let hasExistingRoomAtMomentRoomReleaseCalledStreamComponents = AsyncStream.makeStream(of: Bool.self)
+        let roomFactory = MockRoomFactory()
+        let rooms = DefaultRooms(realtime: realtime, clientOptions: .init(), logger: TestLogger(), roomFactory: roomFactory)
+
+        let roomID = "basketball"
+
+        let roomToReturn = MockRoom(options: options) {
+            await hasExistingRoomAtMomentRoomReleaseCalledStreamComponents.continuation.yield(rooms.testsOnly_hasExistingRoomWithID(roomID))
+        }
+        await roomFactory.setRoom(roomToReturn)
+
+        _ = try await rooms.get(roomID: roomID, options: .init())
+        try #require(await rooms.testsOnly_hasExistingRoomWithID(roomID))
+
+        // When: `release(roomID:)` is called with this room ID
+        _ = try await rooms.release(roomID: roomID)
+
+        // Then:
+        // 1. first, the room is removed from the room map
+        // 2. next, `release` is called on the room
+
+        // These two lines are convoluted because the #require macro has a hard time with stuff of type Bool? and emits warnings about ambiguity unless you jump through the hoops it tells you to
+        let hasExistingRoomAtMomentRoomReleaseCalled = await hasExistingRoomAtMomentRoomReleaseCalledStreamComponents.stream.first { _ in true }
+        #expect(try !#require(hasExistingRoomAtMomentRoomReleaseCalled as Bool?))
+
+        #expect(await roomToReturn.releaseCallCount == 1)
     }
 }

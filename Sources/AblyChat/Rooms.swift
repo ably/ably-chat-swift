@@ -49,7 +49,22 @@ internal actor DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
         }
     }
 
-    internal func release(roomID _: String) async throws {
-        fatalError("Not yet implemented")
+    #if DEBUG
+        internal func testsOnly_hasExistingRoomWithID(_ roomID: String) -> Bool {
+            rooms[roomID] != nil
+        }
+    #endif
+
+    internal func release(roomID: String) async throws {
+        guard let room = rooms[roomID] else {
+            // TODO: what to do here? (https://github.com/ably/specification/pull/200/files#r1837154563) — Andy replied that it’s a no-op but that this is going to be specified in an upcoming PR when we make room-getting async
+            return
+        }
+
+        // CHA-RC1d
+        rooms.removeValue(forKey: roomID)
+
+        // CHA-RL1e
+        await room.release()
     }
 }

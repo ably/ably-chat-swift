@@ -1,10 +1,14 @@
 @testable import AblyChat
 
 actor MockRoomFactory: RoomFactory {
-    private let room: MockRoom?
+    private var room: MockRoom?
     private(set) var createRoomArguments: (realtime: RealtimeClient, chatAPI: ChatAPI, roomID: String, options: RoomOptions, logger: any InternalLogger)?
 
     init(room: MockRoom? = nil) {
+        self.room = room
+    }
+
+    func setRoom(_ room: MockRoom) {
         self.room = room
     }
 
