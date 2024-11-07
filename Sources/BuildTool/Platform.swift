@@ -11,9 +11,9 @@ enum Platform: String, CaseIterable {
         case .macOS:
             .fixed(platform: "macOS")
         case .iOS:
-            .lookup(destinationPredicate: .init(runtime: "iOS-17-5", deviceType: "iPhone-15"))
+            .lookup(destinationPredicate: .init(runtime: "iOS-18-0", deviceType: "iPhone-16"))
         case .tvOS:
-            .lookup(destinationPredicate: .init(runtime: "tvOS-17-5", deviceType: "Apple-TV-4K-3rd-generation-4K"))
+            .lookup(destinationPredicate: .init(runtime: "tvOS-18-0", deviceType: "Apple-TV-4K-3rd-generation-4K"))
         }
     }
 
