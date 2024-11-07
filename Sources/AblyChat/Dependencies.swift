@@ -14,7 +14,7 @@ public protocol RealtimeClientProtocol: ARTRealtimeProtocol, Sendable {
 public protocol RealtimeChannelsProtocol: ARTRealtimeChannelsProtocol, Sendable {
     associatedtype Channel: RealtimeChannelProtocol
 
-    // It’s not clear to me why ARTRealtimeChannelsProtocol doesn’t include this property (https://github.com/ably/ably-cocoa/issues/1968).
+    // It’s not clear to me why ARTRealtimeChannelsProtocol doesn’t include these functions (https://github.com/ably/ably-cocoa/issues/1968).
     func get(_ name: String, options: ARTRealtimeChannelOptions) -> Channel
     func get(_ name: String) -> Channel
 }
