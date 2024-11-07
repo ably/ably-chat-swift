@@ -127,7 +127,14 @@ internal final class ChatAPI: Sendable {
 }
 
 internal struct DictionaryDecoder {
-    private let decoder = JSONDecoder()
+    private let decoder = {
+        var decoder = JSONDecoder()
+
+        // Ably’s REST APIs always serialise dates as milliseconds since Unix epoch
+        decoder.dateDecodingStrategy = .millisecondsSince1970
+
+        return decoder
+    }()
 
     // Function to decode from a dictionary
     internal func decode<T: Decodable>(_: T.Type, from dictionary: NSDictionary) throws -> T {

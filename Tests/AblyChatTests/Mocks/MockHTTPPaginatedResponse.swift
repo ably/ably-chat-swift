@@ -99,6 +99,7 @@ extension MockHTTPPaginatedResponse {
             [
                 "clientId": "random",
                 "timeserial": "3446456",
+                "createdAt": 1_730_943_049_269,
                 "roomId": "basketball::$chat::$chatMessages",
                 "text": "hello",
                 "metadata": [:],
