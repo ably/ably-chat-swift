@@ -218,6 +218,8 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
         // TODO: Not clear whether there can be multiple or just one (asked in https://github.com/ably/specification/pull/200/files#r1781927850)
         var pendingDiscontinuityEvents: [ARTErrorInfo] = []
         var transientDisconnectTimeout: TransientDisconnectTimeout?
+        /// Whether a CHA-RL1f call to `attach()` on the contributor has previously succeeded.
+        var hasBeenAttached: Bool
 
         var hasTransientDisconnectTimeout: Bool {
             transientDisconnectTimeout != nil
@@ -236,7 +238,8 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
             storage = contributors.reduce(into: [:]) { result, contributor in
                 result[contributor.id] = .init(
                     pendingDiscontinuityEvents: pendingDiscontinuityEvents[contributor.id] ?? [],
-                    transientDisconnectTimeout: idsOfContributorsWithTransientDisconnectTimeout.contains(contributor.id) ? .init() : nil
+                    transientDisconnectTimeout: idsOfContributorsWithTransientDisconnectTimeout.contains(contributor.id) ? .init() : nil,
+                    hasBeenAttached: false
                 )
             }
         }
@@ -375,7 +378,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
             }
         case .attached:
             if hasOperationInProgress {
-                if !stateChange.resumed {
+                if !stateChange.resumed, contributorAnnotations[contributor].hasBeenAttached {
                     // CHA-RL4b1
                     logger.log(message: "Recording pending discontinuity event for contributor \(contributor)", level: .info)
 
@@ -650,6 +653,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
             do {
                 logger.log(message: "Attaching contributor \(contributor)", level: .info)
                 try await contributor.channel.attach()
+                contributorAnnotations[contributor].hasBeenAttached = true
             } catch let contributorAttachError {
                 let contributorState = await contributor.channel.state
                 logger.log(message: "Failed to attach contributor \(contributor), which is now in state \(contributorState), error \(contributorAttachError)", level: .info)
