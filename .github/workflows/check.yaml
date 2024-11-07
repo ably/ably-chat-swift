@@ -8,7 +8,7 @@ on:
       - main
 jobs:
   lint:
-    runs-on: macos-latest
+    runs-on: macos-15
 
     # From actions/cache documentation linked to below
     env:
@@ -39,7 +39,7 @@ jobs:
       - run: swift run BuildTool lint
 
   spec-coverage:
-    runs-on: macos-latest
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
 
@@ -54,7 +54,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   generate-matrices:
-    runs-on: macos-latest
+    runs-on: macos-15
     outputs:
       matrix: ${{ steps.generation-step.outputs.matrix }}
     steps:
@@ -70,7 +70,7 @@ jobs:
 
   check-spm:
     name: SPM (Xcode ${{ matrix.tooling.xcodeVersion }})
-    runs-on: macos-latest
+    runs-on: macos-15
     needs: generate-matrices
     strategy:
       fail-fast: false
@@ -88,7 +88,7 @@ jobs:
 
   check-xcode:
     name: Xcode, ${{matrix.platform}} (Xcode ${{ matrix.tooling.xcodeVersion }})
-    runs-on: macos-latest
+    runs-on: macos-15
     needs: generate-matrices
 
     strategy:
@@ -106,7 +106,7 @@ jobs:
 
   check-example-app:
     name: Example app, ${{matrix.platform}} (Xcode ${{ matrix.tooling.xcodeVersion }})
-    runs-on: macos-latest
+    runs-on: macos-15
     needs: generate-matrices
 
     strategy:
