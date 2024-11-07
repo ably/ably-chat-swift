@@ -40,7 +40,37 @@ internal protocol RoomLifecycleContributor: Identifiable, Sendable {
     func emitDiscontinuity(_ error: ARTErrorInfo) async
 }
 
-internal protocol RoomLifecycleManager: Sendable {}
+internal protocol RoomLifecycleManager: Sendable {
+    func performAttachOperation() async throws
+    func performDetachOperation() async throws
+    var roomStatus: RoomStatus { get async }
+    func onChange(bufferingPolicy: BufferingPolicy) async -> Subscription<RoomStatusChange>
+}
+
+internal protocol RoomLifecycleManagerFactory: Sendable {
+    associatedtype Contributor: RoomLifecycleContributor
+    associatedtype Manager: RoomLifecycleManager
+
+    func createManager(
+        contributors: [Contributor],
+        logger: InternalLogger
+    ) async -> Manager
+}
+
+internal final class DefaultRoomLifecycleManagerFactory: RoomLifecycleManagerFactory {
+    private let clock = DefaultSimpleClock()
+
+    internal func createManager(
+        contributors: [DefaultRoomLifecycleContributor],
+        logger: InternalLogger
+    ) async -> DefaultRoomLifecycleManager<DefaultRoomLifecycleContributor> {
+        await .init(
+            contributors: contributors,
+            logger: logger,
+            clock: clock
+        )
+    }
+}
 
 internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor>: RoomLifecycleManager {
     // MARK: - Constant properties
@@ -615,11 +645,19 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
 
     // MARK: - ATTACH operation
 
+    internal func performAttachOperation() async throws {
+        try await _performAttachOperation(forcingOperationID: nil)
+    }
+
+    internal func performAttachOperation(testsOnly_forcingOperationID forcedOperationID: UUID? = nil) async throws {
+        try await _performAttachOperation(forcingOperationID: forcedOperationID)
+    }
+
     /// Implements CHA-RL1’s `ATTACH` operation.
     ///
     /// - Parameters:
     ///   - forcedOperationID: Allows tests to force the operation to have a given ID. In combination with the ``testsOnly_subscribeToOperationWaitEvents`` API, this allows tests to verify that one test-initiated operation is waiting for another test-initiated operation.
-    internal func performAttachOperation(testsOnly_forcingOperationID forcedOperationID: UUID? = nil) async throws {
+    private func _performAttachOperation(forcingOperationID forcedOperationID: UUID?) async throws {
         try await performAnOperation(forcingOperationID: forcedOperationID) { operationID in
             try await bodyOfAttachOperation(operationID: operationID)
         }
@@ -727,11 +765,19 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
 
     // MARK: - DETACH operation
 
+    internal func performDetachOperation() async throws {
+        try await _performDetachOperation(forcingOperationID: nil)
+    }
+
+    internal func performDetachOperation(testsOnly_forcingOperationID forcedOperationID: UUID? = nil) async throws {
+        try await _performDetachOperation(forcingOperationID: forcedOperationID)
+    }
+
     /// Implements CHA-RL2’s DETACH operation.
     ///
     /// - Parameters:
     ///   - forcedOperationID: Allows tests to force the operation to have a given ID. In combination with the ``testsOnly_subscribeToOperationWaitEvents`` API, this allows tests to verify that one test-initiated operation is waiting for another test-initiated operation.
-    internal func performDetachOperation(testsOnly_forcingOperationID forcedOperationID: UUID? = nil) async throws {
+    private func _performDetachOperation(forcingOperationID forcedOperationID: UUID?) async throws {
         try await performAnOperation(forcingOperationID: forcedOperationID) { operationID in
             try await bodyOfDetachOperation(operationID: operationID)
         }

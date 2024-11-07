@@ -19,7 +19,7 @@ public protocol Room: AnyObject, Sendable {
     var options: RoomOptions { get }
 }
 
-public struct RoomStatusChange: Sendable {
+public struct RoomStatusChange: Sendable, Equatable {
     public var current: RoomStatus
     public var previous: RoomStatus
 
@@ -29,7 +29,7 @@ public struct RoomStatusChange: Sendable {
     }
 }
 
-internal actor DefaultRoom: Room {
+internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>: Room where LifecycleManagerFactory.Contributor == DefaultRoomLifecycleContributor {
     internal nonisolated let roomID: String
     internal nonisolated let options: RoomOptions
     private let chatAPI: ChatAPI
@@ -39,8 +39,7 @@ internal actor DefaultRoom: Room {
     // Exposed for testing.
     private nonisolated let realtime: RealtimeClient
 
-    /// The channels that contribute to this room.
-    private let channels: [RoomFeature: RealtimeChannelProtocol]
+    private let lifecycleManager: any RoomLifecycleManager
 
     #if DEBUG
         internal nonisolated var testsOnly_realtime: RealtimeClient {
@@ -48,12 +47,9 @@ internal actor DefaultRoom: Room {
         }
     #endif
 
-    internal private(set) var status: RoomStatus = .initialized
-    // TODO: clean up old subscriptions (https://github.com/ably-labs/ably-chat-swift/issues/36)
-    private var statusSubscriptions: [Subscription<RoomStatusChange>] = []
     private let logger: InternalLogger
 
-    internal init(realtime: RealtimeClient, chatAPI: ChatAPI, roomID: String, options: RoomOptions, logger: InternalLogger) async throws {
+    internal init(realtime: RealtimeClient, chatAPI: ChatAPI, roomID: String, options: RoomOptions, logger: InternalLogger, lifecycleManagerFactory: LifecycleManagerFactory) async throws {
         self.realtime = realtime
         self.roomID = roomID
         self.options = options
@@ -64,7 +60,13 @@ internal actor DefaultRoom: Room {
             throw ARTErrorInfo.create(withCode: 40000, message: "Ensure your Realtime instance is initialized with a clientId.")
         }
 
-        channels = Self.createChannels(roomID: roomID, realtime: realtime)
+        let channels = Self.createChannels(roomID: roomID, realtime: realtime)
+        let contributors = Self.createContributors(channels: channels)
+
+        lifecycleManager = await lifecycleManagerFactory.createManager(
+            contributors: contributors,
+            logger: logger
+        )
 
         messages = await DefaultMessages(
             channel: channels[.messages]!,
@@ -75,10 +77,18 @@ internal actor DefaultRoom: Room {
     }
 
     private static func createChannels(roomID: String, realtime: RealtimeClient) -> [RoomFeature: RealtimeChannelProtocol] {
-        .init(uniqueKeysWithValues: [RoomFeature.messages, RoomFeature.typing, RoomFeature.reactions].map { feature in
+        .init(uniqueKeysWithValues: [RoomFeature.messages].map { feature in
             let channel = realtime.getChannel(feature.channelNameForRoomID(roomID))
+
             return (feature, channel)
         })
+    }
+
+    private static func createContributors(channels: [RoomFeature: RealtimeChannelProtocol]) -> [DefaultRoomLifecycleContributor] {
+        channels.map { entry in
+            let (feature, channel) = entry
+            return .init(channel: .init(underlyingChannel: channel), feature: feature)
+        }
     }
 
     public nonisolated var presence: any Presence {
@@ -98,44 +108,22 @@ internal actor DefaultRoom: Room {
     }
 
     public func attach() async throws {
-        for channel in channels.map(\.value) {
-            do {
-                try await channel.attachAsync()
-            } catch {
-                logger.log(message: "Failed to attach channel \(channel), error \(error)", level: .error)
-                throw error
-            }
-        }
-        transition(to: .attached)
+        try await lifecycleManager.performAttachOperation()
     }
 
     public func detach() async throws {
-        for channel in channels.map(\.value) {
-            do {
-                try await channel.detachAsync()
-            } catch {
-                logger.log(message: "Failed to detach channel \(channel), error \(error)", level: .error)
-                throw error
-            }
-        }
-        transition(to: .detached)
+        try await lifecycleManager.performDetachOperation()
     }
 
     // MARK: - Room status
 
-    internal func onStatusChange(bufferingPolicy: BufferingPolicy) -> Subscription<RoomStatusChange> {
-        let subscription: Subscription<RoomStatusChange> = .init(bufferingPolicy: bufferingPolicy)
-        statusSubscriptions.append(subscription)
-        return subscription
+    internal func onStatusChange(bufferingPolicy: BufferingPolicy) async -> Subscription<RoomStatusChange> {
+        await lifecycleManager.onChange(bufferingPolicy: bufferingPolicy)
     }
 
-    /// Sets ``status`` to the given status, and emits a status change to all subscribers added via ``onStatusChange(bufferingPolicy:)``.
-    internal func transition(to newStatus: RoomStatus) {
-        logger.log(message: "Transitioning to \(newStatus)", level: .debug)
-        let statusChange = RoomStatusChange(current: newStatus, previous: status)
-        status = newStatus
-        for subscription in statusSubscriptions {
-            subscription.emit(statusChange)
+    internal var status: RoomStatus {
+        get async {
+            await lifecycleManager.roomStatus
         }
     }
 }

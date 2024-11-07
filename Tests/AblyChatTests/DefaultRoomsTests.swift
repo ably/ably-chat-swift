@@ -9,10 +9,8 @@ struct DefaultRoomsTests {
         // Given: an instance of DefaultRooms
         let realtime = MockRealtime.create(channels: .init(channels: [
             .init(name: "basketball::$chat::$chatMessages"),
-            .init(name: "basketball::$chat::$typingIndicators"),
-            .init(name: "basketball::$chat::$reactions"),
         ]))
-        let rooms = DefaultRooms(realtime: realtime, clientOptions: .init(), logger: TestLogger())
+        let rooms = DefaultRooms(realtime: realtime, clientOptions: .init(), logger: TestLogger(), lifecycleManagerFactory: MockRoomLifecycleManagerFactory())
 
         // When: get(roomID:options:) is called
         let roomID = "basketball"
@@ -20,7 +18,7 @@ struct DefaultRoomsTests {
         let room = try await rooms.get(roomID: roomID, options: options)
 
         // Then: It returns a DefaultRoom instance that uses the same Realtime instance, with the given ID and options
-        let defaultRoom = try #require(room as? DefaultRoom)
+        let defaultRoom = try #require(room as? DefaultRoom<MockRoomLifecycleManagerFactory>)
         #expect(defaultRoom.testsOnly_realtime === realtime)
         #expect(defaultRoom.roomID == roomID)
         #expect(defaultRoom.options == options)
@@ -32,10 +30,8 @@ struct DefaultRoomsTests {
         // Given: an instance of DefaultRooms, on which get(roomID:options:) has already been called with a given ID
         let realtime = MockRealtime.create(channels: .init(channels: [
             .init(name: "basketball::$chat::$chatMessages"),
-            .init(name: "basketball::$chat::$typingIndicators"),
-            .init(name: "basketball::$chat::$reactions"),
         ]))
-        let rooms = DefaultRooms(realtime: realtime, clientOptions: .init(), logger: TestLogger())
+        let rooms = DefaultRooms(realtime: realtime, clientOptions: .init(), logger: TestLogger(), lifecycleManagerFactory: MockRoomLifecycleManagerFactory())
 
         let roomID = "basketball"
         let options = RoomOptions()
@@ -54,10 +50,8 @@ struct DefaultRoomsTests {
         // Given: an instance of DefaultRooms, on which get(roomID:options:) has already been called with a given ID and options
         let realtime = MockRealtime.create(channels: .init(channels: [
             .init(name: "basketball::$chat::$chatMessages"),
-            .init(name: "basketball::$chat::$typingIndicators"),
-            .init(name: "basketball::$chat::$reactions"),
         ]))
-        let rooms = DefaultRooms(realtime: realtime, clientOptions: .init(), logger: TestLogger())
+        let rooms = DefaultRooms(realtime: realtime, clientOptions: .init(), logger: TestLogger(), lifecycleManagerFactory: MockRoomLifecycleManagerFactory())
 
         let roomID = "basketball"
         let options = RoomOptions()
