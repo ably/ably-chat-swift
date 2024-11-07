@@ -1,0 +1,3 @@
+[submodule "Tests/AblyChatTests/ably-common"]
+	path = Tests/AblyChatTests/ably-common
+	url = https://github.com/ably/ably-common
