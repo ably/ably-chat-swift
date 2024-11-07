@@ -1,8 +1,9 @@
 import Ably
 
-internal actor DefaultRoomLifecycleContributor: RoomLifecycleContributor {
+internal actor DefaultRoomLifecycleContributor: RoomLifecycleContributor, EmitsDiscontinuities {
     internal let channel: DefaultRoomLifecycleContributorChannel
     internal let feature: RoomFeature
+    private var discontinuitySubscriptions: [Subscription<ARTErrorInfo>] = []
 
     internal init(channel: DefaultRoomLifecycleContributorChannel, feature: RoomFeature) {
         self.channel = channel
@@ -11,8 +12,17 @@ internal actor DefaultRoomLifecycleContributor: RoomLifecycleContributor {
 
     // MARK: - Discontinuities
 
-    internal func emitDiscontinuity(_: ARTErrorInfo) {
-        // TODO: https://github.com/ably-labs/ably-chat-swift/issues/47
+    internal func emitDiscontinuity(_ error: ARTErrorInfo) {
+        for subscription in discontinuitySubscriptions {
+            subscription.emit(error)
+        }
+    }
+
+    internal func subscribeToDiscontinuities() -> Subscription<ARTErrorInfo> {
+        let subscription = Subscription<ARTErrorInfo>(bufferingPolicy: .unbounded)
+        // TODO: clean up old subscriptions (https://github.com/ably-labs/ably-chat-swift/issues/36)
+        discontinuitySubscriptions.append(subscription)
+        return subscription
     }
 }
 

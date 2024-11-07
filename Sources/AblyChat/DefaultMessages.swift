@@ -13,7 +13,7 @@ private struct MessageSubscriptionWrapper {
 @MainActor
 internal final class DefaultMessages: Messages, EmitsDiscontinuities {
     private let roomID: String
-    public nonisolated let channel: RealtimeChannelProtocol
+    public nonisolated let featureChannel: FeatureChannel
     private let chatAPI: ChatAPI
     private let clientID: String
 
@@ -21,8 +21,8 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
     // UUID acts as a unique identifier for each listener/subscription. MessageSubscriptionWrapper houses the subscription and the timeserial of when it was attached or resumed.
     private var subscriptionPoints: [UUID: MessageSubscriptionWrapper] = [:]
 
-    internal nonisolated init(channel: RealtimeChannelProtocol, chatAPI: ChatAPI, roomID: String, clientID: String) async {
-        self.channel = channel
+    internal nonisolated init(featureChannel: FeatureChannel, chatAPI: ChatAPI, roomID: String, clientID: String) async {
+        self.featureChannel = featureChannel
         self.chatAPI = chatAPI
         self.roomID = roomID
         self.clientID = clientID
@@ -30,6 +30,10 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
         // Implicitly handles channel events and therefore listners within this class. Alternative is to explicitly call something like `DefaultMessages.start()` which makes the SDK more cumbersome to interact with. This class is useless without kicking off this flow so I think leaving it here is suitable.
         // "Calls to instance method 'handleChannelEvents(roomId:)' from outside of its actor context are implicitly asynchronous" hence the `await` here.
         await handleChannelEvents(roomId: roomID)
+    }
+
+    internal nonisolated var channel: any RealtimeChannelProtocol {
+        featureChannel.channel
     }
 
     // (CHA-M4) Messages can be received via a subscription in realtime.
@@ -99,9 +103,9 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
         try await chatAPI.sendMessage(roomId: roomID, params: params)
     }
 
-    // TODO: (CHA-M7) Users may subscribe to discontinuity events to know when there’s been a break in messages that they need to resolve. Their listener will be called when a discontinuity event is triggered from the room lifecycle. - https://github.com/ably-labs/ably-chat-swift/issues/47
-    internal nonisolated func subscribeToDiscontinuities() -> Subscription<ARTErrorInfo> {
-        fatalError("not implemented")
+    // (CHA-M7) Users may subscribe to discontinuity events to know when there’s been a break in messages that they need to resolve. Their listener will be called when a discontinuity event is triggered from the room lifecycle.
+    internal func subscribeToDiscontinuities() async -> Subscription<ARTErrorInfo> {
+        await featureChannel.subscribeToDiscontinuities()
     }
 
     private func getBeforeSubscriptionStart(_ uuid: UUID, params: QueryOptions) async throws -> any PaginatedResult<Message> {
