@@ -970,17 +970,23 @@ struct DefaultRoomLifecycleManagerTests {
         #expect(discontinuity === contributorStateChange.reason)
     }
 
-    // @specPartial CHA-RL4b1 - I don’t know the meaning of "and the particular contributor has been attached previously" so haven’t implemented that part of the spec point (TODO: asked in https://github.com/ably/specification/pull/200/files#r1775552624)
+    // @specOneOf(1/2) CHA-RL4b1 - Tests the case where the contributor has been attached previously
     @Test
-    func contributorAttachEvent_withResumeFalse_withOperationInProgress_recordsPendingDiscontinuityEvent() async throws {
-        // Given: A DefaultRoomLifecycleManager, with a room lifecycle operation in progress
-        let contributor = createContributor()
+    func contributorAttachEvent_withResumeFalse_withOperationInProgress_withContributorAttachedPreviously_recordsPendingDiscontinuityEvent() async throws {
+        // Given: A DefaultRoomLifecycleManager, with a room lifecycle operation in progress, and which has a contributor for which a CHA-RL1f call to `attach()` has succeeded
+        let contributorDetachOperation = SignallableChannelOperation()
+        let contributor = createContributor(attachBehavior: .success, detachBehavior: contributorDetachOperation.behavior)
         let manager = await createManager(
-            forTestingWhatHappensWhenCurrentlyIn: .attachingDueToAttachOperation(attachOperationID: UUID()), // case and ID arbitrary, just care that an operation is in progress
             contributors: [contributor]
         )
 
-        // When: A contributor emits an ATTACHED event with `resumed` flag set to false
+        // This is to satisfy "a CHA-RL1f call to `attach()` has succeeded"
+        try await manager.performAttachOperation()
+
+        // This is to put the manager into the DETACHING state, to satisfy "with a room lifecycle operation in progress"
+        async let _ = manager.performDetachOperation()
+
+        // When: The aforementioned contributor emits an ATTACHED event with `resumed` flag set to false
         let contributorStateChange = ARTChannelStateChange(
             current: .attached,
             previous: .attaching, // arbitrary
@@ -999,6 +1005,36 @@ struct DefaultRoomLifecycleManagerTests {
 
         let pendingDiscontinuityEvent = pendingDiscontinuityEvents[0]
         #expect(pendingDiscontinuityEvent === contributorStateChange.reason)
+
+        // Teardown: Allow performDetachOperation() call to complete
+        contributorDetachOperation.complete(result: .success)
+    }
+
+    // @specOneOf(2/2) CHA-RL4b1 - Tests the case where the contributor has not been attached previously
+    @Test
+    func contributorAttachEvent_withResumeFalse_withOperationInProgress_withContributorNotAttachedPreviously_doesNotRecordPendingDiscontinuityEvent() async throws {
+        // Given: A DefaultRoomLifecycleManager, with a room lifecycle operation in progress, and which has a contributor for which a CHA-RL1f call to `attach()` has not previously succeeded
+        let contributor = createContributor()
+        let manager = await createManager(
+            forTestingWhatHappensWhenCurrentlyIn: .attachingDueToAttachOperation(attachOperationID: UUID()), // case and ID arbitrary, just care that an operation is in progress
+            contributors: [contributor]
+        )
+
+        // When: The aforementioned contributor emits an ATTACHED event with `resumed` flag set to false
+        let contributorStateChange = ARTChannelStateChange(
+            current: .attached,
+            previous: .attaching, // arbitrary
+            event: .attached,
+            reason: ARTErrorInfo(domain: "SomeDomain", code: 123), // arbitrary
+            resumed: false
+        )
+
+        await waitForManager(manager, toHandleContributorStateChange: contributorStateChange) {
+            await contributor.channel.emitStateChange(contributorStateChange)
+        }
+
+        // Then: The manager does not record a pending discontinuity event for this contributor
+        #expect(await manager.testsOnly_pendingDiscontinuityEvents(for: contributor).isEmpty)
     }
 
     // @spec CHA-RL4b5
