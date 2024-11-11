@@ -29,6 +29,27 @@ public struct RoomStatusChange: Sendable, Equatable {
     }
 }
 
+internal protocol RoomFactory: Sendable {
+    associatedtype Room: AblyChat.Room
+
+    func createRoom(realtime: RealtimeClient, chatAPI: ChatAPI, roomID: String, options: RoomOptions, logger: InternalLogger) async throws -> Room
+}
+
+internal final class DefaultRoomFactory: Sendable, RoomFactory {
+    private let lifecycleManagerFactory = DefaultRoomLifecycleManagerFactory()
+
+    internal func createRoom(realtime: RealtimeClient, chatAPI: ChatAPI, roomID: String, options: RoomOptions, logger: InternalLogger) async throws -> DefaultRoom<DefaultRoomLifecycleManagerFactory> {
+        try await DefaultRoom(
+            realtime: realtime,
+            chatAPI: chatAPI,
+            roomID: roomID,
+            options: options,
+            logger: logger,
+            lifecycleManagerFactory: lifecycleManagerFactory
+        )
+    }
+}
+
 internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>: Room where LifecycleManagerFactory.Contributor == DefaultRoomLifecycleContributor {
     internal nonisolated let roomID: String
     internal nonisolated let options: RoomOptions
@@ -40,12 +61,6 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
     private nonisolated let realtime: RealtimeClient
 
     private let lifecycleManager: any RoomLifecycleManager
-
-    #if DEBUG
-        internal nonisolated var testsOnly_realtime: RealtimeClient {
-            realtime
-        }
-    #endif
 
     private let logger: InternalLogger
 
