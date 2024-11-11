@@ -4,27 +4,27 @@ import Ably
 // TODO: remove once we improve this experience in ably-cocoa (https://github.com/ably/ably-cocoa/issues/1967)
 
 internal extension ARTRealtimeChannelProtocol {
-    func attachAsync() async throws {
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, _>) in
+    func attachAsync() async throws(ARTErrorInfo) {
+        try await withCheckedContinuation { (continuation: CheckedContinuation<Result<Void, ARTErrorInfo>, _>) in
             attach { error in
                 if let error {
-                    continuation.resume(throwing: error)
+                    continuation.resume(returning: .failure(error))
                 } else {
-                    continuation.resume()
+                    continuation.resume(returning: .success(()))
                 }
             }
-        }
+        }.get()
     }
 
-    func detachAsync() async throws {
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, _>) in
+    func detachAsync() async throws(ARTErrorInfo) {
+        try await withCheckedContinuation { (continuation: CheckedContinuation<Result<Void, ARTErrorInfo>, _>) in
             detach { error in
                 if let error {
-                    continuation.resume(throwing: error)
+                    continuation.resume(returning: .failure(error))
                 } else {
-                    continuation.resume()
+                    continuation.resume(returning: .success(()))
                 }
             }
-        }
+        }.get()
     }
 }

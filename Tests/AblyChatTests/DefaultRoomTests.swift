@@ -3,6 +3,25 @@ import Ably
 import Testing
 
 struct DefaultRoomTests {
+    // MARK: - Features
+
+    // @spec CHA-M1
+    @Test
+    func messagesChannelName() async throws {
+        // Given: a DefaultRoom instance
+        let channelsList = [
+            MockRealtimeChannel(name: "basketball::$chat::$chatMessages", attachResult: .success),
+            MockRealtimeChannel(name: "basketball::$chat::$typingIndicators", attachResult: .success),
+            MockRealtimeChannel(name: "basketball::$chat::$reactions", attachResult: .success),
+        ]
+        let channels = MockChannels(channels: channelsList)
+        let realtime = MockRealtime.create(channels: channels)
+        let room = try await DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), roomID: "basketball", options: .init(), logger: TestLogger())
+
+        // Then
+        #expect(room.messages.channel.name == "basketball::$chat::$chatMessages")
+    }
+
     // MARK: - Attach
 
     @Test
@@ -134,7 +153,7 @@ struct DefaultRoomTests {
     // MARK: - Room status
 
     @Test
-    func current_startsAsInitialized() async throws {
+    func status_startsAsInitialized() async throws {
         let channelsList = [
             MockRealtimeChannel(name: "basketball::$chat::$chatMessages"),
             MockRealtimeChannel(name: "basketball::$chat::$typingIndicators"),

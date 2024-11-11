@@ -18,10 +18,6 @@ final class MockRealtime: NSObject, RealtimeClientProtocol, Sendable {
             fatalError("Not implemented")
         }
 
-        func get(_: String) -> Channel {
-            fatalError("Not implemented")
-        }
-
         func exists(_: String) -> Bool {
             fatalError("Not implemented")
         }

@@ -13,7 +13,7 @@ private struct MessageSubscriptionWrapper {
 @MainActor
 internal final class DefaultMessages: Messages, EmitsDiscontinuities {
     private let roomID: String
-    public let channel: RealtimeChannelProtocol
+    public nonisolated let channel: RealtimeChannelProtocol
     private let chatAPI: ChatAPI
     private let clientID: String
 
@@ -21,14 +21,11 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
     // UUID acts as a unique identifier for each listener/subscription. MessageSubscriptionWrapper houses the subscription and the timeserial of when it was attached or resumed.
     private var subscriptionPoints: [UUID: MessageSubscriptionWrapper] = [:]
 
-    internal nonisolated init(chatAPI: ChatAPI, roomID: String, clientID: String) async {
+    internal nonisolated init(channel: RealtimeChannelProtocol, chatAPI: ChatAPI, roomID: String, clientID: String) async {
+        self.channel = channel
         self.chatAPI = chatAPI
         self.roomID = roomID
         self.clientID = clientID
-
-        // (CHA-M1) Chat messages for a Room are sent on a corresponding realtime channel <roomId>::$chat::$chatMessages. For example, if your room id is my-room then the messages channel will be my-room::$chat::$chatMessages.
-        let messagesChannelName = "\(roomID)::$chat::$chatMessages"
-        channel = chatAPI.getChannel(messagesChannelName)
 
         // Implicitly handles channel events and therefore listners within this class. Alternative is to explicitly call something like `DefaultMessages.start()` which makes the SDK more cumbersome to interact with. This class is useless without kicking off this flow so I think leaving it here is suitable.
         // "Calls to instance method 'handleChannelEvents(roomId:)' from outside of its actor context are implicitly asynchronous" hence the `await` here.

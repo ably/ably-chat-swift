@@ -8,10 +8,6 @@ internal final class ChatAPI: Sendable {
         self.realtime = realtime
     }
 
-    internal func getChannel(_ name: String) -> any RealtimeChannelProtocol {
-        realtime.getChannel(name)
-    }
-
     // (CHA-M6) Messages should be queryable from a paginated REST API.
     internal func getMessages(roomId: String, params: QueryOptions) async throws -> any PaginatedResult<Message> {
         let endpoint = "\(apiVersion)/rooms/\(roomId)/messages"

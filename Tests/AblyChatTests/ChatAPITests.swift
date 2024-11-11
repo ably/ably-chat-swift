@@ -3,24 +3,6 @@ import Ably
 import Testing
 
 struct ChatAPITests {
-    // MARK: getChannel Tests
-
-    // @spec CHA-M1
-    @Test
-    func getChannel_returnsChannel() {
-        // Given
-        let realtime = MockRealtime.create(
-            channels: .init(channels: [.init(name: "basketball::$chat::$chatMessages")])
-        )
-        let chatAPI = ChatAPI(realtime: realtime)
-
-        // When
-        let channel = chatAPI.getChannel("basketball::$chat::$chatMessages")
-
-        // Then
-        #expect(channel.name == "basketball::$chat::$chatMessages")
-    }
-
     // MARK: sendMessage Tests
 
     // @spec CHA-M3c

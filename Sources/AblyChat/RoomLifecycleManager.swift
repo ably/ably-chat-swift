@@ -40,7 +40,9 @@ internal protocol RoomLifecycleContributor: Identifiable, Sendable {
     func emitDiscontinuity(_ error: ARTErrorInfo) async
 }
 
-internal actor RoomLifecycleManager<Contributor: RoomLifecycleContributor> {
+internal protocol RoomLifecycleManager: Sendable {}
+
+internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor>: RoomLifecycleManager {
     // MARK: - Constant properties
 
     private let logger: InternalLogger
@@ -583,7 +585,7 @@ internal actor RoomLifecycleManager<Contributor: RoomLifecycleContributor> {
 
     /// Executes a function that represents a room lifecycle operation.
     ///
-    /// - Note: Note that `RoomLifecycleManager` does not implement any sort of mutual exclusion mechanism that _enforces_ that one room lifecycle operation must wait for another (e.g. it is _not_ a queue); each operation needs to implement its own logic for whether it should proceed in the presence of other in-progress operations.
+    /// - Note: Note that `DefaultRoomLifecycleManager` does not implement any sort of mutual exclusion mechanism that _enforces_ that one room lifecycle operation must wait for another (e.g. it is _not_ a queue); each operation needs to implement its own logic for whether it should proceed in the presence of other in-progress operations.
     ///
     /// - Parameters:
     ///   - forcedOperationID: Forces the operation to have a given ID. In combination with the ``testsOnly_subscribeToOperationWaitEvents`` API, this allows tests to verify that one test-initiated operation is waiting for another test-initiated operation.

@@ -39,6 +39,9 @@ internal actor DefaultRoom: Room {
     // Exposed for testing.
     private nonisolated let realtime: RealtimeClient
 
+    /// The channels that contribute to this room.
+    private let channels: [RoomFeature: RealtimeChannelProtocol]
+
     #if DEBUG
         internal nonisolated var testsOnly_realtime: RealtimeClient {
             realtime
@@ -61,11 +64,21 @@ internal actor DefaultRoom: Room {
             throw ARTErrorInfo.create(withCode: 40000, message: "Ensure your Realtime instance is initialized with a clientId.")
         }
 
+        channels = Self.createChannels(roomID: roomID, realtime: realtime)
+
         messages = await DefaultMessages(
+            channel: channels[.messages]!,
             chatAPI: chatAPI,
             roomID: roomID,
             clientID: clientId
         )
+    }
+
+    private static func createChannels(roomID: String, realtime: RealtimeClient) -> [RoomFeature: RealtimeChannelProtocol] {
+        .init(uniqueKeysWithValues: [RoomFeature.messages, RoomFeature.typing, RoomFeature.reactions].map { feature in
+            let channel = realtime.getChannel(feature.channelNameForRoomID(roomID))
+            return (feature, channel)
+        })
     }
 
     public nonisolated var presence: any Presence {
@@ -84,19 +97,8 @@ internal actor DefaultRoom: Room {
         fatalError("Not yet implemented")
     }
 
-    /// Fetches the channels that contribute to this room.
-    private func channels() -> [any RealtimeChannelProtocol] {
-        [
-            "chatMessages",
-            "typingIndicators",
-            "reactions",
-        ].map { suffix in
-            realtime.channels.get("\(roomID)::$chat::$\(suffix)")
-        }
-    }
-
     public func attach() async throws {
-        for channel in channels() {
+        for channel in channels.map(\.value) {
             do {
                 try await channel.attachAsync()
             } catch {
@@ -108,7 +110,7 @@ internal actor DefaultRoom: Room {
     }
 
     public func detach() async throws {
-        for channel in channels() {
+        for channel in channels.map(\.value) {
             do {
                 try await channel.detachAsync()
             } catch {
