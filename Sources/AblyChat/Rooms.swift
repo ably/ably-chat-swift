@@ -6,7 +6,7 @@ public protocol Rooms: AnyObject, Sendable {
     var clientOptions: ClientOptions { get }
 }
 
-internal actor DefaultRooms: Rooms {
+internal actor DefaultRooms<LifecycleManagerFactory: RoomLifecycleManagerFactory>: Rooms where LifecycleManagerFactory.Contributor == DefaultRoomLifecycleContributor {
     private nonisolated let realtime: RealtimeClient
     private let chatAPI: ChatAPI
 
@@ -19,14 +19,16 @@ internal actor DefaultRooms: Rooms {
     internal nonisolated let clientOptions: ClientOptions
 
     private let logger: InternalLogger
+    private let lifecycleManagerFactory: LifecycleManagerFactory
 
     /// The set of rooms, keyed by room ID.
-    private var rooms: [String: DefaultRoom] = [:]
+    private var rooms: [String: DefaultRoom<LifecycleManagerFactory>] = [:]
 
-    internal init(realtime: RealtimeClient, clientOptions: ClientOptions, logger: InternalLogger) {
+    internal init(realtime: RealtimeClient, clientOptions: ClientOptions, logger: InternalLogger, lifecycleManagerFactory: LifecycleManagerFactory) {
         self.realtime = realtime
         self.clientOptions = clientOptions
         self.logger = logger
+        self.lifecycleManagerFactory = lifecycleManagerFactory
         chatAPI = ChatAPI(realtime: realtime)
     }
 
@@ -41,7 +43,7 @@ internal actor DefaultRooms: Rooms {
 
             return existingRoom
         } else {
-            let room = try await DefaultRoom(realtime: realtime, chatAPI: chatAPI, roomID: roomID, options: options, logger: logger)
+            let room = try await DefaultRoom(realtime: realtime, chatAPI: chatAPI, roomID: roomID, options: options, logger: logger, lifecycleManagerFactory: lifecycleManagerFactory)
             rooms[roomID] = room
             return room
         }

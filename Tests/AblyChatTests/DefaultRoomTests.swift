@@ -11,12 +11,10 @@ struct DefaultRoomTests {
         // Given: a DefaultRoom instance
         let channelsList = [
             MockRealtimeChannel(name: "basketball::$chat::$chatMessages", attachResult: .success),
-            MockRealtimeChannel(name: "basketball::$chat::$typingIndicators", attachResult: .success),
-            MockRealtimeChannel(name: "basketball::$chat::$reactions", attachResult: .success),
         ]
         let channels = MockChannels(channels: channelsList)
         let realtime = MockRealtime.create(channels: channels)
-        let room = try await DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), roomID: "basketball", options: .init(), logger: TestLogger())
+        let room = try await DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), roomID: "basketball", options: .init(), logger: TestLogger(), lifecycleManagerFactory: MockRoomLifecycleManagerFactory())
 
         // Then
         #expect(room.messages.channel.name == "basketball::$chat::$chatMessages")
@@ -24,174 +22,144 @@ struct DefaultRoomTests {
 
     // MARK: - Attach
 
-    @Test
-    func attach_attachesAllChannels_andSucceedsIfAllSucceed() async throws {
-        // Given: a DefaultRoom instance with ID "basketball", with a Realtime client for which `attach(_:)` completes successfully if called on the following channels:
-        //
-        //  - basketball::$chat::$chatMessages
-        //  - basketball::$chat::$typingIndicators
-        //  - basketball::$chat::$reactions
+    @Test(
+        arguments: [
+            .success(()),
+            .failure(ARTErrorInfo.createUnknownError() /* arbitrary */ ),
+        ] as[Result<Void, ARTErrorInfo>]
+    )
+    func attach(managerAttachResult: Result<Void, ARTErrorInfo>) async throws {
+        // Given: a DefaultRoom instance
         let channelsList = [
             MockRealtimeChannel(name: "basketball::$chat::$chatMessages", attachResult: .success),
-            MockRealtimeChannel(name: "basketball::$chat::$typingIndicators", attachResult: .success),
-            MockRealtimeChannel(name: "basketball::$chat::$reactions", attachResult: .success),
         ]
         let channels = MockChannels(channels: channelsList)
         let realtime = MockRealtime.create(channels: channels)
-        let room = try await DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), roomID: "basketball", options: .init(), logger: TestLogger())
 
-        let subscription = await room.onStatusChange(bufferingPolicy: .unbounded)
-        async let attachedStatusChange = subscription.first { $0.current == .attached }
+        let lifecycleManager = MockRoomLifecycleManager(attachResult: managerAttachResult)
+        let lifecycleManagerFactory = MockRoomLifecycleManagerFactory(manager: lifecycleManager)
 
-        // When: `attach` is called on the room
-        try await room.attach()
+        let room = try await DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), roomID: "basketball", options: .init(), logger: TestLogger(), lifecycleManagerFactory: lifecycleManagerFactory)
 
-        // Then: `attach(_:)` is called on each of the channels, the room `attach` call succeeds, and the room transitions to ATTACHED
-        for channel in channelsList {
-            #expect(channel.attachCallCounter.isNonZero)
+        // When: `attach()` is called on the room
+        let result = await Result { () async throws(ARTErrorInfo) in
+            do {
+                try await room.attach()
+            } catch {
+                // swiftlint:disable:next force_cast
+                throw error as! ARTErrorInfo
+            }
         }
 
-        #expect(await room.status == .attached)
-        #expect(try #require(await attachedStatusChange).current == .attached)
-    }
-
-    @Test
-    func attach_attachesAllChannels_andFailsIfOneFails() async throws {
-        // Given: a DefaultRoom instance, with a Realtime client for which `attach(_:)` completes successfully if called on the following channels:
-        //
-        //   - basketball::$chat::$chatMessages
-        //   - basketball::$chat::$typingIndicators
-        //
-        // and fails when called on channel basketball::$chat::$reactions
-        let channelAttachError = ARTErrorInfo.createUnknownError() // arbitrary
-        let channelsList = [
-            MockRealtimeChannel(name: "basketball::$chat::$chatMessages", attachResult: .success),
-            MockRealtimeChannel(name: "basketball::$chat::$typingIndicators", attachResult: .success),
-            MockRealtimeChannel(name: "basketball::$chat::$reactions", attachResult: .failure(channelAttachError)),
-        ]
-        let channels = MockChannels(channels: channelsList)
-        let realtime = MockRealtime.create(channels: channels)
-        let room = try await DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), roomID: "basketball", options: .init(), logger: TestLogger())
-
-        // When: `attach` is called on the room
-        let roomAttachError: Error?
-        do {
-            try await room.attach()
-            roomAttachError = nil
-        } catch {
-            roomAttachError = error
-        }
-
-        // Then: the room `attach` call fails with the same error as the channel `attach(_:)` call
-        #expect(try #require(roomAttachError as? ARTErrorInfo) === channelAttachError)
+        // Then: It calls through to the `performAttachOperation()` method on the room lifecycle manager
+        #expect(Result.areIdentical(result, managerAttachResult))
+        #expect(await lifecycleManager.attachCallCount == 1)
     }
 
     // MARK: - Detach
 
-    @Test
-    func detach_detachesAllChannels_andSucceedsIfAllSucceed() async throws {
-        // Given: a DefaultRoom instance with ID "basketball", with a Realtime client for which `detach(_:)` completes successfully if called on the following channels:
-        //
-        //  - basketball::$chat::$chatMessages
-        //  - basketball::$chat::$typingIndicators
-        //  - basketball::$chat::$reactions
+    @Test(
+        arguments: [
+            .success(()),
+            .failure(ARTErrorInfo.createUnknownError() /* arbitrary */ ),
+        ] as[Result<Void, ARTErrorInfo>]
+    )
+    func detach(managerDetachResult: Result<Void, ARTErrorInfo>) async throws {
+        // Given: a DefaultRoom instance
         let channelsList = [
             MockRealtimeChannel(name: "basketball::$chat::$chatMessages", detachResult: .success),
-            MockRealtimeChannel(name: "basketball::$chat::$typingIndicators", detachResult: .success),
-            MockRealtimeChannel(name: "basketball::$chat::$reactions", detachResult: .success),
         ]
         let channels = MockChannels(channels: channelsList)
         let realtime = MockRealtime.create(channels: channels)
-        let room = try await DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), roomID: "basketball", options: .init(), logger: TestLogger())
 
-        let subscription = await room.onStatusChange(bufferingPolicy: .unbounded)
-        async let detachedStatusChange = subscription.first { $0.current == .detached }
+        let lifecycleManager = MockRoomLifecycleManager(detachResult: managerDetachResult)
+        let lifecycleManagerFactory = MockRoomLifecycleManagerFactory(manager: lifecycleManager)
 
-        // When: `detach` is called on the room
-        try await room.detach()
+        let room = try await DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), roomID: "basketball", options: .init(), logger: TestLogger(), lifecycleManagerFactory: lifecycleManagerFactory)
 
-        // Then: `detach(_:)` is called on each of the channels, the room `detach` call succeeds, and the room transitions to DETACHED
-        for channel in channelsList {
-            #expect(channel.detachCallCounter.isNonZero)
+        // When: `detach()` is called on the room
+        let result = await Result { () async throws(ARTErrorInfo) in
+            do {
+                try await room.detach()
+            } catch {
+                // swiftlint:disable:next force_cast
+                throw error as! ARTErrorInfo
+            }
         }
 
-        #expect(await room.status == .detached)
-        #expect(try #require(await detachedStatusChange).current == .detached)
-    }
-
-    @Test
-    func detach_detachesAllChannels_andFailsIfOneFails() async throws {
-        // Given: a DefaultRoom instance, with a Realtime client for which `detach(_:)` completes successfully if called on the following channels:
-        //
-        //   - basketball::$chat::$chatMessages
-        //   - basketball::$chat::$typingIndicators
-        //
-        // and fails when called on channel basketball::$chat::$reactions
-        let channelDetachError = ARTErrorInfo.createUnknownError() // arbitrary
-        let channelsList = [
-            MockRealtimeChannel(name: "basketball::$chat::$chatMessages", detachResult: .success),
-            MockRealtimeChannel(name: "basketball::$chat::$typingIndicators", detachResult: .success),
-            MockRealtimeChannel(name: "basketball::$chat::$reactions", detachResult: .failure(channelDetachError)),
-        ]
-        let channels = MockChannels(channels: channelsList)
-        let realtime = MockRealtime.create(channels: channels)
-        let room = try await DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), roomID: "basketball", options: .init(), logger: TestLogger())
-
-        // When: `detach` is called on the room
-        let roomDetachError: Error?
-        do {
-            try await room.detach()
-            roomDetachError = nil
-        } catch {
-            roomDetachError = error
-        }
-
-        // Then: the room `detach` call fails with the same error as the channel `detach(_:)` call
-        #expect(try #require(roomDetachError as? ARTErrorInfo) === channelDetachError)
+        // Then: It calls through to the `performDetachOperation()` method on the room lifecycle manager
+        #expect(Result.areIdentical(result, managerDetachResult))
+        #expect(await lifecycleManager.detachCallCount == 1)
     }
 
     // MARK: - Room status
 
     @Test
-    func status_startsAsInitialized() async throws {
+    func status() async throws {
+        // Given: a DefaultRoom instance
         let channelsList = [
-            MockRealtimeChannel(name: "basketball::$chat::$chatMessages"),
-            MockRealtimeChannel(name: "basketball::$chat::$typingIndicators"),
-            MockRealtimeChannel(name: "basketball::$chat::$reactions"),
+            MockRealtimeChannel(name: "basketball::$chat::$chatMessages", detachResult: .success),
         ]
-        let realtime = MockRealtime.create(channels: .init(channels: channelsList))
-        let room = try await DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), roomID: "basketball", options: .init(), logger: TestLogger())
-        #expect(await room.status == .initialized)
+        let channels = MockChannels(channels: channelsList)
+        let realtime = MockRealtime.create(channels: channels)
+
+        let lifecycleManagerRoomStatus = RoomStatus.attached // arbitrary
+
+        let lifecycleManager = MockRoomLifecycleManager(roomStatus: lifecycleManagerRoomStatus)
+        let lifecycleManagerFactory = MockRoomLifecycleManagerFactory(manager: lifecycleManager)
+
+        let room = try await DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), roomID: "basketball", options: .init(), logger: TestLogger(), lifecycleManagerFactory: lifecycleManagerFactory)
+
+        // Then: The `status` property returns that of the room lifecycle manager
+        #expect(await room.status == lifecycleManagerRoomStatus)
     }
 
     @Test
-    func transition() async throws {
-        // Given: A DefaultRoom
+    func onStatusChange() async throws {
+        // Given: a DefaultRoom instance
         let channelsList = [
-            MockRealtimeChannel(name: "basketball::$chat::$chatMessages"),
-            MockRealtimeChannel(name: "basketball::$chat::$typingIndicators"),
-            MockRealtimeChannel(name: "basketball::$chat::$reactions"),
+            MockRealtimeChannel(name: "basketball::$chat::$chatMessages", detachResult: .success),
         ]
-        let realtime = MockRealtime.create(channels: .init(channels: channelsList))
-        let room = try await DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), roomID: "basketball", options: .init(), logger: TestLogger())
-        let originalStatus = await room.status
-        let newStatus = RoomStatus.attached // arbitrary
+        let channels = MockChannels(channels: channelsList)
+        let realtime = MockRealtime.create(channels: channels)
 
-        let subscription1 = await room.onStatusChange(bufferingPolicy: .unbounded)
-        let subscription2 = await room.onStatusChange(bufferingPolicy: .unbounded)
+        let lifecycleManager = MockRoomLifecycleManager()
+        let lifecycleManagerFactory = MockRoomLifecycleManagerFactory(manager: lifecycleManager)
 
-        async let statusChange1 = subscription1.first { $0.current == newStatus }
-        async let statusChange2 = subscription2.first { $0.current == newStatus }
+        let room = try await DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), roomID: "basketball", options: .init(), logger: TestLogger(), lifecycleManagerFactory: lifecycleManagerFactory)
 
-        // When: transition(to:) is called
-        await room.transition(to: newStatus)
+        // When: The room lifecycle manager emits a status change through `subscribeToState`
+        let managerStatusChange = RoomStatusChange(current: .detached, previous: .detaching) // arbitrary
+        let roomStatusSubscription = await room.onStatusChange(bufferingPolicy: .unbounded)
+        await lifecycleManager.emitStatusChange(managerStatusChange)
 
-        // Then: It emits a status change to all subscribers added via onChange(bufferingPolicy:), and updates its `status` property to the new state
-        for statusChange in try await [#require(statusChange1), #require(statusChange2)] {
-            #expect(statusChange.previous == originalStatus)
-            #expect(statusChange.current == newStatus)
+        // Then: The room emits this status change through `onStatusChange`
+        let roomStatusChange = try #require(await roomStatusSubscription.first { _ in true })
+        #expect(roomStatusChange == managerStatusChange)
+    }
+}
+
+private extension Result {
+    /// An async equivalent of the initializer of the same name in the standard library.
+    init(catching body: () async throws(Failure) -> Success) async {
+        do {
+            let success = try await body()
+            self = .success(success)
+        } catch {
+            self = .failure(error)
         }
+    }
+}
 
-        #expect(await room.status == .attached)
+private extension Result where Success == Void, Failure == ARTErrorInfo {
+    static func areIdentical(_ lhs: Result<Void, ARTErrorInfo>, _ rhs: Result<Void, ARTErrorInfo>) -> Bool {
+        switch (lhs, rhs) {
+        case (.success, .success):
+            true
+        case let (.failure(lhsError), .failure(rhsError)):
+            lhsError === rhsError
+        default:
+            fatalError("Mis-implemented")
+        }
     }
 }

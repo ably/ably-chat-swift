@@ -15,11 +15,7 @@ internal enum RoomFeature {
         case .messages:
             // (CHA-M1) Chat messages for a Room are sent on a corresponding realtime channel <roomId>::$chat::$chatMessages. For example, if your room id is my-room then the messages channel will be my-room::$chat::$chatMessages.
             "chatMessages"
-        case .typing:
-            "typingIndicators"
-        case .reactions:
-            "reactions"
-        case .presence, .occupancy:
+        case .typing, .reactions, .presence, .occupancy:
             // We’ll add these, with reference to the relevant spec points, as we implement these features
             fatalError("Don’t know channel name suffix for room feature \(self)")
         }
