@@ -11,7 +11,8 @@ struct DefaultMessagesTests {
         let realtime = MockRealtime.create()
         let chatAPI = ChatAPI(realtime: realtime)
         let channel = MockRealtimeChannel()
-        let defaultMessages = await DefaultMessages(channel: channel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId")
+        let featureChannel = MockFeatureChannel(channel: channel)
+        let defaultMessages = await DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId")
 
         // Then
         await #expect(throws: ARTErrorInfo.create(withCode: 40000, status: 400, message: "channel is attached, but channelSerial is not defined"), performing: {
@@ -28,7 +29,8 @@ struct DefaultMessagesTests {
         let realtime = MockRealtime.create { (MockHTTPPaginatedResponse.successGetMessagesWithNoItems, nil) }
         let chatAPI = ChatAPI(realtime: realtime)
         let channel = MockRealtimeChannel()
-        let defaultMessages = await DefaultMessages(channel: channel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId")
+        let featureChannel = MockFeatureChannel(channel: channel)
+        let defaultMessages = await DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId")
 
         // Then
         await #expect(throws: Never.self, performing: {
@@ -52,7 +54,8 @@ struct DefaultMessagesTests {
                 channelSerial: "001"
             )
         )
-        let defaultMessages = await DefaultMessages(channel: channel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId")
+        let featureChannel = MockFeatureChannel(channel: channel)
+        let defaultMessages = await DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId")
         let subscription = try await defaultMessages.subscribe(bufferingPolicy: .unbounded)
         let expectedPaginatedResult = PaginatedResultWrapper<Message>(
             paginatedResponse: MockHTTPPaginatedResponse.successGetMessagesWithNoItems,
@@ -64,5 +67,25 @@ struct DefaultMessagesTests {
 
         // Then
         #expect(previousMessages == expectedPaginatedResult)
+    }
+
+    // @spec CHA-M7
+    @Test
+    func subscribeToDiscontinuities() async throws {
+        // Given: A DefaultMessages instance
+        let realtime = MockRealtime.create()
+        let chatAPI = ChatAPI(realtime: realtime)
+        let channel = MockRealtimeChannel()
+        let featureChannel = MockFeatureChannel(channel: channel)
+        let messages = await DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId")
+
+        // When: The feature channel emits a discontinuity through `subscribeToDiscontinuities`
+        let featureChannelDiscontinuity = ARTErrorInfo.createUnknownError() // arbitrary
+        let messagesDiscontinuitySubscription = await messages.subscribeToDiscontinuities()
+        await featureChannel.emitDiscontinuity(featureChannelDiscontinuity)
+
+        // Then: The DefaultMessages instance emits this discontinuity through `subscribeToDiscontinuities`
+        let messagesDiscontinuity = try #require(await messagesDiscontinuitySubscription.first { _ in true })
+        #expect(messagesDiscontinuity === featureChannelDiscontinuity)
     }
 }

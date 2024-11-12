@@ -81,8 +81,9 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
             throw ARTErrorInfo.create(withCode: 40000, message: "Ensure your Realtime instance is initialized with a clientId.")
         }
 
-        channels = Self.createChannels(roomID: roomID, realtime: realtime)
-        let contributors = Self.createContributors(channels: channels)
+        let featureChannels = Self.createFeatureChannels(roomID: roomID, realtime: realtime)
+        channels = featureChannels.mapValues(\.channel)
+        let contributors = featureChannels.values.map(\.contributor)
 
         lifecycleManager = await lifecycleManagerFactory.createManager(
             contributors: contributors,
@@ -90,26 +91,20 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
         )
 
         messages = await DefaultMessages(
-            channel: channels[.messages]!,
+            featureChannel: featureChannels[.messages]!,
             chatAPI: chatAPI,
             roomID: roomID,
             clientID: clientId
         )
     }
 
-    private static func createChannels(roomID: String, realtime: RealtimeClient) -> [RoomFeature: RealtimeChannelProtocol] {
+    private static func createFeatureChannels(roomID: String, realtime: RealtimeClient) -> [RoomFeature: DefaultFeatureChannel] {
         .init(uniqueKeysWithValues: [RoomFeature.messages].map { feature in
             let channel = realtime.getChannel(feature.channelNameForRoomID(roomID))
+            let contributor = DefaultRoomLifecycleContributor(channel: .init(underlyingChannel: channel), feature: feature)
 
-            return (feature, channel)
+            return (feature, .init(channel: channel, contributor: contributor))
         })
-    }
-
-    private static func createContributors(channels: [RoomFeature: RealtimeChannelProtocol]) -> [DefaultRoomLifecycleContributor] {
-        channels.map { entry in
-            let (feature, channel) = entry
-            return .init(channel: .init(underlyingChannel: channel), feature: feature)
-        }
     }
 
     public nonisolated var presence: any Presence {
