@@ -1,8 +1,11 @@
 import Ably
 import AblyChat
 
-final class MockChannels: RealtimeChannelsProtocol, Sendable {
+final class MockChannels: RealtimeChannelsProtocol, @unchecked Sendable {
     private let channels: [MockRealtimeChannel]
+    private let mutex = NSLock()
+    /// Access must be synchronized via ``mutex``.
+    private(set) var _releaseArguments: [String] = []
 
     init(channels: [MockRealtimeChannel]) {
         self.channels = channels
@@ -24,7 +27,17 @@ final class MockChannels: RealtimeChannelsProtocol, Sendable {
         fatalError("Not implemented")
     }
 
-    func release(_: String) {
-        fatalError("Not implemented")
+    func release(_ name: String) {
+        mutex.lock()
+        defer { mutex.unlock() }
+        _releaseArguments.append(name)
+    }
+
+    var releaseArguments: [String] {
+        let result: [String]
+        mutex.lock()
+        result = _releaseArguments
+        mutex.unlock()
+        return result
     }
 }

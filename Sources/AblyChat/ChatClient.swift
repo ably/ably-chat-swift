@@ -20,8 +20,8 @@ public actor DefaultChatClient: ChatClient {
         self.realtime = realtime
         self.clientOptions = clientOptions ?? .init()
         logger = DefaultInternalLogger(logHandler: self.clientOptions.logHandler, logLevel: self.clientOptions.logLevel)
-        let roomLifecycleManagerFactory = DefaultRoomLifecycleManagerFactory()
-        rooms = DefaultRooms(realtime: realtime, clientOptions: self.clientOptions, logger: logger, lifecycleManagerFactory: roomLifecycleManagerFactory)
+        let roomFactory = DefaultRoomFactory()
+        rooms = DefaultRooms(realtime: realtime, clientOptions: self.clientOptions, logger: logger, roomFactory: roomFactory)
     }
 
     public nonisolated var connection: any Connection {

@@ -74,5 +74,16 @@ struct IntegrationTests {
         // (11) Check that we received a DETACHED status change as a result of detaching the room
         _ = try #require(await rxRoomStatusSubscription.first { $0.current == .detached })
         #expect(await rxRoom.status == .detached)
+
+        // (12) Release the room
+        try await rxClient.rooms.release(roomID: roomID)
+
+        // (13) Check that we received a RELEASED status change as a result of releasing the room
+        _ = try #require(await rxRoomStatusSubscription.first { $0.current == .released })
+        #expect(await rxRoom.status == .released)
+
+        // (14) Fetch the room we just released and check it’s a new object
+        let postReleaseRxRoom = try await rxClient.rooms.get(roomID: roomID, options: .init())
+        #expect(postReleaseRxRoom !== rxRoom)
     }
 }

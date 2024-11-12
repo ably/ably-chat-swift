@@ -22,7 +22,7 @@ struct DefaultChatClientTests {
         // Then: Its `rooms` property returns an instance of DefaultRooms with the same realtime client and client options
         let rooms = client.rooms
 
-        let defaultRooms = try #require(rooms as? DefaultRooms<DefaultRoomLifecycleManagerFactory>)
+        let defaultRooms = try #require(rooms as? DefaultRooms<DefaultRoomFactory>)
         #expect(defaultRooms.testsOnly_realtime === realtime)
         #expect(defaultRooms.clientOptions.isEqualForTestPurposes(options))
     }

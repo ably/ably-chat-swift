@@ -6,6 +6,7 @@ actor MockRoomLifecycleManager: RoomLifecycleManager {
     private(set) var attachCallCount = 0
     private let detachResult: Result<Void, ARTErrorInfo>?
     private(set) var detachCallCount = 0
+    private(set) var releaseCallCount = 0
     private let _roomStatus: RoomStatus?
     // TODO: clean up old subscriptions (https://github.com/ably-labs/ably-chat-swift/issues/36)
     private var subscriptions: [Subscription<RoomStatusChange>] = []
@@ -30,6 +31,10 @@ actor MockRoomLifecycleManager: RoomLifecycleManager {
             fatalError("In order to call performDetachOperation, detachResult must be passed to the initializer")
         }
         try detachResult.get()
+    }
+
+    func performReleaseOperation() async {
+        releaseCallCount += 1
     }
 
     var roomStatus: RoomStatus {

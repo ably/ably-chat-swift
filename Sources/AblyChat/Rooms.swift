@@ -6,7 +6,7 @@ public protocol Rooms: AnyObject, Sendable {
     var clientOptions: ClientOptions { get }
 }
 
-internal actor DefaultRooms<LifecycleManagerFactory: RoomLifecycleManagerFactory>: Rooms where LifecycleManagerFactory.Contributor == DefaultRoomLifecycleContributor {
+internal actor DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
     private nonisolated let realtime: RealtimeClient
     private let chatAPI: ChatAPI
 
@@ -19,16 +19,16 @@ internal actor DefaultRooms<LifecycleManagerFactory: RoomLifecycleManagerFactory
     internal nonisolated let clientOptions: ClientOptions
 
     private let logger: InternalLogger
-    private let lifecycleManagerFactory: LifecycleManagerFactory
+    private let roomFactory: RoomFactory
 
     /// The set of rooms, keyed by room ID.
-    private var rooms: [String: DefaultRoom<LifecycleManagerFactory>] = [:]
+    private var rooms: [String: RoomFactory.Room] = [:]
 
-    internal init(realtime: RealtimeClient, clientOptions: ClientOptions, logger: InternalLogger, lifecycleManagerFactory: LifecycleManagerFactory) {
+    internal init(realtime: RealtimeClient, clientOptions: ClientOptions, logger: InternalLogger, roomFactory: RoomFactory) {
         self.realtime = realtime
         self.clientOptions = clientOptions
         self.logger = logger
-        self.lifecycleManagerFactory = lifecycleManagerFactory
+        self.roomFactory = roomFactory
         chatAPI = ChatAPI(realtime: realtime)
     }
 
@@ -43,13 +43,28 @@ internal actor DefaultRooms<LifecycleManagerFactory: RoomLifecycleManagerFactory
 
             return existingRoom
         } else {
-            let room = try await DefaultRoom(realtime: realtime, chatAPI: chatAPI, roomID: roomID, options: options, logger: logger, lifecycleManagerFactory: lifecycleManagerFactory)
+            let room = try await roomFactory.createRoom(realtime: realtime, chatAPI: chatAPI, roomID: roomID, options: options, logger: logger)
             rooms[roomID] = room
             return room
         }
     }
 
-    internal func release(roomID _: String) async throws {
-        fatalError("Not yet implemented")
+    #if DEBUG
+        internal func testsOnly_hasExistingRoomWithID(_ roomID: String) -> Bool {
+            rooms[roomID] != nil
+        }
+    #endif
+
+    internal func release(roomID: String) async throws {
+        guard let room = rooms[roomID] else {
+            // TODO: what to do here? (https://github.com/ably/specification/pull/200/files#r1837154563) — Andy replied that it’s a no-op but that this is going to be specified in an upcoming PR when we make room-getting async
+            return
+        }
+
+        // CHA-RC1d
+        rooms.removeValue(forKey: roomID)
+
+        // CHA-RL1e
+        await room.release()
     }
 }
