@@ -1,5 +1,5 @@
 {
-  "originHash" : "1ad2d7338668d15feccbf564582941161acd47349bfca8f34374e11c69677ae8",
+  "originHash" : "1e440d9500a61178defdb136b0459b00cd00a3c57aa142d698fd712060f7b673",
   "pins" : [
     {
       "identity" : "ably-cocoa",
@@ -7,7 +7,7 @@
       "location" : "https://github.com/ably/ably-cocoa",
       "state" : {
         "branch" : "main",
-        "revision" : "4856ba6a423788902a6ef680793e7f404ceb4a51"
+        "revision" : "f7bff4b1c941b4c7b952b9224a33674e2302e19f"
       }
     },
     {
@@ -29,21 +29,12 @@
       }
     },
     {
-      "identity" : "swift-argument-parser",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/apple/swift-argument-parser",
-      "state" : {
-        "revision" : "41982a3656a71c768319979febd796c6fd111d5c",
-        "version" : "1.5.0"
-      }
-    },
-    {
       "identity" : "swift-async-algorithms",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-async-algorithms",
       "state" : {
-        "revision" : "6ae9a051f76b81cc668305ceed5b0e0a7fd93d20",
-        "version" : "1.0.1"
+        "revision" : "5c8bd186f48c16af0775972700626f0b74588278",
+        "version" : "1.0.2"
       }
     },
     {
@@ -51,17 +42,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-collections.git",
       "state" : {
-        "revision" : "3d2dc41a01f9e49d84f0a3925fb858bed64f702d",
-        "version" : "1.1.2"
-      }
-    },
-    {
-      "identity" : "table",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/JanGorman/Table.git",
-      "state" : {
-        "revision" : "7b8521c3b1078ba0b347964aec7c503cd6f1ff40",
-        "version" : "1.1.1"
+        "revision" : "671108c96644956dddcd89dd59c203dcdb36cec7",
+        "version" : "1.1.4"
       }
     }
   ],
