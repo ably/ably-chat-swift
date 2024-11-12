@@ -498,8 +498,7 @@ struct SpecCoverage: AsyncParsableCommand {
     }
 
     mutating func run() async throws {
-        // TODO: https://github.com/ably-labs/ably-chat-swift/issues/97 - switch to use main at some point
-        let branchName = "chat-lifecycle"
+        let branchName = "main"
 
         let commitSHA = try await fetchLatestSpecCommitSHAForBranchName(branchName)
         print("Using latest spec commit (\(commitSHA.prefix(7))) from branch \(branchName).\n")
