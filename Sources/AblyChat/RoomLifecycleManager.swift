@@ -533,7 +533,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
 
     /// Whether the room lifecycle manager currently has a room lifecycle operation in progress.
     ///
-    /// - Warning: I haven’t yet figured out the exact meaning of “has an operation in progress” — at what point is an operation considered to be no longer in progress? Is it the point at which the operation has updated the manager’s status to one that no longer indicates an in-progress operation (this is the meaning currently used by `hasOperationInProgress`)? Or is it the point at which the `bodyOf*Operation` method for that operation exits (i.e. the point at which ``performAnOperation(_:)`` considers the operation to have completed)? Does it matter? I’ve chosen to not think about this very much right now, but might need to revisit. See TODO against `emitPendingDiscontinuityEvents` in `bodyOfDetachOperation` for an example of something where these two notions of “has an operation in progress” are not equivalent.
+    /// - Warning: I haven’t yet figured out the exact meaning of “has an operation in progress” — at what point is an operation considered to be no longer in progress? Is it the point at which the operation has updated the manager’s status to one that no longer indicates an in-progress operation (this is the meaning currently used by `hasOperationInProgress`)? Or is it the point at which the `bodyOf*Operation` method for that operation exits (i.e. the point at which ``performAnOperation(_:)`` considers the operation to have completed)? Does it matter? I’ve chosen to not think about this very much right now, but might need to revisit. See TODO against `emitPendingDiscontinuityEvents` in `performAttachmentCycle` for an example of something where these two notions of “has an operation in progress” are not equivalent.
     private var hasOperationInProgress: Bool {
         status.operationID != nil
     }
@@ -716,6 +716,11 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
         // CHA-RL1e
         changeStatus(to: .attachingDueToAttachOperation(attachOperationID: operationID))
 
+        try await performAttachmentCycle()
+    }
+
+    /// Performs the “CHA-RL1e attachment cycle”, to use the terminology of CHA-RL5f.
+    private func performAttachmentCycle() async throws(ARTErrorInfo) {
         // CHA-RL1f
         for contributor in contributors {
             do {
@@ -835,6 +840,11 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
         clearTransientDisconnectTimeouts()
         changeStatus(to: .detaching(detachOperationID: operationID))
 
+        try await performDetachmentCycle()
+    }
+
+    /// Performs the “CHA-RL2f detachment cycle”, to use the terminology of CHA-RL5a.
+    private func performDetachmentCycle() async throws(ARTErrorInfo) {
         // CHA-RL2f
         var firstDetachError: ARTErrorInfo?
         for contributor in contributors {
