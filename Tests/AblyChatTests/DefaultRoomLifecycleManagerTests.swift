@@ -73,14 +73,16 @@ struct DefaultRoomLifecycleManagerTests {
         initialState: ARTRealtimeChannelState = .initialized,
         feature: RoomFeature = .messages, // Arbitrarily chosen, its value only matters in test cases where we check which error is thrown
         attachBehavior: MockRoomLifecycleContributorChannel.AttachOrDetachBehavior? = nil,
-        detachBehavior: MockRoomLifecycleContributorChannel.AttachOrDetachBehavior? = nil
+        detachBehavior: MockRoomLifecycleContributorChannel.AttachOrDetachBehavior? = nil,
+        subscribeToStateBehavior: MockRoomLifecycleContributorChannel.SubscribeToStateBehavior? = nil
     ) -> MockRoomLifecycleContributor {
         .init(
             feature: feature,
             channel: .init(
                 initialState: initialState,
                 attachBehavior: attachBehavior,
-                detachBehavior: detachBehavior
+                detachBehavior: detachBehavior,
+                subscribeToStateBehavior: subscribeToStateBehavior
             )
         )
     }
