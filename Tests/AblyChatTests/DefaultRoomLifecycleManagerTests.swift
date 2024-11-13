@@ -667,11 +667,11 @@ struct DefaultRoomLifecycleManagerTests {
         // When: `performDetachOperation()` is called on the manager
         try await manager.performDetachOperation()
 
-        // Then: It attempts to detach the channel 3 times, waiting 1s between each attempt, the room transitions from DETACHING to DETACHED with no status updates in between, and the call to `performDetachOperation()` succeeds
+        // Then: It attempts to detach the channel 3 times, waiting 250ms between each attempt, the room transitions from DETACHING to DETACHED with no status updates in between, and the call to `performDetachOperation()` succeeds
         #expect(await contributor.channel.detachCallCount == 3)
 
         // We use "did it call clock.sleep(…)?" as a good-enough proxy for the question "did it wait for the right amount of time at the right moment?"
-        #expect(await clock.sleepCallArguments == Array(repeating: 1, count: 2))
+        #expect(await clock.sleepCallArguments == Array(repeating: 0.25, count: 2))
 
         #expect(await asyncLetStatusChanges.map(\.current) == [.detaching, .detached])
     }
@@ -845,11 +845,11 @@ struct DefaultRoomLifecycleManagerTests {
         // Then: When `performReleaseOperation()` is called on the manager
         await manager.performReleaseOperation()
 
-        // It: calls `detach()` on the channel 3 times, with a 1s pause between each attempt, and the call to `performReleaseOperation` completes
+        // It: calls `detach()` on the channel 3 times, with a 0.25s pause between each attempt, and the call to `performReleaseOperation` completes
         #expect(await contributor.channel.detachCallCount == 3)
 
         // We use "did it call clock.sleep(…)?" as a good-enough proxy for the question "did it wait for the right amount of time at the right moment?"
-        #expect(await clock.sleepCallArguments == Array(repeating: 1, count: 2))
+        #expect(await clock.sleepCallArguments == Array(repeating: 0.25, count: 2))
     }
 
     // @specOneOf(2/2) CHA-RL3e - Tests that this spec point suppresses CHA-RL3f retries
@@ -870,13 +870,13 @@ struct DefaultRoomLifecycleManagerTests {
 
         // Then:
         // - it calls `detach()` precisely once on the contributor (that is, it does not retry)
-        // - it waits 1s (TODO: confirm my interpretation of CHA-RL3f, which is that the wait still happens, but is not followed by a retry; have asked in https://github.com/ably/specification/pull/200/files#r1765372854)
+        // - it waits 0.25s (TODO: confirm my interpretation of CHA-RL3f, which is that the wait still happens, but is not followed by a retry; have asked in https://github.com/ably/specification/pull/200/files#r1765372854)
         // - the room transitions to RELEASED
         // - the call to `performReleaseOperation()` completes
         #expect(await contributor.channel.detachCallCount == 1)
 
         // We use "did it call clock.sleep(…)?" as a good-enough proxy for the question "did it wait for the right amount of time at the right moment?"
-        #expect(await clock.sleepCallArguments == [1])
+        #expect(await clock.sleepCallArguments == [0.25])
 
         _ = await releasedStatusChange
 

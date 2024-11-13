@@ -883,9 +883,9 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
                     // CHA-RL2h3: Retry until detach succeeds, with a pause before each attempt
                     while true {
                         do {
-                            logger.log(message: "Will attempt to detach non-failed contributor \(contributor) in 1s.", level: .info)
-                            // TODO: what's the correct wait time? (https://github.com/ably/specification/pull/200#discussion_r1763799223)
-                            try await clock.sleep(timeInterval: 1)
+                            let waitDuration = 0.25
+                            logger.log(message: "Will attempt to detach non-failed contributor \(contributor) in \(waitDuration)s.", level: .info)
+                            try await clock.sleep(timeInterval: waitDuration)
                             logger.log(message: "Detaching non-failed contributor \(contributor)", level: .info)
                             try await contributor.channel.detach()
                             break
@@ -968,11 +968,11 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
                     break
                 } catch {
                     // CHA-RL3f: Retry until detach succeeds, with a pause before each attempt
-                    logger.log(message: "Failed to detach contributor \(contributor), error \(error). Will retry in 1s.", level: .info)
+                    let waitDuration = 0.25
+                    logger.log(message: "Failed to detach contributor \(contributor), error \(error). Will retry in \(waitDuration)s.", level: .info)
                     // TODO: Make this not trap in the case where the Task is cancelled (as part of the broader https://github.com/ably-labs/ably-chat-swift/issues/29 for handling task cancellation)
-                    // TODO: what's the correct wait time? (https://github.com/ably/specification/pull/200#discussion_r1763822207)
                     // swiftlint:disable:next force_try
-                    try! await clock.sleep(timeInterval: 1)
+                    try! await clock.sleep(timeInterval: waitDuration)
                     // Loop repeats
                 }
             }
