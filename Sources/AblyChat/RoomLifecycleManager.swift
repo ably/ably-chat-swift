@@ -186,7 +186,8 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
         case attached
         case detaching(detachOperationID: UUID)
         case detached
-        case suspended(error: ARTErrorInfo)
+        case suspendedAwaitingStartOfRetryOperation(error: ARTErrorInfo)
+        case suspended(retryOperationID: UUID, error: ARTErrorInfo)
         case failed(error: ARTErrorInfo)
         case releasing(releaseOperationID: UUID)
         case released
@@ -205,7 +206,9 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
                 .detaching
             case .detached:
                 .detached
-            case let .suspended(error):
+            case let .suspendedAwaitingStartOfRetryOperation(error):
+                .suspended(error: error)
+            case let .suspended(_, error):
                 .suspended(error: error)
             case let .failed(error):
                 .failed(error: error)
@@ -224,13 +227,15 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
                 detachOperationID
             case let .releasing(releaseOperationID):
                 releaseOperationID
-            case .suspended,
-                 .initialized,
+            case let .suspended(retryOperationID, _):
+                retryOperationID
+            case .initialized,
                  .attached,
                  .detached,
                  .failed,
                  .released,
-                 .attachingDueToContributorStateChange:
+                 .attachingDueToContributorStateChange,
+                 .suspendedAwaitingStartOfRetryOperation:
                 nil
             }
         }
@@ -463,7 +468,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
 
                 clearTransientDisconnectTimeouts()
 
-                changeStatus(to: .suspended(error: reason))
+                changeStatus(to: .suspendedAwaitingStartOfRetryOperation(error: reason))
             }
         case .attaching:
             if !hasOperationInProgress, !contributorAnnotations[contributor].hasTransientDisconnectTimeout {
@@ -704,7 +709,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
         case .released:
             // CHA-RL1c
             throw ARTErrorInfo(chatError: .roomIsReleased)
-        case .initialized, .suspended, .attachingDueToAttachOperation, .attachingDueToContributorStateChange, .detached, .detaching, .failed:
+        case .initialized, .suspendedAwaitingStartOfRetryOperation, .suspended, .attachingDueToAttachOperation, .attachingDueToContributorStateChange, .detached, .detaching, .failed:
             break
         }
 
@@ -735,7 +740,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
                 case .suspended:
                     // CHA-RL1h2
                     let error = ARTErrorInfo(chatError: .attachmentFailed(feature: contributor.feature, underlyingError: contributorAttachError))
-                    changeStatus(to: .suspended(error: error))
+                    changeStatus(to: .suspendedAwaitingStartOfRetryOperation(error: error))
 
                     // CHA-RL1h3
                     throw error
@@ -832,7 +837,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
         case .failed:
             // CHA-RL2d
             throw ARTErrorInfo(chatError: .roomInFailedState)
-        case .initialized, .suspended, .attachingDueToAttachOperation, .attachingDueToContributorStateChange, .attached, .detaching:
+        case .initialized, .suspendedAwaitingStartOfRetryOperation, .suspended, .attachingDueToAttachOperation, .attachingDueToContributorStateChange, .attached, .detaching:
             break
         }
 
@@ -938,7 +943,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
             // See note on waitForCompletionOfOperationWithID for the current need for this force try
             // swiftlint:disable:next force_try
             return try! await waitForCompletionOfOperationWithID(releaseOperationID, requester: .anotherOperation(operationID: operationID))
-        case .initialized, .attached, .attachingDueToAttachOperation, .attachingDueToContributorStateChange, .detaching, .suspended, .failed:
+        case .initialized, .attached, .attachingDueToAttachOperation, .attachingDueToContributorStateChange, .detaching, .suspendedAwaitingStartOfRetryOperation, .suspended, .failed:
             break
         }
 
@@ -998,6 +1003,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
              .initialized,
              .released,
              .releasing,
+             .suspendedAwaitingStartOfRetryOperation,
              .suspended:
             // CHA-PR3g, CHA-PR11g, CHA-PR6f, CHA-T2f
             throw .init(chatError: .presenceOperationDisallowedForCurrentRoomStatus(feature: requester))
