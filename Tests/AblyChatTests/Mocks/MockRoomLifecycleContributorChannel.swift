@@ -4,6 +4,7 @@
 final actor MockRoomLifecycleContributorChannel: RoomLifecycleContributorChannel {
     private let attachBehavior: AttachOrDetachBehavior?
     private let detachBehavior: AttachOrDetachBehavior?
+    private let subscribeToStateBehavior: SubscribeToStateBehavior
 
     var state: ARTRealtimeChannelState
     var errorReason: ARTErrorInfo?
@@ -16,11 +17,13 @@ final actor MockRoomLifecycleContributorChannel: RoomLifecycleContributorChannel
     init(
         initialState: ARTRealtimeChannelState,
         attachBehavior: AttachOrDetachBehavior?,
-        detachBehavior: AttachOrDetachBehavior?
+        detachBehavior: AttachOrDetachBehavior?,
+        subscribeToStateBehavior: SubscribeToStateBehavior?
     ) {
         state = initialState
         self.attachBehavior = attachBehavior
         self.detachBehavior = detachBehavior
+        self.subscribeToStateBehavior = subscribeToStateBehavior ?? .justAddSubscription
     }
 
     enum AttachOrDetachResult {
@@ -50,6 +53,11 @@ final actor MockRoomLifecycleContributorChannel: RoomLifecycleContributorChannel
         static func failure(_ error: ARTErrorInfo) -> Self {
             .complete(.failure(error))
         }
+    }
+
+    enum SubscribeToStateBehavior {
+        case justAddSubscription
+        case addSubscriptionAndEmitStateChange(ARTChannelStateChange)
     }
 
     func attach() async throws(ARTErrorInfo) {
@@ -100,6 +108,14 @@ final actor MockRoomLifecycleContributorChannel: RoomLifecycleContributorChannel
     func subscribeToState() -> Subscription<ARTChannelStateChange> {
         let subscription = Subscription<ARTChannelStateChange>(bufferingPolicy: .unbounded)
         subscriptions.append(subscription)
+
+        switch subscribeToStateBehavior {
+        case .justAddSubscription:
+            break
+        case let .addSubscriptionAndEmitStateChange(stateChange):
+            emitStateChange(stateChange)
+        }
+
         return subscription
     }
 
