@@ -45,7 +45,7 @@ internal protocol RoomLifecycleManager: Sendable {
     func performDetachOperation() async throws
     func performReleaseOperation() async
     var roomStatus: RoomStatus { get async }
-    func onChange(bufferingPolicy: BufferingPolicy) async -> Subscription<RoomStatusChange>
+    func onRoomStatusChange(bufferingPolicy: BufferingPolicy) async -> Subscription<RoomStatusChange>
     func waitToBeAbleToPerformPresenceOperations(requestedByFeature requester: RoomFeature) async throws(ARTErrorInfo)
 }
 
@@ -88,7 +88,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
     private var contributorAnnotations: ContributorAnnotations
     private var listenForStateChangesTask: Task<Void, Never>!
     // TODO: clean up old subscriptions (https://github.com/ably-labs/ably-chat-swift/issues/36)
-    private var subscriptions: [Subscription<RoomStatusChange>] = []
+    private var roomStatusChangeSubscriptions: [Subscription<RoomStatusChange>] = []
     private var operationResultContinuations = OperationResultContinuations()
 
     // MARK: - Initializers and `deinit`
@@ -318,9 +318,9 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
         status.toRoomStatus
     }
 
-    internal func onChange(bufferingPolicy: BufferingPolicy) -> Subscription<RoomStatusChange> {
+    internal func onRoomStatusChange(bufferingPolicy: BufferingPolicy) -> Subscription<RoomStatusChange> {
         let subscription: Subscription<RoomStatusChange> = .init(bufferingPolicy: bufferingPolicy)
-        subscriptions.append(subscription)
+        roomStatusChangeSubscriptions.append(subscription)
         return subscription
     }
 
@@ -333,12 +333,12 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
         // Avoid a double-emit of room status when changing from `.suspendedAwaitingStartOfRetryOperation` to `.suspended`.
         if new.toRoomStatus != previous.toRoomStatus {
             let statusChange = RoomStatusChange(current: status.toRoomStatus, previous: previous.toRoomStatus)
-            emitStatusChange(statusChange)
+            emitRoomStatusChange(statusChange)
         }
     }
 
-    private func emitStatusChange(_ change: RoomStatusChange) {
-        for subscription in subscriptions {
+    private func emitRoomStatusChange(_ change: RoomStatusChange) {
+        for subscription in roomStatusChangeSubscriptions {
             subscription.emit(change)
         }
     }

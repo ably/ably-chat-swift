@@ -218,7 +218,7 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
     // MARK: - Room status
 
     internal func onStatusChange(bufferingPolicy: BufferingPolicy) async -> Subscription<RoomStatusChange> {
-        await lifecycleManager.onChange(bufferingPolicy: bufferingPolicy)
+        await lifecycleManager.onRoomStatusChange(bufferingPolicy: bufferingPolicy)
     }
 
     internal var status: RoomStatus {
