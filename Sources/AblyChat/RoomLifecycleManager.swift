@@ -188,7 +188,8 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
         case detaching(detachOperationID: UUID)
         case detached
         case detachedDueToRetryOperation(retryOperationID: UUID)
-        case suspendedAwaitingStartOfRetryOperation(error: ARTErrorInfo)
+        // `retryOperationTask` is exposed so that tests can wait for the triggered RETRY operation to complete.
+        case suspendedAwaitingStartOfRetryOperation(retryOperationTask: Task<Void, Never>, error: ARTErrorInfo)
         case suspended(retryOperationID: UUID, error: ARTErrorInfo)
         case failed(error: ARTErrorInfo)
         case releasing(releaseOperationID: UUID)
@@ -210,7 +211,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
                 .detaching
             case .detached, .detachedDueToRetryOperation:
                 .detached
-            case let .suspendedAwaitingStartOfRetryOperation(error):
+            case let .suspendedAwaitingStartOfRetryOperation(_, error):
                 .suspended(error: error)
             case let .suspended(_, error):
                 .suspended(error: error)
@@ -509,7 +510,14 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
 
                 clearTransientDisconnectTimeouts()
 
-                changeStatus(to: .suspendedAwaitingStartOfRetryOperation(error: reason))
+                // My understanding is that, since this task is being created inside an actor’s synchronous code, the two .suspended* statuses will always come in the right order; i.e. first .suspendedAwaitingStartOfRetryOperation and then .suspended.
+                let retryOperationTask = scheduleAnOperation(
+                    kind: .retry(
+                        triggeringContributor: contributor,
+                        errorForSuspendedStatus: reason
+                    )
+                )
+                changeStatus(to: .suspendedAwaitingStartOfRetryOperation(retryOperationTask: retryOperationTask, error: reason))
             }
         case .attaching:
             if !hasOperationInProgress, !contributorAnnotations[contributor].hasTransientDisconnectTimeout {
@@ -719,6 +727,27 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
         try result.get()
     }
 
+    /// The kinds of operation that you can schedule using ``scheduleAnOperation(kind:)``.
+    private enum OperationKind {
+        /// The RETRY operation.
+        case retry(triggeringContributor: Contributor, errorForSuspendedStatus: ARTErrorInfo)
+    }
+
+    /// Requests that a room lifecycle operation be performed asynchronously.
+    private func scheduleAnOperation(kind: OperationKind) -> Task<Void, Never> {
+        logger.log(message: "Scheduling operation \(kind)", level: .debug)
+        return Task {
+            logger.log(message: "Performing scheduled operation \(kind)", level: .debug)
+            switch kind {
+            case let .retry(triggeringContributor, errorForSuspendedStatus):
+                await performRetryOperation(
+                    triggeredByContributor: triggeringContributor,
+                    errorForSuspendedStatus: errorForSuspendedStatus
+                )
+            }
+        }
+    }
+
     // MARK: - ATTACH operation
 
     internal func performAttachOperation() async throws {
@@ -781,9 +810,16 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
                 case .suspended:
                     // CHA-RL1h2
                     let error = ARTErrorInfo(chatError: .attachmentFailed(feature: contributor.feature, underlyingError: contributorAttachError))
-                    changeStatus(to: .suspendedAwaitingStartOfRetryOperation(error: error))
 
                     // CHA-RL1h3
+                    // My understanding is that, since this task is being created inside an actor’s synchronous code, the two .suspended* statuses will always come in the right order; i.e. first .suspendedAwaitingStartOfRetryOperation and then .suspended.
+                    let retryOperationTask = scheduleAnOperation(
+                        kind: .retry(
+                            triggeringContributor: contributor,
+                            errorForSuspendedStatus: error
+                        )
+                    )
+                    changeStatus(to: .suspendedAwaitingStartOfRetryOperation(retryOperationTask: retryOperationTask, error: error))
                     throw error
                 case .failed:
                     // CHA-RL1h4
