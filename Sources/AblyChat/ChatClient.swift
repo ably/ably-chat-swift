@@ -29,7 +29,7 @@ public actor DefaultChatClient: ChatClient {
     }
 
     public nonisolated var clientID: String {
-        fatalError("Not yet implemented")
+        realtime.clientId ?? "<Noname>"
     }
 }
 

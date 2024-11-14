@@ -188,6 +188,10 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
             }
         }
 
+        if channel.state == .initialized {
+            channel.attach()
+        }
+
         // (CHA-M5b) If a subscription is added when the underlying realtime channel is in any other state, then its subscription point becomes the attachSerial at the the point of channel attachment.
         return try await timeserialOnChannelAttach()
     }
