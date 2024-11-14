@@ -22,6 +22,8 @@ struct IntegrationTests {
 
     @Test
     func basicIntegrationTest() async throws {
+        // MARK: - Setup + Attach
+
         let apiKey = try await Sandbox.createAPIKey()
 
         // (1) Create a couple of chat clients — one for sending and one for receiving
@@ -30,8 +32,8 @@ struct IntegrationTests {
 
         // (2) Fetch a room
         let roomID = "basketball"
-        let txRoom = try await txClient.rooms.get(roomID: roomID, options: .init())
-        let rxRoom = try await rxClient.rooms.get(roomID: roomID, options: .init())
+        let txRoom = try await txClient.rooms.get(roomID: roomID, options: .init(reactions: .init()))
+        let rxRoom = try await rxClient.rooms.get(roomID: roomID, options: .init(reactions: .init()))
 
         // (3) Subscribe to room status
         let rxRoomStatusSubscription = await rxRoom.onStatusChange(bufferingPolicy: .unbounded)
@@ -42,6 +44,8 @@ struct IntegrationTests {
         // (5) Check that we received an ATTACHED status change as a result of attaching the room
         _ = try #require(await rxRoomStatusSubscription.first { $0.current == .attached })
         #expect(await rxRoom.status == .attached)
+
+        // MARK: - Send and receive messages
 
         // (6) Send a message before subscribing to messages, so that later on we can check history works.
 
@@ -68,21 +72,35 @@ struct IntegrationTests {
         try #require(rxMessagesBeforeSubscribing.items.count == 1)
         #expect(rxMessagesBeforeSubscribing.items[0] == txMessageBeforeRxSubscribe)
 
-        // (10) Detach the room
+        // MARK: - Reactions
+
+        // (10) Subscribe to reactions
+        let rxReactionSubscription = await rxRoom.reactions.subscribe(bufferingPolicy: .unbounded)
+
+        // (11) Now that we’re subscribed to reactions, send a reaction on the other client and check that we receive it on the subscription
+        try await txRoom.reactions.send(params: .init(type: "heart"))
+        let rxReactionFromSubscription = try #require(await rxReactionSubscription.first { _ in true })
+        #expect(rxReactionFromSubscription.type == "heart")
+
+        // MARK: - Detach
+
+        // (12) Detach the room
         try await rxRoom.detach()
 
-        // (11) Check that we received a DETACHED status change as a result of detaching the room
+        // (13) Check that we received a DETACHED status change as a result of detaching the room
         _ = try #require(await rxRoomStatusSubscription.first { $0.current == .detached })
         #expect(await rxRoom.status == .detached)
 
-        // (12) Release the room
+        // MARK: - Release
+
+        // (14) Release the room
         try await rxClient.rooms.release(roomID: roomID)
 
-        // (13) Check that we received a RELEASED status change as a result of releasing the room
+        // (15) Check that we received a RELEASED status change as a result of releasing the room
         _ = try #require(await rxRoomStatusSubscription.first { $0.current == .released })
         #expect(await rxRoom.status == .released)
 
-        // (14) Fetch the room we just released and check it’s a new object
+        // (16) Fetch the room we just released and check it’s a new object
         let postReleaseRxRoom = try await rxClient.rooms.get(roomID: roomID, options: .init())
         #expect(postReleaseRxRoom !== rxRoom)
     }

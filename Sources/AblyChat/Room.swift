@@ -61,6 +61,7 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
     private let chatAPI: ChatAPI
 
     public nonisolated let messages: any Messages
+    private let _reactions: (any RoomReactions)?
 
     // Exposed for testing.
     private nonisolated let realtime: RealtimeClient
@@ -90,16 +91,25 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
             logger: logger
         )
 
+        // TODO: Address force unwrapping of `channels` within feature initialisation below: https://github.com/ably-labs/ably-chat-swift/issues/105
+
         messages = await DefaultMessages(
             featureChannel: featureChannels[.messages]!,
             chatAPI: chatAPI,
             roomID: roomID,
             clientID: clientId
         )
+
+        _reactions = options.reactions != nil ? await DefaultRoomReactions(
+            featureChannel: featureChannels[.reactions]!,
+            clientID: clientId,
+            roomID: roomID,
+            logger: logger
+        ) : nil
     }
 
     private static func createFeatureChannels(roomID: String, realtime: RealtimeClient) -> [RoomFeature: DefaultFeatureChannel] {
-        .init(uniqueKeysWithValues: [RoomFeature.messages].map { feature in
+        .init(uniqueKeysWithValues: [RoomFeature.messages, RoomFeature.reactions].map { feature in
             let channel = realtime.getChannel(feature.channelNameForRoomID(roomID))
             let contributor = DefaultRoomLifecycleContributor(channel: .init(underlyingChannel: channel), feature: feature)
 
@@ -112,7 +122,11 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
     }
 
     public nonisolated var reactions: any RoomReactions {
-        fatalError("Not yet implemented")
+        guard let _reactions else {
+            fatalError("Reactions are not enabled for this room")
+        }
+
+        return _reactions
     }
 
     public nonisolated var typing: any Typing {

@@ -75,7 +75,7 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
                 }
 
                 let metadata = data["metadata"] as? Metadata
-                let headers = try message.extras?.toJSON()["headers"] as? Headers
+                let headers = extras["headers"] as? Headers
 
                 let message = Message(
                     timeserial: timeserial,
@@ -205,27 +205,33 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
 
         // (CHA-M5b) If a subscription is added when the underlying realtime channel is in any other state, then its subscription point becomes the attachSerial at the the point of channel attachment.
         return try await withCheckedThrowingContinuation { continuation in
+            // avoids multiple invocations of the continuation
+            var nillableContinuation: CheckedContinuation<TimeserialString, any Error>? = continuation
+
             channel.on { [weak self] stateChange in
                 guard let self else {
                     return
                 }
+
                 switch stateChange.current {
                 case .attached:
                     // Handle successful attachment
                     if let attachSerial = channel.properties.attachSerial {
-                        continuation.resume(returning: attachSerial)
+                        nillableContinuation?.resume(returning: attachSerial)
                     } else {
-                        continuation.resume(throwing: ARTErrorInfo.create(withCode: 40000, status: 400, message: "Channel is attached, but attachSerial is not defined"))
+                        nillableContinuation?.resume(throwing: ARTErrorInfo.create(withCode: 40000, status: 400, message: "Channel is attached, but attachSerial is not defined"))
                     }
+                    nillableContinuation = nil
                 case .failed, .suspended:
                     // TODO: Revisit as part of https://github.com/ably-labs/ably-chat-swift/issues/32
-                    continuation.resume(
+                    nillableContinuation?.resume(
                         throwing: ARTErrorInfo.create(
                             withCode: ErrorCode.messagesAttachmentFailed.rawValue,
                             status: ErrorCode.messagesAttachmentFailed.statusCode,
                             message: "Channel failed to attach"
                         )
                     )
+                    nillableContinuation = nil
                 default:
                     break
                 }
