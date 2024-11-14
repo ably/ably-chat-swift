@@ -169,7 +169,7 @@ struct DefaultRoomLifecycleManagerTests {
             contributors: [
                 createContributor(
                     // Arbitrary, allows the ATTACH to eventually complete
-                    attachBehavior: .complete(.success),
+                    attachBehavior: .success,
                     // This allows us to prolong the execution of the DETACH triggered in (1)
                     detachBehavior: contributorDetachOperation.behavior
                 ),
@@ -235,7 +235,7 @@ struct DefaultRoomLifecycleManagerTests {
     @Test
     func attach_attachesAllContributors_andWhenTheyAllAttachSuccessfully_transitionsToAttached() async throws {
         // Given: A DefaultRoomLifecycleManager, all of whose contributors’ calls to `attach` succeed
-        let contributors = (1 ... 3).map { _ in createContributor(attachBehavior: .complete(.success)) }
+        let contributors = (1 ... 3).map { _ in createContributor(attachBehavior: .success) }
         let manager = await createManager(contributors: contributors)
 
         let statusChangeSubscription = await manager.onChange(bufferingPolicy: .unbounded)
@@ -257,7 +257,7 @@ struct DefaultRoomLifecycleManagerTests {
     @Test
     func attach_uponSuccess_emitsPendingDiscontinuityEvents() async throws {
         // Given: A DefaultRoomLifecycleManager, all of whose contributors’ calls to `attach` succeed
-        let contributors = (1 ... 3).map { _ in createContributor(attachBehavior: .complete(.success)) }
+        let contributors = (1 ... 3).map { _ in createContributor(attachBehavior: .success) }
         let pendingDiscontinuityEvents: [MockRoomLifecycleContributor.ID: [ARTErrorInfo]] = [
             contributors[1].id: [.init(domain: "SomeDomain", code: 123) /* arbitrary */ ],
             contributors[2].id: [.init(domain: "SomeDomain", code: 456) /* arbitrary */ ],
@@ -291,7 +291,7 @@ struct DefaultRoomLifecycleManagerTests {
     @Test
     func attach_uponSuccess_clearsTransientDisconnectTimeouts() async throws {
         // Given: A DefaultRoomLifecycleManager, all of whose contributors’ calls to `attach` succeed
-        let contributors = (1 ... 3).map { _ in createContributor(attachBehavior: .complete(.success)) }
+        let contributors = (1 ... 3).map { _ in createContributor(attachBehavior: .success) }
         let manager = await createManager(
             forTestingWhatHappensWhenHasTransientDisconnectTimeoutForTheseContributorIDs: [contributors[1].id],
             contributors: contributors
@@ -315,7 +315,7 @@ struct DefaultRoomLifecycleManagerTests {
             if i == 1 {
                 createContributor(attachBehavior: .completeAndChangeState(.failure(contributorAttachError), newState: .suspended))
             } else {
-                createContributor(attachBehavior: .complete(.success))
+                createContributor(attachBehavior: .success)
             }
         }
 
@@ -363,9 +363,9 @@ struct DefaultRoomLifecycleManagerTests {
             } else {
                 createContributor(
                     feature: .occupancy, // arbitrary, just needs to be different to that used for the other contributor
-                    attachBehavior: .complete(.success),
+                    attachBehavior: .success,
                     // The room is going to try to detach per CHA-RL1h5, so even though that's not what this test is testing, we need a detachBehavior so the mock doesn’t blow up
-                    detachBehavior: .complete(.success)
+                    detachBehavior: .success
                 )
             }
         }
@@ -411,13 +411,13 @@ struct DefaultRoomLifecycleManagerTests {
         let contributors = [
             createContributor(
                 attachBehavior: .completeAndChangeState(.success, newState: .attached),
-                detachBehavior: .complete(.success)
+                detachBehavior: .success
             ),
             createContributor(
                 attachBehavior: .completeAndChangeState(.failure(.create(withCode: 123, message: "")), newState: .failed)
             ),
             createContributor(
-                detachBehavior: .complete(.success)
+                detachBehavior: .success
             ),
         ]
 
@@ -572,7 +572,7 @@ struct DefaultRoomLifecycleManagerTests {
     @Test
     func detach_detachesAllContributors_andWhenTheyAllDetachSuccessfully_transitionsToDetached() async throws {
         // Given: A DefaultRoomLifecycleManager, all of whose contributors’ calls to `detach` succeed
-        let contributors = (1 ... 3).map { _ in createContributor(detachBehavior: .complete(.success)) }
+        let contributors = (1 ... 3).map { _ in createContributor(detachBehavior: .success) }
         let manager = await createManager(contributors: contributors)
 
         let statusChangeSubscription = await manager.onChange(bufferingPolicy: .unbounded)
@@ -792,10 +792,10 @@ struct DefaultRoomLifecycleManagerTests {
         // - two in a non-FAILED state, and on whom calling `detach()` succeeds
         // - one in the FAILED state
         let contributors = [
-            createContributor(initialState: .attached /* arbitrary non-FAILED */, detachBehavior: .complete(.success)),
+            createContributor(initialState: .attached /* arbitrary non-FAILED */, detachBehavior: .success),
             // We put the one that will be skipped in the middle, to verify that the subsequent contributors don’t get skipped
-            createContributor(initialState: .failed, detachBehavior: .complete(.failure(.init(domain: "SomeDomain", code: 123) /* arbitrary error */ ))),
-            createContributor(initialState: .detached /* arbitrary non-FAILED */, detachBehavior: .complete(.success)),
+            createContributor(initialState: .failed, detachBehavior: .failure(.init(domain: "SomeDomain", code: 123) /* arbitrary error */ )),
+            createContributor(initialState: .detached /* arbitrary non-FAILED */, detachBehavior: .success),
         ]
 
         let manager = await createManager(contributors: contributors)
