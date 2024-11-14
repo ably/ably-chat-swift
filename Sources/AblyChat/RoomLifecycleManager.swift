@@ -324,6 +324,30 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
         return subscription
     }
 
+    #if DEBUG
+        // TODO: clean up old subscriptions (https://github.com/ably-labs/ably-chat-swift/issues/36)
+        /// Supports the ``testsOnly_onRoomStatusChange()`` method.
+        private var statusChangeSubscriptions: [Subscription<StatusChange>] = []
+
+        internal struct StatusChange {
+            internal var current: Status
+            internal var previous: Status
+        }
+
+        /// Allows tests to subscribe to changes to the manager’s internal status (which exposes more cases and additional metadata, compared to the ``RoomStatus`` exposed by ``onRoomStatusChange(bufferingPolicy:)``).
+        internal func testsOnly_onStatusChange() -> Subscription<StatusChange> {
+            let subscription: Subscription<StatusChange> = .init(bufferingPolicy: .unbounded)
+            statusChangeSubscriptions.append(subscription)
+            return subscription
+        }
+
+        internal func emitStatusChange(_ change: StatusChange) {
+            for subscription in statusChangeSubscriptions {
+                subscription.emit(change)
+            }
+        }
+    #endif
+
     /// Updates ``status`` and emits a status change event.
     private func changeStatus(to new: Status) {
         logger.log(message: "Transitioning from \(status) to \(new)", level: .info)
@@ -335,6 +359,11 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
             let statusChange = RoomStatusChange(current: status.toRoomStatus, previous: previous.toRoomStatus)
             emitRoomStatusChange(statusChange)
         }
+
+        #if DEBUG
+            let statusChange = StatusChange(current: status, previous: previous)
+            emitStatusChange(statusChange)
+        #endif
     }
 
     private func emitRoomStatusChange(_ change: RoomStatusChange) {
