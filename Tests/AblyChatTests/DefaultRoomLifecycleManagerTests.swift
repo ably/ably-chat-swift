@@ -183,7 +183,7 @@ struct DefaultRoomLifecycleManagerTests {
         let detachOperationID = UUID()
         let attachOperationID = UUID()
 
-        let statusChangeSubscription = await manager.onChange(bufferingPolicy: .unbounded)
+        let statusChangeSubscription = await manager.onRoomStatusChange(bufferingPolicy: .unbounded)
         // Wait for the manager to enter DETACHING; this our sign that the DETACH operation triggered in (1) has started
         async let detachingStatusChange = statusChangeSubscription.first { $0.current == .detaching }
 
@@ -219,7 +219,7 @@ struct DefaultRoomLifecycleManagerTests {
         let contributorAttachOperation = SignallableChannelOperation()
 
         let manager = await createManager(contributors: [createContributor(attachBehavior: contributorAttachOperation.behavior)])
-        let statusChangeSubscription = await manager.onChange(bufferingPolicy: .unbounded)
+        let statusChangeSubscription = await manager.onRoomStatusChange(bufferingPolicy: .unbounded)
         async let statusChange = statusChangeSubscription.first { _ in true }
 
         // When: `performAttachOperation()` is called on the lifecycle manager
@@ -242,7 +242,7 @@ struct DefaultRoomLifecycleManagerTests {
         let contributors = (1 ... 3).map { _ in createContributor(attachBehavior: .success) }
         let manager = await createManager(contributors: contributors)
 
-        let statusChangeSubscription = await manager.onChange(bufferingPolicy: .unbounded)
+        let statusChangeSubscription = await manager.onRoomStatusChange(bufferingPolicy: .unbounded)
         async let attachedStatusChange = statusChangeSubscription.first { $0.current == .attached }
 
         // When: `performAttachOperation()` is called on the lifecycle manager
@@ -325,7 +325,7 @@ struct DefaultRoomLifecycleManagerTests {
 
         let manager = await createManager(contributors: contributors)
 
-        let statusChangeSubscription = await manager.onChange(bufferingPolicy: .unbounded)
+        let statusChangeSubscription = await manager.onRoomStatusChange(bufferingPolicy: .unbounded)
         async let maybeSuspendedStatusChange = statusChangeSubscription.suspendedElements().first { _ in true }
 
         // When: `performAttachOperation()` is called on the lifecycle manager
@@ -376,7 +376,7 @@ struct DefaultRoomLifecycleManagerTests {
 
         let manager = await createManager(contributors: contributors)
 
-        let statusChangeSubscription = await manager.onChange(bufferingPolicy: .unbounded)
+        let statusChangeSubscription = await manager.onRoomStatusChange(bufferingPolicy: .unbounded)
         async let maybeFailedStatusChange = statusChangeSubscription.failedElements().first { _ in true }
 
         // When: `performAttachOperation()` is called on the lifecycle manager
@@ -556,7 +556,7 @@ struct DefaultRoomLifecycleManagerTests {
             forTestingWhatHappensWhenHasTransientDisconnectTimeoutForTheseContributorIDs: [contributor.id],
             contributors: [contributor]
         )
-        let statusChangeSubscription = await manager.onChange(bufferingPolicy: .unbounded)
+        let statusChangeSubscription = await manager.onRoomStatusChange(bufferingPolicy: .unbounded)
         async let statusChange = statusChangeSubscription.first { _ in true }
 
         // When: `performDetachOperation()` is called on the lifecycle manager
@@ -579,7 +579,7 @@ struct DefaultRoomLifecycleManagerTests {
         let contributors = (1 ... 3).map { _ in createContributor(detachBehavior: .success) }
         let manager = await createManager(contributors: contributors)
 
-        let statusChangeSubscription = await manager.onChange(bufferingPolicy: .unbounded)
+        let statusChangeSubscription = await manager.onRoomStatusChange(bufferingPolicy: .unbounded)
         async let detachedStatusChange = statusChangeSubscription.first { $0.current == .detached }
 
         // When: `performDetachOperation()` is called on the lifecycle manager
@@ -616,7 +616,7 @@ struct DefaultRoomLifecycleManagerTests {
 
         let manager = await createManager(contributors: contributors)
 
-        let statusChangeSubscription = await manager.onChange(bufferingPolicy: .unbounded)
+        let statusChangeSubscription = await manager.onRoomStatusChange(bufferingPolicy: .unbounded)
         async let maybeFailedStatusChange = statusChangeSubscription.failedElements().first { _ in true }
 
         // When: `performDetachOperation()` is called on the lifecycle manager
@@ -663,7 +663,7 @@ struct DefaultRoomLifecycleManagerTests {
 
         let manager = await createManager(contributors: [contributor], clock: clock)
 
-        let statusChangeSubscription = await manager.onChange(bufferingPolicy: .unbounded)
+        let statusChangeSubscription = await manager.onRoomStatusChange(bufferingPolicy: .unbounded)
         async let asyncLetStatusChanges = Array(statusChangeSubscription.prefix(2))
 
         // When: `performDetachOperation()` is called on the manager
@@ -701,7 +701,7 @@ struct DefaultRoomLifecycleManagerTests {
         let contributor = createContributor()
         let manager = await createManager(forTestingWhatHappensWhenCurrentlyIn: .detached, contributors: [contributor])
 
-        let statusChangeSubscription = await manager.onChange(bufferingPolicy: .unbounded)
+        let statusChangeSubscription = await manager.onRoomStatusChange(bufferingPolicy: .unbounded)
         async let statusChange = statusChangeSubscription.first { _ in true }
 
         // When: `performReleaseOperation()` is called on the lifecycle manager
@@ -727,7 +727,7 @@ struct DefaultRoomLifecycleManagerTests {
         let firstReleaseOperationID = UUID()
         let secondReleaseOperationID = UUID()
 
-        let statusChangeSubscription = await manager.onChange(bufferingPolicy: .unbounded)
+        let statusChangeSubscription = await manager.onRoomStatusChange(bufferingPolicy: .unbounded)
         // Wait for the manager to enter RELEASING; this our sign that the DETACH operation triggered in (1) has started
         async let releasingStatusChange = statusChangeSubscription.first { $0.current == .releasing }
 
@@ -772,7 +772,7 @@ struct DefaultRoomLifecycleManagerTests {
             forTestingWhatHappensWhenHasTransientDisconnectTimeoutForTheseContributorIDs: [contributor.id],
             contributors: [contributor]
         )
-        let statusChangeSubscription = await manager.onChange(bufferingPolicy: .unbounded)
+        let statusChangeSubscription = await manager.onRoomStatusChange(bufferingPolicy: .unbounded)
         async let statusChange = statusChangeSubscription.first { _ in true }
 
         // When: `performReleaseOperation()` is called on the lifecycle manager
@@ -804,7 +804,7 @@ struct DefaultRoomLifecycleManagerTests {
 
         let manager = await createManager(contributors: contributors)
 
-        let statusChangeSubscription = await manager.onChange(bufferingPolicy: .unbounded)
+        let statusChangeSubscription = await manager.onRoomStatusChange(bufferingPolicy: .unbounded)
         async let releasedStatusChange = statusChangeSubscription.first { $0.current == .released }
 
         // When: `performReleaseOperation()` is called on the lifecycle manager
@@ -864,7 +864,7 @@ struct DefaultRoomLifecycleManagerTests {
 
         let manager = await createManager(contributors: [contributor], clock: clock)
 
-        let statusChangeSubscription = await manager.onChange(bufferingPolicy: .unbounded)
+        let statusChangeSubscription = await manager.onRoomStatusChange(bufferingPolicy: .unbounded)
         async let releasedStatusChange = statusChangeSubscription.first { $0.current == .released }
 
         // When: `performReleaseOperation()` is called on the lifecycle manager
@@ -1001,7 +1001,7 @@ struct DefaultRoomLifecycleManagerTests {
 
         let manager = await createManager(contributors: contributors)
 
-        let roomStatusSubscription = await manager.onChange(bufferingPolicy: .unbounded)
+        let roomStatusSubscription = await manager.onRoomStatusChange(bufferingPolicy: .unbounded)
         async let maybeFailedStatusChange = roomStatusSubscription.failedElements().first { _ in true }
 
         // When: `performRetryOperation(triggeredByContributor:errorForSuspendedStatus:)` is called on the manager, triggered by the contributor at index 0
@@ -1089,7 +1089,7 @@ struct DefaultRoomLifecycleManagerTests {
             contributors: contributors
         )
 
-        let roomStatusSubscription = await manager.onChange(bufferingPolicy: .unbounded)
+        let roomStatusSubscription = await manager.onRoomStatusChange(bufferingPolicy: .unbounded)
         async let maybeFailedStatusChange = roomStatusSubscription.failedElements().first { _ in true }
 
         // When: `performRetryOperation(triggeredByContributor:errorForSuspendedStatus:)` is called on the manager, triggered by the aforementioned contributor
@@ -1160,7 +1160,7 @@ struct DefaultRoomLifecycleManagerTests {
             contributors: contributors
         )
 
-        let roomStatusSubscription = await manager.onChange(bufferingPolicy: .unbounded)
+        let roomStatusSubscription = await manager.onRoomStatusChange(bufferingPolicy: .unbounded)
         async let maybeAttachingStatusChange = roomStatusSubscription.attachingElements().first { _ in true }
 
         // When: `performRetryOperation(triggeredByContributor:errorForSuspendedStatus:)` is called on the manager, triggered by the aforementioned contributor
@@ -1206,7 +1206,7 @@ struct DefaultRoomLifecycleManagerTests {
             contributors: contributors
         )
 
-        let roomStatusSubscription = await manager.onChange(bufferingPolicy: .unbounded)
+        let roomStatusSubscription = await manager.onRoomStatusChange(bufferingPolicy: .unbounded)
         async let attachedStatusChange = roomStatusSubscription.first { $0.current == .attached }
 
         // When: `performRetryOperation(triggeredByContributor:errorForSuspendedStatus:)` is called on the manager
@@ -1254,7 +1254,7 @@ struct DefaultRoomLifecycleManagerTests {
             contributors: contributors
         )
 
-        let roomStatusSubscription = await manager.onChange(bufferingPolicy: .unbounded)
+        let roomStatusSubscription = await manager.onRoomStatusChange(bufferingPolicy: .unbounded)
         async let failedStatusChange = roomStatusSubscription.failedElements().first { _ in true }
 
         // When: `performRetryOperation(triggeredByContributor:errorForSuspendedStatus:)` is called on the manager
@@ -1376,7 +1376,7 @@ struct DefaultRoomLifecycleManagerTests {
         try await manager.performAttachOperation()
 
         // This is to put the manager into the DETACHING state, to satisfy "with a room lifecycle operation in progress"
-        let roomStatusSubscription = await manager.onChange(bufferingPolicy: .unbounded)
+        let roomStatusSubscription = await manager.onRoomStatusChange(bufferingPolicy: .unbounded)
         async let _ = manager.performDetachOperation()
         _ = await roomStatusSubscription.first { $0.current == .detaching }
 
@@ -1451,7 +1451,7 @@ struct DefaultRoomLifecycleManagerTests {
             contributors: contributors
         )
 
-        let roomStatusSubscription = await manager.onChange(bufferingPolicy: .unbounded)
+        let roomStatusSubscription = await manager.onRoomStatusChange(bufferingPolicy: .unbounded)
         async let failedStatusChange = roomStatusSubscription.failedElements().first { _ in true }
 
         // When: A contributor emits an FAILED event
@@ -1547,7 +1547,7 @@ struct DefaultRoomLifecycleManagerTests {
 
         // and When: This transient disconnect timeout completes
 
-        let roomStatusSubscription = await manager.onChange(bufferingPolicy: .unbounded)
+        let roomStatusSubscription = await manager.onRoomStatusChange(bufferingPolicy: .unbounded)
         async let maybeRoomAttachingStatusChange = roomStatusSubscription.attachingElements().first { _ in true }
 
         sleepOperation.complete()
@@ -1659,7 +1659,7 @@ struct DefaultRoomLifecycleManagerTests {
             contributors: contributors
         )
 
-        let roomStatusSubscription = await manager.onChange(bufferingPolicy: .unbounded)
+        let roomStatusSubscription = await manager.onRoomStatusChange(bufferingPolicy: .unbounded)
         async let maybeAttachedRoomStatusChange = roomStatusSubscription.first { $0.current == .attached }
 
         // When: A contributor emits a state change to ATTACHED
@@ -1730,7 +1730,7 @@ struct DefaultRoomLifecycleManagerTests {
             contributors: [contributorThatWillEmitStateChange]
         )
 
-        let roomStatusSubscription = await manager.onChange(bufferingPolicy: .unbounded)
+        let roomStatusSubscription = await manager.onRoomStatusChange(bufferingPolicy: .unbounded)
         async let maybeSuspendedRoomStatusChange = roomStatusSubscription.suspendedElements().first { _ in true }
 
         // When: A contributor emits a state change to SUSPENDED
@@ -1775,7 +1775,7 @@ struct DefaultRoomLifecycleManagerTests {
             contributors: [contributor]
         )
 
-        let roomStatusSubscription = await manager.onChange(bufferingPolicy: .unbounded)
+        let roomStatusSubscription = await manager.onRoomStatusChange(bufferingPolicy: .unbounded)
 
         let attachOperationID = UUID()
         async let _ = manager.performAttachOperation(testsOnly_forcingOperationID: attachOperationID)
@@ -1813,7 +1813,7 @@ struct DefaultRoomLifecycleManagerTests {
             contributors: [contributor]
         )
 
-        let roomStatusSubscription = await manager.onChange(bufferingPolicy: .unbounded)
+        let roomStatusSubscription = await manager.onRoomStatusChange(bufferingPolicy: .unbounded)
 
         let attachOperationID = UUID()
         async let _ = manager.performAttachOperation(testsOnly_forcingOperationID: attachOperationID)
