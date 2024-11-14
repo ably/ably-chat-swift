@@ -310,23 +310,51 @@ struct DefaultRoomLifecycleManagerTests {
 
     // @spec CHA-RL1h2
     // @specOneOf(1/2) CHA-RL1h1 - tests that an error gets thrown when channel attach fails due to entering SUSPENDED (TODO: but I don’t yet fully understand the meaning of CHA-RL1h1; outstanding question https://github.com/ably/specification/pull/200/files#r1765476610)
-    // @specPartial CHA-RL1h3 - Have tested the failure of the operation and the error that’s thrown. Have not yet implemented the "enter the recovery loop" (TODO: https://github.com/ably-labs/ably-chat-swift/issues/50)
+    // @spec CHA-RL1h3
     @Test
-    func attach_whenContributorFailsToAttachAndEntersSuspended_transitionsToSuspended() async throws {
+    func attach_whenContributorFailsToAttachAndEntersSuspended_transitionsToSuspendedAndPerformsRetryOperation() async throws {
         // Given: A DefaultRoomLifecycleManager, one of whose contributors’ call to `attach` fails causing it to enter the SUSPENDED status
         let contributorAttachError = ARTErrorInfo(domain: "SomeDomain", code: 123)
+        var nonSuspendedContributorsDetachOperations: [SignallableChannelOperation] = []
         let contributors = (1 ... 3).map { i in
             if i == 1 {
-                createContributor(attachBehavior: .completeAndChangeState(.failure(contributorAttachError), newState: .suspended))
+                return createContributor(
+                    attachBehavior: .fromFunction { callCount in
+                        if callCount == 1 {
+                            .completeAndChangeState(.failure(contributorAttachError), newState: .suspended) // The behaviour described above
+                        } else {
+                            .success // So the CHA-RL5f RETRY attachment cycle succeeds
+                        }
+                    },
+
+                    // This is so that the RETRY operation’s wait-to-become-ATTACHED succeeds
+                    subscribeToStateBehavior: .addSubscriptionAndEmitStateChange(
+                        .init(
+                            current: .attached,
+                            previous: .detached, // arbitrary
+                            event: .attached,
+                            reason: .createUnknownError() // Not related to this test, just to avoid a crash in CHA-RL4b1 handling of this state change
+                        )
+                    )
+                )
             } else {
-                createContributor(attachBehavior: .success)
+                // These contributors will be detached by the RETRY operation; we want to be able to delay their completion (and hence delay the RETRY operation’s transition from SUSPENDED to DETACHED) until we have been able to verify that the room’s status is SUSPENDED
+                let detachOperation = SignallableChannelOperation()
+                nonSuspendedContributorsDetachOperations.append(detachOperation)
+
+                return createContributor(
+                    attachBehavior: .success, // So the CHA-RL5f RETRY attachment cycle succeeds
+                    detachBehavior: detachOperation.behavior
+                )
             }
         }
 
         let manager = await createManager(contributors: contributors)
 
-        let statusChangeSubscription = await manager.onRoomStatusChange(bufferingPolicy: .unbounded)
-        async let maybeSuspendedStatusChange = statusChangeSubscription.suspendedElements().first { _ in true }
+        let roomStatusChangeSubscription = await manager.onRoomStatusChange(bufferingPolicy: .unbounded)
+        async let maybeSuspendedRoomStatusChange = roomStatusChangeSubscription.suspendedElements().first { _ in true }
+
+        let managerStatusChangeSubscription = await manager.testsOnly_onStatusChange()
 
         // When: `performAttachOperation()` is called on the lifecycle manager
         async let roomAttachResult: Void = manager.performAttachOperation()
@@ -336,7 +364,7 @@ struct DefaultRoomLifecycleManagerTests {
         // 1. the room status transitions to SUSPENDED, with the status change’s `error` having the AttachmentFailed code corresponding to the feature of the failed contributor, `cause` equal to the error thrown by the contributor `attach` call
         // 2. the manager’s `error` is set to this same error
         // 3. the room attach operation fails with this same error
-        let suspendedStatusChange = try #require(await maybeSuspendedStatusChange)
+        let suspendedRoomStatusChange = try #require(await maybeSuspendedRoomStatusChange)
 
         #expect(await manager.roomStatus.isSuspended)
 
@@ -347,9 +375,41 @@ struct DefaultRoomLifecycleManagerTests {
             roomAttachError = error
         }
 
-        for error in await [suspendedStatusChange.error, manager.roomStatus.error, roomAttachError] {
+        for error in await [suspendedRoomStatusChange.error, manager.roomStatus.error, roomAttachError] {
             #expect(isChatError(error, withCode: .messagesAttachmentFailed, cause: contributorAttachError))
         }
+
+        // and:
+        // 4. The manager asynchronously performs a RETRY operation, triggered by the contributor that entered SUSPENDED
+
+        // Allow the RETRY operation’s contributor detaches to complete
+        for detachOperation in nonSuspendedContributorsDetachOperations {
+            detachOperation.complete(behavior: .success) // So the CHA-RL5a RETRY detachment cycle succeeds
+        }
+
+        // Wait for the RETRY to finish
+        let retryOperationTask = try #require(await managerStatusChangeSubscription.compactMap { statusChange in
+            if case let .suspendedAwaitingStartOfRetryOperation(retryOperationTask, _) = statusChange.current {
+                return retryOperationTask
+            }
+            return nil
+        }
+        .first { _ in
+            true
+        })
+
+        await retryOperationTask.value
+
+        // We confirm that a RETRY happened by checking for its expected side effects:
+        #expect(await contributors[0].channel.detachCallCount == 0) // RETRY doesn’t touch this since it’s the one that triggered the RETRY
+        #expect(await contributors[1].channel.detachCallCount == 1) // From the CHA-RL5a RETRY detachment cycle
+        #expect(await contributors[2].channel.detachCallCount == 1) // From the CHA-RL5a RETRY detachment cycle
+
+        #expect(await contributors[0].channel.attachCallCount == 2) // From the ATTACH operation and the CHA-RL5f RETRY attachment cycle
+        #expect(await contributors[1].channel.attachCallCount == 1) // From the CHA-RL5f RETRY attachment cycle
+        #expect(await contributors[2].channel.attachCallCount == 1) // From the CHA-RL5f RETRY attachment cycle
+
+        _ = try #require(await roomStatusChangeSubscription.first { $0.current == .attached }) // Room status changes to ATTACHED
     }
 
     // @specOneOf(2/2) CHA-RL1h1 - tests that an error gets thrown when channel attach fails due to entering FAILED (TODO: but I don’t yet fully understand the meaning of CHA-RL1h1; outstanding question https://github.com/ably/specification/pull/200/files#r1765476610))
@@ -1710,16 +1770,38 @@ struct DefaultRoomLifecycleManagerTests {
         #expect(await manager.roomStatus == initialManagerStatus.toRoomStatus)
     }
 
-    // @specPartial CHA-RL4b9 - Haven’t implemented "the room enters the RETRY loop"; TODO do this (https://github.com/ably-labs/ably-chat-swift/issues/51)
+    // @spec CHA-RL4b9
     @Test
     func contributorSuspendedEvent_withNoOperationInProgress() async throws {
         // Given: A DefaultRoomLifecycleManager with no lifecycle operation in progress
-        let contributorThatWillEmitStateChange = createContributor()
+        let contributorThatWillEmitStateChange = createContributor(
+            attachBehavior: .success, // So the CHA-RL5f RETRY attachment cycle succeeds
+
+            // This is so that the RETRY operation’s wait-to-become-ATTACHED succeeds
+            subscribeToStateBehavior: .addSubscriptionAndEmitStateChange(
+                .init(
+                    current: .attached,
+                    previous: .detached, // arbitrary
+                    event: .attached,
+                    reason: .createUnknownError() // Not related to this test, just to avoid a crash in CHA-RL4b1 handling of this state change
+                )
+            )
+        )
+
+        var nonSuspendedContributorsDetachOperations: [SignallableChannelOperation] = []
         let contributors = [
             contributorThatWillEmitStateChange,
-            createContributor(),
-            createContributor(),
-        ]
+        ] + (1 ... 2).map { _ in
+            // These contributors will be detached by the RETRY operation; we want to be able to delay their completion (and hence delay the RETRY operation’s transition from SUSPENDED to DETACHED) until we have been able to verify that the room’s status is SUSPENDED
+            let detachOperation = SignallableChannelOperation()
+            nonSuspendedContributorsDetachOperations.append(detachOperation)
+
+            return createContributor(
+                attachBehavior: .success, // So the CHA-RL5f RETRY attachment cycle succeeds
+                detachBehavior: detachOperation.behavior
+            )
+        }
+
         let manager = await createManager(
             forTestingWhatHappensWhenCurrentlyIn: .initialized, // case arbitrary, just care that no operation is in progress
             // Give 2 of the 3 contributors a transient disconnect timeout, so we can test that _all_ such timeouts get cleared (as the spec point specifies), not just those for the SUSPENDED contributor
@@ -1732,6 +1814,8 @@ struct DefaultRoomLifecycleManagerTests {
 
         let roomStatusSubscription = await manager.onRoomStatusChange(bufferingPolicy: .unbounded)
         async let maybeSuspendedRoomStatusChange = roomStatusSubscription.suspendedElements().first { _ in true }
+
+        let managerStatusChangeSubscription = await manager.testsOnly_onStatusChange()
 
         // When: A contributor emits a state change to SUSPENDED
         let contributorStateChangeReason = ARTErrorInfo(domain: "SomeDomain", code: 123) // arbitrary
@@ -1748,14 +1832,46 @@ struct DefaultRoomLifecycleManagerTests {
         }
 
         // Then:
-        // - The room transitions to SUSPENDED, and this status change has error equal to the contributor state change’s `reason`
-        // - All transient disconnect timeouts are cancelled
+        // 1. The room transitions to SUSPENDED, and this status change has error equal to the contributor state change’s `reason`
+        // 2. All transient disconnect timeouts are cancelled
         let suspendedRoomStatusChange = try #require(await maybeSuspendedRoomStatusChange)
         #expect(suspendedRoomStatusChange.error === contributorStateChangeReason)
 
         #expect(await manager.roomStatus == .suspended(error: contributorStateChangeReason))
 
         #expect(await !manager.testsOnly_hasTransientDisconnectTimeoutForAnyContributor)
+
+        // and:
+        // 3. The manager performs a RETRY operation, triggered by the contributor that entered SUSPENDED
+
+        // Allow the RETRY operation’s contributor detaches to complete
+        for detachOperation in nonSuspendedContributorsDetachOperations {
+            detachOperation.complete(behavior: .success) // So the CHA-RL5a RETRY detachment cycle succeeds
+        }
+
+        // Wait for the RETRY to finish
+        let retryOperationTask = try #require(await managerStatusChangeSubscription.compactMap { statusChange in
+            if case let .suspendedAwaitingStartOfRetryOperation(retryOperationTask, _) = statusChange.current {
+                return retryOperationTask
+            }
+            return nil
+        }
+        .first { _ in
+            true
+        })
+
+        await retryOperationTask.value
+
+        // We confirm that a RETRY happened by checking for its expected side effects:
+        #expect(await contributors[0].channel.detachCallCount == 0) // RETRY doesn’t touch this since it’s the one that triggered the RETRY
+        #expect(await contributors[1].channel.detachCallCount == 1) // From the CHA-RL5a RETRY detachment cycle
+        #expect(await contributors[2].channel.detachCallCount == 1) // From the CHA-RL5a RETRY detachment cycle
+
+        #expect(await contributors[0].channel.attachCallCount == 1) // From the CHA-RL5f RETRY attachment cycle
+        #expect(await contributors[1].channel.attachCallCount == 1) // From the CHA-RL5f RETRY attachment cycle
+        #expect(await contributors[2].channel.attachCallCount == 1) // From the CHA-RL5f RETRY attachment cycle
+
+        _ = try #require(await roomStatusSubscription.first { $0.current == .attached }) // Room status changes to ATTACHED
     }
 
     // MARK: - Waiting to be able to perform presence operations
