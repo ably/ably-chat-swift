@@ -32,22 +32,10 @@ internal final class ChatAPI: Sendable {
         // (CHA-M3b) A message may be sent without metadata or headers. When these are not specified by the user, they must be omitted from the REST payload.
         if let metadata = params.metadata {
             body["metadata"] = metadata
-
-            // (CHA-M3c) metadata must not contain the key ably-chat. This is reserved for future internal use. If this key is present, the send call shall terminate by throwing an ErrorInfo with code 40001.
-            if metadata.contains(where: { $0.key == "ably-chat" }) {
-                throw ARTErrorInfo.create(withCode: 40001, message: "metadata must not contain the key `ably-chat`")
-            }
         }
 
         if let headers = params.headers {
             body["headers"] = headers
-
-            // (CHA-M3d) headers must not contain a key prefixed with ably-chat. This is reserved for future internal use. If this key is present, the send call shall terminate by throwing an ErrorInfo with code 40001.
-            if headers.keys.contains(where: { keyString in
-                keyString.hasPrefix("ably-chat")
-            }) {
-                throw ARTErrorInfo.create(withCode: 40001, message: "headers must not contain any key with a prefix of `ably-chat`")
-            }
         }
 
         let response: SendMessageResponse = try await makeRequest(endpoint, method: "POST", body: body)

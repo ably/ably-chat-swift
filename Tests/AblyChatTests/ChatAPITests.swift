@@ -5,65 +5,6 @@ import Testing
 struct ChatAPITests {
     // MARK: sendMessage Tests
 
-    // @spec CHA-M3c
-    @Test
-    func sendMessage_whenMetadataHasAblyChatAsKey_throws40001() async {
-        // Given
-        let realtime = MockRealtime.create()
-        let chatAPI = ChatAPI(realtime: realtime)
-        let roomId = "basketball::$chat::$chatMessages"
-        let expectedError = ARTErrorInfo.create(withCode: 40001, message: "metadata must not contain the key `ably-chat`")
-
-        await #expect(
-            performing: {
-                // When
-                try await chatAPI.sendMessage(roomId: roomId, params: .init(text: "hello", metadata: ["ably-chat": .null]))
-            }, throws: { error in
-                // Then
-                error as? ARTErrorInfo == expectedError
-            }
-        )
-    }
-
-    // @specOneOf(1/2) CHA-M3d
-    @Test
-    func sendMessage_whenHeadersHasAnyKeyWithPrefixOfAblyChat_throws40001() async {
-        // Given
-        let realtime = MockRealtime.create {
-            (MockHTTPPaginatedResponse.successSendMessage, nil)
-        }
-        let chatAPI = ChatAPI(realtime: realtime)
-        let roomId = "basketball::$chat::$chatMessages"
-        let expectedError = ARTErrorInfo.create(withCode: 40001, message: "headers must not contain any key with a prefix of `ably-chat`")
-
-        await #expect(
-            performing: {
-                // When
-                try await chatAPI.sendMessage(roomId: roomId, params: .init(text: "hello", headers: ["ably-chat123": .null]))
-            }, throws: { error in
-                // then
-                error as? ARTErrorInfo == expectedError
-            }
-        )
-    }
-
-    // @specOneOf(2/2) CHA-M3d
-    @Test
-    func sendMessage_whenHeadersHasAnyKeyWithSuffixOfAblyChat_doesNotThrowAnyError() async {
-        // Given
-        let realtime = MockRealtime.create {
-            (MockHTTPPaginatedResponse.successSendMessage, nil)
-        }
-        let chatAPI = ChatAPI(realtime: realtime)
-        let roomId = "basketball::$chat::$chatMessages"
-
-        // Then
-        await #expect(throws: Never.self, performing: {
-            // When
-            try await chatAPI.sendMessage(roomId: roomId, params: .init(text: "hello", headers: ["123ably-chat": .null]))
-        })
-    }
-
     @Test
     func sendMessage_whenSendMessageReturnsNoItems_throwsNoItemInResponse() async {
         // Given
