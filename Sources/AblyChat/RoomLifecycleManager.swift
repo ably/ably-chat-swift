@@ -46,6 +46,7 @@ internal protocol RoomLifecycleManager: Sendable {
     func performReleaseOperation() async
     var roomStatus: RoomStatus { get async }
     func onChange(bufferingPolicy: BufferingPolicy) async -> Subscription<RoomStatusChange>
+    func waitToBeAbleToPerformPresenceOperations(requestedByFeature requester: RoomFeature) async throws(ARTErrorInfo)
 }
 
 internal protocol RoomLifecycleManagerFactory: Sendable {
@@ -556,7 +557,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
         /// The manager emits an `OperationWaitEvent` each time one room lifecycle operation is going to wait for another to complete. These events are emitted to support testing of the manager; see ``testsOnly_subscribeToOperationWaitEvents``.
         internal struct OperationWaitEvent: Equatable {
             /// The ID of the operation which initiated the wait. It is waiting for the operation with ID ``waitedOperationID`` to complete.
-            internal var waitingOperationID: UUID
+            internal var waitingOperationID: UUID?
             /// The ID of the operation whose completion will be awaited.
             internal var waitedOperationID: UUID
         }
@@ -573,6 +574,29 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
         }
     #endif
 
+    private enum OperationWaitRequester {
+        case anotherOperation(operationID: UUID)
+        case waitToBeAbleToPerformPresenceOperations
+
+        internal var loggingDescription: String {
+            switch self {
+            case let .anotherOperation(operationID):
+                "Operation \(operationID)"
+            case .waitToBeAbleToPerformPresenceOperations:
+                "waitToBeAbleToPerformPresenceOperations"
+            }
+        }
+
+        internal var waitingOperationID: UUID? {
+            switch self {
+            case let .anotherOperation(operationID):
+                operationID
+            case .waitToBeAbleToPerformPresenceOperations:
+                nil
+            }
+        }
+    }
+
     /// Waits for the operation with ID `waitedOperationID` to complete, re-throwing any error thrown by that operation.
     ///
     /// Note that this method currently treats all waited operations as throwing. If you wish to wait for an operation that you _know_ to be non-throwing (which the RELEASE operation currently is) then you’ll need to call this method with `try!` or equivalent. (It might be possible to improve this in the future, but I didn’t want to put much time into figuring it out.)
@@ -581,12 +605,12 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
     ///
     /// - Parameters:
     ///   - waitedOperationID: The ID of the operation whose completion will be awaited.
-    ///   - waitingOperationID: The ID of the operation which is awaiting this result. Only used for logging.
+    ///   - requester: A description of who is awaiting this result. Only used for logging.
     private func waitForCompletionOfOperationWithID(
         _ waitedOperationID: UUID,
-        waitingOperationID: UUID
+        requester: OperationWaitRequester
     ) async throws(ARTErrorInfo) {
-        logger.log(message: "Operation \(waitingOperationID) started waiting for result of operation \(waitedOperationID)", level: .debug)
+        logger.log(message: "\(requester.loggingDescription) started waiting for result of operation \(waitedOperationID)", level: .debug)
 
         do {
             let result = await withCheckedContinuation { (continuation: OperationResultContinuations.Continuation) in
@@ -594,7 +618,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
                 operationResultContinuations.addContinuation(continuation, forResultOfOperationWithID: waitedOperationID)
 
                 #if DEBUG
-                    let operationWaitEvent = OperationWaitEvent(waitingOperationID: waitingOperationID, waitedOperationID: waitedOperationID)
+                    let operationWaitEvent = OperationWaitEvent(waitingOperationID: requester.waitingOperationID, waitedOperationID: waitedOperationID)
                     for subscription in operationWaitEventSubscriptions {
                         subscription.emit(operationWaitEvent)
                     }
@@ -603,9 +627,9 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
 
             try result.get()
 
-            logger.log(message: "Operation \(waitingOperationID) completed waiting for result of operation \(waitedOperationID), which completed successfully", level: .debug)
+            logger.log(message: "\(requester.loggingDescription) completed waiting for result of operation \(waitedOperationID), which completed successfully", level: .debug)
         } catch {
-            logger.log(message: "Operation \(waitingOperationID) completed waiting for result of operation \(waitedOperationID), which threw error \(error)", level: .debug)
+            logger.log(message: "\(requester.loggingDescription) completed waiting for result of operation \(waitedOperationID), which threw error \(error)", level: .debug)
             throw error
         }
     }
@@ -686,7 +710,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
 
         // CHA-RL1d
         if let currentOperationID = status.operationID {
-            try? await waitForCompletionOfOperationWithID(currentOperationID, waitingOperationID: operationID)
+            try? await waitForCompletionOfOperationWithID(currentOperationID, requester: .anotherOperation(operationID: operationID))
         }
 
         // CHA-RL1e
@@ -903,7 +927,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
             // CHA-RL3c
             // See note on waitForCompletionOfOperationWithID for the current need for this force try
             // swiftlint:disable:next force_try
-            return try! await waitForCompletionOfOperationWithID(releaseOperationID, waitingOperationID: operationID)
+            return try! await waitForCompletionOfOperationWithID(releaseOperationID, requester: .anotherOperation(operationID: operationID))
         case .initialized, .attached, .attachingDueToAttachOperation, .attachingDueToContributorStateChange, .detaching, .suspended, .failed:
             break
         }
@@ -941,5 +965,32 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
 
         // CHA-RL3g
         changeStatus(to: .released)
+    }
+
+    // MARK: - Waiting to be able to perform presence operations
+
+    internal func waitToBeAbleToPerformPresenceOperations(requestedByFeature requester: RoomFeature) async throws(ARTErrorInfo) {
+        switch status {
+        case let .attachingDueToAttachOperation(attachOperationID):
+            // CHA-PR3d, CHA-PR10d, CHA-PR6c, CHA-T2c
+            try await waitForCompletionOfOperationWithID(attachOperationID, requester: .waitToBeAbleToPerformPresenceOperations)
+        case .attachingDueToContributorStateChange:
+            // TODO: Spec doesn’t say what to do in this situation; asked in https://github.com/ably/specification/issues/228
+            fatalError("waitToBeAbleToPerformPresenceOperations doesn’t currently handle attachingDueToContributorStateChange")
+        case .attached:
+            // CHA-PR3e, CHA-PR11e, CHA-PR6d, CHA-T2d
+            break
+        case .detached:
+            // CHA-PR3f, CHA-PR11f, CHA-PR6e, CHA-T2e
+            throw .init(chatError: .presenceOperationRequiresRoomAttach(feature: requester))
+        case .detaching,
+             .failed,
+             .initialized,
+             .released,
+             .releasing,
+             .suspended:
+            // CHA-PR3g, CHA-PR11g, CHA-PR6f, CHA-T2f
+            throw .init(chatError: .presenceOperationDisallowedForCurrentRoomStatus(feature: requester))
+        }
     }
 }
