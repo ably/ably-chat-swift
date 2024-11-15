@@ -6,6 +6,7 @@ public protocol Occupancy: AnyObject, Sendable, EmitsDiscontinuities {
     var channel: RealtimeChannelProtocol { get }
 }
 
+// (CHA-O2) The occupancy event format is shown here (https://sdk.ably.com/builds/ably/specification/main/chat-features/#chat-structs-occupancy-event)
 public struct OccupancyEvent: Sendable, Encodable, Decodable {
     public var connections: Int
     public var presenceMembers: Int

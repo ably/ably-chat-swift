@@ -14,6 +14,9 @@ public struct RoomOptions: Sendable, Equatable {
     }
 }
 
+// (CHA-PR9) Users may configure their presence options via the RoomOptions provided at room configuration time.
+// (CHA-PR9a) Setting enter to false prevents the user from entering presence by means of the ChannelMode on the underlying realtime channel. Entering presence will result in an error. The default is true.
+// (CHA-PR9b) Setting subscribe to false prevents the user from subscribing to presence by means of the ChannelMode on the underlying realtime channel. This does not prevent them from receiving their own presence messages, but they will not receive them from others. The default is true.
 public struct PresenceOptions: Sendable, Equatable {
     public var enter = true
     public var subscribe = true

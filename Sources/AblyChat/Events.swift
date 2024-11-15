@@ -5,3 +5,7 @@ internal enum MessageEvent: String {
 internal enum RoomReactionEvents: String {
     case reaction = "roomReaction"
 }
+
+internal enum OccupancyEvents: String {
+    case meta = "[meta]occupancy"
+}

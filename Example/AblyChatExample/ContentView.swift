@@ -50,7 +50,14 @@ struct ContentView: View {
 
     private func room() async throws -> Room {
         let chosenChatClient: ChatClient = (mode == .mock) ? mockChatClient : liveChatClient
-        return try await chosenChatClient.rooms.get(roomID: roomID, options: .init(reactions: .init()))
+        return try await chosenChatClient.rooms.get(
+            roomID: roomID,
+            options: .init(
+                presence: .init(),
+                reactions: .init(),
+                occupancy: .init()
+            )
+        )
     }
 
     private var sendTitle: String {
@@ -127,12 +134,12 @@ struct ContentView: View {
         .tryTask { try await attachRoom() }
         .tryTask { try await showMessages() }
         .tryTask { try await showReactions() }
+        .tryTask { try await showPresence() }
+        .tryTask { try await showOccupancy() }
         .tryTask {
             // NOTE: As we implement more features, move them out of the `if mode == .mock` block and into the main block just above.
             if mode == .mock {
-                try await showPresence()
                 try await showTypings()
-                try await showOccupancy()
                 try await showRoomStatus()
             }
         }
@@ -185,9 +192,15 @@ struct ContentView: View {
     }
 
     func showPresence() async throws {
-        for await event in try await room().presence.subscribe(events: [.enter, .leave]) {
+        try await room().presence.enter(data: .init(userCustomData: ["status": .string("📱 Online")]))
+
+        for await event in try await room().presence.subscribe(events: [.enter, .leave, .update]) {
             withAnimation {
-                messages.insert(BasicListItem(id: UUID().uuidString, title: "System", text: event.clientID + " \(event.action.displayedText)"), at: 0)
+                let status = event.data?.userCustomData?["status"]?.value as? String
+                let clientPresenceChangeMessage = "\(event.clientID) \(event.action.displayedText)"
+                let presenceMessage = status != nil ? "\(clientPresenceChangeMessage) with status: \(status!)" : clientPresenceChangeMessage
+
+                messages.insert(BasicListItem(id: UUID().uuidString, title: "System", text: presenceMessage), at: 0)
             }
         }
     }

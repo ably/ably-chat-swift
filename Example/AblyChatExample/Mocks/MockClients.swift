@@ -277,7 +277,7 @@ actor MockPresence: Presence {
         MockStrings.names.shuffled().map { name in
             PresenceMember(
                 clientID: name,
-                data: ["foo": "bar"],
+                data: PresenceData(userCustomData: nil),
                 action: .present,
                 extras: nil,
                 updatedAt: Date()
@@ -285,11 +285,11 @@ actor MockPresence: Presence {
         }
     }
 
-    func get(params _: PresenceQuery?) async throws -> [PresenceMember] {
+    func get(params _: PresenceQuery) async throws -> [PresenceMember] {
         MockStrings.names.shuffled().map { name in
             PresenceMember(
                 clientID: name,
-                data: ["foo": "bar"],
+                data: PresenceData(userCustomData: nil),
                 action: .present,
                 extras: nil,
                 updatedAt: Date()
@@ -301,20 +301,7 @@ actor MockPresence: Presence {
         fatalError("Not yet implemented")
     }
 
-    func enter() async throws {
-        for subscription in mockSubscriptions {
-            subscription.emit(
-                PresenceEvent(
-                    action: .enter,
-                    clientID: clientID,
-                    timestamp: Date(),
-                    data: nil
-                )
-            )
-        }
-    }
-
-    func enter(data: PresenceData) async throws {
+    func enter(data: PresenceData? = nil) async throws {
         for subscription in mockSubscriptions {
             subscription.emit(
                 PresenceEvent(
@@ -327,28 +314,20 @@ actor MockPresence: Presence {
         }
     }
 
-    func update() async throws {
-        fatalError("Not yet implemented")
-    }
-
-    func update(data _: PresenceData) async throws {
-        fatalError("Not yet implemented")
-    }
-
-    func leave() async throws {
+    func update(data: PresenceData? = nil) async throws {
         for subscription in mockSubscriptions {
             subscription.emit(
                 PresenceEvent(
-                    action: .leave,
+                    action: .update,
                     clientID: clientID,
                     timestamp: Date(),
-                    data: nil
+                    data: data
                 )
             )
         }
     }
 
-    func leave(data: PresenceData) async throws {
+    func leave(data: PresenceData? = nil) async throws {
         for subscription in mockSubscriptions {
             subscription.emit(
                 PresenceEvent(

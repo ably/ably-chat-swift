@@ -62,6 +62,8 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
 
     public nonisolated let messages: any Messages
     private let _reactions: (any RoomReactions)?
+    private let _presence: (any Presence)?
+    private let _occupancy: (any Occupancy)?
 
     // Exposed for testing.
     private nonisolated let realtime: RealtimeClient
@@ -82,7 +84,7 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
             throw ARTErrorInfo.create(withCode: 40000, message: "Ensure your Realtime instance is initialized with a clientId.")
         }
 
-        let featureChannels = Self.createFeatureChannels(roomID: roomID, realtime: realtime)
+        let featureChannels = Self.createFeatureChannels(roomID: roomID, roomOptions: options, realtime: realtime)
         channels = featureChannels.mapValues(\.channel)
         let contributors = featureChannels.values.map(\.contributor)
 
@@ -106,11 +108,48 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
             roomID: roomID,
             logger: logger
         ) : nil
+
+        _presence = options.presence != nil ? await DefaultPresence(
+            featureChannel: featureChannels[.presence]!,
+            roomID: roomID,
+            clientID: clientId,
+            logger: logger
+        ) : nil
+
+        _occupancy = options.occupancy != nil ? DefaultOccupancy(
+            featureChannel: featureChannels[.occupancy]!,
+            chatAPI: chatAPI,
+            roomID: roomID,
+            logger: logger
+        ) : nil
     }
 
-    private static func createFeatureChannels(roomID: String, realtime: RealtimeClient) -> [RoomFeature: DefaultFeatureChannel] {
-        .init(uniqueKeysWithValues: [RoomFeature.messages, RoomFeature.reactions].map { feature in
-            let channel = realtime.getChannel(feature.channelNameForRoomID(roomID))
+    private static func createFeatureChannels(roomID: String, roomOptions: RoomOptions, realtime: RealtimeClient) -> [RoomFeature: DefaultFeatureChannel] {
+        .init(uniqueKeysWithValues: [
+            RoomFeature.messages,
+            RoomFeature.reactions,
+            RoomFeature.presence,
+            RoomFeature.occupancy,
+        ].map { feature in
+            let channelOptions = ARTRealtimeChannelOptions()
+
+            // channel setup for presence and occupancy
+            if feature == .presence {
+                let channelOptions = ARTRealtimeChannelOptions()
+                let presenceOptions = roomOptions.presence
+
+                if presenceOptions?.enter ?? false {
+                    channelOptions.modes.insert(.presence)
+                }
+
+                if presenceOptions?.subscribe ?? false {
+                    channelOptions.modes.insert(.presenceSubscribe)
+                }
+            } else if feature == .occupancy {
+                channelOptions.params = ["occupancy": "metrics"]
+            }
+
+            let channel = realtime.getChannel(feature.channelNameForRoomID(roomID), opts: channelOptions)
             let contributor = DefaultRoomLifecycleContributor(channel: .init(underlyingChannel: channel), feature: feature)
 
             return (feature, .init(channel: channel, contributor: contributor))
@@ -118,14 +157,16 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
     }
 
     public nonisolated var presence: any Presence {
-        fatalError("Not yet implemented")
+        guard let _presence else {
+            fatalError("Presence is not enabled for this room")
+        }
+        return _presence
     }
 
     public nonisolated var reactions: any RoomReactions {
         guard let _reactions else {
             fatalError("Reactions are not enabled for this room")
         }
-
         return _reactions
     }
 
@@ -134,7 +175,10 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
     }
 
     public nonisolated var occupancy: any Occupancy {
-        fatalError("Not yet implemented")
+        guard let _occupancy else {
+            fatalError("Occupancy is not enabled for this room")
+        }
+        return _occupancy
     }
 
     public func attach() async throws {

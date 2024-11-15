@@ -24,13 +24,20 @@ public protocol RealtimeChannelProtocol: ARTRealtimeChannelProtocol, Sendable {}
 internal extension RealtimeClientProtocol {
     // Function to get the channel with merged options
     func getChannel(_ name: String, opts: ARTRealtimeChannelOptions? = nil) -> any RealtimeChannelProtocol {
-        // Merge opts and defaultChannelOptions
-        let resolvedOptions = opts ?? ARTRealtimeChannelOptions()
+        // Create a new instance of ARTRealtimeChannelOptions if opts is nil
+        let resolvedOptions = ARTRealtimeChannelOptions()
 
-        // Merge params if available, using defaultChannelOptions as fallback
-        resolvedOptions.params = opts?.params?.merging(
+        // Merge params if available, using opts first, then defaultChannelOptions as fallback
+        resolvedOptions.params = (opts?.params ?? [:]).merging(
             defaultChannelOptions.params ?? [:]
         ) { _, new in new }
+
+        // Apply other options from `opts` if necessary
+        if let customOpts = opts {
+            resolvedOptions.modes = customOpts.modes
+            resolvedOptions.cipher = customOpts.cipher
+            resolvedOptions.attachOnSubscribe = customOpts.attachOnSubscribe
+        }
 
         // Return the resolved channel
         return channels.get(name, options: resolvedOptions)
