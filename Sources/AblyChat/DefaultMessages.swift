@@ -16,16 +16,18 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
     public nonisolated let featureChannel: FeatureChannel
     private let chatAPI: ChatAPI
     private let clientID: String
+    private let logger: InternalLogger
 
     // TODO: https://github.com/ably-labs/ably-chat-swift/issues/36 - Handle unsubscribing in line with CHA-M4b
     // UUID acts as a unique identifier for each listener/subscription. MessageSubscriptionWrapper houses the subscription and the timeserial of when it was attached or resumed.
     private var subscriptionPoints: [UUID: MessageSubscriptionWrapper] = [:]
 
-    internal nonisolated init(featureChannel: FeatureChannel, chatAPI: ChatAPI, roomID: String, clientID: String) async {
+    internal nonisolated init(featureChannel: FeatureChannel, chatAPI: ChatAPI, roomID: String, clientID: String, logger: InternalLogger) async {
         self.featureChannel = featureChannel
         self.chatAPI = chatAPI
         self.roomID = roomID
         self.clientID = clientID
+        self.logger = logger
 
         // Implicitly handles channel events and therefore listners within this class. Alternative is to explicitly call something like `DefaultMessages.start()` which makes the SDK more cumbersome to interact with. This class is useless without kicking off this flow so I think leaving it here is suitable.
         // "Calls to instance method 'handleChannelEvents(roomId:)' from outside of its actor context are implicitly asynchronous" hence the `await` here.
@@ -38,6 +40,7 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
 
     // (CHA-M4) Messages can be received via a subscription in realtime.
     internal func subscribe(bufferingPolicy: BufferingPolicy) async throws -> MessageSubscription {
+        logger.log(message: "Subscribing to messages", level: .debug)
         let uuid = UUID()
         let timeserial = try await resolveSubscriptionStart()
         let messageSubscription = MessageSubscription(
@@ -162,8 +165,10 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
     }
 
     private func handleAttach(fromResume: Bool) async throws {
+        logger.log(message: "Handling attach", level: .debug)
         // Do nothing if we have resumed as there is no discontinuity in the message stream
         if fromResume {
+            logger.log(message: "Channel has resumed, no need to handle attach", level: .debug)
             return
         }
 
@@ -171,20 +176,26 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
             let timeserialOnChannelAttach = try await timeserialOnChannelAttach()
 
             for uuid in subscriptionPoints.keys {
+                logger.log(message: "Resetting subscription point for listener: \(uuid)", level: .debug)
                 subscriptionPoints[uuid]?.timeserial = timeserialOnChannelAttach
             }
         } catch {
+            logger.log(message: "Error handling attach: \(error)", level: .error)
             throw ARTErrorInfo.create(from: error)
         }
     }
 
     private func resolveSubscriptionStart() async throws -> TimeserialString {
+        logger.log(message: "Resolving subscription start", level: .debug)
         // (CHA-M5a) If a subscription is added when the underlying realtime channel is ATTACHED, then the subscription point is the current channelSerial of the realtime channel.
         if channel.state == .attached {
             if let channelSerial = channel.properties.channelSerial {
+                logger.log(message: "Channel is attached, returning channelSerial: \(channelSerial)", level: .debug)
                 return channelSerial
             } else {
-                throw ARTErrorInfo.create(withCode: 40000, status: 400, message: "channel is attached, but channelSerial is not defined")
+                let error = ARTErrorInfo.create(withCode: 40000, status: 400, message: "channel is attached, but channelSerial is not defined")
+                logger.log(message: "Error resolving subscription start: \(error)", level: .error)
+                throw error
             }
         }
 
@@ -194,12 +205,16 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
 
     // Always returns the attachSerial and not the channelSerial to also serve (CHA-M5c) - If a channel leaves the ATTACHED state and then re-enters ATTACHED with resumed=false, then it must be assumed that messages have been missed. The subscription point of any subscribers must be reset to the attachSerial.
     private func timeserialOnChannelAttach() async throws -> TimeserialString {
+        logger.log(message: "Resolving timeserial on channel attach", level: .debug)
         // If the state is already 'attached', return the attachSerial immediately
         if channel.state == .attached {
             if let attachSerial = channel.properties.attachSerial {
+                logger.log(message: "Channel is attached, returning attachSerial: \(attachSerial)", level: .debug)
                 return attachSerial
             } else {
-                throw ARTErrorInfo.create(withCode: 40000, status: 400, message: "Channel is attached, but attachSerial is not defined")
+                let error = ARTErrorInfo.create(withCode: 40000, status: 400, message: "Channel is attached, but attachSerial is not defined")
+                logger.log(message: "Error resolving timeserial on channel attach: \(error)", level: .error)
+                throw error
             }
         }
 
@@ -217,13 +232,16 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
                 case .attached:
                     // Handle successful attachment
                     if let attachSerial = channel.properties.attachSerial {
+                        logger.log(message: "Channel is attached, returning attachSerial: \(attachSerial)", level: .debug)
                         nillableContinuation?.resume(returning: attachSerial)
                     } else {
+                        logger.log(message: "Channel is attached, but attachSerial is not defined", level: .error)
                         nillableContinuation?.resume(throwing: ARTErrorInfo.create(withCode: 40000, status: 400, message: "Channel is attached, but attachSerial is not defined"))
                     }
                     nillableContinuation = nil
                 case .failed, .suspended:
                     // TODO: Revisit as part of https://github.com/ably-labs/ably-chat-swift/issues/32
+                    logger.log(message: "Channel failed to attach", level: .error)
                     nillableContinuation?.resume(
                         throwing: ARTErrorInfo.create(
                             withCode: ErrorCode.messagesAttachmentFailed.rawValue,
