@@ -1,5 +1,6 @@
 excluded:
   - .build
+  - UTSChatAdapter/Sources/Adapter/NanoID.swift
 
 strict: true
 
