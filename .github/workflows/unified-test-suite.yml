@@ -1,0 +1,39 @@
+name: Unified Test Suite
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  unified-test-suite:
+    runs-on: macos-15
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npm ci
+
+      - name: Install uts-chat globally
+        run: npm install -g @ably-labs/uts-chat
+
+      # This step can be removed once the runners' default version of Xcode is 16 or above
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: 16
+
+      - name: Prepare Adapter
+        working-directory: UTSChatAdapter
+        run: swift build --target Adapter
+
+      - name: Run uts-chat with ADAPTER_EXECUTABLE
+        env:
+          ADAPTER_EXECUTABLE: cd UTSChatAdapter && swift run UTSChatAdapter
+        run: uts-chat
