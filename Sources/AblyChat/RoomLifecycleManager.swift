@@ -604,6 +604,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
             logger.log(message: "Operation \(waitingOperationID) completed waiting for result of operation \(waitedOperationID), which completed successfully", level: .debug)
         } catch {
             logger.log(message: "Operation \(waitingOperationID) completed waiting for result of operation \(waitedOperationID), which threw error \(error)", level: .debug)
+            throw error
         }
     }
 
