@@ -984,7 +984,9 @@ struct DefaultRoomLifecycleManagerTests {
         try await manager.performAttachOperation()
 
         // This is to put the manager into the DETACHING state, to satisfy "with a room lifecycle operation in progress"
+        let roomStatusSubscription = await manager.onChange(bufferingPolicy: .unbounded)
         async let _ = manager.performDetachOperation()
+        _ = await roomStatusSubscription.first { $0.current == .detaching }
 
         // When: The aforementioned contributor emits an ATTACHED event with `resumed` flag set to false
         let contributorStateChange = ARTChannelStateChange(
