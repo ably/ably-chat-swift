@@ -1,5 +1,5 @@
 {
-  "originHash" : "f00ee2e8c80adfe8d72deb089738cdb967aeae43e71837f90d99fc602728fe45",
+  "originHash" : "b6d25f160b01b473629481d68d4fe734b3981fcd87079531f784c2ade3afdc4d",
   "pins" : [
     {
       "identity" : "ably-cocoa",
@@ -7,7 +7,7 @@
       "location" : "https://github.com/ably/ably-cocoa",
       "state" : {
         "branch" : "main",
-        "revision" : "4856ba6a423788902a6ef680793e7f404ceb4a51"
+        "revision" : "f7bff4b1c941b4c7b952b9224a33674e2302e19f"
       }
     },
     {

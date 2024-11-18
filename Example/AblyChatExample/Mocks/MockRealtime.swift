@@ -36,6 +36,10 @@ final class MockRealtime: NSObject, RealtimeClientProtocol, Sendable {
             fatalError("Not implemented")
         }
 
+        var presence: ARTRealtimePresenceProtocol {
+            fatalError("Not implemented")
+        }
+
         var errorReason: ARTErrorInfo? {
             fatalError("Not implemented")
         }

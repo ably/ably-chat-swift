@@ -1,18 +1,87 @@
 import Ably
 
 // TODO: (https://github.com/ably-labs/ably-chat-swift/issues/13): try to improve this type
-public typealias PresenceData = any Sendable
+public enum PresenceCustomData: Sendable, Codable, Equatable {
+    case string(String)
+    case number(Int) // Changed from NSNumber to Int to conform to Codable. Address in linked issue above.
+    case bool(Bool)
+    case null
+
+    public var value: Any? {
+        switch self {
+        case let .string(value):
+            value
+        case let .number(value):
+            value
+        case let .bool(value):
+            value
+        case .null:
+            nil
+        }
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+
+        if let value = try? container.decode(String.self) {
+            self = .string(value)
+        } else if let value = try? container.decode(Int.self) {
+            self = .number(value)
+        } else if let value = try? container.decode(Bool.self) {
+            self = .bool(value)
+        } else {
+            self = .null
+        }
+    }
+}
+
+public typealias UserCustomData = [String: PresenceCustomData]
+
+// (CHA-PR2a) The presence data format is a JSON object as described below. Customers may specify content of an arbitrary type to be placed in the userCustomData field.
+public struct PresenceData: Codable, Sendable {
+    public var userCustomData: UserCustomData?
+
+    public init(userCustomData: UserCustomData? = nil) {
+        self.userCustomData = userCustomData
+    }
+}
+
+internal extension PresenceData {
+    func asQueryItems() -> [String: Any] {
+        // Return an empty userCustomData string if no custom data is available
+        guard let userCustomData else {
+            return ["userCustomData": ""]
+        }
+
+        // Create a dictionary for userCustomData
+        var userCustomDataDict: [String: Any] = [:]
+
+        // Iterate over the custom data and handle different PresenceCustomData cases
+        for (key, value) in userCustomData {
+            switch value {
+            case let .string(stringValue):
+                userCustomDataDict[key] = stringValue
+            case let .number(numberValue):
+                userCustomDataDict[key] = numberValue
+            case let .bool(boolValue):
+                userCustomDataDict[key] = boolValue
+            case .null:
+                userCustomDataDict[key] = NSNull() // Use NSNull to represent null in the dictionary
+            }
+        }
+
+        // Return the final dictionary
+        return ["userCustomData": userCustomDataDict]
+    }
+}
 
 public protocol Presence: AnyObject, Sendable, EmitsDiscontinuities {
     func get() async throws -> [PresenceMember]
-    func get(params: PresenceQuery?) async throws -> [PresenceMember]
+    func get(params: PresenceQuery) async throws -> [PresenceMember]
     func isUserPresent(clientID: String) async throws -> Bool
-    func enter() async throws
-    func enter(data: PresenceData) async throws
-    func update() async throws
-    func update(data: PresenceData) async throws
-    func leave() async throws
-    func leave(data: PresenceData) async throws
+    func enter(data: PresenceData?) async throws
+    func update(data: PresenceData?) async throws
+    func leave(data: PresenceData?) async throws
     func subscribe(event: PresenceEventType) async -> Subscription<PresenceEvent>
     func subscribe(events: [PresenceEventType]) async -> Subscription<PresenceEvent>
 }
@@ -23,6 +92,26 @@ public struct PresenceMember: Sendable {
         case enter
         case leave
         case update
+        case absent
+        case unknown
+
+        internal init(from action: ARTPresenceAction) {
+            switch action {
+            case .present:
+                self = .present
+            case .enter:
+                self = .enter
+            case .leave:
+                self = .leave
+            case .update:
+                self = .update
+            case .absent:
+                self = .absent
+            @unknown default:
+                self = .unknown
+                print("Unknown presence action encountered: \(action)")
+            }
+        }
     }
 
     public init(clientID: String, data: PresenceData, action: PresenceMember.Action, extras: (any Sendable)?, updatedAt: Date) {
@@ -46,6 +135,19 @@ public enum PresenceEventType: Sendable {
     case leave
     case update
     case present
+
+    internal func toARTPresenceAction() -> ARTPresenceAction {
+        switch self {
+        case .present:
+            .present
+        case .enter:
+            .enter
+        case .leave:
+            .leave
+        case .update:
+            .update
+        }
+    }
 }
 
 public struct PresenceEvent: Sendable {
@@ -80,5 +182,14 @@ public struct PresenceQuery: Sendable {
         self.clientID = clientID
         self.connectionID = connectionID
         self.waitForSync = waitForSync
+    }
+
+    internal func asARTRealtimePresenceQuery() -> ARTRealtimePresenceQuery {
+        let query = ARTRealtimePresenceQuery()
+        query.limit = UInt(limit)
+        query.clientId = clientID
+        query.connectionId = connectionID
+        query.waitForSync = waitForSync
+        return query
     }
 }

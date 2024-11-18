@@ -32,8 +32,22 @@ struct IntegrationTests {
 
         // (2) Fetch a room
         let roomID = "basketball"
-        let txRoom = try await txClient.rooms.get(roomID: roomID, options: .init(reactions: .init()))
-        let rxRoom = try await rxClient.rooms.get(roomID: roomID, options: .init(reactions: .init()))
+        let txRoom = try await txClient.rooms.get(
+            roomID: roomID,
+            options: .init(
+                presence: .init(),
+                reactions: .init(),
+                occupancy: .init()
+            )
+        )
+        let rxRoom = try await rxClient.rooms.get(
+            roomID: roomID,
+            options: .init(
+                presence: .init(),
+                reactions: .init(),
+                occupancy: .init()
+            )
+        )
 
         // (3) Subscribe to room status
         let rxRoomStatusSubscription = await rxRoom.onStatusChange(bufferingPolicy: .unbounded)
@@ -82,25 +96,99 @@ struct IntegrationTests {
         let rxReactionFromSubscription = try #require(await rxReactionSubscription.first { _ in true })
         #expect(rxReactionFromSubscription.type == "heart")
 
+        // MARK: - Occupancy
+
+        // It can take a moment for the occupancy to update from the clients connecting above, so we’ll wait a 2 seconds here.
+        try await Task.sleep(nanoseconds: 2_000_000_000)
+
+        // (12) Get current occupancy
+        let currentOccupancy = try await rxRoom.occupancy.get()
+        #expect(currentOccupancy.connections != 0) // this flucuates dependant on the number of clients connected e.g. simulators running the test, hence why checking for non-zero
+        #expect(currentOccupancy.presenceMembers == 0) // not yet entered presence
+
+        // (13) Subscribe to occupancy
+        let rxOccupancySubscription = await rxRoom.occupancy.subscribe(bufferingPolicy: .unbounded)
+
+        // (14) Enter presence on the other client and check that we receive the updated occupancy on the subscription
+        try await txRoom.presence.enter(data: nil)
+
+        // It can take a moment for the occupancy to update from the clients entering presence above, so we’ll wait 2 seconds here.
+        try await Task.sleep(nanoseconds: 2_000_000_000)
+
+        // (15) Check that we received an updated presence count when getting the occupancy
+        let updatedCurrentOccupancy = try await rxRoom.occupancy.get()
+        #expect(updatedCurrentOccupancy.presenceMembers == 1) // 1 for txClient entering presence
+
+        // (16) Check that we received an updated presence count on the subscription
+        let rxOccupancyEventFromSubscription = try #require(await rxOccupancySubscription.first { _ in true })
+
+        #expect(rxOccupancyEventFromSubscription.presenceMembers == 1) // 1 for txClient entering presence
+
+        try await txRoom.presence.leave(data: nil)
+
+        // It can take a moment for the occupancy to update from the clients leaving presence above, so we’ll wait 2 seconds here. Important for the occupancy tests below.
+        try await Task.sleep(nanoseconds: 2_000_000_000)
+
+        // MARK: - Presence
+
+        // (17) Subscribe to presence
+        let rxPresenceSubscription = await rxRoom.presence.subscribe(events: [.enter, .leave, .update])
+
+        // (18) Send `.enter` presence event with custom data on the other client and check that we receive it on the subscription
+        try await txRoom.presence.enter(data: .init(userCustomData: ["randomData": .string("randomValue")]))
+        let rxPresenceEnterTxEvent = try #require(await rxPresenceSubscription.first { _ in true })
+        #expect(rxPresenceEnterTxEvent.action == .enter)
+        #expect(rxPresenceEnterTxEvent.data?.userCustomData?["randomData"]?.value as? String == "randomValue")
+
+        // (19) Send `.update` presence event with custom data on the other client and check that we receive it on the subscription
+        try await txRoom.presence.update(data: .init(userCustomData: ["randomData": .string("randomValue")]))
+        let rxPresenceUpdateTxEvent = try #require(await rxPresenceSubscription.first { _ in true })
+        #expect(rxPresenceUpdateTxEvent.action == .update)
+        #expect(rxPresenceUpdateTxEvent.data?.userCustomData?["randomData"]?.value as? String == "randomValue")
+
+        // (20) Send `.leave` presence event with custom data on the other client and check that we receive it on the subscription
+        try await txRoom.presence.leave(data: .init(userCustomData: ["randomData": .string("randomValue")]))
+        let rxPresenceLeaveTxEvent = try #require(await rxPresenceSubscription.first { _ in true })
+        #expect(rxPresenceLeaveTxEvent.action == .leave)
+        #expect(rxPresenceLeaveTxEvent.data?.userCustomData?["randomData"]?.value as? String == "randomValue")
+
+        // (21) Send `.enter` presence event with custom data on our client and check that we receive it on the subscription
+        try await txRoom.presence.enter(data: .init(userCustomData: ["randomData": .string("randomValue")]))
+        let rxPresenceEnterRxEvent = try #require(await rxPresenceSubscription.first { _ in true })
+        #expect(rxPresenceEnterRxEvent.action == .enter)
+        #expect(rxPresenceEnterRxEvent.data?.userCustomData?["randomData"]?.value as? String == "randomValue")
+
+        // (22) Send `.update` presence event with custom data on our client and check that we receive it on the subscription
+        try await txRoom.presence.update(data: .init(userCustomData: ["randomData": .string("randomValue")]))
+        let rxPresenceUpdateRxEvent = try #require(await rxPresenceSubscription.first { _ in true })
+        #expect(rxPresenceUpdateRxEvent.action == .update)
+        #expect(rxPresenceUpdateRxEvent.data?.userCustomData?["randomData"]?.value as? String == "randomValue")
+
+        // (23) Send `.leave` presence event with custom data on our client and check that we receive it on the subscription
+        try await txRoom.presence.leave(data: .init(userCustomData: ["randomData": .string("randomValue")]))
+        let rxPresenceLeaveRxEvent = try #require(await rxPresenceSubscription.first { _ in true })
+        #expect(rxPresenceLeaveRxEvent.action == .leave)
+        #expect(rxPresenceLeaveRxEvent.data?.userCustomData?["randomData"]?.value as? String == "randomValue")
+
         // MARK: - Detach
 
-        // (12) Detach the room
+        // (24) Detach the room
         try await rxRoom.detach()
 
-        // (13) Check that we received a DETACHED status change as a result of detaching the room
+        // (25) Check that we received a DETACHED status change as a result of detaching the room
         _ = try #require(await rxRoomStatusSubscription.first { $0.current == .detached })
         #expect(await rxRoom.status == .detached)
 
         // MARK: - Release
 
-        // (14) Release the room
+        // (26) Release the room
         try await rxClient.rooms.release(roomID: roomID)
 
-        // (15) Check that we received a RELEASED status change as a result of releasing the room
+        // (27) Check that we received a RELEASED status change as a result of releasing the room
         _ = try #require(await rxRoomStatusSubscription.first { $0.current == .released })
         #expect(await rxRoom.status == .released)
 
-        // (16) Fetch the room we just released and check it’s a new object
+        // (28) Fetch the room we just released and check it’s a new object
         let postReleaseRxRoom = try await rxClient.rooms.get(roomID: roomID, options: .init())
         #expect(postReleaseRxRoom !== rxRoom)
     }

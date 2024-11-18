@@ -14,13 +14,15 @@ internal enum RoomFeature {
 
     private var channelNameSuffix: String {
         switch self {
-        case .messages:
+        case .messages, .presence, .occupancy:
             // (CHA-M1) Chat messages for a Room are sent on a corresponding realtime channel <roomId>::$chat::$chatMessages. For example, if your room id is my-room then the messages channel will be my-room::$chat::$chatMessages.
+            // (CHA-PR1) Presence for a Room is exposed on the realtime channel used for chat messages, in the format <roomId>::$chat::$chatMessages. For example, if your room id is my-room then the presence channel will be my-room::$chat::$chatMessages.
+            // (CHA-O1) Occupancy for a room is exposed on the realtime channel used for chat messages, in the format <roomId>::$chat::$chatMessages. For example, if your room id is my-room then the presence channel will be my-room::$chat::$chatMessages.
             "chatMessages"
         case .reactions:
             // (CHA-ER1) Reactions for a Room are sent on a corresponding realtime channel <roomId>::$chat::$reactions. For example, if your room id is my-room then the reactions channel will be my-room::$chat::$reactions.
             "reactions"
-        case .typing, .presence, .occupancy:
+        case .typing:
             // We’ll add these, with reference to the relevant spec points, as we implement these features
             fatalError("Don’t know channel name suffix for room feature \(self)")
         }
