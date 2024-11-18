@@ -1727,7 +1727,7 @@ struct DefaultRoomLifecycleManagerTests {
                 contributorThatWillEmitStateChange.id,
                 contributors[1].id,
             ],
-            contributors: [contributorThatWillEmitStateChange]
+            contributors: contributors
         )
 
         let roomStatusSubscription = await manager.onRoomStatusChange(bufferingPolicy: .unbounded)
