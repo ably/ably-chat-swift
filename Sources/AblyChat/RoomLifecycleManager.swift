@@ -539,7 +539,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
 
     /// Stores bookkeeping information needed for allowing one operation to await the result of another.
     private struct OperationResultContinuations {
-        typealias Continuation = CheckedContinuation<Void, Error>
+        typealias Continuation = CheckedContinuation<Result<Void, ARTErrorInfo>, Never>
 
         private var operationResultContinuationsByOperationID: [UUID: [Continuation]] = [:]
 
@@ -585,11 +585,11 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
     private func waitForCompletionOfOperationWithID(
         _ waitedOperationID: UUID,
         waitingOperationID: UUID
-    ) async throws {
+    ) async throws(ARTErrorInfo) {
         logger.log(message: "Operation \(waitingOperationID) started waiting for result of operation \(waitedOperationID)", level: .debug)
 
         do {
-            try await withCheckedThrowingContinuation { (continuation: OperationResultContinuations.Continuation) in
+            let result = await withCheckedContinuation { (continuation: OperationResultContinuations.Continuation) in
                 // My “it is guaranteed” in the documentation for this method is really more of an “I hope that”, because it’s based on my pretty vague understanding of Swift concurrency concepts; namely, I believe that if you call this manager-isolated `async` method from another manager-isolated method, the initial synchronous part of this method — in particular the call to `addContinuation` below — will occur _before_ the call to this method suspends. (I think this can be roughly summarised as “calls to async methods on self don’t do actor hopping” but I could be completely misusing a load of Swift concurrency vocabulary there.)
                 operationResultContinuations.addContinuation(continuation, forResultOfOperationWithID: waitedOperationID)
 
@@ -601,6 +601,8 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
                 #endif
             }
 
+            try result.get()
+
             logger.log(message: "Operation \(waitingOperationID) completed waiting for result of operation \(waitedOperationID), which completed successfully", level: .debug)
         } catch {
             logger.log(message: "Operation \(waitingOperationID) completed waiting for result of operation \(waitedOperationID), which threw error \(error)", level: .debug)
@@ -609,12 +611,12 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
     }
 
     /// Operations should call this when they have completed, in order to complete any waits initiated by ``waitForCompletionOfOperationWithID(_:waitingOperationID:)``.
-    private func operationWithID(_ operationID: UUID, didCompleteWithResult result: Result<Void, Error>) {
+    private func operationWithID(_ operationID: UUID, didCompleteWithResult result: Result<Void, ARTErrorInfo>) {
         logger.log(message: "Operation \(operationID) completed with result \(result)", level: .debug)
         let continuationsToResume = operationResultContinuations.removeContinuationsForResultOfOperationWithID(operationID)
 
         for continuation in continuationsToResume {
-            continuation.resume(with: result)
+            continuation.resume(returning: result)
         }
     }
 
@@ -622,16 +624,18 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
     ///
     /// - Note: Note that `DefaultRoomLifecycleManager` does not implement any sort of mutual exclusion mechanism that _enforces_ that one room lifecycle operation must wait for another (e.g. it is _not_ a queue); each operation needs to implement its own logic for whether it should proceed in the presence of other in-progress operations.
     ///
+    /// Note that this method currently treats all performed operations as throwing. If you wish to wait for an operation that you _know_ to be non-throwing (which the RELEASE operation currently is) then you’ll need to call this method with `try!` or equivalent. (It might be possible to improve this in the future, but I didn’t want to put much time into figuring it out.)
+    ///
     /// - Parameters:
     ///   - forcedOperationID: Forces the operation to have a given ID. In combination with the ``testsOnly_subscribeToOperationWaitEvents`` API, this allows tests to verify that one test-initiated operation is waiting for another test-initiated operation.
     ///   - body: The implementation of the operation to be performed. Once this function returns or throws an error, the operation is considered to have completed, and any waits for this operation’s completion initiated via ``waitForCompletionOfOperationWithID(_:waitingOperationID:)`` will complete.
-    private func performAnOperation<Failure: Error>(
+    private func performAnOperation(
         forcingOperationID forcedOperationID: UUID?,
-        _ body: (UUID) async throws(Failure) -> Void
-    ) async throws(Failure) {
+        _ body: (UUID) async throws(ARTErrorInfo) -> Void
+    ) async throws(ARTErrorInfo) {
         let operationID = forcedOperationID ?? UUID()
         logger.log(message: "Performing operation \(operationID)", level: .debug)
-        let result: Result<Void, Failure>
+        let result: Result<Void, ARTErrorInfo>
         do {
             // My understanding (based on what the compiler allows me to do, and a vague understanding of how actors work) is that inside this closure you can write code as if it were a method on the manager itself — i.e. with synchronous access to the manager’s state. But I currently lack the Swift concurrency vocabulary to explain exactly why this is the case.
             try await body(operationID)
@@ -660,12 +664,12 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
     /// - Parameters:
     ///   - forcedOperationID: Allows tests to force the operation to have a given ID. In combination with the ``testsOnly_subscribeToOperationWaitEvents`` API, this allows tests to verify that one test-initiated operation is waiting for another test-initiated operation.
     private func _performAttachOperation(forcingOperationID forcedOperationID: UUID?) async throws {
-        try await performAnOperation(forcingOperationID: forcedOperationID) { operationID in
+        try await performAnOperation(forcingOperationID: forcedOperationID) { operationID throws(ARTErrorInfo) in
             try await bodyOfAttachOperation(operationID: operationID)
         }
     }
 
-    private func bodyOfAttachOperation(operationID: UUID) async throws {
+    private func bodyOfAttachOperation(operationID: UUID) async throws(ARTErrorInfo) {
         switch status {
         case .attached:
             // CHA-RL1a
@@ -780,12 +784,12 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
     /// - Parameters:
     ///   - forcedOperationID: Allows tests to force the operation to have a given ID. In combination with the ``testsOnly_subscribeToOperationWaitEvents`` API, this allows tests to verify that one test-initiated operation is waiting for another test-initiated operation.
     private func _performDetachOperation(forcingOperationID forcedOperationID: UUID?) async throws {
-        try await performAnOperation(forcingOperationID: forcedOperationID) { operationID in
+        try await performAnOperation(forcingOperationID: forcedOperationID) { operationID throws(ARTErrorInfo) in
             try await bodyOfDetachOperation(operationID: operationID)
         }
     }
 
-    private func bodyOfDetachOperation(operationID: UUID) async throws {
+    private func bodyOfDetachOperation(operationID: UUID) async throws(ARTErrorInfo) {
         switch status {
         case .detached:
             // CHA-RL2a
@@ -808,7 +812,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
         changeStatus(to: .detaching(detachOperationID: operationID))
 
         // CHA-RL2f
-        var firstDetachError: Error?
+        var firstDetachError: ARTErrorInfo?
         for contributor in contributors {
             logger.log(message: "Detaching contributor \(contributor)", level: .info)
             do {
@@ -879,7 +883,9 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
     /// - Parameters:
     ///   - forcedOperationID: Allows tests to force the operation to have a given ID. In combination with the ``testsOnly_subscribeToOperationWaitEvents`` API, this allows tests to verify that one test-initiated operation is waiting for another test-initiated operation.
     internal func _performReleaseOperation(forcingOperationID forcedOperationID: UUID? = nil) async {
-        await performAnOperation(forcingOperationID: forcedOperationID) { operationID in
+        // See note on performAnOperation for the current need for this force try
+        // swiftlint:disable:next force_try
+        try! await performAnOperation(forcingOperationID: forcedOperationID) { operationID in
             await bodyOfReleaseOperation(operationID: operationID)
         }
     }
