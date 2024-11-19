@@ -2,6 +2,34 @@ import Ably
 import AblyChat
 import SwiftUI
 
+private enum Environment: Equatable {
+    // Set ``current`` to `.live` if you wish to connect to actual instances of the Chat client in either Prod or Sandbox environments. Setting the mode to `.mock` will use the `MockChatClient`, and therefore simulate all features of the Chat app.
+    static let current: Self = .mock
+
+    case mock
+    /// - Parameters:
+    ///   - key: Your Ably API key.
+    ///   - clientId: A string that identifies this client.
+    case live(key: String, clientId: String)
+
+    func createChatClient() -> ChatClient {
+        switch self {
+        case .mock:
+            return MockChatClient(
+                realtime: MockRealtime.create(),
+                clientOptions: ClientOptions()
+            )
+        case let .live(key: key, clientId: clientId):
+            let realtimeOptions = ARTClientOptions()
+            realtimeOptions.key = key
+            realtimeOptions.clientId = clientId
+            let realtime = ARTRealtime(options: realtimeOptions)
+
+            return DefaultChatClient(realtime: realtime, clientOptions: .init())
+        }
+    }
+}
+
 @MainActor
 struct ContentView: View {
     #if os(macOS)
@@ -15,20 +43,7 @@ struct ContentView: View {
     // Can be replaced with your own room ID
     private let roomID = "DemoRoomID"
 
-    // Set mode to `.live` if you wish to connect to actual instances of the Chat client in either Prod or Sandbox environments. Setting the mode to `.mock` will use the `MockChatClient`, and therefore simulate all features of the Chat app.
-    private let mode = Environment.mock
-    private enum Environment {
-        case mock
-        case live
-    }
-
-    @State private var mockChatClient = MockChatClient(
-        realtime: MockRealtime.create(),
-        clientOptions: ClientOptions()
-    )
-
-    private let liveRealtime: ARTRealtime
-    @State private var liveChatClient: DefaultChatClient
+    @State private var chatClient = Environment.current.createChatClient()
 
     @State private var title = "Room"
     @State private var messages = [BasicListItem]()
@@ -38,19 +53,8 @@ struct ContentView: View {
     @State private var occupancyInfo = "Connections: 0"
     @State private var statusInfo = ""
 
-    // You only need to set `options.key` and `options.clientId` if your mode is set to `.live`. Otherwise, you can ignore this.
-    init() {
-        let options = ARTClientOptions()
-        options.key = ""
-        options.clientId = ""
-        liveRealtime = ARTRealtime(options: options)
-
-        _liveChatClient = State(initialValue: DefaultChatClient(realtime: liveRealtime, clientOptions: .init()))
-    }
-
     private func room() async throws -> Room {
-        let chosenChatClient: ChatClient = (mode == .mock) ? mockChatClient : liveChatClient
-        return try await chosenChatClient.rooms.get(
+        try await chatClient.rooms.get(
             roomID: roomID,
             options: .init(
                 presence: .init(),
@@ -137,8 +141,8 @@ struct ContentView: View {
         .tryTask { try await showPresence() }
         .tryTask { try await showOccupancy() }
         .tryTask {
-            // NOTE: As we implement more features, move them out of the `if mode == .mock` block and into the main block just above.
-            if mode == .mock {
+            // NOTE: As we implement more features, move them out of the `if Environment.current == .mock` block and into the main block just above.
+            if Environment.current == .mock {
                 try await showTypings()
                 try await showRoomStatus()
             }
