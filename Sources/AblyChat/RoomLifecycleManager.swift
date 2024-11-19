@@ -182,11 +182,14 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
     internal enum Status: Equatable {
         case initialized
         case attachingDueToAttachOperation(attachOperationID: UUID)
+        case attachingDueToRetryOperation(retryOperationID: UUID)
         case attachingDueToContributorStateChange(error: ARTErrorInfo?)
         case attached
         case detaching(detachOperationID: UUID)
         case detached
-        case suspended(error: ARTErrorInfo)
+        case detachedDueToRetryOperation(retryOperationID: UUID)
+        case suspendedAwaitingStartOfRetryOperation(error: ARTErrorInfo)
+        case suspended(retryOperationID: UUID, error: ARTErrorInfo)
         case failed(error: ARTErrorInfo)
         case releasing(releaseOperationID: UUID)
         case released
@@ -197,15 +200,19 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
                 .initialized
             case .attachingDueToAttachOperation:
                 .attaching(error: nil)
+            case .attachingDueToRetryOperation:
+                .attaching(error: nil)
             case let .attachingDueToContributorStateChange(error: error):
                 .attaching(error: error)
             case .attached:
                 .attached
             case .detaching:
                 .detaching
-            case .detached:
+            case .detached, .detachedDueToRetryOperation:
                 .detached
-            case let .suspended(error):
+            case let .suspendedAwaitingStartOfRetryOperation(error):
+                .suspended(error: error)
+            case let .suspended(_, error):
                 .suspended(error: error)
             case let .failed(error):
                 .failed(error: error)
@@ -220,17 +227,23 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
             switch self {
             case let .attachingDueToAttachOperation(attachOperationID):
                 attachOperationID
+            case let .attachingDueToRetryOperation(retryOperationID):
+                retryOperationID
             case let .detaching(detachOperationID):
                 detachOperationID
+            case let .detachedDueToRetryOperation(retryOperationID):
+                retryOperationID
             case let .releasing(releaseOperationID):
                 releaseOperationID
-            case .suspended,
-                 .initialized,
+            case let .suspended(retryOperationID, _):
+                retryOperationID
+            case .initialized,
                  .attached,
                  .detached,
                  .failed,
                  .released,
-                 .attachingDueToContributorStateChange:
+                 .attachingDueToContributorStateChange,
+                 .suspendedAwaitingStartOfRetryOperation:
                 nil
             }
         }
@@ -316,8 +329,12 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
         logger.log(message: "Transitioning from \(status) to \(new)", level: .info)
         let previous = status
         status = new
-        let statusChange = RoomStatusChange(current: status.toRoomStatus, previous: previous.toRoomStatus)
-        emitStatusChange(statusChange)
+
+        // Avoid a double-emit of room status when changing from `.suspendedAwaitingStartOfRetryOperation` to `.suspended`.
+        if new.toRoomStatus != previous.toRoomStatus {
+            let statusChange = RoomStatusChange(current: status.toRoomStatus, previous: previous.toRoomStatus)
+            emitStatusChange(statusChange)
+        }
     }
 
     private func emitStatusChange(_ change: RoomStatusChange) {
@@ -463,7 +480,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
 
                 clearTransientDisconnectTimeouts()
 
-                changeStatus(to: .suspended(error: reason))
+                changeStatus(to: .suspendedAwaitingStartOfRetryOperation(error: reason))
             }
         case .attaching:
             if !hasOperationInProgress, !contributorAnnotations[contributor].hasTransientDisconnectTimeout {
@@ -533,7 +550,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
 
     /// Whether the room lifecycle manager currently has a room lifecycle operation in progress.
     ///
-    /// - Warning: I haven’t yet figured out the exact meaning of “has an operation in progress” — at what point is an operation considered to be no longer in progress? Is it the point at which the operation has updated the manager’s status to one that no longer indicates an in-progress operation (this is the meaning currently used by `hasOperationInProgress`)? Or is it the point at which the `bodyOf*Operation` method for that operation exits (i.e. the point at which ``performAnOperation(_:)`` considers the operation to have completed)? Does it matter? I’ve chosen to not think about this very much right now, but might need to revisit. See TODO against `emitPendingDiscontinuityEvents` in `bodyOfDetachOperation` for an example of something where these two notions of “has an operation in progress” are not equivalent.
+    /// - Warning: I haven’t yet figured out the exact meaning of “has an operation in progress” — at what point is an operation considered to be no longer in progress? Is it the point at which the operation has updated the manager’s status to one that no longer indicates an in-progress operation (this is the meaning currently used by `hasOperationInProgress`)? Or is it the point at which the `bodyOf*Operation` method for that operation exits (i.e. the point at which ``performAnOperation(_:)`` considers the operation to have completed)? Does it matter? I’ve chosen to not think about this very much right now, but might need to revisit. See TODO against `emitPendingDiscontinuityEvents` in `performAttachmentCycle` for an example of something where these two notions of “has an operation in progress” are not equivalent.
     private var hasOperationInProgress: Bool {
         status.operationID != nil
     }
@@ -704,7 +721,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
         case .released:
             // CHA-RL1c
             throw ARTErrorInfo(chatError: .roomIsReleased)
-        case .initialized, .suspended, .attachingDueToAttachOperation, .attachingDueToContributorStateChange, .detached, .detaching, .failed:
+        case .initialized, .suspendedAwaitingStartOfRetryOperation, .suspended, .attachingDueToAttachOperation, .attachingDueToRetryOperation, .attachingDueToContributorStateChange, .detached, .detachedDueToRetryOperation, .detaching, .failed:
             break
         }
 
@@ -716,6 +733,11 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
         // CHA-RL1e
         changeStatus(to: .attachingDueToAttachOperation(attachOperationID: operationID))
 
+        try await performAttachmentCycle()
+    }
+
+    /// Performs the “CHA-RL1e attachment cycle”, to use the terminology of CHA-RL5f.
+    private func performAttachmentCycle() async throws(ARTErrorInfo) {
         // CHA-RL1f
         for contributor in contributors {
             do {
@@ -730,7 +752,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
                 case .suspended:
                     // CHA-RL1h2
                     let error = ARTErrorInfo(chatError: .attachmentFailed(feature: contributor.feature, underlyingError: contributorAttachError))
-                    changeStatus(to: .suspended(error: error))
+                    changeStatus(to: .suspendedAwaitingStartOfRetryOperation(error: error))
 
                     // CHA-RL1h3
                     throw error
@@ -815,7 +837,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
 
     private func bodyOfDetachOperation(operationID: UUID) async throws(ARTErrorInfo) {
         switch status {
-        case .detached:
+        case .detached, .detachedDueToRetryOperation:
             // CHA-RL2a
             return
         case .releasing:
@@ -827,7 +849,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
         case .failed:
             // CHA-RL2d
             throw ARTErrorInfo(chatError: .roomInFailedState)
-        case .initialized, .suspended, .attachingDueToAttachOperation, .attachingDueToContributorStateChange, .attached, .detaching:
+        case .initialized, .suspendedAwaitingStartOfRetryOperation, .suspended, .attachingDueToAttachOperation, .attachingDueToRetryOperation, .attachingDueToContributorStateChange, .attached, .detaching:
             break
         }
 
@@ -835,9 +857,30 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
         clearTransientDisconnectTimeouts()
         changeStatus(to: .detaching(detachOperationID: operationID))
 
+        try await performDetachmentCycle(trigger: .detachOperation)
+    }
+
+    /// Describes the reason a CHA-RL2f detachment cycle is being performed.
+    private enum DetachmentCycleTrigger {
+        case detachOperation
+        case retryOperation(retryOperationID: UUID, triggeringContributor: Contributor)
+
+        /// Given a CHA-RL2f detachment cycle triggered by this trigger, returns the DETACHED status to which the room should transition per CHA-RL2g.
+        var detachedStatus: Status {
+            switch self {
+            case .detachOperation:
+                .detached
+            case let .retryOperation(retryOperationID, _):
+                .detachedDueToRetryOperation(retryOperationID: retryOperationID)
+            }
+        }
+    }
+
+    /// Performs the “CHA-RL2f detachment cycle”, to use the terminology of CHA-RL5a.
+    private func performDetachmentCycle(trigger: DetachmentCycleTrigger) async throws(ARTErrorInfo) {
         // CHA-RL2f
         var firstDetachError: ARTErrorInfo?
-        for contributor in contributors {
+        for contributor in contributorsForDetachmentCycle(trigger: trigger) {
             logger.log(message: "Detaching contributor \(contributor)", level: .info)
             do {
                 try await contributor.channel.detach()
@@ -868,9 +911,9 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
                     // CHA-RL2h3: Retry until detach succeeds, with a pause before each attempt
                     while true {
                         do {
-                            logger.log(message: "Will attempt to detach non-failed contributor \(contributor) in 1s.", level: .info)
-                            // TODO: what's the correct wait time? (https://github.com/ably/specification/pull/200#discussion_r1763799223)
-                            try await clock.sleep(timeInterval: 1)
+                            let waitDuration = 0.25
+                            logger.log(message: "Will attempt to detach non-failed contributor \(contributor) in \(waitDuration)s.", level: .info)
+                            try await clock.sleep(timeInterval: waitDuration)
                             logger.log(message: "Detaching non-failed contributor \(contributor)", level: .info)
                             try await contributor.channel.detach()
                             break
@@ -889,7 +932,19 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
         }
 
         // CHA-RL2g
-        changeStatus(to: .detached)
+        changeStatus(to: trigger.detachedStatus)
+    }
+
+    /// Returns the contributors that should be detached in a CHA-RL2f detachment cycle.
+    private func contributorsForDetachmentCycle(trigger: DetachmentCycleTrigger) -> [Contributor] {
+        switch trigger {
+        case .detachOperation:
+            // CHA-RL2f
+            contributors
+        case let .retryOperation(_, triggeringContributor):
+            // CHA-RL5a
+            contributors.filter { $0.id != triggeringContributor.id }
+        }
     }
 
     // MARK: - RELEASE operation
@@ -919,7 +974,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
         case .released:
             // CHA-RL3a
             return
-        case .detached:
+        case .detached, .detachedDueToRetryOperation:
             // CHA-RL3b
             changeStatus(to: .released)
             return
@@ -928,7 +983,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
             // See note on waitForCompletionOfOperationWithID for the current need for this force try
             // swiftlint:disable:next force_try
             return try! await waitForCompletionOfOperationWithID(releaseOperationID, requester: .anotherOperation(operationID: operationID))
-        case .initialized, .attached, .attachingDueToAttachOperation, .attachingDueToContributorStateChange, .detaching, .suspended, .failed:
+        case .initialized, .attached, .attachingDueToAttachOperation, .attachingDueToRetryOperation, .attachingDueToContributorStateChange, .detaching, .suspendedAwaitingStartOfRetryOperation, .suspended, .failed:
             break
         }
 
@@ -953,11 +1008,11 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
                     break
                 } catch {
                     // CHA-RL3f: Retry until detach succeeds, with a pause before each attempt
-                    logger.log(message: "Failed to detach contributor \(contributor), error \(error). Will retry in 1s.", level: .info)
+                    let waitDuration = 0.25
+                    logger.log(message: "Failed to detach contributor \(contributor), error \(error). Will retry in \(waitDuration)s.", level: .info)
                     // TODO: Make this not trap in the case where the Task is cancelled (as part of the broader https://github.com/ably-labs/ably-chat-swift/issues/29 for handling task cancellation)
-                    // TODO: what's the correct wait time? (https://github.com/ably/specification/pull/200#discussion_r1763822207)
                     // swiftlint:disable:next force_try
-                    try! await clock.sleep(timeInterval: 1)
+                    try! await clock.sleep(timeInterval: waitDuration)
                     // Loop repeats
                 }
             }
@@ -965,6 +1020,108 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
 
         // CHA-RL3g
         changeStatus(to: .released)
+    }
+
+    // MARK: - RETRY operation
+
+    /// Implements CHA-RL5’s RETRY operation.
+    ///
+    /// - Parameters:
+    ///   - forcedOperationID: Allows tests to force the operation to have a given ID. In combination with the ``testsOnly_subscribeToOperationWaitEvents`` API, this allows tests to verify that one test-initiated operation is waiting for another test-initiated operation.
+    ///   - triggeringContributor: This is, in the language of CHA-RL5a, “the channel that became SUSPENDED”.
+    internal func performRetryOperation(testsOnly_forcingOperationID forcedOperationID: UUID? = nil, triggeredByContributor triggeringContributor: Contributor, errorForSuspendedStatus: ARTErrorInfo) async {
+        // See note on performAnOperation for the current need for this force try
+        // swiftlint:disable:next force_try
+        try! await performAnOperation(forcingOperationID: forcedOperationID) { operationID in
+            await bodyOfRetryOperation(
+                operationID: operationID,
+                triggeredByContributor: triggeringContributor,
+                errorForSuspendedStatus: errorForSuspendedStatus
+            )
+        }
+    }
+
+    private func bodyOfRetryOperation(
+        operationID: UUID,
+        triggeredByContributor triggeringContributor: Contributor,
+        errorForSuspendedStatus: ARTErrorInfo
+    ) async {
+        changeStatus(to: .suspended(retryOperationID: operationID, error: errorForSuspendedStatus))
+
+        // CHA-RL5a
+        do {
+            try await performDetachmentCycle(
+                trigger: .retryOperation(
+                    retryOperationID: operationID,
+                    triggeringContributor: triggeringContributor
+                )
+            )
+        } catch {
+            logger.log(message: "RETRY’s detachment cycle failed with error \(error). Ending RETRY.", level: .debug)
+            return
+        }
+
+        // CHA-RL5d
+        do {
+            try await waitForContributorThatTriggeredRetryToBecomeAttached(triggeringContributor)
+        } catch {
+            // CHA-RL5e
+            logger.log(message: "RETRY’s waiting for triggering contributor to attach failed with error \(error). Ending RETRY.", level: .debug)
+            return
+        }
+
+        // CHA-RL5f
+        changeStatus(to: .attachingDueToRetryOperation(retryOperationID: operationID))
+        do {
+            try await performAttachmentCycle()
+        } catch {
+            logger.log(message: "RETRY’s attachment cycle failed with error \(error). Ending RETRY.", level: .debug)
+            return
+        }
+    }
+
+    /// Performs CHA-RL5d’s “the room waits until the original channel that caused the retry loop naturally enters the ATTACHED state”.
+    ///
+    /// Throws an error if the room enters the FAILED status, which is considered terminal by the RETRY operation.
+    private func waitForContributorThatTriggeredRetryToBecomeAttached(_ triggeringContributor: Contributor) async throws {
+        logger.log(message: "RETRY waiting for \(triggeringContributor) to enter ATTACHED", level: .debug)
+
+        let handleState = { [self] (state: ARTRealtimeChannelState, associatedError: ARTErrorInfo?) in
+            switch state {
+            // CHA-RL5d
+            case .attached:
+                logger.log(message: "RETRY completed waiting for \(triggeringContributor) to enter ATTACHED", level: .debug)
+                return true
+            // CHA-RL5e
+            case .failed:
+                guard let associatedError else {
+                    preconditionFailure("Contributor entered FAILED but there’s no associated error")
+                }
+                logger.log(message: "RETRY failed waiting for \(triggeringContributor) to enter ATTACHED, since it entered FAILED with error \(associatedError)", level: .debug)
+
+                changeStatus(to: .failed(error: associatedError))
+                throw associatedError
+            case .attaching, .detached, .detaching, .initialized, .suspended:
+                return false
+            @unknown default:
+                return false
+            }
+        }
+
+        // Check whether the contributor is already in one of the states that we’re going to wait for. CHA-RL5d doesn’t make this check explicit but it seems like the right thing to do (asked in https://github.com/ably/specification/issues/221).
+        // TODO: this assumes that if you fetch a channel’s `state` and then its `errorReason`, they will both refer to the same channel state; this may not be true due to threading, address in https://github.com/ably-labs/ably-chat-swift/issues/49
+        if try await handleState(triggeringContributor.channel.state, triggeringContributor.channel.errorReason) {
+            return
+        }
+
+        // TODO: this assumes that if you check a channel’s state, and it’s x, and you then immediately add a state listener, you’ll definitely find out if the channel changes to a state other than x; this may not be true due to threading, address in https://github.com/ably-labs/ably-chat-swift/issues/49
+        for await stateChange in await triggeringContributor.channel.subscribeToState() {
+            // (I prefer this way of writing it, in this case)
+            // swiftlint:disable:next for_where
+            if try handleState(stateChange.current, stateChange.reason) {
+                return
+            }
+        }
     }
 
     // MARK: - Waiting to be able to perform presence operations
@@ -977,10 +1134,13 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
         case .attachingDueToContributorStateChange:
             // TODO: Spec doesn’t say what to do in this situation; asked in https://github.com/ably/specification/issues/228
             fatalError("waitToBeAbleToPerformPresenceOperations doesn’t currently handle attachingDueToContributorStateChange")
+        case .attachingDueToRetryOperation:
+            // TODO: Spec doesn’t say what to do in this situation; asked in https://github.com/ably/specification/issues/228
+            fatalError("waitToBeAbleToPerformPresenceOperations doesn’t currently handle attachingDueToRetryOperation")
         case .attached:
             // CHA-PR3e, CHA-PR11e, CHA-PR6d, CHA-T2d
             break
-        case .detached:
+        case .detached, .detachedDueToRetryOperation:
             // CHA-PR3f, CHA-PR11f, CHA-PR6e, CHA-T2e
             throw .init(chatError: .presenceOperationRequiresRoomAttach(feature: requester))
         case .detaching,
@@ -988,6 +1148,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
              .initialized,
              .released,
              .releasing,
+             .suspendedAwaitingStartOfRetryOperation,
              .suspended:
             // CHA-PR3g, CHA-PR11g, CHA-PR6f, CHA-T2f
             throw .init(chatError: .presenceOperationDisallowedForCurrentRoomStatus(feature: requester))
