@@ -21,25 +21,38 @@ public protocol RealtimeChannelsProtocol: ARTRealtimeChannelsProtocol, Sendable 
 /// Expresses the requirements of the object returned by ``RealtimeChannelsProtocol.get(_:)``.
 public protocol RealtimeChannelProtocol: ARTRealtimeChannelProtocol, Sendable {}
 
+/// Like (a subset of) `ARTRealtimeChannelOptions` but with value semantics. (It’s unfortunate that `ARTRealtimeChannelOptions` doesn’t have a `-copy` method.)
+internal struct RealtimeChannelOptions {
+    internal var modes: ARTChannelMode
+    internal var params: [String: String]?
+
+    internal init() {
+        // Get our default values from ably-cocoa
+        let artRealtimeChannelOptions = ARTRealtimeChannelOptions()
+        modes = artRealtimeChannelOptions.modes
+        params = artRealtimeChannelOptions.params
+    }
+
+    internal var toARTRealtimeChannelOptions: ARTRealtimeChannelOptions {
+        let result = ARTRealtimeChannelOptions()
+        result.modes = modes
+        result.params = params
+        return result
+    }
+}
+
 internal extension RealtimeClientProtocol {
     // Function to get the channel with merged options
-    func getChannel(_ name: String, opts: ARTRealtimeChannelOptions? = nil) -> any RealtimeChannelProtocol {
-        // Create a new instance of ARTRealtimeChannelOptions if opts is nil
-        let resolvedOptions = ARTRealtimeChannelOptions()
+    func getChannel(_ name: String, opts: RealtimeChannelOptions? = nil) -> any RealtimeChannelProtocol {
+        var resolvedOptions = opts ?? .init()
 
-        // Merge params if available, using opts first, then defaultChannelOptions as fallback
-        resolvedOptions.params = (opts?.params ?? [:]).merging(
-            defaultChannelOptions.params ?? [:]
-        ) { _, new in new }
-
-        // Apply other options from `opts` if necessary
-        if let customOpts = opts {
-            resolvedOptions.modes = customOpts.modes
-            resolvedOptions.cipher = customOpts.cipher
-            resolvedOptions.attachOnSubscribe = customOpts.attachOnSubscribe
+        // Add in the default params
+        resolvedOptions.params = (resolvedOptions.params ?? [:]).merging(
+            defaultChannelParams
+        ) { _, new
+            in new
         }
 
-        // Return the resolved channel
-        return channels.get(name, options: resolvedOptions)
+        return channels.get(name, options: resolvedOptions.toARTRealtimeChannelOptions)
     }
 }

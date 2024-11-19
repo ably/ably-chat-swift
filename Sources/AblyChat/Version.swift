@@ -8,8 +8,4 @@ internal let version = "0.1.0"
 
 internal let channelOptionsAgentString = "chat-ios/\(version)"
 
-internal var defaultChannelOptions: ARTRealtimeChannelOptions {
-    let options = ARTRealtimeChannelOptions()
-    options.params = ["agent": channelOptionsAgentString]
-    return options
-}
+internal let defaultChannelParams = ["agent": channelOptionsAgentString]
