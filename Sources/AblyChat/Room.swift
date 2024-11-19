@@ -84,14 +84,16 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
             throw ARTErrorInfo.create(withCode: 40000, message: "Ensure your Realtime instance is initialized with a clientId.")
         }
 
-        let featureChannels = Self.createFeatureChannels(roomID: roomID, roomOptions: options, realtime: realtime)
-        channels = featureChannels.mapValues(\.channel)
-        let contributors = featureChannels.values.map(\.contributor)
+        let featureChannelPartialDependencies = Self.createFeatureChannelPartialDependencies(roomID: roomID, roomOptions: options, realtime: realtime)
+        channels = featureChannelPartialDependencies.mapValues(\.channel)
+        let contributors = featureChannelPartialDependencies.values.map(\.contributor)
 
         lifecycleManager = await lifecycleManagerFactory.createManager(
             contributors: contributors,
             logger: logger
         )
+
+        let featureChannels = Self.createFeatureChannels(partialDependencies: featureChannelPartialDependencies, lifecycleManager: lifecycleManager)
 
         // TODO: Address force unwrapping of `channels` within feature initialisation below: https://github.com/ably-labs/ably-chat-swift/issues/105
 
@@ -124,7 +126,12 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
         ) : nil
     }
 
-    private static func createFeatureChannels(roomID: String, roomOptions: RoomOptions, realtime: RealtimeClient) -> [RoomFeature: DefaultFeatureChannel] {
+    private struct FeatureChannelPartialDependencies {
+        internal var channel: RealtimeChannelProtocol
+        internal var contributor: DefaultRoomLifecycleContributor
+    }
+
+    private static func createFeatureChannelPartialDependencies(roomID: String, roomOptions: RoomOptions, realtime: RealtimeClient) -> [RoomFeature: FeatureChannelPartialDependencies] {
         .init(uniqueKeysWithValues: [
             RoomFeature.messages,
             RoomFeature.reactions,
@@ -154,6 +161,16 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
 
             return (feature, .init(channel: channel, contributor: contributor))
         })
+    }
+
+    private static func createFeatureChannels(partialDependencies: [RoomFeature: FeatureChannelPartialDependencies], lifecycleManager: RoomLifecycleManager) -> [RoomFeature: DefaultFeatureChannel] {
+        partialDependencies.mapValues { partialDependencies in
+            .init(
+                channel: partialDependencies.channel,
+                contributor: partialDependencies.contributor,
+                roomLifecycleManager: lifecycleManager
+            )
+        }
     }
 
     public nonisolated var presence: any Presence {

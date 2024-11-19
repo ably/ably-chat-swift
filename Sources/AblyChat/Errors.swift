@@ -11,6 +11,8 @@ public let errorDomain = "AblyChatErrorDomain"
  The error codes for errors in the ``errorDomain`` error domain.
  */
 public enum ErrorCode: Int {
+    case nonspecific = 40000
+
     /// ``Rooms.get(roomID:options:)`` was called with a different set of room options than was used on a previous call. You must first release the existing room instance using ``Rooms.release(roomID:)``.
     ///
     /// TODO this code is a guess, revisit in https://github.com/ably-labs/ably-chat-swift/issues/32
@@ -36,7 +38,8 @@ public enum ErrorCode: Int {
     internal var statusCode: Int {
         // TODO: These are currently a guess, revisit once outstanding spec question re status codes is answered (https://github.com/ably/specification/pull/200#discussion_r1755222945), and also revisit in https://github.com/ably-labs/ably-chat-swift/issues/32
         switch self {
-        case .inconsistentRoomOptions,
+        case .nonspecific,
+             .inconsistentRoomOptions,
              .messagesDetachmentFailed,
              .presenceDetachmentFailed,
              .reactionsDetachmentFailed,
@@ -69,6 +72,8 @@ internal enum ChatError {
     case roomInFailedState
     case roomIsReleasing
     case roomIsReleased
+    case presenceOperationRequiresRoomAttach(feature: RoomFeature)
+    case presenceOperationDisallowedForCurrentRoomStatus(feature: RoomFeature)
 
     /// The ``ARTErrorInfo.code`` that should be returned for this error.
     internal var code: ErrorCode {
@@ -107,6 +112,24 @@ internal enum ChatError {
             .roomIsReleasing
         case .roomIsReleased:
             .roomIsReleased
+        case .presenceOperationRequiresRoomAttach,
+             .presenceOperationDisallowedForCurrentRoomStatus:
+            .nonspecific
+        }
+    }
+
+    private static func descriptionOfFeature(_ feature: RoomFeature) -> String {
+        switch feature {
+        case .messages:
+            "messages"
+        case .occupancy:
+            "occupancy"
+        case .presence:
+            "presence"
+        case .reactions:
+            "reactions"
+        case .typing:
+            "typing"
         }
     }
 
@@ -120,19 +143,6 @@ internal enum ChatError {
         forFailureOfOperation operation: AttachOrDetach,
         feature: RoomFeature
     ) -> String {
-        let featureDescription = switch feature {
-        case .messages:
-            "messages"
-        case .occupancy:
-            "occupancy"
-        case .presence:
-            "presence"
-        case .reactions:
-            "reactions"
-        case .typing:
-            "typing"
-        }
-
         let operationDescription = switch operation {
         case .attach:
             "attach"
@@ -140,7 +150,7 @@ internal enum ChatError {
             "detach"
         }
 
-        return "The \(featureDescription) feature failed to \(operationDescription)."
+        return "The \(descriptionOfFeature(feature)) feature failed to \(operationDescription)."
     }
 
     /// The ``ARTErrorInfo.localizedDescription`` that should be returned for this error.
@@ -158,6 +168,10 @@ internal enum ChatError {
             "Cannot perform operation because the room is in a releasing state."
         case .roomIsReleased:
             "Cannot perform operation because the room is in a released state."
+        case let .presenceOperationRequiresRoomAttach(feature):
+            "To perform this \(Self.descriptionOfFeature(feature)) operation, you must first attach the room."
+        case let .presenceOperationDisallowedForCurrentRoomStatus(feature):
+            "This \(Self.descriptionOfFeature(feature)) operation can not be performed given the current room status."
         }
     }
 
@@ -171,7 +185,9 @@ internal enum ChatError {
         case .inconsistentRoomOptions,
              .roomInFailedState,
              .roomIsReleasing,
-             .roomIsReleased:
+             .roomIsReleased,
+             .presenceOperationRequiresRoomAttach,
+             .presenceOperationDisallowedForCurrentRoomStatus:
             nil
         }
     }
