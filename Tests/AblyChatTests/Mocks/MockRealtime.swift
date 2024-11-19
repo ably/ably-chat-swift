@@ -4,6 +4,7 @@ import Foundation
 
 /// A mock implementation of `ARTRealtimeProtocol`. We’ll figure out how to do mocking in tests properly in https://github.com/ably-labs/ably-chat-swift/issues/5.
 final class MockRealtime: NSObject, RealtimeClientProtocol, Sendable {
+    let connection: MockConnection
     let channels: MockChannels
     let paginatedCallback: (@Sendable () -> (ARTHTTPPaginatedResponse?, ARTErrorInfo?))?
 
@@ -17,24 +18,29 @@ final class MockRealtime: NSObject, RealtimeClientProtocol, Sendable {
 
     init(
         channels: MockChannels = .init(channels: []),
+        connection: MockConnection = .init(),
         paginatedCallback: (@Sendable () -> (ARTHTTPPaginatedResponse?, ARTErrorInfo?))? = nil
     ) {
         self.channels = channels
         self.paginatedCallback = paginatedCallback
+        self.connection = connection
     }
 
     required init(options _: ARTClientOptions) {
         channels = .init(channels: [])
+        connection = .init()
         paginatedCallback = nil
     }
 
     required init(key _: String) {
         channels = .init(channels: [])
+        connection = .init()
         paginatedCallback = nil
     }
 
     required init(token _: String) {
         channels = .init(channels: [])
+        connection = .init()
         paginatedCallback = nil
     }
 
@@ -45,9 +51,10 @@ final class MockRealtime: NSObject, RealtimeClientProtocol, Sendable {
      */
     static func create(
         channels: MockChannels = MockChannels(channels: []),
+        connection: MockConnection = MockConnection(),
         paginatedCallback: (@Sendable () -> (ARTHTTPPaginatedResponse?, ARTErrorInfo?))? = nil
     ) -> MockRealtime {
-        MockRealtime(channels: channels, paginatedCallback: paginatedCallback)
+        MockRealtime(channels: channels, connection: connection, paginatedCallback: paginatedCallback)
     }
 
     func time(_: @escaping ARTDateTimeCallback) {

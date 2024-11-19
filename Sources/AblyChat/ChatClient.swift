@@ -16,16 +16,17 @@ public actor DefaultChatClient: ChatClient {
     public nonisolated let rooms: Rooms
     private let logger: InternalLogger
 
+    // (CHA-CS1) Every chat client has a status, which describes the current status of the connection.
+    // (CHA-CS4) The chat client must allow its connection status to be observed by clients.
+    public nonisolated let connection: any Connection
+
     public init(realtime: RealtimeClient, clientOptions: ClientOptions?) {
         self.realtime = realtime
         self.clientOptions = clientOptions ?? .init()
         logger = DefaultInternalLogger(logHandler: self.clientOptions.logHandler, logLevel: self.clientOptions.logLevel)
         let roomFactory = DefaultRoomFactory()
         rooms = DefaultRooms(realtime: realtime, clientOptions: self.clientOptions, logger: logger, roomFactory: roomFactory)
-    }
-
-    public nonisolated var connection: any Connection {
-        fatalError("Not yet implemented")
+        connection = DefaultConnection(realtime: realtime)
     }
 
     public nonisolated var clientID: String {

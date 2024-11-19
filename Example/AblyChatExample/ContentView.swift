@@ -141,12 +141,24 @@ struct ContentView: View {
             try await showReactions()
             try await showPresence()
             try await showOccupancy()
+            await printConnectionStatusChange()
         }
         .tryTask {
             // NOTE: As we implement more features, move them out of the `if Environment.current == .mock` block and into the main block just above.
             if Environment.current == .mock {
                 try await showTypings()
                 try await showRoomStatus()
+            }
+        }
+    }
+
+    func printConnectionStatusChange() async {
+        let connectionSubsciption = chatClient.connection.onStatusChange(bufferingPolicy: .unbounded)
+
+        // Continue listening for connection status change on a background task so this function can return
+        Task {
+            for await status in connectionSubsciption {
+                print("Connection status changed to: \(status.current)")
             }
         }
     }

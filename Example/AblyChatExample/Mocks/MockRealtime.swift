@@ -3,6 +3,8 @@ import AblyChat
 
 /// A mock implementation of `RealtimeClientProtocol`. It only exists so that we can construct an instance of `DefaultChatClient` without needing to create a proper `ARTRealtime` instance (which we can’t yet do because we don’t have a method for inserting an API key into the example app). TODO remove this once we start building the example app
 final class MockRealtime: NSObject, RealtimeClientProtocol, Sendable {
+    let connection = Connection()
+
     var device: ARTLocalDevice {
         fatalError("Not implemented")
     }
@@ -12,6 +14,73 @@ final class MockRealtime: NSObject, RealtimeClientProtocol, Sendable {
     }
 
     let channels = Channels()
+
+    final class Connection: NSObject, ConnectionProtocol {
+        init(id: String? = nil, key: String? = nil, maxMessageSize: Int = 0, state: ARTRealtimeConnectionState = .closed, errorReason: ARTErrorInfo? = nil, recoveryKey: String? = nil) {
+            self.id = id
+            self.key = key
+            self.maxMessageSize = maxMessageSize
+            self.state = state
+            self.errorReason = errorReason
+            self.recoveryKey = recoveryKey
+        }
+
+        let id: String?
+
+        let key: String?
+
+        let maxMessageSize: Int
+
+        let state: ARTRealtimeConnectionState
+
+        let errorReason: ARTErrorInfo?
+
+        let recoveryKey: String?
+
+        func createRecoveryKey() -> String? {
+            fatalError("Not implemented")
+        }
+
+        func connect() {
+            fatalError("Not implemented")
+        }
+
+        func close() {
+            fatalError("Not implemented")
+        }
+
+        func ping(_: @escaping ARTCallback) {
+            fatalError("Not implemented")
+        }
+
+        func on(_: ARTRealtimeConnectionEvent, callback _: @escaping (ARTConnectionStateChange) -> Void) -> ARTEventListener {
+            fatalError("Not implemented")
+        }
+
+        func on(_: @escaping (ARTConnectionStateChange) -> Void) -> ARTEventListener {
+            fatalError("Not implemented")
+        }
+
+        func once(_: ARTRealtimeConnectionEvent, callback _: @escaping (ARTConnectionStateChange) -> Void) -> ARTEventListener {
+            fatalError("Not implemented")
+        }
+
+        func once(_: @escaping (ARTConnectionStateChange) -> Void) -> ARTEventListener {
+            fatalError("Not implemented")
+        }
+
+        func off(_: ARTRealtimeConnectionEvent, listener _: ARTEventListener) {
+            fatalError("Not implemented")
+        }
+
+        func off(_: ARTEventListener) {
+            fatalError("Not implemented")
+        }
+
+        func off() {
+            fatalError("Not implemented")
+        }
+    }
 
     final class Channels: RealtimeChannelsProtocol {
         func get(_: String, options _: ARTRealtimeChannelOptions) -> MockRealtime.Channel {

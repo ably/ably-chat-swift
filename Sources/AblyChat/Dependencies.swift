@@ -5,9 +5,13 @@ import Ably
 /// The `ARTRealtime` class from the ably-cocoa SDK implements this protocol.
 public protocol RealtimeClientProtocol: ARTRealtimeProtocol, Sendable {
     associatedtype Channels: RealtimeChannelsProtocol
+    associatedtype Connection: ConnectionProtocol
 
     // It’s not clear to me why ARTRealtimeProtocol doesn’t include this property. I briefly tried adding it but ran into compilation failures that it wasn’t immediately obvious how to fix.
     var channels: Channels { get }
+
+    // TODO: Expose `Connection` on ARTRealtimeProtocol so it can be used from RealtimeClientProtocol - https://github.com/ably-labs/ably-chat-swift/issues/123
+    var connection: Connection { get }
 }
 
 /// Expresses the requirements of the object returned by ``RealtimeClientProtocol.channels``.
@@ -20,6 +24,8 @@ public protocol RealtimeChannelsProtocol: ARTRealtimeChannelsProtocol, Sendable 
 
 /// Expresses the requirements of the object returned by ``RealtimeChannelsProtocol.get(_:)``.
 public protocol RealtimeChannelProtocol: ARTRealtimeChannelProtocol, Sendable {}
+
+public protocol ConnectionProtocol: ARTConnectionProtocol, Sendable {}
 
 /// Like (a subset of) `ARTRealtimeChannelOptions` but with value semantics. (It’s unfortunate that `ARTRealtimeChannelOptions` doesn’t have a `-copy` method.)
 internal struct RealtimeChannelOptions {
