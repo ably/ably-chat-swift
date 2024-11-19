@@ -6,10 +6,8 @@ import Ably
 // Version information
 internal let version = "0.1.0"
 
-// Channel options agent string
 internal let channelOptionsAgentString = "chat-ios/\(version)"
 
-// Default channel options
 internal var defaultChannelOptions: ARTRealtimeChannelOptions {
     let options = ARTRealtimeChannelOptions()
     options.params = ["agent": channelOptionsAgentString]
