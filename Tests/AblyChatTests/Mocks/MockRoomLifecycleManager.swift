@@ -44,7 +44,7 @@ actor MockRoomLifecycleManager: RoomLifecycleManager {
         return roomStatus
     }
 
-    func onChange(bufferingPolicy: BufferingPolicy) async -> Subscription<RoomStatusChange> {
+    func onRoomStatusChange(bufferingPolicy: BufferingPolicy) async -> Subscription<RoomStatusChange> {
         let subscription = Subscription<RoomStatusChange>(bufferingPolicy: bufferingPolicy)
         subscriptions.append(subscription)
         return subscription
