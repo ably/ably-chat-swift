@@ -64,6 +64,8 @@ struct DefaultRoomTests {
         #expect(room.messages.channel.name == "basketball::$chat::$chatMessages")
     }
 
+    // @specUntested CHA-RC2b - We chose to implement this failure with an idiomatic fatalError instead of throwing, but we can’t test this.
+
     // MARK: - Attach
 
     @Test(
