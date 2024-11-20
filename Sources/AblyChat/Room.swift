@@ -131,7 +131,7 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
         internal var contributor: DefaultRoomLifecycleContributor
     }
 
-    private static func createFeatureChannelPartialDependencies(roomID: String, roomOptions: RoomOptions, realtime: RealtimeClient) -> [RoomFeature: FeatureChannelPartialDependencies] {
+    private static func createFeatureChannelPartialDependencies(roomID: String, roomOptions _: RoomOptions, realtime: RealtimeClient) -> [RoomFeature: FeatureChannelPartialDependencies] {
         .init(uniqueKeysWithValues: [
             RoomFeature.messages,
             RoomFeature.reactions,
@@ -142,15 +142,18 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
 
             // channel setup for presence and occupancy
             if feature == .presence {
-                let presenceOptions = roomOptions.presence
+                // TODO: Restore this code once we understand weird Realtime behaviour and spec points (https://github.com/ably-labs/ably-chat-swift/issues/133)
+                /*
+                 let presenceOptions = roomOptions.presence
 
-                if presenceOptions?.enter ?? false {
-                    channelOptions.modes.insert(.presence)
-                }
+                 if presenceOptions?.enter ?? false {
+                     channelOptions.modes.insert(.presence)
+                 }
 
-                if presenceOptions?.subscribe ?? false {
-                    channelOptions.modes.insert(.presenceSubscribe)
-                }
+                 if presenceOptions?.subscribe ?? false {
+                     channelOptions.modes.insert(.presenceSubscribe)
+                 }
+                 */
             } else if feature == .occupancy {
                 channelOptions.params = ["occupancy": "metrics"]
             }
