@@ -3,6 +3,26 @@ import Ably
 import Testing
 
 struct DefaultRoomTests {
+    // MARK: - Fetching channels
+
+    // @spec CHA-GP2a
+    @Test
+    func disablesImplicitAttach() async throws {
+        // Given: A DefaultRoom instance
+        let channelsList = [
+            MockRealtimeChannel(name: "basketball::$chat::$chatMessages", attachResult: .success),
+            MockRealtimeChannel(name: "basketball::$chat::$reactions", attachResult: .success),
+        ]
+        let channels = MockChannels(channels: channelsList)
+        let realtime = MockRealtime.create(channels: channels)
+        _ = try await DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), roomID: "basketball", options: .init(), logger: TestLogger(), lifecycleManagerFactory: MockRoomLifecycleManagerFactory())
+
+        // Then: When it fetches a channel, it does so with the `attachOnSubscribe` channel option set to false
+        let channelsGetArguments = channels.getArguments
+        #expect(!channelsGetArguments.isEmpty)
+        #expect(channelsGetArguments.allSatisfy { $0.options.attachOnSubscribe == false })
+    }
+
     // MARK: - Features
 
     // @spec CHA-M1
