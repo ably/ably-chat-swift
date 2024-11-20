@@ -142,7 +142,6 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
 
             // channel setup for presence and occupancy
             if feature == .presence {
-                let channelOptions = ARTRealtimeChannelOptions()
                 let presenceOptions = roomOptions.presence
 
                 if presenceOptions?.enter ?? false {
