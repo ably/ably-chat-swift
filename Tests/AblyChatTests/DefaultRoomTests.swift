@@ -69,6 +69,49 @@ struct DefaultRoomTests {
 
     // @specUntested CHA-RC2b - We chose to implement this failure with an idiomatic fatalError instead of throwing, but we can’t test this.
 
+    // This is just a basic sense check to make sure the room getters are working as expected, since we don’t have unit tests for some of the features at the moment.
+    @Test(arguments: [.messages, .presence, .reactions, .occupancy, .typing] as[RoomFeature])
+    func whenFeatureEnabled_propertyGetterReturns(feature: RoomFeature) async throws {
+        // Given: A RoomOptions with the (test argument `feature`) feature enabled in the room options
+        let roomOptions: RoomOptions = switch feature {
+        case .messages:
+            // Messages should always be enabled without needing any special options
+            .init()
+        case .presence:
+            .init(presence: .init())
+        case .reactions:
+            .init(reactions: .init())
+        case .occupancy:
+            .init(occupancy: .init())
+        case .typing:
+            .init(typing: .init())
+        }
+
+        let channelsList = [
+            MockRealtimeChannel(name: "basketball::$chat::$chatMessages"),
+            MockRealtimeChannel(name: "basketball::$chat::$reactions"),
+            MockRealtimeChannel(name: "basketball::$chat::$typingIndicators"),
+        ]
+        let channels = MockChannels(channels: channelsList)
+        let realtime = MockRealtime.create(channels: channels)
+        let room = try await DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), roomID: "basketball", options: roomOptions, logger: TestLogger(), lifecycleManagerFactory: MockRoomLifecycleManagerFactory())
+
+        // When: We call the room’s getter for that feature
+        // Then: It returns an object (i.e. does not `fatalError()`)
+        switch feature {
+        case .messages:
+            #expect(room.messages is DefaultMessages)
+        case .presence:
+            #expect(room.presence is DefaultPresence)
+        case .reactions:
+            #expect(room.reactions is DefaultRoomReactions)
+        case .occupancy:
+            #expect(room.occupancy is DefaultOccupancy)
+        case .typing:
+            #expect(room.typing is DefaultTyping)
+        }
+    }
+
     // MARK: - Attach
 
     @Test(
