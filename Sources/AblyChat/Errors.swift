@@ -16,7 +16,7 @@ public enum ErrorCode: Int {
     /// ``Rooms.get(roomID:options:)`` was called with a different set of room options than was used on a previous call. You must first release the existing room instance using ``Rooms.release(roomID:)``.
     ///
     /// TODO this code is a guess, revisit in https://github.com/ably-labs/ably-chat-swift/issues/32
-    case inconsistentRoomOptions = 1
+    case inconsistentRoomOptions = 40000
 
     case messagesAttachmentFailed = 102_001
     case presenceAttachmentFailed = 102_002

@@ -1,0 +1,1 @@
+ChatAdapterGenerator().generate()
