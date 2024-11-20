@@ -131,36 +131,57 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
         internal var contributor: DefaultRoomLifecycleContributor
     }
 
-    private static func createFeatureChannelPartialDependencies(roomID: String, roomOptions _: RoomOptions, realtime: RealtimeClient) -> [RoomFeature: FeatureChannelPartialDependencies] {
-        .init(uniqueKeysWithValues: [
-            RoomFeature.messages,
-            RoomFeature.reactions,
-            RoomFeature.presence,
-            RoomFeature.occupancy,
-        ].map { feature in
+    /// The returned dictionary is guaranteed to have an entry for each element of `features`.
+    private static func createChannelsForFeatures(_ features: [RoomFeature], roomID: String, roomOptions _: RoomOptions, realtime: RealtimeClient) -> [RoomFeature: RealtimeChannelProtocol] {
+        // CHA-RC3a
+
+        // Multiple features can share a realtime channel. We fetch each realtime channel exactly once, merging the channel options for the various features that use this channel.
+
+        let featuresGroupedByChannelName = Dictionary(grouping: features) { $0.channelNameForRoomID(roomID) }
+
+        let pairsOfFeatureAndChannel = featuresGroupedByChannelName.flatMap { channelName, features in
             var channelOptions = RealtimeChannelOptions()
 
             // channel setup for presence and occupancy
-            if feature == .presence {
-                // TODO: Restore this code once we understand weird Realtime behaviour and spec points (https://github.com/ably-labs/ably-chat-swift/issues/133)
-                /*
-                 let presenceOptions = roomOptions.presence
+            for feature in features {
+                if feature == .presence {
+                    // TODO: Restore this code once we understand weird Realtime behaviour and spec points (https://github.com/ably-labs/ably-chat-swift/issues/133)
+                    /*
+                     let presenceOptions = roomOptions.presence
 
-                 if presenceOptions?.enter ?? false {
-                     channelOptions.modes.insert(.presence)
-                 }
+                     if presenceOptions?.enter ?? false {
+                         channelOptions.modes.insert(.presence)
+                     }
 
-                 if presenceOptions?.subscribe ?? false {
-                     channelOptions.modes.insert(.presenceSubscribe)
-                 }
-                 */
-            } else if feature == .occupancy {
-                channelOptions.params = ["occupancy": "metrics"]
+                     if presenceOptions?.subscribe ?? false {
+                         channelOptions.modes.insert(.presenceSubscribe)
+                     }
+                     */
+                } else if feature == .occupancy {
+                    var params: [String: String] = channelOptions.params ?? [:]
+                    params["occupancy"] = "metrics"
+                    channelOptions.params = params
+                }
             }
 
-            let channel = realtime.getChannel(feature.channelNameForRoomID(roomID), opts: channelOptions)
-            let contributor = DefaultRoomLifecycleContributor(channel: .init(underlyingChannel: channel), feature: feature)
+            let channel = realtime.getChannel(channelName, opts: channelOptions)
+            return features.map { ($0, channel) }
+        }
 
+        return Dictionary(uniqueKeysWithValues: pairsOfFeatureAndChannel)
+    }
+
+    private static func createFeatureChannelPartialDependencies(roomID: String, roomOptions: RoomOptions, realtime: RealtimeClient) -> [RoomFeature: FeatureChannelPartialDependencies] {
+        let features: [RoomFeature] = [
+            .messages,
+            .reactions,
+            .presence,
+            .occupancy,
+        ]
+        let channelsByFeature = createChannelsForFeatures(features, roomID: roomID, roomOptions: roomOptions, realtime: realtime)
+
+        return .init(uniqueKeysWithValues: channelsByFeature.map { feature, channel in
+            let contributor = DefaultRoomLifecycleContributor(channel: .init(underlyingChannel: channel), feature: feature)
             return (feature, .init(channel: channel, contributor: contributor))
         })
     }
