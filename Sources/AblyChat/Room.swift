@@ -73,6 +73,51 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
 
     private let logger: InternalLogger
 
+    private enum RoomFeatureWithOptions {
+        case messages
+        case presence(PresenceOptions)
+        case typing(TypingOptions)
+        case reactions(RoomReactionsOptions)
+        case occupancy(OccupancyOptions)
+
+        var toRoomFeature: RoomFeature {
+            switch self {
+            case .messages:
+                .messages
+            case .presence:
+                .presence
+            case .typing:
+                .typing
+            case .reactions:
+                .reactions
+            case .occupancy:
+                .occupancy
+            }
+        }
+
+        static func fromRoomOptions(_ roomOptions: RoomOptions) -> [Self] {
+            var result: [Self] = [.messages]
+
+            if let presenceOptions = roomOptions.presence {
+                result.append(.presence(presenceOptions))
+            }
+
+            if let typingOptions = roomOptions.typing {
+                result.append(.typing(typingOptions))
+            }
+
+            if let reactionsOptions = roomOptions.reactions {
+                result.append(.reactions(reactionsOptions))
+            }
+
+            if let occupancyOptions = roomOptions.occupancy {
+                result.append(.occupancy(occupancyOptions))
+            }
+
+            return result
+        }
+    }
+
     internal init(realtime: RealtimeClient, chatAPI: ChatAPI, roomID: String, options: RoomOptions, logger: InternalLogger, lifecycleManagerFactory: LifecycleManagerFactory) async throws {
         self.realtime = realtime
         self.roomID = roomID
@@ -84,7 +129,9 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
             throw ARTErrorInfo.create(withCode: 40000, message: "Ensure your Realtime instance is initialized with a clientId.")
         }
 
-        let featureChannelPartialDependencies = Self.createFeatureChannelPartialDependencies(roomID: roomID, roomOptions: options, realtime: realtime)
+        let featuresWithOptions = RoomFeatureWithOptions.fromRoomOptions(options)
+
+        let featureChannelPartialDependencies = Self.createFeatureChannelPartialDependencies(roomID: roomID, featuresWithOptions: featuresWithOptions, realtime: realtime)
         channels = featureChannelPartialDependencies.mapValues(\.channel)
         let contributors = featureChannelPartialDependencies.values.map(\.contributor)
 
@@ -95,8 +142,6 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
 
         let featureChannels = Self.createFeatureChannels(partialDependencies: featureChannelPartialDependencies, lifecycleManager: lifecycleManager)
 
-        // TODO: Address force unwrapping of `channels` within feature initialisation below: https://github.com/ably-labs/ably-chat-swift/issues/105
-
         messages = await DefaultMessages(
             featureChannel: featureChannels[.messages]!,
             chatAPI: chatAPI,
@@ -105,26 +150,38 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
             logger: logger
         )
 
-        _reactions = options.reactions != nil ? await DefaultRoomReactions(
-            featureChannel: featureChannels[.reactions]!,
-            clientID: clientId,
-            roomID: roomID,
-            logger: logger
-        ) : nil
+        _reactions = if let featureChannel = featureChannels[.reactions] {
+            await DefaultRoomReactions(
+                featureChannel: featureChannel,
+                clientID: clientId,
+                roomID: roomID,
+                logger: logger
+            )
+        } else {
+            nil
+        }
 
-        _presence = options.presence != nil ? await DefaultPresence(
-            featureChannel: featureChannels[.presence]!,
-            roomID: roomID,
-            clientID: clientId,
-            logger: logger
-        ) : nil
+        _presence = if let featureChannel = featureChannels[.presence] {
+            await DefaultPresence(
+                featureChannel: featureChannel,
+                roomID: roomID,
+                clientID: clientId,
+                logger: logger
+            )
+        } else {
+            nil
+        }
 
-        _occupancy = options.occupancy != nil ? DefaultOccupancy(
-            featureChannel: featureChannels[.occupancy]!,
-            chatAPI: chatAPI,
-            roomID: roomID,
-            logger: logger
-        ) : nil
+        _occupancy = if let featureChannel = featureChannels[.occupancy] {
+            DefaultOccupancy(
+                featureChannel: featureChannel,
+                chatAPI: chatAPI,
+                roomID: roomID,
+                logger: logger
+            )
+        } else {
+            nil
+        }
     }
 
     private struct FeatureChannelPartialDependencies {
@@ -133,32 +190,30 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
     }
 
     /// The returned dictionary is guaranteed to have an entry for each element of `features`.
-    private static func createChannelsForFeatures(_ features: [RoomFeature], roomID: String, roomOptions _: RoomOptions, realtime: RealtimeClient) -> [RoomFeature: RealtimeChannelProtocol] {
+    private static func createChannelsForFeaturesWithOptions(_ featuresWithOptions: [RoomFeatureWithOptions], roomID: String, realtime: RealtimeClient) -> [RoomFeature: RealtimeChannelProtocol] {
         // CHA-RC3a
 
         // Multiple features can share a realtime channel. We fetch each realtime channel exactly once, merging the channel options for the various features that use this channel.
 
-        let featuresGroupedByChannelName = Dictionary(grouping: features) { $0.channelNameForRoomID(roomID) }
+        let featuresGroupedByChannelName = Dictionary(grouping: featuresWithOptions) { $0.toRoomFeature.channelNameForRoomID(roomID) }
 
         let pairsOfFeatureAndChannel = featuresGroupedByChannelName.flatMap { channelName, features in
             var channelOptions = RealtimeChannelOptions()
 
             // channel setup for presence and occupancy
             for feature in features {
-                if feature == .presence {
+                if case /* let */ .presence /* (presenceOptions) */ = feature {
                     // TODO: Restore this code once we understand weird Realtime behaviour and spec points (https://github.com/ably-labs/ably-chat-swift/issues/133)
                     /*
-                     let presenceOptions = roomOptions.presence
-
-                     if presenceOptions?.enter ?? false {
+                     if presenceOptions.enter {
                          channelOptions.modes.insert(.presence)
                      }
 
-                     if presenceOptions?.subscribe ?? false {
+                     if presenceOptions.subscribe {
                          channelOptions.modes.insert(.presenceSubscribe)
                      }
                      */
-                } else if feature == .occupancy {
+                } else if case .occupancy = feature {
                     var params: [String: String] = channelOptions.params ?? [:]
                     params["occupancy"] = "metrics"
                     channelOptions.params = params
@@ -166,20 +221,14 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
             }
 
             let channel = realtime.getChannel(channelName, opts: channelOptions)
-            return features.map { ($0, channel) }
+            return features.map { ($0.toRoomFeature, channel) }
         }
 
         return Dictionary(uniqueKeysWithValues: pairsOfFeatureAndChannel)
     }
 
-    private static func createFeatureChannelPartialDependencies(roomID: String, roomOptions: RoomOptions, realtime: RealtimeClient) -> [RoomFeature: FeatureChannelPartialDependencies] {
-        let features: [RoomFeature] = [
-            .messages,
-            .reactions,
-            .presence,
-            .occupancy,
-        ]
-        let channelsByFeature = createChannelsForFeatures(features, roomID: roomID, roomOptions: roomOptions, realtime: realtime)
+    private static func createFeatureChannelPartialDependencies(roomID: String, featuresWithOptions: [RoomFeatureWithOptions], realtime: RealtimeClient) -> [RoomFeature: FeatureChannelPartialDependencies] {
+        let channelsByFeature = createChannelsForFeaturesWithOptions(featuresWithOptions, roomID: roomID, realtime: realtime)
 
         return .init(uniqueKeysWithValues: channelsByFeature.map { feature, channel in
             let contributor = DefaultRoomLifecycleContributor(channel: .init(underlyingChannel: channel), feature: feature)
