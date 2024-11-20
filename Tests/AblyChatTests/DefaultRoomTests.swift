@@ -10,8 +10,8 @@ struct DefaultRoomTests {
     func disablesImplicitAttach() async throws {
         // Given: A DefaultRoom instance
         let channelsList = [
-            MockRealtimeChannel(name: "basketball::$chat::$chatMessages", attachResult: .success),
-            MockRealtimeChannel(name: "basketball::$chat::$reactions", attachResult: .success),
+            MockRealtimeChannel(name: "basketball::$chat::$chatMessages"),
+            MockRealtimeChannel(name: "basketball::$chat::$reactions"),
         ]
         let channels = MockChannels(channels: channelsList)
         let realtime = MockRealtime.create(channels: channels)
@@ -28,8 +28,8 @@ struct DefaultRoomTests {
     func fetchesEachChannelOnce() async throws {
         // Given: A DefaultRoom instance, configured to use presence and occupancy
         let channelsList = [
-            MockRealtimeChannel(name: "basketball::$chat::$chatMessages", attachResult: .success),
-            MockRealtimeChannel(name: "basketball::$chat::$reactions", attachResult: .success),
+            MockRealtimeChannel(name: "basketball::$chat::$chatMessages"),
+            MockRealtimeChannel(name: "basketball::$chat::$reactions"),
         ]
         let channels = MockChannels(channels: channelsList)
         let realtime = MockRealtime.create(channels: channels)
@@ -53,8 +53,8 @@ struct DefaultRoomTests {
     func messagesChannelName() async throws {
         // Given: a DefaultRoom instance
         let channelsList = [
-            MockRealtimeChannel(name: "basketball::$chat::$chatMessages", attachResult: .success),
-            MockRealtimeChannel(name: "basketball::$chat::$reactions", attachResult: .success), // required as DefaultRoom attaches reactions implicitly for now
+            MockRealtimeChannel(name: "basketball::$chat::$chatMessages"),
+            MockRealtimeChannel(name: "basketball::$chat::$reactions"), // required as DefaultRoom attaches reactions implicitly for now
         ]
         let channels = MockChannels(channels: channelsList)
         let realtime = MockRealtime.create(channels: channels)
@@ -75,8 +75,8 @@ struct DefaultRoomTests {
     func attach(managerAttachResult: Result<Void, ARTErrorInfo>) async throws {
         // Given: a DefaultRoom instance
         let channelsList = [
-            MockRealtimeChannel(name: "basketball::$chat::$chatMessages", attachResult: .success),
-            MockRealtimeChannel(name: "basketball::$chat::$reactions", attachResult: .success), // required as DefaultRoom attaches reactions implicitly for now
+            MockRealtimeChannel(name: "basketball::$chat::$chatMessages"),
+            MockRealtimeChannel(name: "basketball::$chat::$reactions"), // required as DefaultRoom attaches reactions implicitly for now
         ]
         let channels = MockChannels(channels: channelsList)
         let realtime = MockRealtime.create(channels: channels)
@@ -112,8 +112,8 @@ struct DefaultRoomTests {
     func detach(managerDetachResult: Result<Void, ARTErrorInfo>) async throws {
         // Given: a DefaultRoom instance
         let channelsList = [
-            MockRealtimeChannel(name: "basketball::$chat::$chatMessages", detachResult: .success),
-            MockRealtimeChannel(name: "basketball::$chat::$reactions", attachResult: .success), // required as DefaultRoom attaches reactions implicitly for now
+            MockRealtimeChannel(name: "basketball::$chat::$chatMessages"),
+            MockRealtimeChannel(name: "basketball::$chat::$reactions"), // required as DefaultRoom attaches reactions implicitly for now
         ]
         let channels = MockChannels(channels: channelsList)
         let realtime = MockRealtime.create(channels: channels)
@@ -146,7 +146,7 @@ struct DefaultRoomTests {
         // Given: a DefaultRoom instance
         let channelsList = [
             MockRealtimeChannel(name: "basketball::$chat::$chatMessages"),
-            MockRealtimeChannel(name: "basketball::$chat::$reactions", attachResult: .success), // required as DefaultRoom attaches reactions implicitly for now
+            MockRealtimeChannel(name: "basketball::$chat::$reactions"), // required as DefaultRoom attaches reactions implicitly for now
         ]
         let channels = MockChannels(channels: channelsList)
         let realtime = MockRealtime.create(channels: channels)
@@ -172,8 +172,8 @@ struct DefaultRoomTests {
     func status() async throws {
         // Given: a DefaultRoom instance
         let channelsList = [
-            MockRealtimeChannel(name: "basketball::$chat::$chatMessages", detachResult: .success),
-            MockRealtimeChannel(name: "basketball::$chat::$reactions", attachResult: .success), // required as DefaultRoom attaches reactions implicitly for now
+            MockRealtimeChannel(name: "basketball::$chat::$chatMessages"),
+            MockRealtimeChannel(name: "basketball::$chat::$reactions"), // required as DefaultRoom attaches reactions implicitly for now
         ]
         let channels = MockChannels(channels: channelsList)
         let realtime = MockRealtime.create(channels: channels)
@@ -193,8 +193,8 @@ struct DefaultRoomTests {
     func onStatusChange() async throws {
         // Given: a DefaultRoom instance
         let channelsList = [
-            MockRealtimeChannel(name: "basketball::$chat::$chatMessages", detachResult: .success),
-            MockRealtimeChannel(name: "basketball::$chat::$reactions", attachResult: .success), // required as DefaultRoom attaches reactions implicitly for now
+            MockRealtimeChannel(name: "basketball::$chat::$chatMessages"),
+            MockRealtimeChannel(name: "basketball::$chat::$reactions"), // required as DefaultRoom attaches reactions implicitly for now
         ]
         let channels = MockChannels(channels: channelsList)
         let realtime = MockRealtime.create(channels: channels)
