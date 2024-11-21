@@ -12,6 +12,7 @@ struct DefaultRoomTests {
         let channelsList = [
             MockRealtimeChannel(name: "basketball::$chat::$chatMessages", attachResult: .success),
             MockRealtimeChannel(name: "basketball::$chat::$reactions", attachResult: .success),
+            MockRealtimeChannel(name: "basketball::$chat::$typingIndicators", attachResult: .success), // required as DefaultRoom attaches typingIndicators implicitly for now
         ]
         let channels = MockChannels(channels: channelsList)
         let realtime = MockRealtime.create(channels: channels)
@@ -30,6 +31,7 @@ struct DefaultRoomTests {
         let channelsList = [
             MockRealtimeChannel(name: "basketball::$chat::$chatMessages", attachResult: .success),
             MockRealtimeChannel(name: "basketball::$chat::$reactions", attachResult: .success),
+            MockRealtimeChannel(name: "basketball::$chat::$typingIndicators", attachResult: .success), // required as DefaultRoom attaches typingIndicators implicitly for now
         ]
         let channels = MockChannels(channels: channelsList)
         let realtime = MockRealtime.create(channels: channels)
@@ -38,7 +40,7 @@ struct DefaultRoomTests {
 
         // Then: It fetches the …$chatMessages channel (which is used by messages, presence, and occupancy) only once, and the options with which it does so are the result of merging the options used by the presence feature and those used by the occupancy feature
         let channelsGetArguments = channels.getArguments
-        #expect(channelsGetArguments.map(\.name).sorted() == ["basketball::$chat::$chatMessages", "basketball::$chat::$reactions"])
+        #expect(channelsGetArguments.map(\.name).sorted() == ["basketball::$chat::$chatMessages", "basketball::$chat::$reactions", "basketball::$chat::$typingIndicators"])
 
         let chatMessagesChannelGetOptions = try #require(channelsGetArguments.first { $0.name == "basketball::$chat::$chatMessages" }?.options)
         #expect(chatMessagesChannelGetOptions.params?["occupancy"] == "metrics")
@@ -55,6 +57,7 @@ struct DefaultRoomTests {
         let channelsList = [
             MockRealtimeChannel(name: "basketball::$chat::$chatMessages", attachResult: .success),
             MockRealtimeChannel(name: "basketball::$chat::$reactions", attachResult: .success), // required as DefaultRoom attaches reactions implicitly for now
+            MockRealtimeChannel(name: "basketball::$chat::$typingIndicators", attachResult: .success), // required as DefaultRoom attaches typingIndicators implicitly for now
         ]
         let channels = MockChannels(channels: channelsList)
         let realtime = MockRealtime.create(channels: channels)
@@ -77,6 +80,7 @@ struct DefaultRoomTests {
         let channelsList = [
             MockRealtimeChannel(name: "basketball::$chat::$chatMessages", attachResult: .success),
             MockRealtimeChannel(name: "basketball::$chat::$reactions", attachResult: .success), // required as DefaultRoom attaches reactions implicitly for now
+            MockRealtimeChannel(name: "basketball::$chat::$typingIndicators", attachResult: .success), // required as DefaultRoom attaches typingIndicators implicitly for now
         ]
         let channels = MockChannels(channels: channelsList)
         let realtime = MockRealtime.create(channels: channels)
@@ -114,6 +118,7 @@ struct DefaultRoomTests {
         let channelsList = [
             MockRealtimeChannel(name: "basketball::$chat::$chatMessages", detachResult: .success),
             MockRealtimeChannel(name: "basketball::$chat::$reactions", attachResult: .success), // required as DefaultRoom attaches reactions implicitly for now
+            MockRealtimeChannel(name: "basketball::$chat::$typingIndicators", attachResult: .success), // required as DefaultRoom attaches typingIndicators implicitly for now
         ]
         let channels = MockChannels(channels: channelsList)
         let realtime = MockRealtime.create(channels: channels)
@@ -147,6 +152,7 @@ struct DefaultRoomTests {
         let channelsList = [
             MockRealtimeChannel(name: "basketball::$chat::$chatMessages"),
             MockRealtimeChannel(name: "basketball::$chat::$reactions", attachResult: .success), // required as DefaultRoom attaches reactions implicitly for now
+            MockRealtimeChannel(name: "basketball::$chat::$typingIndicators", attachResult: .success), // required as DefaultRoom attaches typingIndicators implicitly for now
         ]
         let channels = MockChannels(channels: channelsList)
         let realtime = MockRealtime.create(channels: channels)
@@ -174,6 +180,7 @@ struct DefaultRoomTests {
         let channelsList = [
             MockRealtimeChannel(name: "basketball::$chat::$chatMessages", detachResult: .success),
             MockRealtimeChannel(name: "basketball::$chat::$reactions", attachResult: .success), // required as DefaultRoom attaches reactions implicitly for now
+            MockRealtimeChannel(name: "basketball::$chat::$typingIndicators", attachResult: .success), // required as DefaultRoom attaches typingIndicators implicitly for now
         ]
         let channels = MockChannels(channels: channelsList)
         let realtime = MockRealtime.create(channels: channels)
@@ -195,6 +202,7 @@ struct DefaultRoomTests {
         let channelsList = [
             MockRealtimeChannel(name: "basketball::$chat::$chatMessages", detachResult: .success),
             MockRealtimeChannel(name: "basketball::$chat::$reactions", attachResult: .success), // required as DefaultRoom attaches reactions implicitly for now
+            MockRealtimeChannel(name: "basketball::$chat::$typingIndicators", attachResult: .success), // required as DefaultRoom attaches typingIndicators implicitly for now
         ]
         let channels = MockChannels(channels: channelsList)
         let realtime = MockRealtime.create(channels: channels)

@@ -27,10 +27,11 @@ public struct PresenceOptions: Sendable, Equatable {
     }
 }
 
+// (CHA-T3) Users may configure a timeout interval for when they are typing. This configuration is provided as part of the RoomOptions typing.timeoutMs property, or idiomatic equivalent. The default is 5000ms.
 public struct TypingOptions: Sendable, Equatable {
-    public var timeout: TimeInterval = 10
+    public var timeout: TimeInterval = 5
 
-    public init(timeout: TimeInterval = 10) {
+    public init(timeout: TimeInterval = 5) {
         self.timeout = timeout
     }
 }

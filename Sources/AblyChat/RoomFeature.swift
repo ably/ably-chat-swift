@@ -23,8 +23,8 @@ internal enum RoomFeature {
             // (CHA-ER1) Reactions for a Room are sent on a corresponding realtime channel <roomId>::$chat::$reactions. For example, if your room id is my-room then the reactions channel will be my-room::$chat::$reactions.
             "reactions"
         case .typing:
-            // We’ll add these, with reference to the relevant spec points, as we implement these features
-            fatalError("Don’t know channel name suffix for room feature \(self)")
+            // (CHA-T1) Typing Indicators for a Room is exposed on a dedicated Realtime channel. These channels use the format <roomId>::$chat::$typingIndicators. For example, if your room id is my-room then the typing channel will be my-room::$chat::$typingIndicators.
+            "typingIndicators"
         }
     }
 }

@@ -64,6 +64,7 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
     private let _reactions: (any RoomReactions)?
     private let _presence: (any Presence)?
     private let _occupancy: (any Occupancy)?
+    private let _typing: (any Typing)?
 
     // Exposed for testing.
     private nonisolated let realtime: RealtimeClient
@@ -125,6 +126,14 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
             roomID: roomID,
             logger: logger
         ) : nil
+
+        _typing = options.typing != nil ? DefaultTyping(
+            featureChannel: featureChannels[.typing]!,
+            roomID: roomID,
+            clientID: clientId,
+            logger: logger,
+            timeout: options.typing?.timeout ?? 5
+        ) : nil
     }
 
     private struct FeatureChannelPartialDependencies {
@@ -178,6 +187,7 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
             .reactions,
             .presence,
             .occupancy,
+            .typing,
         ]
         let channelsByFeature = createChannelsForFeatures(features, roomID: roomID, roomOptions: roomOptions, realtime: realtime)
 
@@ -212,7 +222,10 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
     }
 
     public nonisolated var typing: any Typing {
-        fatalError("Not yet implemented")
+        guard let _typing else {
+            fatalError("Typing is not enabled for this room")
+        }
+        return _typing
     }
 
     public nonisolated var occupancy: any Occupancy {
