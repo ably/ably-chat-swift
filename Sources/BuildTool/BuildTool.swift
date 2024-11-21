@@ -8,7 +8,8 @@ import Table
 struct BuildTool: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         subcommands: [
-            BuildAndTestLibrary.self,
+            BuildLibraryForTesting.self,
+            TestLibrary.self,
             BuildExampleApp.self,
             GenerateMatrices.self,
             Lint.self,
@@ -18,8 +19,8 @@ struct BuildTool: AsyncParsableCommand {
 }
 
 @available(macOS 14, *)
-struct BuildAndTestLibrary: AsyncParsableCommand {
-    static let configuration = CommandConfiguration(abstract: "Build and test the AblyChat library")
+struct BuildLibraryForTesting: AsyncParsableCommand {
+    static let configuration = CommandConfiguration(abstract: "Build the AblyChat library for testing")
 
     @Option var platform: Platform
 
@@ -27,8 +28,21 @@ struct BuildAndTestLibrary: AsyncParsableCommand {
         let destinationSpecifier = try await platform.resolve()
         let scheme = "AblyChat"
 
-        try await XcodeRunner.runXcodebuild(action: nil, scheme: scheme, destination: destinationSpecifier)
-        try await XcodeRunner.runXcodebuild(action: "test", scheme: scheme, destination: destinationSpecifier)
+        try await XcodeRunner.runXcodebuild(action: "build-for-testing", scheme: scheme, destination: destinationSpecifier)
+    }
+}
+
+@available(macOS 14, *)
+struct TestLibrary: AsyncParsableCommand {
+    static let configuration = CommandConfiguration(abstract: "Test the AblyChat library")
+
+    @Option var platform: Platform
+
+    mutating func run() async throws {
+        let destinationSpecifier = try await platform.resolve()
+        let scheme = "AblyChat"
+
+        try await XcodeRunner.runXcodebuild(action: "test-without-building", scheme: scheme, destination: destinationSpecifier)
     }
 }
 
