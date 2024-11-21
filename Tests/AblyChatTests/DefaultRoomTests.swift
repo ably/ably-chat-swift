@@ -64,6 +64,7 @@ struct DefaultRoomTests {
     // @spec CHA-RC2c
     // @spec CHA-RC2d
     // @spec CHA-RC2f
+    // @spec CHA-RL5a1 - We implement this spec point by _not allowing multiple contributors to share a channel_; this is an approach that I’ve suggested in https://github.com/ably/specification/issues/240.
     @Test
     func fetchesChannelAndCreatesLifecycleContributorForEnabledFeatures() async throws {
         // Given: a DefaultRoom instance, initialized with options that request that the room use a strict subset of the possible features
@@ -83,9 +84,10 @@ struct DefaultRoomTests {
 
         // Then: It:
         // - fetches the channel that corresponds to each feature requested by the room options, plus the messages feature
+        // - initializes the RoomLifecycleManager with a contributor for each fetched channel, and the feature assigned to each contributor is the feature, of the enabled features that correspond to that channel, which appears first in the CHA-RC2e list
         // - initializes the RoomLifecycleManager with a contributor for each feature requested by the room options, plus the messages feature
         let lifecycleManagerCreationArguments = try #require(await lifecycleManagerFactory.createManagerArguments.first)
-        let expectedFeatures: [RoomFeature] = [.messages, .presence, .reactions]
+        let expectedFeatures: [RoomFeature] = [.messages, .reactions] // i.e. since messages and presence share a channel, we create a single contributor for this channel and its assigned feature is messages
         #expect(lifecycleManagerCreationArguments.contributors.count == expectedFeatures.count)
         #expect(Set(lifecycleManagerCreationArguments.contributors.map(\.feature)) == Set(expectedFeatures))
 

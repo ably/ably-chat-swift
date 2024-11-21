@@ -70,7 +70,7 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
     private nonisolated let realtime: RealtimeClient
 
     private let lifecycleManager: any RoomLifecycleManager
-    private let channels: [RoomFeature: any RealtimeChannelProtocol]
+    private let channels: [any RealtimeChannelProtocol]
 
     private let logger: InternalLogger
 
@@ -96,6 +96,7 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
             }
         }
 
+        /// The features are returned in CHA-RC2e order.
         static func fromRoomOptions(_ roomOptions: RoomOptions) -> [Self] {
             var result: [Self] = [.messages]
 
@@ -133,8 +134,8 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
         let featuresWithOptions = RoomFeatureWithOptions.fromRoomOptions(options)
 
         let featureChannelPartialDependencies = Self.createFeatureChannelPartialDependencies(roomID: roomID, featuresWithOptions: featuresWithOptions, realtime: realtime)
-        channels = featureChannelPartialDependencies.mapValues(\.channel)
-        let contributors = featureChannelPartialDependencies.values.map(\.contributor)
+        channels = featureChannelPartialDependencies.map(\.featureChannelPartialDependencies.channel)
+        let contributors = featureChannelPartialDependencies.map(\.featureChannelPartialDependencies.contributor)
 
         lifecycleManager = await lifecycleManagerFactory.createManager(
             contributors: contributors,
@@ -202,15 +203,19 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
         internal var contributor: DefaultRoomLifecycleContributor
     }
 
-    /// The returned dictionary is guaranteed to have an entry for each element of `features`.
-    private static func createChannelsForFeaturesWithOptions(_ featuresWithOptions: [RoomFeatureWithOptions], roomID: String, realtime: RealtimeClient) -> [RoomFeature: RealtimeChannelProtocol] {
+    /// Each feature in `featuresWithOptions` is guaranteed to appear in the `features` member of precisely one of the returned array’s values.
+    ///
+    /// The elements of `featuresWithOptions` must be in CHA-RC2e order.
+    private static func createFeatureChannelPartialDependencies(roomID: String, featuresWithOptions: [RoomFeatureWithOptions], realtime: RealtimeClient) -> [(features: [RoomFeature], featureChannelPartialDependencies: FeatureChannelPartialDependencies)] {
         // CHA-RC3a
 
         // Multiple features can share a realtime channel. We fetch each realtime channel exactly once, merging the channel options for the various features that use this channel.
 
+        // CHA-RL5a1: This spec point requires us to implement a special behaviour to handle the fact that multiple contributors can share a channel. I have decided, instead, to make it so that each channel has precisely one lifecycle contributor. I think this is a simpler, functionally equivalent approach and have suggested it in https://github.com/ably/specification/issues/240.
+
         let featuresGroupedByChannelName = Dictionary(grouping: featuresWithOptions) { $0.toRoomFeature.channelNameForRoomID(roomID) }
 
-        let pairsOfFeatureAndChannel = featuresGroupedByChannelName.flatMap { channelName, features in
+        return featuresGroupedByChannelName.map { channelName, features in
             var channelOptions = RealtimeChannelOptions()
 
             // channel setup for presence and occupancy
@@ -234,23 +239,23 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
             }
 
             let channel = realtime.getChannel(channelName, opts: channelOptions)
-            return features.map { ($0.toRoomFeature, channel) }
+
+            // Give the contributor the first of the enabled features that correspond to this channel, using CHA-RC2e ordering. This will determine which feature is used for atttachment and detachment errors.
+            let contributorFeature = features[0].toRoomFeature
+
+            let contributor = DefaultRoomLifecycleContributor(channel: .init(underlyingChannel: channel), feature: contributorFeature)
+            let featureChannelPartialDependencies = FeatureChannelPartialDependencies(channel: channel, contributor: contributor)
+
+            return (features.map(\.toRoomFeature), featureChannelPartialDependencies)
+        }
+    }
+
+    private static func createFeatureChannels(partialDependencies: [(features: [RoomFeature], featureChannelPartialDependencies: FeatureChannelPartialDependencies)], lifecycleManager: RoomLifecycleManager) -> [RoomFeature: DefaultFeatureChannel] {
+        let pairsOfFeatureAndPartialDependencies = partialDependencies.flatMap { features, partialDependencies in
+            features.map { (feature: $0, partialDependencies: partialDependencies) }
         }
 
-        return Dictionary(uniqueKeysWithValues: pairsOfFeatureAndChannel)
-    }
-
-    private static func createFeatureChannelPartialDependencies(roomID: String, featuresWithOptions: [RoomFeatureWithOptions], realtime: RealtimeClient) -> [RoomFeature: FeatureChannelPartialDependencies] {
-        let channelsByFeature = createChannelsForFeaturesWithOptions(featuresWithOptions, roomID: roomID, realtime: realtime)
-
-        return .init(uniqueKeysWithValues: channelsByFeature.map { feature, channel in
-            let contributor = DefaultRoomLifecycleContributor(channel: .init(underlyingChannel: channel), feature: feature)
-            return (feature, .init(channel: channel, contributor: contributor))
-        })
-    }
-
-    private static func createFeatureChannels(partialDependencies: [RoomFeature: FeatureChannelPartialDependencies], lifecycleManager: RoomLifecycleManager) -> [RoomFeature: DefaultFeatureChannel] {
-        partialDependencies.mapValues { partialDependencies in
+        return Dictionary(uniqueKeysWithValues: pairsOfFeatureAndPartialDependencies).mapValues { partialDependencies in
             .init(
                 channel: partialDependencies.channel,
                 contributor: partialDependencies.contributor,
@@ -299,7 +304,7 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
         await lifecycleManager.performReleaseOperation()
 
         // CHA-RL3h
-        for channel in channels.values {
+        for channel in channels {
             realtime.channels.release(channel.name)
         }
     }
