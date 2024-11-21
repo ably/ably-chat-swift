@@ -23,6 +23,29 @@ struct DefaultRoomTests {
         #expect(channelsGetArguments.allSatisfy { $0.options.attachOnSubscribe == false })
     }
 
+    // @spec CHA-RC3a
+    @Test
+    func fetchesEachChannelOnce() async throws {
+        // Given: A DefaultRoom instance, configured to use presence and occupancy
+        let channelsList = [
+            MockRealtimeChannel(name: "basketball::$chat::$chatMessages", attachResult: .success),
+            MockRealtimeChannel(name: "basketball::$chat::$reactions", attachResult: .success),
+        ]
+        let channels = MockChannels(channels: channelsList)
+        let realtime = MockRealtime.create(channels: channels)
+        let roomOptions = RoomOptions(presence: PresenceOptions(), occupancy: OccupancyOptions())
+        _ = try await DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), roomID: "basketball", options: roomOptions, logger: TestLogger(), lifecycleManagerFactory: MockRoomLifecycleManagerFactory())
+
+        // Then: It fetches the …$chatMessages channel (which is used by messages, presence, and occupancy) only once, and the options with which it does so are the result of merging the options used by the presence feature and those used by the occupancy feature
+        let channelsGetArguments = channels.getArguments
+        #expect(channelsGetArguments.map(\.name).sorted() == ["basketball::$chat::$chatMessages", "basketball::$chat::$reactions"])
+
+        let chatMessagesChannelGetOptions = try #require(channelsGetArguments.first { $0.name == "basketball::$chat::$chatMessages" }?.options)
+        #expect(chatMessagesChannelGetOptions.params?["occupancy"] == "metrics")
+        // TODO: Restore this code once we understand weird Realtime behaviour and spec points (https://github.com/ably-labs/ably-chat-swift/issues/133)
+//        #expect(chatMessagesChannelGetOptions.modes == [.presence, .presenceSubscribe])
+    }
+
     // MARK: - Features
 
     // @spec CHA-M1
