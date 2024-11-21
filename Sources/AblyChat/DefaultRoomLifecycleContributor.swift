@@ -1,8 +1,8 @@
 import Ably
 
 internal actor DefaultRoomLifecycleContributor: RoomLifecycleContributor, EmitsDiscontinuities {
-    internal let channel: DefaultRoomLifecycleContributorChannel
-    internal let feature: RoomFeature
+    internal nonisolated let channel: DefaultRoomLifecycleContributorChannel
+    internal nonisolated let feature: RoomFeature
     private var discontinuitySubscriptions: [Subscription<ARTErrorInfo>] = []
 
     internal init(channel: DefaultRoomLifecycleContributorChannel, feature: RoomFeature) {
