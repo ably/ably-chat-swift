@@ -67,6 +67,39 @@ struct DefaultRoomTests {
         #expect(room.messages.channel.name == "basketball::$chat::$chatMessages")
     }
 
+    // TODO: Only create contributors for features user has enabled (https://github.com/ably-labs/ably-chat-swift/issues/105)
+    // TODO: Only fetch channel for features user has enabled (https://github.com/ably-labs/ably-chat-swift/issues/105)
+    @Test
+    func fetchesChannelAndCreatesLifecycleContributorForEachFeature() async throws {
+        // Given: a DefaultRoom instance
+        let channelsList = [
+            MockRealtimeChannel(name: "basketball::$chat::$chatMessages"),
+            MockRealtimeChannel(name: "basketball::$chat::$reactions"),
+            MockRealtimeChannel(name: "basketball::$chat::$typingIndicators"),
+        ]
+        let channels = MockChannels(channels: channelsList)
+        let realtime = MockRealtime.create(channels: channels)
+        let lifecycleManagerFactory = MockRoomLifecycleManagerFactory()
+        _ = try await DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), roomID: "basketball", options: .init(), logger: TestLogger(), lifecycleManagerFactory: lifecycleManagerFactory)
+
+        // Then: It:
+        // - fetches the channel that corresponds to each feature
+        // - initializes the RoomLifecycleManager with a contributor for each feature
+        let lifecycleManagerCreationArguments = try #require(await lifecycleManagerFactory.createManagerArguments.first)
+        let expectedFeatures: [RoomFeature] = [.messages, .occupancy, .reactions, .presence, .typing]
+        #expect(lifecycleManagerCreationArguments.contributors.count == expectedFeatures.count)
+        #expect(Set(lifecycleManagerCreationArguments.contributors.map(\.feature)) == Set(expectedFeatures))
+
+        let channelsGetArguments = channels.getArguments
+        let expectedFetchedChannelNames = [
+            "basketball::$chat::$chatMessages",
+            "basketball::$chat::$reactions",
+            "basketball::$chat::$typingIndicators",
+        ]
+        #expect(channelsGetArguments.count == expectedFetchedChannelNames.count)
+        #expect(Set(channelsGetArguments.map(\.name)) == Set(expectedFetchedChannelNames))
+    }
+
     // @specUntested CHA-RC2b - We chose to implement this failure with an idiomatic fatalError instead of throwing, but we can’t test this.
 
     // This is just a basic sense check to make sure the room getters are working as expected, since we don’t have unit tests for some of the features at the moment.
