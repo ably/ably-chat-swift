@@ -1192,31 +1192,60 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
     // MARK: - Waiting to be able to perform presence operations
 
     internal func waitToBeAbleToPerformPresenceOperations(requestedByFeature requester: RoomFeature) async throws(ARTErrorInfo) {
-        switch status {
-        case let .attachingDueToAttachOperation(attachOperationID):
-            // CHA-PR3d, CHA-PR10d, CHA-PR6c, CHA-T2c
-            try await waitForCompletionOfOperationWithID(attachOperationID, requester: .waitToBeAbleToPerformPresenceOperations)
-        case .attachingDueToContributorStateChange:
-            // TODO: Spec doesn’t say what to do in this situation; asked in https://github.com/ably/specification/issues/228
-            fatalError("waitToBeAbleToPerformPresenceOperations doesn’t currently handle attachingDueToContributorStateChange")
-        case .attachingDueToRetryOperation:
-            // TODO: Spec doesn’t say what to do in this situation; asked in https://github.com/ably/specification/issues/228
-            fatalError("waitToBeAbleToPerformPresenceOperations doesn’t currently handle attachingDueToRetryOperation")
+        // Although this method’s implementation only uses the manager’s public
+        // API, it’s implemented as a method on the manager itself, so that the
+        // implementation is isolated to the manager and hence doesn’t “miss”
+        // any status changes. (There may be other ways to achieve the same
+        // effect; can revisit.)
+
+        switch status.toRoomStatus {
+        case .attaching:
+            // CHA-RL9, which is invoked by CHA-PR3d, CHA-PR10d, CHA-PR6c, CHA-T2c
+
+            // CHA-RL9a
+            let subscription = onRoomStatusChange(bufferingPolicy: .unbounded)
+            logger.log(message: "waitToBeAbleToPerformPresenceOperations waiting for status change", level: .debug)
+            #if DEBUG
+                for subscription in statusChangeWaitEventSubscriptions {
+                    subscription.emit(.init())
+                }
+            #endif
+            let nextRoomStatusChange = await (subscription.first { _ in true })
+            logger.log(message: "waitToBeAbleToPerformPresenceOperations got status change \(String(describing: nextRoomStatusChange))", level: .debug)
+
+            // CHA-RL9b
+            // TODO: decide what to do if nextRoomStatusChange is nil; I believe that this will happen if the current Task is cancelled. For now, will just treat it as an invalid status change. Handle it properly in https://github.com/ably-labs/ably-chat-swift/issues/29
+            if nextRoomStatusChange?.current != .attached {
+                // CHA-RL9c
+                throw .init(chatError: .roomInInvalidState(cause: nextRoomStatusChange?.current.error))
+            }
         case .attached:
             // CHA-PR3e, CHA-PR11e, CHA-PR6d, CHA-T2d
             break
-        case .detached, .detachedDueToRetryOperation:
+        case .detached:
             // CHA-PR3f, CHA-PR11f, CHA-PR6e, CHA-T2e
             throw .init(chatError: .presenceOperationRequiresRoomAttach(feature: requester))
-        case .detaching,
-             .failed,
-             .initialized,
-             .released,
-             .releasing,
-             .suspendedAwaitingStartOfRetryOperation,
-             .suspended:
+        default:
             // CHA-PR3g, CHA-PR11g, CHA-PR6f, CHA-T2f
             throw .init(chatError: .presenceOperationDisallowedForCurrentRoomStatus(feature: requester))
         }
     }
+
+    #if DEBUG
+        /// The manager emits a `StatusChangeWaitEvent` each time ``waitToBeAbleToPerformPresenceOperations(requestedByFeature:)`` is going to wait for a room status change. These events are emitted to support testing of the manager; see ``testsOnly_subscribeToStatusChangeWaitEvents``.
+        internal struct StatusChangeWaitEvent: Equatable {
+            // Nothing here currently, just created this type for consistency with OperationWaitEvent
+        }
+
+        // TODO: clean up old subscriptions (https://github.com/ably-labs/ably-chat-swift/issues/36)
+        /// Supports the ``testsOnly_subscribeToStatusChangeWaitEvents()`` method.
+        private var statusChangeWaitEventSubscriptions: [Subscription<StatusChangeWaitEvent>] = []
+
+        /// Returns a subscription which emits an event each time ``waitToBeAbleToPerformPresenceOperations(requestedByFeature:)`` is going to wait for a room status change.
+        internal func testsOnly_subscribeToStatusChangeWaitEvents() -> Subscription<StatusChangeWaitEvent> {
+            let subscription = Subscription<StatusChangeWaitEvent>(bufferingPolicy: .unbounded)
+            statusChangeWaitEventSubscriptions.append(subscription)
+            return subscription
+        }
+    #endif
 }
