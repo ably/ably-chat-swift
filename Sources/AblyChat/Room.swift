@@ -101,7 +101,8 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
             featureChannel: featureChannels[.messages]!,
             chatAPI: chatAPI,
             roomID: roomID,
-            clientID: clientId
+            clientID: clientId,
+            logger: logger
         )
 
         _reactions = options.reactions != nil ? await DefaultRoomReactions(

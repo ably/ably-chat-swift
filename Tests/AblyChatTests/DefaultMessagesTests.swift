@@ -12,7 +12,7 @@ struct DefaultMessagesTests {
         let chatAPI = ChatAPI(realtime: realtime)
         let channel = MockRealtimeChannel()
         let featureChannel = MockFeatureChannel(channel: channel)
-        let defaultMessages = await DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId")
+        let defaultMessages = await DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
 
         // Then
         await #expect(throws: ARTErrorInfo.create(withCode: 40000, status: 400, message: "channel is attached, but channelSerial is not defined"), performing: {
@@ -30,7 +30,7 @@ struct DefaultMessagesTests {
         let chatAPI = ChatAPI(realtime: realtime)
         let channel = MockRealtimeChannel()
         let featureChannel = MockFeatureChannel(channel: channel)
-        let defaultMessages = await DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId")
+        let defaultMessages = await DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
 
         // Then
         await #expect(throws: Never.self, performing: {
@@ -55,7 +55,7 @@ struct DefaultMessagesTests {
             )
         )
         let featureChannel = MockFeatureChannel(channel: channel)
-        let defaultMessages = await DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId")
+        let defaultMessages = await DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
         let subscription = try await defaultMessages.subscribe(bufferingPolicy: .unbounded)
         let expectedPaginatedResult = PaginatedResultWrapper<Message>(
             paginatedResponse: MockHTTPPaginatedResponse.successGetMessagesWithNoItems,
@@ -77,7 +77,7 @@ struct DefaultMessagesTests {
         let chatAPI = ChatAPI(realtime: realtime)
         let channel = MockRealtimeChannel()
         let featureChannel = MockFeatureChannel(channel: channel)
-        let messages = await DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId")
+        let messages = await DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
 
         // When: The feature channel emits a discontinuity through `subscribeToDiscontinuities`
         let featureChannelDiscontinuity = ARTErrorInfo.createUnknownError() // arbitrary
