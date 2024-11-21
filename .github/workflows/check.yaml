@@ -111,8 +111,13 @@ jobs:
         with:
           xcode-version: ${{ matrix.tooling.xcodeVersion }}
 
-      - name: Build and run tests
-        run: swift run BuildTool build-and-test-library --platform ${{ matrix.platform }}
+      # We run these as two separate steps so that we can easily see the execution time of each step.
+
+      - name: Build for testing
+        run: swift run BuildTool build-library-for-testing --platform ${{ matrix.platform }}
+
+      - name: Run tests
+        run: swift run BuildTool test-library --platform ${{ matrix.platform }}
 
   check-example-app:
     name: Example app, ${{matrix.platform}} (Xcode ${{ matrix.tooling.xcodeVersion }})
