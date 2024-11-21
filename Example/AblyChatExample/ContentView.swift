@@ -134,12 +134,14 @@ struct ContentView: View {
                     }
             }
         }
-        .tryTask { try await setDefaultTitle() }
-        .tryTask { try await attachRoom() }
-        .tryTask { try await showMessages() }
-        .tryTask { try await showReactions() }
-        .tryTask { try await showPresence() }
-        .tryTask { try await showOccupancy() }
+        .tryTask {
+            try await setDefaultTitle()
+            try await attachRoom()
+            try await showMessages()
+            try await showReactions()
+            try await showPresence()
+            try await showOccupancy()
+        }
         .tryTask {
             // NOTE: As we implement more features, move them out of the `if Environment.current == .mock` block and into the main block just above.
             if Environment.current == .mock {
@@ -179,18 +181,25 @@ struct ContentView: View {
             }
         }
 
-        for await message in messagesSubscription {
-            withAnimation {
-                messages.insert(BasicListItem(id: message.timeserial, title: message.clientID, text: message.text), at: 0)
+        // Continue listening for messages on a background task so this function can return
+        Task {
+            for await message in messagesSubscription {
+                withAnimation {
+                    messages.insert(BasicListItem(id: message.timeserial, title: message.clientID, text: message.text), at: 0)
+                }
             }
         }
     }
 
     func showReactions() async throws {
         let reactionSubscription = try await room().reactions.subscribe(bufferingPolicy: .unbounded)
-        for await reaction in reactionSubscription {
-            withAnimation {
-                showReaction(reaction.displayedText)
+
+        // Continue listening for reactions on a background task so this function can return
+        Task {
+            for await reaction in reactionSubscription {
+                withAnimation {
+                    showReaction(reaction.displayedText)
+                }
             }
         }
     }
@@ -198,25 +207,31 @@ struct ContentView: View {
     func showPresence() async throws {
         try await room().presence.enter(data: .init(userCustomData: ["status": .string("📱 Online")]))
 
-        for await event in try await room().presence.subscribe(events: [.enter, .leave, .update]) {
-            withAnimation {
-                let status = event.data?.userCustomData?["status"]?.value as? String
-                let clientPresenceChangeMessage = "\(event.clientID) \(event.action.displayedText)"
-                let presenceMessage = status != nil ? "\(clientPresenceChangeMessage) with status: \(status!)" : clientPresenceChangeMessage
+        // Continue listening for new presence events on a background task so this function can return
+        Task {
+            for await event in try await room().presence.subscribe(events: [.enter, .leave, .update]) {
+                withAnimation {
+                    let status = event.data?.userCustomData?["status"]?.value as? String
+                    let clientPresenceChangeMessage = "\(event.clientID) \(event.action.displayedText)"
+                    let presenceMessage = status != nil ? "\(clientPresenceChangeMessage) with status: \(status!)" : clientPresenceChangeMessage
 
-                messages.insert(BasicListItem(id: UUID().uuidString, title: "System", text: presenceMessage), at: 0)
+                    messages.insert(BasicListItem(id: UUID().uuidString, title: "System", text: presenceMessage), at: 0)
+                }
             }
         }
     }
 
     func showTypings() async throws {
-        for await typing in try await room().typing.subscribe(bufferingPolicy: .unbounded) {
-            withAnimation {
-                typingInfo = "Typing: \(typing.currentlyTyping.joined(separator: ", "))..."
-                Task {
-                    try? await Task.sleep(nanoseconds: 1 * 1_000_000_000)
-                    withAnimation {
-                        typingInfo = ""
+        // Continue listening for typing events on a background task so this function can return
+        Task {
+            for await typing in try await room().typing.subscribe(bufferingPolicy: .unbounded) {
+                withAnimation {
+                    typingInfo = "Typing: \(typing.currentlyTyping.joined(separator: ", "))..."
+                    Task {
+                        try? await Task.sleep(nanoseconds: 1 * 1_000_000_000)
+                        withAnimation {
+                            typingInfo = ""
+                        }
                     }
                 }
             }
@@ -224,25 +239,36 @@ struct ContentView: View {
     }
 
     func showOccupancy() async throws {
-        for await event in try await room().occupancy.subscribe(bufferingPolicy: .unbounded) {
-            withAnimation {
-                occupancyInfo = "Connections: \(event.presenceMembers) (\(event.connections))"
+        // Continue listening for occupancy events on a background task so this function can return
+        let currentOccupancy = try await room().occupancy.get()
+        withAnimation {
+            occupancyInfo = "Connections: \(currentOccupancy.presenceMembers) (\(currentOccupancy.connections))"
+        }
+
+        Task {
+            for await event in try await room().occupancy.subscribe(bufferingPolicy: .unbounded) {
+                withAnimation {
+                    occupancyInfo = "Connections: \(event.presenceMembers) (\(event.connections))"
+                }
             }
         }
     }
 
     func showRoomStatus() async throws {
-        for await status in try await room().onStatusChange(bufferingPolicy: .unbounded) {
-            withAnimation {
-                if status.current.isAttaching {
-                    statusInfo = "\(status.current)...".capitalized
-                } else {
-                    statusInfo = "\(status.current)".capitalized
-                    if status.current == .attached {
-                        Task {
-                            try? await Task.sleep(nanoseconds: 1 * 1_000_000_000)
-                            withAnimation {
-                                statusInfo = ""
+        // Continue listening for status change events on a background task so this function can return
+        Task {
+            for await status in try await room().onStatusChange(bufferingPolicy: .unbounded) {
+                withAnimation {
+                    if status.current.isAttaching {
+                        statusInfo = "\(status.current)...".capitalized
+                    } else {
+                        statusInfo = "\(status.current)".capitalized
+                        if status.current == .attached {
+                            Task {
+                                try? await Task.sleep(nanoseconds: 1 * 1_000_000_000)
+                                withAnimation {
+                                    statusInfo = ""
+                                }
                             }
                         }
                     }

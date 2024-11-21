@@ -21,6 +21,15 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
     // (CHA-PR6) It must be possible to retrieve all the @Members of the presence set. The behaviour depends on the current room status, as presence operations in a Realtime Client cause implicit attaches.
     internal func get() async throws -> [PresenceMember] {
         logger.log(message: "Getting presence", level: .debug)
+
+        // CHA-PR6b to CHA-PR6f
+        do {
+            try await featureChannel.waitToBeAbleToPerformPresenceOperations(requestedByFeature: RoomFeature.presence)
+        } catch {
+            logger.log(message: "Error waiting to be able to perform presence get operation: \(error)", level: .error)
+            throw error
+        }
+
         return try await withCheckedThrowingContinuation { continuation in
             channel.presence.get { [processPresenceGet] members, error in
                 do {
@@ -36,6 +45,15 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
 
     internal func get(params: PresenceQuery) async throws -> [PresenceMember] {
         logger.log(message: "Getting presence with params: \(params)", level: .debug)
+
+        // CHA-PR6b to CHA-PR6f
+        do {
+            try await featureChannel.waitToBeAbleToPerformPresenceOperations(requestedByFeature: RoomFeature.presence)
+        } catch {
+            logger.log(message: "Error waiting to be able to perform presence get operation: \(error)", level: .error)
+            throw error
+        }
+
         return try await withCheckedThrowingContinuation { continuation in
             channel.presence.get(params.asARTRealtimePresenceQuery()) { [processPresenceGet] members, error in
                 do {
@@ -52,6 +70,15 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
     // (CHA-PR5) It must be possible to query if a given clientId is in the presence set.
     internal func isUserPresent(clientID: String) async throws -> Bool {
         logger.log(message: "Checking if user is present with clientID: \(clientID)", level: .debug)
+
+        // CHA-PR6b to CHA-PR6f
+        do {
+            try await featureChannel.waitToBeAbleToPerformPresenceOperations(requestedByFeature: RoomFeature.presence)
+        } catch {
+            logger.log(message: "Error waiting to be able to perform presence get operation: \(error)", level: .error)
+            throw error
+        }
+
         return try await withCheckedThrowingContinuation { continuation in
             channel.presence.get(ARTRealtimePresenceQuery(clientId: clientID, connectionId: nil)) { [logger] members, error in
                 guard let members else {
@@ -68,6 +95,14 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
     // (CHA-PR3a) Users may choose to enter presence, optionally providing custom data to enter with. The overall presence data must retain the format specified in CHA-PR2.
     internal func enter(data: PresenceData? = nil) async throws {
         logger.log(message: "Entering presence", level: .debug)
+
+        // CHA-PR3c to CHA-PR3g
+        do {
+            try await featureChannel.waitToBeAbleToPerformPresenceOperations(requestedByFeature: RoomFeature.presence)
+        } catch {
+            logger.log(message: "Error waiting to be able to perform presence enter operation: \(error)", level: .error)
+            throw error
+        }
         return try await withCheckedThrowingContinuation { continuation in
             channel.presence.enterClient(clientID, data: data?.asQueryItems()) { [logger] error in
                 if let error {
@@ -83,6 +118,15 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
     // (CHA-PR10a) Users may choose to update their presence data, optionally providing custom data to update with. The overall presence data must retain the format specified in CHA-PR2.
     internal func update(data: PresenceData? = nil) async throws {
         logger.log(message: "Updating presence", level: .debug)
+
+        // CHA-PR10c to CHA-PR10g
+        do {
+            try await featureChannel.waitToBeAbleToPerformPresenceOperations(requestedByFeature: RoomFeature.presence)
+        } catch {
+            logger.log(message: "Error waiting to be able to perform presence update operation: \(error)", level: .error)
+            throw error
+        }
+
         return try await withCheckedThrowingContinuation { continuation in
             channel.presence.update(data?.asQueryItems()) { [logger] error in
                 if let error {
@@ -98,6 +142,14 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
     // (CHA-PR4a) Users may choose to leave presence, which results in them being removed from the Realtime presence set.
     internal func leave(data: PresenceData? = nil) async throws {
         logger.log(message: "Leaving presence", level: .debug)
+
+        // CHA-PR6b to CHA-PR6f
+        do {
+            try await featureChannel.waitToBeAbleToPerformPresenceOperations(requestedByFeature: RoomFeature.presence)
+        } catch {
+            logger.log(message: "Error waiting to be able to perform presence leave operation: \(error)", level: .error)
+            throw error
+        }
         return try await withCheckedThrowingContinuation { continuation in
             channel.presence.leave(data?.asQueryItems()) { [logger] error in
                 if let error {
