@@ -5,15 +5,13 @@ actor MockChatClient: ChatClient {
     let realtime: RealtimeClient
     nonisolated let clientOptions: ClientOptions
     nonisolated let rooms: Rooms
+    nonisolated let connection: Connection
 
     init(realtime: RealtimeClient, clientOptions: ClientOptions?) {
         self.realtime = realtime
         self.clientOptions = clientOptions ?? .init()
+        connection = MockConnection(status: .connected, error: nil)
         rooms = MockRooms(clientOptions: self.clientOptions)
-    }
-
-    nonisolated var connection: any Connection {
-        fatalError("Not yet implemented")
     }
 
     nonisolated var clientID: String {
@@ -385,5 +383,23 @@ actor MockOccupancy: Occupancy {
 
     func subscribeToDiscontinuities() -> Subscription<ARTErrorInfo> {
         fatalError("Not yet implemented")
+    }
+}
+
+actor MockConnection: Connection {
+    let status: AblyChat.ConnectionStatus
+    let error: ARTErrorInfo?
+
+    nonisolated func onStatusChange(bufferingPolicy _: BufferingPolicy) -> Subscription<ConnectionStatusChange> {
+        let mockSub = MockSubscription<ConnectionStatusChange>(randomElement: {
+            ConnectionStatusChange(current: .connecting, previous: .connected, retryIn: 1)
+        }, interval: 5)
+
+        return Subscription(mockAsyncSequence: mockSub)
+    }
+
+    init(status: AblyChat.ConnectionStatus, error: ARTErrorInfo?) {
+        self.status = status
+        self.error = error
     }
 }
