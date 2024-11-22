@@ -58,6 +58,7 @@ struct ContentView: View {
             roomID: roomID,
             options: .init(
                 presence: .init(),
+                typing: .init(),
                 reactions: .init(),
                 occupancy: .init()
             )
@@ -90,6 +91,11 @@ struct ContentView: View {
                 .listStyle(PlainListStyle())
                 HStack {
                     TextField("Type a message...", text: $newMessage)
+                        .onChange(of: newMessage) {
+                            Task {
+                                try await startTyping()
+                            }
+                        }
                     #if !os(tvOS)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                     #endif
@@ -141,24 +147,13 @@ struct ContentView: View {
             try await showReactions()
             try await showPresence()
             try await showOccupancy()
+            try await showTypings()
             await printConnectionStatusChange()
         }
         .tryTask {
             // NOTE: As we implement more features, move them out of the `if Environment.current == .mock` block and into the main block just above.
             if Environment.current == .mock {
-                try await showTypings()
                 try await showRoomStatus()
-            }
-        }
-    }
-
-    func printConnectionStatusChange() async {
-        let connectionSubsciption = chatClient.connection.onStatusChange(bufferingPolicy: .unbounded)
-
-        // Continue listening for connection status change on a background task so this function can return
-        Task {
-            for await status in connectionSubsciption {
-                print("Connection status changed to: \(status.current)")
             }
         }
     }
@@ -234,17 +229,15 @@ struct ContentView: View {
     }
 
     func showTypings() async throws {
+        let typingSubscription = try await room().typing.subscribe(bufferingPolicy: .unbounded)
         // Continue listening for typing events on a background task so this function can return
         Task {
-            for await typing in try await room().typing.subscribe(bufferingPolicy: .unbounded) {
+            for await typing in typingSubscription {
                 withAnimation {
-                    typingInfo = "Typing: \(typing.currentlyTyping.joined(separator: ", "))..."
-                    Task {
-                        try? await Task.sleep(nanoseconds: 1 * 1_000_000_000)
-                        withAnimation {
-                            typingInfo = ""
-                        }
-                    }
+                    // Set the typing info to the list of users currently typing
+                    typingInfo = typing.currentlyTyping.isEmpty ?
+                        "" :
+                        "Typing: \(typing.currentlyTyping.joined(separator: ", "))..."
                 }
             }
         }
@@ -262,6 +255,17 @@ struct ContentView: View {
                 withAnimation {
                     occupancyInfo = "Connections: \(event.presenceMembers) (\(event.connections))"
                 }
+            }
+        }
+    }
+
+    func printConnectionStatusChange() async {
+        let connectionSubsciption = chatClient.connection.onStatusChange(bufferingPolicy: .unbounded)
+
+        // Continue listening for connection status change on a background task so this function can return
+        Task {
+            for await status in connectionSubsciption {
+                print("Connection status changed to: \(status.current)")
             }
         }
     }
@@ -299,6 +303,10 @@ struct ContentView: View {
 
     func sendReaction(type: String) async throws {
         try await room().reactions.send(params: .init(type: type))
+    }
+
+    func startTyping() async throws {
+        try await room().typing.start()
     }
 }
 
