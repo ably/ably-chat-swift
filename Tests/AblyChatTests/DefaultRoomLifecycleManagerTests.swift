@@ -1422,18 +1422,29 @@ struct DefaultRoomLifecycleManagerTests {
         #expect(discontinuity === contributorStateChange.reason)
     }
 
-    // @specOneOf(1/2) CHA-RL4b1 - Tests the case where the contributor has been attached previously
+    // @specPartial CHA-RL4b1 - Tests the case where the contributor has been attached previously (TODO: I have changed the criteria for deciding whether an ATTACHED status change represents a discontinuity, to be based on whether there was a previous ATTACHED state change instead of whether the `attach()` call has completed; see https://github.com/ably/specification/issues/239 and change this back to specOneOf(1/2) once we’re aligned with spec again)
     @Test
     func contributorAttachEvent_withResumeFalse_withOperationInProgress_withContributorAttachedPreviously_recordsPendingDiscontinuityEvent() async throws {
-        // Given: A DefaultRoomLifecycleManager, with a room lifecycle operation in progress, and which has a contributor for which a CHA-RL1f call to `attach()` has succeeded
+        // Given: A DefaultRoomLifecycleManager, with a room lifecycle operation in progress, and which has a contributor for which it has previously received an ATTACHED state change
         let contributorDetachOperation = SignallableChannelOperation()
         let contributor = createContributor(attachBehavior: .success, detachBehavior: contributorDetachOperation.behavior)
         let manager = await createManager(
             contributors: [contributor]
         )
 
-        // This is to satisfy "a CHA-RL1f call to `attach()` has succeeded"
-        try await manager.performAttachOperation()
+        // This is to satisfy "for which it has previously received an ATTACHED state change"
+        let previousContributorStateChange = ARTChannelStateChange(
+            // `previous`, `reason`, and `resumed` are arbitrary, but for realism let’s simulate an initial ATTACHED
+            current: .attached,
+            previous: .attaching,
+            event: .attached,
+            reason: nil,
+            resumed: false
+        )
+
+        await waitForManager(manager, toHandleContributorStateChange: previousContributorStateChange) {
+            await contributor.channel.emitStateChange(previousContributorStateChange)
+        }
 
         // This is to put the manager into the DETACHING state, to satisfy "with a room lifecycle operation in progress"
         let roomStatusSubscription = await manager.onRoomStatusChange(bufferingPolicy: .unbounded)
@@ -1464,10 +1475,10 @@ struct DefaultRoomLifecycleManagerTests {
         contributorDetachOperation.complete(behavior: .success)
     }
 
-    // @specOneOf(2/2) CHA-RL4b1 - Tests the case where the contributor has not been attached previously
+    // @specPartial CHA-RL4b1 - Tests the case where the contributor has not been attached previously (TODO: I have changed the criteria for deciding whether an ATTACHED status change represents a discontinuity, to be based on whether there was a previous ATTACHED state change instead of whether the `attach()` call has completed; see https://github.com/ably/specification/issues/239 and change this back to specOneOf(2/2) once we’re aligned with spec again)
     @Test
     func contributorAttachEvent_withResumeFalse_withOperationInProgress_withContributorNotAttachedPreviously_doesNotRecordPendingDiscontinuityEvent() async throws {
-        // Given: A DefaultRoomLifecycleManager, with a room lifecycle operation in progress, and which has a contributor for which a CHA-RL1f call to `attach()` has not previously succeeded
+        // Given: A DefaultRoomLifecycleManager, with a room lifecycle operation in progress, and which has a contributor for which it has not previously received an ATTACHED state change
         let contributor = createContributor()
         let manager = await createManager(
             forTestingWhatHappensWhenCurrentlyIn: .attachingDueToAttachOperation(attachOperationID: UUID()), // case and ID arbitrary, just care that an operation is in progress

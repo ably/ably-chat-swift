@@ -164,6 +164,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
                 for (contributor, subscription) in subscriptions {
                     // This `@Sendable` is to make the compiler error "'self'-isolated value of type '() async -> Void' passed as a strongly transferred parameter; later accesses could race" go away. I don’t hugely understand what it means, but given the "'self'-isolated value" I guessed it was something vaguely to do with the fact that `async` actor initializers are actor-isolated and thought that marking it as `@Sendable` would sever this isolation and make the error go away, which it did 🤷. But there are almost certainly consequences that I am incapable of reasoning about with my current level of Swift concurrency knowledge.
                     group.addTask { @Sendable [weak self] in
+                        // We intentionally wait to finish processing one state change before moving on to the next; this means that when we process an ATTACHED state change, we can be sure that the current `hasBeenAttached` annotation correctly reflects the contributor’s previous state changes.
                         for await stateChange in subscription {
                             await self?.didReceiveStateChange(stateChange, forContributor: contributor)
                         }
@@ -264,7 +265,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
         // TODO: Not clear whether there can be multiple or just one (asked in https://github.com/ably/specification/pull/200/files#r1781927850)
         var pendingDiscontinuityEvents: [ARTErrorInfo] = []
         var transientDisconnectTimeout: TransientDisconnectTimeout?
-        /// Whether a CHA-RL1f call to `attach()` on the contributor has previously succeeded.
+        /// Whether a state change to `ATTACHED` has already been observed for this contributor.
         var hasBeenAttached: Bool
 
         var hasTransientDisconnectTimeout: Bool {
@@ -384,6 +385,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
         ///
         /// A contributor state change is considered handled once the manager has performed all of the side effects that it will perform as a result of receiving this state change. Specifically, once:
         ///
+        /// - (if the state change is ATTACHED) the manager has recorded that an ATTACHED state change has been observed for the contributor
         /// - the manager has recorded all pending discontinuity events provoked by the state change (you can retrieve these using ``testsOnly_pendingDiscontinuityEventsForContributor(at:)``)
         /// - the manager has performed all status changes provoked by the state change (this does _not_ include the case in which the state change provokes the creation of a transient disconnect timeout which subsequently provokes a status change; use ``testsOnly_subscribeToHandledTransientDisconnectTimeouts()`` to find out about those)
         /// - the manager has performed all contributor actions provoked by the state change, namely calls to ``RoomLifecycleContributorChannel.detach()`` or ``RoomLifecycleContributor.emitDiscontinuity(_:)``
@@ -456,14 +458,17 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
                 await contributor.emitDiscontinuity(reason)
             }
         case .attached:
+            let hadAlreadyAttached = contributorAnnotations[contributor].hasBeenAttached
+            contributorAnnotations[contributor].hasBeenAttached = true
+
             if hasOperationInProgress {
-                if !stateChange.resumed, contributorAnnotations[contributor].hasBeenAttached {
+                if !stateChange.resumed, hadAlreadyAttached {
                     // CHA-RL4b1
                     logger.log(message: "Recording pending discontinuity event for contributor \(contributor)", level: .info)
 
                     guard let reason = stateChange.reason else {
                         // TODO: Decide the right thing to do here (https://github.com/ably-labs/ably-chat-swift/issues/74)
-                        preconditionFailure("State change event with resumed == false should have a reason")
+                        preconditionFailure("Non-initial ATTACHED state change with resumed == false should have a reason")
                     }
 
                     contributorAnnotations[contributor].pendingDiscontinuityEvents.append(reason)
@@ -801,7 +806,6 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
             do {
                 logger.log(message: "Attaching contributor \(contributor)", level: .info)
                 try await contributor.channel.attach()
-                contributorAnnotations[contributor].hasBeenAttached = true
             } catch let contributorAttachError {
                 let contributorState = await contributor.channel.state
                 logger.log(message: "Failed to attach contributor \(contributor), which is now in state \(contributorState), error \(contributorAttachError)", level: .info)
