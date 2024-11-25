@@ -463,7 +463,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
 
                     guard let reason = stateChange.reason else {
                         // TODO: Decide the right thing to do here (https://github.com/ably-labs/ably-chat-swift/issues/74)
-                        preconditionFailure("State change event with resumed == false should have a reason")
+                        preconditionFailure("Non-initial ATTACHED state change with resumed == false should have a reason")
                     }
 
                     contributorAnnotations[contributor].pendingDiscontinuityEvents.append(reason)
