@@ -37,7 +37,7 @@ internal protocol RoomLifecycleContributor: Identifiable, Sendable {
     /// Informs the contributor that there has been a break in channel continuity, which it should inform library users about.
     ///
     /// It is marked as `async` purely to make it easier to write mocks for this method (i.e. to use an actor as a mock).
-    func emitDiscontinuity(_ error: ARTErrorInfo) async
+    func emitDiscontinuity(_ error: ARTErrorInfo?) async
 }
 
 internal protocol RoomLifecycleManager: Sendable {
@@ -111,7 +111,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
     #if DEBUG
         internal init(
             testsOnly_status status: Status? = nil,
-            testsOnly_pendingDiscontinuityEvents pendingDiscontinuityEvents: [Contributor.ID: [ARTErrorInfo]]? = nil,
+            testsOnly_pendingDiscontinuityEvents pendingDiscontinuityEvents: [Contributor.ID: [ARTErrorInfo?]]? = nil,
             testsOnly_idsOfContributorsWithTransientDisconnectTimeout idsOfContributorsWithTransientDisconnectTimeout: Set<Contributor.ID>? = nil,
             contributors: [Contributor],
             logger: InternalLogger,
@@ -130,7 +130,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
 
     private init(
         status: Status?,
-        pendingDiscontinuityEvents: [Contributor.ID: [ARTErrorInfo]]?,
+        pendingDiscontinuityEvents: [Contributor.ID: [ARTErrorInfo?]]?,
         idsOfContributorsWithTransientDisconnectTimeout: Set<Contributor.ID>?,
         contributors: [Contributor],
         logger: InternalLogger,
@@ -263,7 +263,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
         }
 
         // TODO: Not clear whether there can be multiple or just one (asked in https://github.com/ably/specification/pull/200/files#r1781927850)
-        var pendingDiscontinuityEvents: [ARTErrorInfo] = []
+        var pendingDiscontinuityEvents: [ARTErrorInfo?] = []
         var transientDisconnectTimeout: TransientDisconnectTimeout?
         /// Whether a state change to `ATTACHED` has already been observed for this contributor.
         var hasBeenAttached: Bool
@@ -279,7 +279,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
 
         init(
             contributors: [Contributor],
-            pendingDiscontinuityEvents: [Contributor.ID: [ARTErrorInfo]],
+            pendingDiscontinuityEvents: [Contributor.ID: [ARTErrorInfo?]],
             idsOfContributorsWithTransientDisconnectTimeout: Set<Contributor.ID>
         ) {
             storage = contributors.reduce(into: [:]) { result, contributor in
@@ -397,7 +397,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
             return subscription
         }
 
-        internal func testsOnly_pendingDiscontinuityEvents(for contributor: Contributor) -> [ARTErrorInfo] {
+        internal func testsOnly_pendingDiscontinuityEvents(for contributor: Contributor) -> [ARTErrorInfo?] {
             contributorAnnotations[contributor].pendingDiscontinuityEvents
         }
 
@@ -441,19 +441,16 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
                 break
             }
 
-            guard let reason = stateChange.reason else {
-                // TODO: Decide the right thing to do here (https://github.com/ably-labs/ably-chat-swift/issues/74)
-                preconditionFailure("State change event with resumed == false should have a reason")
-            }
+            let reason = stateChange.reason
 
             if hasOperationInProgress {
                 // CHA-RL4a3
-                logger.log(message: "Recording pending discontinuity event for contributor \(contributor)", level: .info)
+                logger.log(message: "Recording pending discontinuity event \(String(describing: reason)) for contributor \(contributor)", level: .info)
 
                 contributorAnnotations[contributor].pendingDiscontinuityEvents.append(reason)
             } else {
                 // CHA-RL4a4
-                logger.log(message: "Emitting discontinuity event for contributor \(contributor)", level: .info)
+                logger.log(message: "Emitting discontinuity event \(String(describing: reason)) for contributor \(contributor)", level: .info)
 
                 await contributor.emitDiscontinuity(reason)
             }
@@ -464,12 +461,10 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
             if hasOperationInProgress {
                 if !stateChange.resumed, hadAlreadyAttached {
                     // CHA-RL4b1
-                    logger.log(message: "Recording pending discontinuity event for contributor \(contributor)", level: .info)
 
-                    guard let reason = stateChange.reason else {
-                        // TODO: Decide the right thing to do here (https://github.com/ably-labs/ably-chat-swift/issues/74)
-                        preconditionFailure("Non-initial ATTACHED state change with resumed == false should have a reason")
-                    }
+                    let reason = stateChange.reason
+
+                    logger.log(message: "Recording pending discontinuity event \(String(describing: reason)) for contributor \(contributor)", level: .info)
 
                     contributorAnnotations[contributor].pendingDiscontinuityEvents.append(reason)
                 }
@@ -860,7 +855,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
         logger.log(message: "Emitting pending discontinuity events", level: .info)
         for contributor in contributors {
             for pendingDiscontinuityEvent in contributorAnnotations[contributor].pendingDiscontinuityEvents {
-                logger.log(message: "Emitting pending discontinuity event \(pendingDiscontinuityEvent) to contributor \(contributor)", level: .info)
+                logger.log(message: "Emitting pending discontinuity event \(String(describing: pendingDiscontinuityEvent)) to contributor \(contributor)", level: .info)
                 await contributor.emitDiscontinuity(pendingDiscontinuityEvent)
             }
         }
