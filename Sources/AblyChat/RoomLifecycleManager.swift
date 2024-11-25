@@ -448,12 +448,12 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
 
             if hasOperationInProgress {
                 // CHA-RL4a3
-                logger.log(message: "Recording pending discontinuity event for contributor \(contributor)", level: .info)
+                logger.log(message: "Recording pending discontinuity event \(reason) for contributor \(contributor)", level: .info)
 
                 contributorAnnotations[contributor].pendingDiscontinuityEvents.append(reason)
             } else {
                 // CHA-RL4a4
-                logger.log(message: "Emitting discontinuity event for contributor \(contributor)", level: .info)
+                logger.log(message: "Emitting discontinuity event \(reason) for contributor \(contributor)", level: .info)
 
                 await contributor.emitDiscontinuity(reason)
             }
@@ -464,12 +464,13 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
             if hasOperationInProgress {
                 if !stateChange.resumed, hadAlreadyAttached {
                     // CHA-RL4b1
-                    logger.log(message: "Recording pending discontinuity event for contributor \(contributor)", level: .info)
 
                     guard let reason = stateChange.reason else {
                         // TODO: Decide the right thing to do here (https://github.com/ably-labs/ably-chat-swift/issues/74)
                         preconditionFailure("Non-initial ATTACHED state change with resumed == false should have a reason")
                     }
+
+                    logger.log(message: "Recording pending discontinuity event \(reason) for contributor \(contributor)", level: .info)
 
                     contributorAnnotations[contributor].pendingDiscontinuityEvents.append(reason)
                 }
