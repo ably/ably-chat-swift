@@ -1,5 +1,5 @@
 import Ably
-import AblyChat
+@testable import AblyChat
 import Testing
 
 /// Some very basic integration tests, just to check that things are kind of working.
@@ -7,17 +7,49 @@ import Testing
 /// It would be nice to give this a time limit, but unfortunately the `timeLimit` trait is only available on iOS 16 etc and above. CodeRabbit suggested writing a timeout function myself and wrapping the contents of the test in it, but I didn’t have time to try understanding its suggested code, so it can wait.
 @Suite
 struct IntegrationTests {
-    private static func createSandboxRealtime(apiKey: String) -> ARTRealtime {
+    private class AblyCocoaLogger: ARTLog {
+        private let label: String
+
+        init(label: String) {
+            self.label = label
+        }
+
+        override func log(_ message: String, with level: ARTLogLevel) {
+            super.log("\(label): \(message)", with: level)
+        }
+    }
+
+    private final class ChatLogger: LogHandler {
+        private let label: String
+        private let defaultLogHandler = DefaultLogHandler()
+
+        init(label: String) {
+            self.label = label
+        }
+
+        func log(message: String, level: LogLevel, context: LogContext?) {
+            defaultLogHandler.log(message: "\(label): \(message)", level: level, context: context)
+        }
+    }
+
+    private static func createSandboxRealtime(apiKey: String, loggingLabel: String) -> ARTRealtime {
         let realtimeOptions = ARTClientOptions(key: apiKey)
         realtimeOptions.environment = "sandbox"
         realtimeOptions.clientId = UUID().uuidString
 
+        if TestLogger.loggingEnabled {
+            realtimeOptions.logLevel = .verbose
+            realtimeOptions.logHandler = AblyCocoaLogger(label: loggingLabel)
+        }
+
         return ARTRealtime(options: realtimeOptions)
     }
 
-    private static func createSandboxChatClient(apiKey: String) -> DefaultChatClient {
-        let realtime = createSandboxRealtime(apiKey: apiKey)
-        return DefaultChatClient(realtime: realtime, clientOptions: nil)
+    private static func createSandboxChatClient(apiKey: String, loggingLabel: String) -> DefaultChatClient {
+        let realtime = createSandboxRealtime(apiKey: apiKey, loggingLabel: loggingLabel)
+        let clientOptions = TestLogger.loggingEnabled ? ClientOptions(logHandler: ChatLogger(label: loggingLabel), logLevel: .trace) : nil
+
+        return DefaultChatClient(realtime: realtime, clientOptions: clientOptions)
     }
 
     @Test
@@ -27,8 +59,8 @@ struct IntegrationTests {
         let apiKey = try await Sandbox.createAPIKey()
 
         // (1) Create a couple of chat clients — one for sending and one for receiving
-        let txClient = Self.createSandboxChatClient(apiKey: apiKey)
-        let rxClient = Self.createSandboxChatClient(apiKey: apiKey)
+        let txClient = Self.createSandboxChatClient(apiKey: apiKey, loggingLabel: "tx")
+        let rxClient = Self.createSandboxChatClient(apiKey: apiKey, loggingLabel: "rx")
 
         // (2) Fetch a room
         let roomID = "basketball"
