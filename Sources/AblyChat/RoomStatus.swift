@@ -12,6 +12,24 @@ public enum RoomStatus: Sendable, Equatable {
     case releasing
     case released
 
+    internal var error: ARTErrorInfo? {
+        switch self {
+        case let .attaching(error):
+            error
+        case let .suspended(error):
+            error
+        case let .failed(error):
+            error
+        case .initialized,
+             .attached,
+             .detaching,
+             .detached,
+             .releasing,
+             .released:
+            nil
+        }
+    }
+
     // Helpers to allow us to test whether a `RoomStatus` value has a certain case, without caring about the associated value. These are useful for in contexts where we want to use a `Bool` to communicate a case. For example:
     //
     // 1. testing (e.g.  `#expect(status.isFailed)`)

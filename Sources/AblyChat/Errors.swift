@@ -34,6 +34,8 @@ public enum ErrorCode: Int {
     case roomIsReleasing = 102_102
     case roomIsReleased = 102_103
 
+    case roomInInvalidState = 102_107
+
     /// The ``ARTErrorInfo.statusCode`` that should be returned for this error.
     internal var statusCode: Int {
         // TODO: These are currently a guess, revisit once outstanding spec question re status codes is answered (https://github.com/ably/specification/pull/200#discussion_r1755222945), and also revisit in https://github.com/ably-labs/ably-chat-swift/issues/32
@@ -49,12 +51,15 @@ public enum ErrorCode: Int {
              .roomIsReleasing,
              .roomIsReleased:
             400
-        case .messagesAttachmentFailed,
-             .presenceAttachmentFailed,
-             .reactionsAttachmentFailed,
-             .occupancyAttachmentFailed,
-             .typingAttachmentFailed:
-            // TODO: This is currently a best guess based on the limited status code information given in the spec at time of writing (i.e. CHA-RL1h4); it's not clear to me whether these error codes are always meant to have the same status code. Revisit once aforementioned spec question re status codes answered.
+        case
+            // TODO: These *AttachmentFailed ones are currently a best guess based on the limited status code information given in the spec at time of writing (i.e. CHA-RL1h4); it's not clear to me whether these error codes are always meant to have the same status code. Revisit once aforementioned spec question re status codes answered.
+            .messagesAttachmentFailed,
+            .presenceAttachmentFailed,
+            .reactionsAttachmentFailed,
+            .occupancyAttachmentFailed,
+            .typingAttachmentFailed,
+            // CHA-RL9c
+            .roomInInvalidState:
             500
         }
     }
@@ -74,6 +79,7 @@ internal enum ChatError {
     case roomIsReleased
     case presenceOperationRequiresRoomAttach(feature: RoomFeature)
     case presenceOperationDisallowedForCurrentRoomStatus(feature: RoomFeature)
+    case roomInInvalidState(cause: ARTErrorInfo?)
 
     /// The ``ARTErrorInfo.code`` that should be returned for this error.
     internal var code: ErrorCode {
@@ -112,6 +118,8 @@ internal enum ChatError {
             .roomIsReleasing
         case .roomIsReleased:
             .roomIsReleased
+        case .roomInInvalidState:
+            .roomInInvalidState
         case .presenceOperationRequiresRoomAttach,
              .presenceOperationDisallowedForCurrentRoomStatus:
             .nonspecific
@@ -172,6 +180,8 @@ internal enum ChatError {
             "To perform this \(Self.descriptionOfFeature(feature)) operation, you must first attach the room."
         case let .presenceOperationDisallowedForCurrentRoomStatus(feature):
             "This \(Self.descriptionOfFeature(feature)) operation can not be performed given the current room status."
+        case .roomInInvalidState:
+            "The room operation failed because the room was in an invalid state."
         }
     }
 
@@ -182,6 +192,8 @@ internal enum ChatError {
             underlyingError
         case let .detachmentFailed(_, underlyingError):
             underlyingError
+        case let .roomInInvalidState(cause):
+            cause
         case .inconsistentRoomOptions,
              .roomInFailedState,
              .roomIsReleasing,

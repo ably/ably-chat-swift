@@ -1876,12 +1876,15 @@ struct DefaultRoomLifecycleManagerTests {
 
     // MARK: - Waiting to be able to perform presence operations
 
+    // @specOneOf(1/2) CHA-RL9a
+    // @spec CHA-RL9b
+    //
     // @specPartial CHA-PR3d - Tests the wait described in the spec point, but not that the feature actually performs this wait nor the side effect. TODO change this to a specOneOf once the feature is implemented
     // @specPartial CHA-PR10d - Tests the wait described in the spec point, but not that the feature actually performs this wait nor the side effect. TODO change this to a specOneOf once the feature is implemented
     // @specPartial CHA-PR6c - Tests the wait described in the spec point, but not that the feature actually performs this wait nor the side effect. TODO change this to a specOneOf once the feature is implemented
     // @specPartial CHA-T2c - Tests the wait described in the spec point, but not that the feature actually performs this wait nor the side effect. TODO change this to a specOneOf once the feature is implemented
     @Test
-    func waitToBeAbleToPerformPresenceOperations_whenAttaching_whenAttachSucceeds() async throws {
+    func waitToBeAbleToPerformPresenceOperations_whenAttaching_whenTransitionsToAttached() async throws {
         // Given: A DefaultRoomLifecycleManager, with an ATTACH operation in progress and hence in the ATTACHING status
         let contributorAttachOperation = SignallableChannelOperation()
 
@@ -1900,26 +1903,28 @@ struct DefaultRoomLifecycleManagerTests {
         _ = await roomStatusSubscription.attachingElements().first { _ in true }
 
         // When: `waitToBeAbleToPerformPresenceOperations(requestedByFeature:)` is called on the lifecycle manager
-        let operationWaitSubscription = await manager.testsOnly_subscribeToOperationWaitEvents()
+        let statusChangeWaitSubscription = await manager.testsOnly_subscribeToStatusChangeWaitEvents()
         async let waitToBeAbleToPerformPresenceOperationsResult: Void = manager.waitToBeAbleToPerformPresenceOperations(requestedByFeature: .messages /* arbitrary */ )
 
-        // Then: The manager waits for the ATTACH operation to complete
-        let operationWaitEvent = try #require(await operationWaitSubscription.first { _ in true })
-        #expect(operationWaitEvent.waitedOperationID == attachOperationID)
+        // Then: The manager waits for its room status to change
+        _ = try #require(await statusChangeWaitSubscription.first { _ in true })
 
-        // and When: The ATTACH operation succeeds
+        // and When: The ATTACH operation succeeds, thus putting the room in the ATTACHED status
         contributorAttachOperation.complete(behavior: .success)
 
         // Then: The call to `waitToBeAbleToPerformPresenceOperations(requestedByFeature:)` succeeds
         try await waitToBeAbleToPerformPresenceOperationsResult
     }
 
+    // @specOneOf(2/2) CHA-RL9a
+    // @spec CHA-RL9c
+    //
     // @specPartial CHA-PR3d - Tests the wait described in the spec point, but not that the feature actually performs this wait nor the side effect. TODO change this to a specOneOf once the feature is implemented
     // @specPartial CHA-PR10d - Tests the wait described in the spec point, but not that the feature actually performs this wait nor the side effect. TODO change this to a specOneOf once the feature is implemented
     // @specPartial CHA-PR6c - Tests the wait described in the spec point, but not that the feature actually performs this wait nor the side effect. TODO change this to a specOneOf once the feature is implemented
     // @specPartial CHA-T2c - Tests the wait described in the spec point, but not that the feature actually performs this wait nor the side effect. TODO change this to a specOneOf once the feature is implemented
     @Test
-    func waitToBeAbleToPerformPresenceOperations_whenAttaching_whenAttachFails() async throws {
+    func waitToBeAbleToPerformPresenceOperations_whenAttaching_whenTransitionsToNonAttachedStatus() async throws {
         // Given: A DefaultRoomLifecycleManager, with an ATTACH operation in progress and hence in the ATTACHING status
         let contributorAttachOperation = SignallableChannelOperation()
 
@@ -1938,18 +1943,17 @@ struct DefaultRoomLifecycleManagerTests {
         _ = await roomStatusSubscription.attachingElements().first { _ in true }
 
         // When: `waitToBeAbleToPerformPresenceOperations(requestedByFeature:)` is called on the lifecycle manager
-        let operationWaitSubscription = await manager.testsOnly_subscribeToOperationWaitEvents()
+        let statusChangeWaitSubscription = await manager.testsOnly_subscribeToStatusChangeWaitEvents()
         async let waitToBeAbleToPerformPresenceOperationsResult: Void = manager.waitToBeAbleToPerformPresenceOperations(requestedByFeature: .messages /* arbitrary */ )
 
-        // Then: The manager waits for the ATTACH operation to complete
-        let operationWaitEvent = try #require(await operationWaitSubscription.first { _ in true })
-        #expect(operationWaitEvent.waitedOperationID == attachOperationID)
+        // Then: The manager waits for its room status to change
+        _ = try #require(await statusChangeWaitSubscription.first { _ in true })
 
-        // and When: The ATTACH operation fails
+        // and When: The ATTACH operation fails, thus putting the room in the FAILED status (i.e. a non-ATTACHED status)
         let contributorAttachError = ARTErrorInfo.createUnknownError() // arbitrary
         contributorAttachOperation.complete(behavior: .completeAndChangeState(.failure(contributorAttachError), newState: .failed))
 
-        // Then: The call to `waitToBeAbleToPerformPresenceOperations(requestedByFeature:)` fails with the same error
+        // Then: The call to `waitToBeAbleToPerformPresenceOperations(requestedByFeature:)` fails with a `roomInInvalidState` error, whose cause is the error associated with the room status change
         var caughtError: Error?
         do {
             try await waitToBeAbleToPerformPresenceOperationsResult
@@ -1957,7 +1961,8 @@ struct DefaultRoomLifecycleManagerTests {
             caughtError = error
         }
 
-        #expect(isChatError(caughtError, withCode: .messagesAttachmentFailed, cause: contributorAttachError))
+        let expectedCause = ARTErrorInfo(chatError: .attachmentFailed(feature: .messages, underlyingError: contributorAttachError)) // using our knowledge of CHA-RL1h4
+        #expect(isChatError(caughtError, withCode: .roomInInvalidState, cause: expectedCause))
     }
 
     // @specPartial CHA-PR3e - Tests the wait described in the spec point, but not that the feature actually performs this wait nor the side effect. TODO change this to a specOneOf once the feature is implemented
