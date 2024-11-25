@@ -1,6 +1,6 @@
 import Ably
 
-internal actor DefaultRoomLifecycleContributor: RoomLifecycleContributor, EmitsDiscontinuities {
+internal actor DefaultRoomLifecycleContributor: RoomLifecycleContributor, EmitsDiscontinuities, CustomDebugStringConvertible {
     internal nonisolated let channel: DefaultRoomLifecycleContributorChannel
     internal nonisolated let feature: RoomFeature
     private var discontinuitySubscriptions: [Subscription<ARTErrorInfo>] = []
@@ -24,9 +24,15 @@ internal actor DefaultRoomLifecycleContributor: RoomLifecycleContributor, EmitsD
         discontinuitySubscriptions.append(subscription)
         return subscription
     }
+
+    // MARK: - CustomDebugStringConvertible
+
+    internal nonisolated var debugDescription: String {
+        "(\(id): \(feature), \(channel))"
+    }
 }
 
-internal final class DefaultRoomLifecycleContributorChannel: RoomLifecycleContributorChannel {
+internal final class DefaultRoomLifecycleContributorChannel: RoomLifecycleContributorChannel, CustomDebugStringConvertible {
     private let underlyingChannel: any RealtimeChannelProtocol
 
     internal init(underlyingChannel: any RealtimeChannelProtocol) {
@@ -54,5 +60,11 @@ internal final class DefaultRoomLifecycleContributorChannel: RoomLifecycleContri
         let subscription = Subscription<ARTChannelStateChange>(bufferingPolicy: .unbounded)
         underlyingChannel.on { subscription.emit($0) }
         return subscription
+    }
+
+    // MARK: - CustomDebugStringConvertible
+
+    internal var debugDescription: String {
+        "\(underlyingChannel)"
     }
 }
