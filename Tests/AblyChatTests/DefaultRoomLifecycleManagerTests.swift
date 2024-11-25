@@ -54,7 +54,7 @@ struct DefaultRoomLifecycleManagerTests {
 
     private func createManager(
         forTestingWhatHappensWhenCurrentlyIn status: DefaultRoomLifecycleManager<MockRoomLifecycleContributor>.Status? = nil,
-        forTestingWhatHappensWhenHasPendingDiscontinuityEvents pendingDiscontinuityEvents: [MockRoomLifecycleContributor.ID: [ARTErrorInfo]]? = nil,
+        forTestingWhatHappensWhenHasPendingDiscontinuityEvents pendingDiscontinuityEvents: [MockRoomLifecycleContributor.ID: [ARTErrorInfo?]]? = nil,
         forTestingWhatHappensWhenHasTransientDisconnectTimeoutForTheseContributorIDs idsOfContributorsWithTransientDisconnectTimeout: Set<MockRoomLifecycleContributor.ID>? = nil,
         contributors: [MockRoomLifecycleContributor] = [],
         clock: SimpleClock = MockSimpleClock()
@@ -262,7 +262,7 @@ struct DefaultRoomLifecycleManagerTests {
     func attach_uponSuccess_emitsPendingDiscontinuityEvents() async throws {
         // Given: A DefaultRoomLifecycleManager, all of whose contributors’ calls to `attach` succeed
         let contributors = (1 ... 3).map { _ in createContributor(attachBehavior: .success) }
-        let pendingDiscontinuityEvents: [MockRoomLifecycleContributor.ID: [ARTErrorInfo]] = [
+        let pendingDiscontinuityEvents: [MockRoomLifecycleContributor.ID: [ARTErrorInfo?]] = [
             contributors[1].id: [.init(domain: "SomeDomain", code: 123) /* arbitrary */ ],
             contributors[2].id: [.init(domain: "SomeDomain", code: 456) /* arbitrary */ ],
         ]
@@ -333,7 +333,7 @@ struct DefaultRoomLifecycleManagerTests {
                             current: .attached,
                             previous: .detached, // arbitrary
                             event: .attached,
-                            reason: .createUnknownError() // Not related to this test, just to avoid a crash in CHA-RL4b1 handling of this state change
+                            reason: nil // arbitrary
                         )
                     )
                 )
@@ -961,7 +961,7 @@ struct DefaultRoomLifecycleManagerTests {
                         current: .attached,
                         previous: .attaching, // arbitrary
                         event: .attached,
-                        reason: .createUnknownError() // Not related to this test, just to avoid a crash in CHA-RL4b1 handling of this state change
+                        reason: nil // arbitrary
                     )
                 )
             ),
@@ -1010,7 +1010,7 @@ struct DefaultRoomLifecycleManagerTests {
                         current: .attached,
                         previous: .attaching, // arbitrary
                         event: .attached,
-                        reason: .createUnknownError() // Not related to this test, just to avoid a crash in CHA-RL4b1 handling of this state change
+                        reason: nil // arbitrary
                     )
                 )
             ),
@@ -1203,7 +1203,7 @@ struct DefaultRoomLifecycleManagerTests {
                             current: .attached,
                             previous: .attaching, // arbitrary
                             event: .attached,
-                            reason: .createUnknownError() // Not related to this test, just to avoid a crash in CHA-RL4b1 handling of this state change
+                            reason: nil // arbitrary
                         )
 
                         return .addSubscriptionAndEmitStateChange(contributorAttachedStateChange)
@@ -1248,7 +1248,7 @@ struct DefaultRoomLifecycleManagerTests {
                         current: .attached,
                         previous: .attaching, // arbitrary
                         event: .attached,
-                        reason: .createUnknownError() // Not related to this test, just to avoid a crash in CHA-RL4b1 handling of this state change
+                        reason: nil // arbitrary
                     )
                 ) // Not related to this test, just so that the CHA-RL5d wait completes
             ),
@@ -1296,7 +1296,7 @@ struct DefaultRoomLifecycleManagerTests {
                         current: .attached,
                         previous: .attaching, // arbitrary
                         event: .attached,
-                        reason: .createUnknownError() // Not related to this test, just to avoid a crash in CHA-RL4b1 handling of this state change
+                        reason: nil // arbitrary
                     )
                 ) // Not related to this test, just so that the CHA-RL5d wait completes
             ),
@@ -1794,7 +1794,7 @@ struct DefaultRoomLifecycleManagerTests {
                     current: .attached,
                     previous: .detached, // arbitrary
                     event: .attached,
-                    reason: .createUnknownError() // Not related to this test, just to avoid a crash in CHA-RL4b1 handling of this state change
+                    reason: nil // arbitrary
                 )
             )
         )

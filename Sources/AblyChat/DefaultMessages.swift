@@ -107,7 +107,7 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
     }
 
     // (CHA-M7) Users may subscribe to discontinuity events to know when there’s been a break in messages that they need to resolve. Their listener will be called when a discontinuity event is triggered from the room lifecycle.
-    internal func subscribeToDiscontinuities() async -> Subscription<ARTErrorInfo> {
+    internal func subscribeToDiscontinuities() async -> Subscription<ARTErrorInfo?> {
         await featureChannel.subscribeToDiscontinuities()
     }
 

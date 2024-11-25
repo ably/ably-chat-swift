@@ -1,5 +1,5 @@
 import Ably
 
 public protocol EmitsDiscontinuities {
-    func subscribeToDiscontinuities() async -> Subscription<ARTErrorInfo>
+    func subscribeToDiscontinuities() async -> Subscription<ARTErrorInfo?>
 }
