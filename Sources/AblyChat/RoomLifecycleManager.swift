@@ -806,6 +806,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
             do {
                 logger.log(message: "Attaching contributor \(contributor)", level: .info)
                 try await contributor.channel.attach()
+                logger.log(message: "Successfully attached contributor \(contributor)", level: .info)
             } catch let contributorAttachError {
                 let contributorState = await contributor.channel.state
                 logger.log(message: "Failed to attach contributor \(contributor), which is now in state \(contributorState), error \(contributorAttachError)", level: .info)
