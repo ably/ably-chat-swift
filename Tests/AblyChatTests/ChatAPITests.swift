@@ -40,7 +40,8 @@ struct ChatAPITests {
 
         // Then
         let expectedMessage = Message(
-            timeserial: "3446456",
+            serial: "3446456",
+            latestAction: .create,
             clientID: "mockClientId",
             roomID: roomId,
             text: "hello",
@@ -89,7 +90,8 @@ struct ChatAPITests {
             paginatedResponse: paginatedResponse,
             items: [
                 Message(
-                    timeserial: "3446456",
+                    serial: "3446456",
+                    latestAction: .create,
                     clientID: "random",
                     roomID: roomId,
                     text: "hello",
@@ -98,7 +100,8 @@ struct ChatAPITests {
                     headers: [:]
                 ),
                 Message(
-                    timeserial: "3446457",
+                    serial: "3446457",
+                    latestAction: .create,
                     clientID: "random",
                     roomID: roomId,
                     text: "hello response",
@@ -110,10 +113,10 @@ struct ChatAPITests {
         )
 
         // When
-        let getMessages = try? await chatAPI.getMessages(roomId: roomId, params: .init()) as? PaginatedResultWrapper<Message>
+        let getMessagesResult = try? await chatAPI.getMessages(roomId: roomId, params: .init()) as? PaginatedResultWrapper<Message>
 
         // Then
-        #expect(getMessages == expectedPaginatedResult)
+        #expect(getMessagesResult == expectedPaginatedResult)
     }
 
     // @spec CHA-M5i

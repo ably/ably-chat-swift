@@ -3,6 +3,7 @@ import Ably
 internal final class ChatAPI: Sendable {
     private let realtime: RealtimeClient
     private let apiVersion = "/chat/v1"
+    private let apiVersionV2 = "/chat/v2" // TODO: remove v1 after full transition to v2
 
     public init(realtime: RealtimeClient) {
         self.realtime = realtime
@@ -10,12 +11,12 @@ internal final class ChatAPI: Sendable {
 
     // (CHA-M6) Messages should be queryable from a paginated REST API.
     internal func getMessages(roomId: String, params: QueryOptions) async throws -> any PaginatedResult<Message> {
-        let endpoint = "\(apiVersion)/rooms/\(roomId)/messages"
+        let endpoint = "\(apiVersionV2)/rooms/\(roomId)/messages"
         return try await makePaginatedRequest(endpoint, params: params.asQueryItems())
     }
 
     internal struct SendMessageResponse: Codable {
-        internal let timeserial: String
+        internal let serial: String
         internal let createdAt: Int64
     }
 
@@ -26,7 +27,7 @@ internal final class ChatAPI: Sendable {
             throw ARTErrorInfo.create(withCode: 40000, message: "Ensure your Realtime instance is initialized with a clientId.")
         }
 
-        let endpoint = "\(apiVersion)/rooms/\(roomId)/messages"
+        let endpoint = "\(apiVersionV2)/rooms/\(roomId)/messages"
         var body: [String: Any] = ["text": params.text]
 
         // (CHA-M3b) A message may be sent without metadata or headers. When these are not specified by the user, they must be omitted from the REST payload.
@@ -44,7 +45,8 @@ internal final class ChatAPI: Sendable {
         let createdAtInSeconds = TimeInterval(Double(response.createdAt) / 1000)
 
         let message = Message(
-            timeserial: response.timeserial,
+            serial: response.serial,
+            latestAction: .create,
             clientID: clientId,
             roomID: roomId,
             text: params.text,

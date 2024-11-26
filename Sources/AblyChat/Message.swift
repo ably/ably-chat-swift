@@ -5,10 +5,11 @@ public typealias MessageMetadata = Metadata
 
 // (CHA-M2) A Message corresponds to a single message in a chat room. This is analogous to a single user-specified message on an Ably channel (NOTE: not a ProtocolMessage).
 public struct Message: Sendable, Codable, Identifiable, Equatable {
-    // id to meet Identifiable conformance. 2 messages in the same channel cannot have the same timeserial.
-    public var id: String { timeserial }
+    // id to meet Identifiable conformance. 2 messages in the same channel cannot have the same serial.
+    public var id: String { serial }
 
-    public var timeserial: String
+    public var serial: String
+    public var latestAction: MessageAction
     public var clientID: String
     public var roomID: String
     public var text: String
@@ -16,8 +17,9 @@ public struct Message: Sendable, Codable, Identifiable, Equatable {
     public var metadata: MessageMetadata
     public var headers: MessageHeaders
 
-    public init(timeserial: String, clientID: String, roomID: String, text: String, createdAt: Date?, metadata: MessageMetadata, headers: MessageHeaders) {
-        self.timeserial = timeserial
+    public init(serial: String, latestAction: MessageAction, clientID: String, roomID: String, text: String, createdAt: Date?, metadata: MessageMetadata, headers: MessageHeaders) {
+        self.serial = serial
+        self.latestAction = latestAction
         self.clientID = clientID
         self.roomID = roomID
         self.text = text
@@ -27,30 +29,13 @@ public struct Message: Sendable, Codable, Identifiable, Equatable {
     }
 
     internal enum CodingKeys: String, CodingKey {
-        case timeserial
+        case serial
+        case latestAction
         case clientID = "clientId"
         case roomID = "roomId"
         case text
         case createdAt
         case metadata
         case headers
-    }
-
-    // (CHA-M2a) A Message is considered before another Message in the global order if the timeserial of the corresponding realtime channel message comes first.
-    public func isBefore(_ otherMessage: Message) throws -> Bool {
-        let otherMessageTimeserial = try DefaultTimeserial.calculateTimeserial(from: otherMessage.timeserial)
-        return try DefaultTimeserial.calculateTimeserial(from: timeserial).before(otherMessageTimeserial)
-    }
-
-    // CHA-M2b) A Message is considered after another Message in the global order if the timeserial of the corresponding realtime channel message comes second.
-    public func isAfter(_ otherMessage: Message) throws -> Bool {
-        let otherMessageTimeserial = try DefaultTimeserial.calculateTimeserial(from: otherMessage.timeserial)
-        return try DefaultTimeserial.calculateTimeserial(from: timeserial).after(otherMessageTimeserial)
-    }
-
-    // (CHA-M2c) A Message is considered to be equal to another Message if they have the same timeserial.
-    public func isEqual(_ otherMessage: Message) throws -> Bool {
-        let otherMessageTimeserial = try DefaultTimeserial.calculateTimeserial(from: otherMessage.timeserial)
-        return try DefaultTimeserial.calculateTimeserial(from: timeserial).equal(otherMessageTimeserial)
     }
 }

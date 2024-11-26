@@ -61,7 +61,7 @@ extension MockHTTPPaginatedResponse {
     static let successSendMessage = MockHTTPPaginatedResponse(
         items: [
             [
-                "timeserial": "3446456",
+                "serial": "3446456",
                 "createdAt": 1_631_840_000_000,
                 "text": "hello",
             ],
@@ -98,7 +98,8 @@ extension MockHTTPPaginatedResponse {
         items: [
             [
                 "clientId": "random",
-                "timeserial": "3446456",
+                "serial": "3446456",
+                "latestAction": "message.create",
                 "createdAt": 1_730_943_049_269,
                 "roomId": "basketball::$chat::$chatMessages",
                 "text": "hello",
@@ -107,7 +108,8 @@ extension MockHTTPPaginatedResponse {
             ],
             [
                 "clientId": "random",
-                "timeserial": "3446457",
+                "serial": "3446457",
+                "latestAction": "message.create",
                 "roomId": "basketball::$chat::$chatMessages",
                 "text": "hello response",
                 "metadata": [:],
@@ -125,14 +127,14 @@ extension MockHTTPPaginatedResponse {
     static let nextPage = MockHTTPPaginatedResponse(
         items: [
             [
-                "timeserial": "3446450",
+                "serial": "3446450",
                 "roomId": "basketball::$chat::$chatMessages",
                 "text": "previous message",
                 "metadata": [:],
                 "headers": [:],
             ],
             [
-                "timeserial": "3446451",
+                "serial": "3446451",
                 "roomId": "basketball::$chat::$chatMessages",
                 "text": "previous response",
                 "metadata": [:],

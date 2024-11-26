@@ -1,12 +1,9 @@
 import Ably
 
-// Typealias for the timeserial used to sync message subscriptions with. This is a string representation of a timestamp.
-private typealias TimeserialString = String
-
-// Wraps the MessageSubscription with the timeserial of when the subscription was attached or resumed.
+// Wraps the MessageSubscription with the message serial of when the subscription was attached or resumed.
 private struct MessageSubscriptionWrapper {
     let subscription: MessageSubscription
-    var timeserial: TimeserialString
+    var serial: String
 }
 
 // TODO: Don't have a strong understanding of why @MainActor is needed here. Revisit as part of https://github.com/ably-labs/ably-chat-swift/issues/83
@@ -19,7 +16,7 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
     private let logger: InternalLogger
 
     // TODO: https://github.com/ably-labs/ably-chat-swift/issues/36 - Handle unsubscribing in line with CHA-M4b
-    // UUID acts as a unique identifier for each listener/subscription. MessageSubscriptionWrapper houses the subscription and the timeserial of when it was attached or resumed.
+    // UUID acts as a unique identifier for each listener/subscription. MessageSubscriptionWrapper houses the subscription and the serial of when it was attached or resumed.
     private var subscriptionPoints: [UUID: MessageSubscriptionWrapper] = [:]
 
     internal nonisolated init(featureChannel: FeatureChannel, chatAPI: ChatAPI, roomID: String, clientID: String, logger: InternalLogger) async {
@@ -42,7 +39,7 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
     internal func subscribe(bufferingPolicy: BufferingPolicy) async throws -> MessageSubscription {
         logger.log(message: "Subscribing to messages", level: .debug)
         let uuid = UUID()
-        let timeserial = try await resolveSubscriptionStart()
+        let serial = try await resolveSubscriptionStart()
         let messageSubscription = MessageSubscription(
             bufferingPolicy: bufferingPolicy
         ) { [weak self] queryOptions in
@@ -51,12 +48,12 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
         }
 
         // (CHA-M4a) A subscription can be registered to receive incoming messages. Adding a subscription has no side effects on the status of the room or the underlying realtime channel.
-        subscriptionPoints[uuid] = .init(subscription: messageSubscription, timeserial: timeserial)
+        subscriptionPoints[uuid] = .init(subscription: messageSubscription, serial: serial)
 
         // (CHA-M4c) When a realtime message with name set to message.created is received, it is translated into a message event, which contains a type field with the event type as well as a message field containing the Message Struct. This event is then broadcast to all subscribers.
         // (CHA-M4d) If a realtime message with an unknown name is received, the SDK shall silently discard the message, though it may log at DEBUG or TRACE level.
         // (CHA-M5k) Incoming realtime events that are malformed (unknown field should be ignored) shall not be emitted to subscribers.
-        channel.subscribe(MessageEvent.created.rawValue) { message in
+        channel.subscribe(RealtimeMessageName.chatMessage.rawValue) { message in
             Task {
                 // TODO: Revisit errors thrown as part of https://github.com/ably-labs/ably-chat-swift/issues/32
                 guard let data = message.data as? [String: Any],
@@ -69,8 +66,8 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
                     throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without extras")
                 }
 
-                guard let timeserial = extras["timeserial"] as? String else {
-                    throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without timeserial")
+                guard let serial = message.serial else {
+                    throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without serial")
                 }
 
                 guard let clientID = message.clientId else {
@@ -80,8 +77,13 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
                 let metadata = data["metadata"] as? Metadata
                 let headers = extras["headers"] as? Headers
 
+                guard let action = MessageAction.fromRealtimeAction(message.action) else {
+                    return
+                }
+
                 let message = Message(
-                    timeserial: timeserial,
+                    serial: serial,
+                    latestAction: action,
                     clientID: clientID,
                     roomID: self.roomID,
                     text: text,
@@ -112,21 +114,11 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
     }
 
     private func getBeforeSubscriptionStart(_ uuid: UUID, params: QueryOptions) async throws -> any PaginatedResult<Message> {
-        guard let subscriptionPoint = subscriptionPoints[uuid]?.timeserial else {
+        guard let subscriptionPoint = subscriptionPoints[uuid]?.serial else {
             throw ARTErrorInfo.create(
                 withCode: 40000,
                 status: 400,
                 message: "cannot query history; listener has not been subscribed yet"
-            )
-        }
-
-        // (CHA-M5j) If the end parameter is specified and is more recent than the subscription point timeserial, the method must throw an ErrorInfo with code 40000.
-        let parseSerial = try? DefaultTimeserial.calculateTimeserial(from: subscriptionPoint)
-        if let end = params.end, dateToMilliseconds(end) > parseSerial?.timestamp ?? 0 {
-            throw ARTErrorInfo.create(
-                withCode: 40000,
-                status: 400,
-                message: "cannot query history; end time is after the subscription point of the listener"
             )
         }
 
@@ -173,11 +165,11 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
         }
 
         do {
-            let timeserialOnChannelAttach = try await timeserialOnChannelAttach()
+            let serialOnChannelAttach = try await serialOnChannelAttach()
 
             for uuid in subscriptionPoints.keys {
                 logger.log(message: "Resetting subscription point for listener: \(uuid)", level: .debug)
-                subscriptionPoints[uuid]?.timeserial = timeserialOnChannelAttach
+                subscriptionPoints[uuid]?.serial = serialOnChannelAttach
             }
         } catch {
             logger.log(message: "Error handling attach: \(error)", level: .error)
@@ -185,7 +177,7 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
         }
     }
 
-    private func resolveSubscriptionStart() async throws -> TimeserialString {
+    private func resolveSubscriptionStart() async throws -> String {
         logger.log(message: "Resolving subscription start", level: .debug)
         // (CHA-M5a) If a subscription is added when the underlying realtime channel is ATTACHED, then the subscription point is the current channelSerial of the realtime channel.
         if channel.state == .attached {
@@ -200,12 +192,12 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
         }
 
         // (CHA-M5b) If a subscription is added when the underlying realtime channel is in any other state, then its subscription point becomes the attachSerial at the the point of channel attachment.
-        return try await timeserialOnChannelAttach()
+        return try await serialOnChannelAttach()
     }
 
     // Always returns the attachSerial and not the channelSerial to also serve (CHA-M5c) - If a channel leaves the ATTACHED state and then re-enters ATTACHED with resumed=false, then it must be assumed that messages have been missed. The subscription point of any subscribers must be reset to the attachSerial.
-    private func timeserialOnChannelAttach() async throws -> TimeserialString {
-        logger.log(message: "Resolving timeserial on channel attach", level: .debug)
+    private func serialOnChannelAttach() async throws -> String {
+        logger.log(message: "Resolving serial on channel attach", level: .debug)
         // If the state is already 'attached', return the attachSerial immediately
         if channel.state == .attached {
             if let attachSerial = channel.properties.attachSerial {
@@ -213,7 +205,7 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
                 return attachSerial
             } else {
                 let error = ARTErrorInfo.create(withCode: 40000, status: 400, message: "Channel is attached, but attachSerial is not defined")
-                logger.log(message: "Error resolving timeserial on channel attach: \(error)", level: .error)
+                logger.log(message: "Error resolving serial on channel attach: \(error)", level: .error)
                 throw error
             }
         }
@@ -221,7 +213,7 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
         // (CHA-M5b) If a subscription is added when the underlying realtime channel is in any other state, then its subscription point becomes the attachSerial at the the point of channel attachment.
         return try await withCheckedThrowingContinuation { continuation in
             // avoids multiple invocations of the continuation
-            var nillableContinuation: CheckedContinuation<TimeserialString, any Error>? = continuation
+            var nillableContinuation: CheckedContinuation<String, any Error>? = continuation
 
             channel.on { [weak self] stateChange in
                 guard let self else {

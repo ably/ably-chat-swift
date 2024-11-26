@@ -3,7 +3,8 @@ import Testing
 
 struct MessageTests {
     let earlierMessage = Message(
-        timeserial: "ABC123@1631840000000-5:2",
+        serial: "ABC123@1631840000000-5:2",
+        latestAction: .create,
         clientID: "testClientID",
         roomID: "roomId",
         text: "hello",
@@ -13,7 +14,8 @@ struct MessageTests {
     )
 
     let laterMessage = Message(
-        timeserial: "ABC123@1631840000001-5:2",
+        serial: "ABC123@1631840000001-5:2",
+        latestAction: .create,
         clientID: "testClientID",
         roomID: "roomId",
         text: "hello",
@@ -23,7 +25,8 @@ struct MessageTests {
     )
 
     let invalidMessage = Message(
-        timeserial: "invalid",
+        serial: "invalid",
+        latestAction: .create,
         clientID: "testClientID",
         roomID: "roomId",
         text: "hello",
@@ -37,21 +40,13 @@ struct MessageTests {
     // @specOneOf(1/3) CHA-M2a
     @Test
     func isBefore_WhenMessageIsBefore_ReturnsTrue() async throws {
-        #expect(try earlierMessage.isBefore(laterMessage))
+        #expect(earlierMessage.serial < laterMessage.serial)
     }
 
     // @specOneOf(2/3) CHA-M2a
     @Test
     func isBefore_WhenMessageIsNotBefore_ReturnsFalse() async throws {
-        #expect(try !laterMessage.isBefore(earlierMessage))
-    }
-
-    // @specOneOf(3/3) CHA-M2a
-    @Test
-    func isBefore_whenTimeserialIsInvalid_throwsInvalidMessage() async throws {
-        #expect(throws: DefaultTimeserial.TimeserialError.invalidFormat, performing: {
-            try earlierMessage.isBefore(invalidMessage)
-        })
+        #expect(laterMessage.serial > earlierMessage.serial)
     }
 
     // MARK: isAfter Tests
@@ -59,21 +54,13 @@ struct MessageTests {
     // @specOneOf(1/3) CHA-M2b
     @Test
     func isAfter_whenMessageIsAfter_ReturnsTrue() async throws {
-        #expect(try laterMessage.isAfter(earlierMessage))
+        #expect(laterMessage.serial > earlierMessage.serial)
     }
 
     // @specOneOf(2/3) CHA-M2b
     @Test
     func isAfter_whenMessageIsNotAfter_ReturnsFalse() async throws {
-        #expect(try !earlierMessage.isAfter(laterMessage))
-    }
-
-    // @specOneOf(3/3) CHA-M2b
-    @Test
-    func isAfter_whenTimeserialIsInvalid_throwsInvalidMessage() async throws {
-        #expect(throws: DefaultTimeserial.TimeserialError.invalidFormat, performing: {
-            try earlierMessage.isAfter(invalidMessage)
-        })
+        #expect(earlierMessage.serial < laterMessage.serial)
     }
 
     // MARK: isEqual Tests
@@ -82,7 +69,8 @@ struct MessageTests {
     @Test
     func isEqual_whenMessageIsEqual_ReturnsTrue() async throws {
         let duplicateOfEarlierMessage = Message(
-            timeserial: "ABC123@1631840000000-5:2",
+            serial: "ABC123@1631840000000-5:2",
+            latestAction: .create,
             clientID: "random",
             roomID: "",
             text: "",
@@ -90,20 +78,12 @@ struct MessageTests {
             metadata: [:],
             headers: [:]
         )
-        #expect(try earlierMessage.isEqual(duplicateOfEarlierMessage))
+        #expect(earlierMessage.serial == duplicateOfEarlierMessage.serial)
     }
 
     // @specOneOf(2/3) CHA-M2c
     @Test
     func isEqual_whenMessageIsNotEqual_ReturnsFalse() async throws {
-        #expect(try !earlierMessage.isEqual(laterMessage))
-    }
-
-    // @specOneOf(3/3) CHA-M2c
-    @Test
-    func isEqual_whenTimeserialIsInvalid_throwsInvalidMessage() async throws {
-        #expect(throws: DefaultTimeserial.TimeserialError.invalidFormat, performing: {
-            try earlierMessage.isEqual(invalidMessage)
-        })
+        #expect(earlierMessage.serial != laterMessage.serial)
     }
 }

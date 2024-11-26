@@ -184,7 +184,7 @@ struct ContentView: View {
 
         for message in previousMessages.items {
             withAnimation {
-                messages.append(BasicListItem(id: message.timeserial, title: message.clientID, text: message.text))
+                messages.append(BasicListItem(id: message.serial, title: message.clientID, text: message.text))
             }
         }
 
@@ -192,7 +192,7 @@ struct ContentView: View {
         Task {
             for await message in messagesSubscription {
                 withAnimation {
-                    messages.insert(BasicListItem(id: message.timeserial, title: message.clientID, text: message.text), at: 0)
+                    messages.insert(BasicListItem(id: message.serial, title: message.clientID, text: message.text), at: 0)
                 }
             }
         }
