@@ -11,7 +11,8 @@ final class MockMessagesPaginatedResult: PaginatedResult {
     var items: [T] {
         Array(repeating: 0, count: numberOfMockMessages).map { _ in
             Message(
-                timeserial: "\(Date().timeIntervalSince1970)",
+                serial: "\(Date().timeIntervalSince1970)",
+                latestAction: .create,
                 clientID: self.clientID,
                 roomID: self.roomID,
                 text: MockStrings.randomPhrase(),
