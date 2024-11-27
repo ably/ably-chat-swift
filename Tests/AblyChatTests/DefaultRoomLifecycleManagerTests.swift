@@ -276,7 +276,7 @@ struct DefaultRoomLifecycleManagerTests {
 
         // Then: It:
         // - emits all pending discontinuities to its contributors
-        // - clears all pending discontinuity events (TODO: I assume this is the intended behaviour, but confirm; have asked in https://github.com/ably/specification/pull/200/files#r1781917231)
+        // - clears all pending discontinuity events
         for contributor in contributors {
             let expectedPendingDiscontinuityEvents = pendingDiscontinuityEvents[contributor.id] ?? []
             let emitDiscontinuityArguments = await contributor.emitDiscontinuityArguments
