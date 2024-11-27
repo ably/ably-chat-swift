@@ -111,7 +111,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
     #if DEBUG
         internal init(
             testsOnly_status status: Status? = nil,
-            testsOnly_pendingDiscontinuityEvents pendingDiscontinuityEvents: [Contributor.ID: [DiscontinuityEvent]]? = nil,
+            testsOnly_pendingDiscontinuityEvents pendingDiscontinuityEvents: [Contributor.ID: DiscontinuityEvent]? = nil,
             testsOnly_idsOfContributorsWithTransientDisconnectTimeout idsOfContributorsWithTransientDisconnectTimeout: Set<Contributor.ID>? = nil,
             contributors: [Contributor],
             logger: InternalLogger,
@@ -130,7 +130,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
 
     private init(
         status: Status?,
-        pendingDiscontinuityEvents: [Contributor.ID: [DiscontinuityEvent]]?,
+        pendingDiscontinuityEvents: [Contributor.ID: DiscontinuityEvent]?,
         idsOfContributorsWithTransientDisconnectTimeout: Set<Contributor.ID>?,
         contributors: [Contributor],
         logger: InternalLogger,
@@ -262,8 +262,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
             var task: Task<Void, Error>?
         }
 
-        // TODO: Not clear whether there can be multiple or just one (asked in https://github.com/ably/specification/pull/200/files#r1781927850)
-        var pendingDiscontinuityEvents: [DiscontinuityEvent] = []
+        var pendingDiscontinuityEvent: DiscontinuityEvent?
         var transientDisconnectTimeout: TransientDisconnectTimeout?
         /// Whether a state change to `ATTACHED` has already been observed for this contributor.
         var hasBeenAttached: Bool
@@ -279,12 +278,12 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
 
         init(
             contributors: [Contributor],
-            pendingDiscontinuityEvents: [Contributor.ID: [DiscontinuityEvent]],
+            pendingDiscontinuityEvents: [Contributor.ID: DiscontinuityEvent],
             idsOfContributorsWithTransientDisconnectTimeout: Set<Contributor.ID>
         ) {
             storage = contributors.reduce(into: [:]) { result, contributor in
                 result[contributor.id] = .init(
-                    pendingDiscontinuityEvents: pendingDiscontinuityEvents[contributor.id] ?? [],
+                    pendingDiscontinuityEvent: pendingDiscontinuityEvents[contributor.id],
                     transientDisconnectTimeout: idsOfContributorsWithTransientDisconnectTimeout.contains(contributor.id) ? .init() : nil,
                     hasBeenAttached: false
                 )
@@ -308,7 +307,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
         mutating func clearPendingDiscontinuityEvents() {
             storage = storage.mapValues { annotation in
                 var newAnnotation = annotation
-                newAnnotation.pendingDiscontinuityEvents = []
+                newAnnotation.pendingDiscontinuityEvent = nil
                 return newAnnotation
             }
         }
@@ -386,7 +385,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
         /// A contributor state change is considered handled once the manager has performed all of the side effects that it will perform as a result of receiving this state change. Specifically, once:
         ///
         /// - (if the state change is ATTACHED) the manager has recorded that an ATTACHED state change has been observed for the contributor
-        /// - the manager has recorded all pending discontinuity events provoked by the state change (you can retrieve these using ``testsOnly_pendingDiscontinuityEvents(for:)``)
+        /// - the manager has recorded all pending discontinuity events provoked by the state change (you can retrieve these using ``testsOnly_pendingDiscontinuityEvent(for:)``)
         /// - the manager has performed all status changes provoked by the state change (this does _not_ include the case in which the state change provokes the creation of a transient disconnect timeout which subsequently provokes a status change; use ``testsOnly_subscribeToHandledTransientDisconnectTimeouts()`` to find out about those)
         /// - the manager has performed all contributor actions provoked by the state change, namely calls to ``RoomLifecycleContributorChannel.detach()`` or ``RoomLifecycleContributor.emitDiscontinuity(_:)``
         /// - the manager has recorded all transient disconnect timeouts provoked by the state change (you can retrieve this information using ``testsOnly_hasTransientDisconnectTimeout(for:) or ``testsOnly_idOfTransientDisconnectTimeout(for:)``)
@@ -397,8 +396,8 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
             return subscription
         }
 
-        internal func testsOnly_pendingDiscontinuityEvents(for contributor: Contributor) -> [DiscontinuityEvent] {
-            contributorAnnotations[contributor].pendingDiscontinuityEvents
+        internal func testsOnly_pendingDiscontinuityEvent(for contributor: Contributor) -> DiscontinuityEvent? {
+            contributorAnnotations[contributor].pendingDiscontinuityEvent
         }
 
         internal func testsOnly_hasTransientDisconnectTimeout(for contributor: Contributor) -> Bool {
@@ -448,7 +447,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
                 let discontinuity = DiscontinuityEvent(error: reason)
                 logger.log(message: "Recording pending discontinuity event \(discontinuity) for contributor \(contributor)", level: .info)
 
-                contributorAnnotations[contributor].pendingDiscontinuityEvents.append(discontinuity)
+                contributorAnnotations[contributor].pendingDiscontinuityEvent = discontinuity
             } else {
                 // CHA-RL4a4
                 let discontinuity = DiscontinuityEvent(error: reason)
@@ -468,7 +467,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
 
                     logger.log(message: "Recording pending discontinuity event \(discontinuity) for contributor \(contributor)", level: .info)
 
-                    contributorAnnotations[contributor].pendingDiscontinuityEvents.append(discontinuity)
+                    contributorAnnotations[contributor].pendingDiscontinuityEvent = discontinuity
                 }
             } else {
                 // CHA-RL4b10
@@ -856,7 +855,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
         // Emit all pending discontinuity events
         logger.log(message: "Emitting pending discontinuity events", level: .info)
         for contributor in contributors {
-            for pendingDiscontinuityEvent in contributorAnnotations[contributor].pendingDiscontinuityEvents {
+            if let pendingDiscontinuityEvent = contributorAnnotations[contributor].pendingDiscontinuityEvent {
                 logger.log(message: "Emitting pending discontinuity event \(String(describing: pendingDiscontinuityEvent)) to contributor \(contributor)", level: .info)
                 await contributor.emitDiscontinuity(pendingDiscontinuityEvent)
             }

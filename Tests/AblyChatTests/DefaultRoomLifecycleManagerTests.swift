@@ -54,7 +54,7 @@ struct DefaultRoomLifecycleManagerTests {
 
     private func createManager(
         forTestingWhatHappensWhenCurrentlyIn status: DefaultRoomLifecycleManager<MockRoomLifecycleContributor>.Status? = nil,
-        forTestingWhatHappensWhenHasPendingDiscontinuityEvents pendingDiscontinuityEvents: [MockRoomLifecycleContributor.ID: [DiscontinuityEvent]]? = nil,
+        forTestingWhatHappensWhenHasPendingDiscontinuityEvents pendingDiscontinuityEvents: [MockRoomLifecycleContributor.ID: DiscontinuityEvent]? = nil,
         forTestingWhatHappensWhenHasTransientDisconnectTimeoutForTheseContributorIDs idsOfContributorsWithTransientDisconnectTimeout: Set<MockRoomLifecycleContributor.ID>? = nil,
         contributors: [MockRoomLifecycleContributor] = [],
         clock: SimpleClock = MockSimpleClock()
@@ -262,9 +262,9 @@ struct DefaultRoomLifecycleManagerTests {
     func attach_uponSuccess_emitsPendingDiscontinuityEvents() async throws {
         // Given: A DefaultRoomLifecycleManager, all of whose contributors’ calls to `attach` succeed
         let contributors = (1 ... 3).map { _ in createContributor(attachBehavior: .success) }
-        let pendingDiscontinuityEvents: [MockRoomLifecycleContributor.ID: [DiscontinuityEvent]] = [
-            contributors[1].id: [.init(error: .init(domain: "SomeDomain", code: 123) /* arbitrary */ )],
-            contributors[2].id: [.init(error: .init(domain: "SomeDomain", code: 456) /* arbitrary */ )],
+        let pendingDiscontinuityEvents: [MockRoomLifecycleContributor.ID: DiscontinuityEvent] = [
+            contributors[1].id: .init(error: .init(domain: "SomeDomain", code: 123) /* arbitrary */ ),
+            contributors[2].id: .init(error: .init(domain: "SomeDomain", code: 456) /* arbitrary */ ),
         ]
         let manager = await createManager(
             forTestingWhatHappensWhenHasPendingDiscontinuityEvents: pendingDiscontinuityEvents,
@@ -278,16 +278,14 @@ struct DefaultRoomLifecycleManagerTests {
         // - emits all pending discontinuities to its contributors
         // - clears all pending discontinuity events
         for contributor in contributors {
-            let expectedPendingDiscontinuityEvents = pendingDiscontinuityEvents[contributor.id] ?? []
+            let expectedPendingDiscontinuityEvent = pendingDiscontinuityEvents[contributor.id]
             let emitDiscontinuityArguments = await contributor.emitDiscontinuityArguments
-            try #require(emitDiscontinuityArguments.count == expectedPendingDiscontinuityEvents.count)
-            for (emitDiscontinuityArgument, expectedArgument) in zip(emitDiscontinuityArguments, expectedPendingDiscontinuityEvents) {
-                #expect(emitDiscontinuityArgument == expectedArgument)
-            }
+            try #require(emitDiscontinuityArguments.count == (expectedPendingDiscontinuityEvent == nil ? 0 : 1))
+            #expect(emitDiscontinuityArguments.first == expectedPendingDiscontinuityEvent)
         }
 
         for contributor in contributors {
-            #expect(await manager.testsOnly_pendingDiscontinuityEvents(for: contributor).isEmpty)
+            #expect(await manager.testsOnly_pendingDiscontinuityEvent(for: contributor) == nil)
         }
     }
 
@@ -1353,7 +1351,7 @@ struct DefaultRoomLifecycleManagerTests {
         }
 
         // Then: The manager does not record a pending discontinuity event for this contributor, nor does it call `emitDiscontinuity` on the contributor; this shows us that the actions described in CHA-RL4a3 and CHA-RL4a4 haven’t been performed
-        #expect(await manager.testsOnly_pendingDiscontinuityEvents(for: contributor).isEmpty)
+        #expect(await manager.testsOnly_pendingDiscontinuityEvent(for: contributor) == nil)
         #expect(await contributor.emitDiscontinuityArguments.isEmpty)
     }
 
@@ -1381,10 +1379,7 @@ struct DefaultRoomLifecycleManagerTests {
         }
 
         // Then: The manager records a pending discontinuity event for this contributor, and this discontinuity event has error equal to the contributor UPDATE event’s `reason`
-        let pendingDiscontinuityEvents = await manager.testsOnly_pendingDiscontinuityEvents(for: contributor)
-        try #require(pendingDiscontinuityEvents.count == 1)
-
-        let pendingDiscontinuityEvent = pendingDiscontinuityEvents[0]
+        let pendingDiscontinuityEvent = try #require(await manager.testsOnly_pendingDiscontinuityEvent(for: contributor))
         #expect(pendingDiscontinuityEvent.error === contributorStateChange.reason)
     }
 
@@ -1462,10 +1457,7 @@ struct DefaultRoomLifecycleManagerTests {
         }
 
         // Then: The manager records a pending discontinuity event for this contributor, and this discontinuity event has error equal to the contributor ATTACHED event’s `reason`
-        let pendingDiscontinuityEvents = await manager.testsOnly_pendingDiscontinuityEvents(for: contributor)
-        try #require(pendingDiscontinuityEvents.count == 1)
-
-        let pendingDiscontinuityEvent = pendingDiscontinuityEvents[0]
+        let pendingDiscontinuityEvent = try #require(await manager.testsOnly_pendingDiscontinuityEvent(for: contributor))
         #expect(pendingDiscontinuityEvent.error === contributorStateChange.reason)
 
         // Teardown: Allow performDetachOperation() call to complete
@@ -1496,7 +1488,7 @@ struct DefaultRoomLifecycleManagerTests {
         }
 
         // Then: The manager does not record a pending discontinuity event for this contributor
-        #expect(await manager.testsOnly_pendingDiscontinuityEvents(for: contributor).isEmpty)
+        #expect(await manager.testsOnly_pendingDiscontinuityEvent(for: contributor) == nil)
     }
 
     // @spec CHA-RL4b5
