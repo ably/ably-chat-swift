@@ -1228,13 +1228,13 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
                 throw .init(chatError: .roomInInvalidState(cause: nextRoomStatusChange?.current.error))
             }
         case .attached:
-            // CHA-PR3e, CHA-PR11e, CHA-PR6d, CHA-T2d
+            // CHA-PR3e, CHA-PR10e, CHA-PR6d, CHA-T2d
             break
         case .detached:
-            // CHA-PR3f, CHA-PR11f, CHA-PR6e, CHA-T2e
+            // CHA-PR3f, CHA-PR10f, CHA-PR6e, CHA-T2e
             throw .init(chatError: .presenceOperationRequiresRoomAttach(feature: requester))
         default:
-            // CHA-PR3g, CHA-PR11g, CHA-PR6f, CHA-T2f
+            // CHA-PR3g, CHA-PR10g, CHA-PR6f, CHA-T2f
             throw .init(chatError: .presenceOperationDisallowedForCurrentRoomStatus(feature: requester))
         }
     }
