@@ -6,6 +6,6 @@ import Ably
 // Version information
 internal let version = "0.1.0"
 
-internal let channelOptionsAgentString = "chat-ios/\(version)"
+internal let channelOptionsAgentString = "chat-swift/\(version)"
 
 internal let defaultChannelParams = ["agent": channelOptionsAgentString]
