@@ -440,6 +440,11 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
                 break
             }
 
+            // CHA-RL4a2 — if contributor has not yet been attached then no-op
+            guard contributorAnnotations[contributor].hasBeenAttached else {
+                break
+            }
+
             let reason = stateChange.reason
 
             if hasOperationInProgress {

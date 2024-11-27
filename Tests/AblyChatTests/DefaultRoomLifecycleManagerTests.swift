@@ -1354,11 +1354,25 @@ struct DefaultRoomLifecycleManagerTests {
     // @spec CHA-RL4a1
     @Test
     func contributorUpdate_withResumedTrue_doesNothing() async throws {
-        // Given: A DefaultRoomLifecycleManager
+        // Given: A DefaultRoomLifecycleManager, which has a contributor for which it has previously received an ATTACHED state change (so that we get through the CHA-RL4a2 check)
         let contributor = createContributor()
         let manager = await createManager(contributors: [contributor])
 
-        // When: A contributor emits an UPDATE event with `resumed` flag set to true
+        // This is to satisfy "for which it has previously received an ATTACHED state change"
+        let previousContributorStateChange = ARTChannelStateChange(
+            // `previous`, `reason`, and `resumed` are arbitrary, but for realism let’s simulate an initial ATTACHED
+            current: .attached,
+            previous: .attaching,
+            event: .attached,
+            reason: nil,
+            resumed: false
+        )
+
+        await waitForManager(manager, toHandleContributorStateChange: previousContributorStateChange) {
+            await contributor.channel.emitStateChange(previousContributorStateChange)
+        }
+
+        // When: This contributor emits an UPDATE event with `resumed` flag set to true
         let contributorStateChange = ARTChannelStateChange(
             current: .attached, // arbitrary
             previous: .attached, // arbitrary
@@ -1376,17 +1390,56 @@ struct DefaultRoomLifecycleManagerTests {
         #expect(await contributor.emitDiscontinuityArguments.isEmpty)
     }
 
+    // @specPartial CHA-RL4a2 - TODO: I have changed the criteria for deciding whether an ATTACHED status change represents a discontinuity, to be based on whether there was a previous ATTACHED state change instead of whether the `attach()` call has completed; see https://github.com/ably/specification/issues/239 and change this to @spec once we’re aligned with spec again
+    @Test
+    func contributorUpdate_withContributorNotPreviouslyAttached_doesNothing() async throws {
+        // Given: A DefaultRoomLifecycleManager, which has a contributor for which it has not previously received an ATTACHED state change
+        let contributor = createContributor()
+        let manager = await createManager(contributors: [contributor])
+
+        // When: This contributor emits an UPDATE event with `resumed` flag set to false (so that we get through the CHA-RL4a1 check)
+        let contributorStateChange = ARTChannelStateChange(
+            current: .attached, // arbitrary
+            previous: .attached, // arbitrary
+            event: .update,
+            reason: ARTErrorInfo(domain: "SomeDomain", code: 123), // arbitrary
+            resumed: false
+        )
+
+        await waitForManager(manager, toHandleContributorStateChange: contributorStateChange) {
+            await contributor.channel.emitStateChange(contributorStateChange)
+        }
+
+        // Then: The manager does not record a pending discontinuity event for this contributor, nor does it call `emitDiscontinuity` on the contributor; this shows us that the actions described in CHA-RL4a3 and CHA-RL4a4 haven’t been performed
+        #expect(await manager.testsOnly_pendingDiscontinuityEvent(for: contributor) == nil)
+        #expect(await contributor.emitDiscontinuityArguments.isEmpty)
+    }
+
     // @specOneOf(1/2) CHA-RL4a3
     @Test
     func contributorUpdate_withResumedFalse_withOperationInProgress_recordsPendingDiscontinuityEvent() async throws {
-        // Given: A DefaultRoomLifecycleManager, with a room lifecycle operation in progress
+        // Given: A DefaultRoomLifecycleManager, with a room lifecycle operation in progress, and with a contributor for which it has previously received an ATTACHED state change
         let contributor = createContributor()
         let manager = await createManager(
             forTestingWhatHappensWhenCurrentlyIn: .attachingDueToAttachOperation(attachOperationID: UUID()), // case and ID arbitrary, just care that an operation is in progress
             contributors: [contributor]
         )
 
-        // When: A contributor emits an UPDATE event with `resumed` flag set to false
+        // This is to satisfy "for which it has previously received an ATTACHED state change"
+        let previousContributorStateChange = ARTChannelStateChange(
+            // `previous`, `reason`, and `resumed` are arbitrary, but for realism let’s simulate an initial ATTACHED
+            current: .attached,
+            previous: .attaching,
+            event: .attached,
+            reason: nil,
+            resumed: false
+        )
+
+        await waitForManager(manager, toHandleContributorStateChange: previousContributorStateChange) {
+            await contributor.channel.emitStateChange(previousContributorStateChange)
+        }
+
+        // When: This contributor emits an UPDATE event with `resumed` flag set to false
         let contributorStateChange = ARTChannelStateChange(
             current: .attached, // arbitrary
             previous: .attached, // arbitrary
@@ -1407,7 +1460,7 @@ struct DefaultRoomLifecycleManagerTests {
     // @specOneOf(2/2) CHA-RL4a3 - tests the “though it must not overwrite any existing discontinuity event” part of the spec point
     @Test
     func contributorUpdate_withResumedFalse_withOperationInProgress_doesNotOverwriteExistingPendingDiscontinuityEvent() async throws {
-        // Given: A DefaultRoomLifecycleManager, with a room lifecycle operation in progress and with an existing pending discontinuity event for a given contributor
+        // Given: A DefaultRoomLifecycleManager, with a room lifecycle operation in progress, with a contributor for which it has previously received an ATTACHED state change, and with an existing pending discontinuity event for this contributor
         let contributor = createContributor()
         let existingPendingDiscontinuityEvent = DiscontinuityEvent(error: .createUnknownError())
         let manager = await createManager(
@@ -1417,6 +1470,20 @@ struct DefaultRoomLifecycleManagerTests {
             ],
             contributors: [contributor]
         )
+
+        // This is to satisfy "for which it has previously received an ATTACHED state change"
+        let previousContributorStateChange = ARTChannelStateChange(
+            // `previous`, `reason`, and `resumed` are arbitrary, but for realism let’s simulate an initial ATTACHED
+            current: .attached,
+            previous: .attaching,
+            event: .attached,
+            reason: nil,
+            resumed: false
+        )
+
+        await waitForManager(manager, toHandleContributorStateChange: previousContributorStateChange) {
+            await contributor.channel.emitStateChange(previousContributorStateChange)
+        }
 
         // When: The aforementioned contributor emits an UPDATE event with `resumed` flag set to false
         let contributorStateChange = ARTChannelStateChange(
@@ -1439,14 +1506,28 @@ struct DefaultRoomLifecycleManagerTests {
     // @spec CHA-RL4a4
     @Test
     func contributorUpdate_withResumedTrue_withNoOperationInProgress_emitsDiscontinuityEvent() async throws {
-        // Given: A DefaultRoomLifecycleManager, with no room lifecycle operation in progress
+        // Given: A DefaultRoomLifecycleManager, with no room lifecycle operation in progress, and with a contributor for which it has previously received an ATTACHED state change
         let contributor = createContributor()
         let manager = await createManager(
             forTestingWhatHappensWhenCurrentlyIn: .initialized, // case arbitrary, just care that no operation is in progress
             contributors: [contributor]
         )
 
-        // When: A contributor emits an UPDATE event with `resumed` flag set to false
+        // This is to satisfy "for which it has previously received an ATTACHED state change"
+        let previousContributorStateChange = ARTChannelStateChange(
+            // `previous`, `reason`, and `resumed` are arbitrary, but for realism let’s simulate an initial ATTACHED
+            current: .attached,
+            previous: .attaching,
+            event: .attached,
+            reason: nil,
+            resumed: false
+        )
+
+        await waitForManager(manager, toHandleContributorStateChange: previousContributorStateChange) {
+            await contributor.channel.emitStateChange(previousContributorStateChange)
+        }
+
+        // When: This contributor emits an UPDATE event with `resumed` flag set to false
         let contributorStateChange = ARTChannelStateChange(
             current: .attached, // arbitrary
             previous: .attached, // arbitrary
