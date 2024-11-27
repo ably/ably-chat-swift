@@ -386,7 +386,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
         /// A contributor state change is considered handled once the manager has performed all of the side effects that it will perform as a result of receiving this state change. Specifically, once:
         ///
         /// - (if the state change is ATTACHED) the manager has recorded that an ATTACHED state change has been observed for the contributor
-        /// - the manager has recorded all pending discontinuity events provoked by the state change (you can retrieve these using ``testsOnly_pendingDiscontinuityEventsForContributor(at:)``)
+        /// - the manager has recorded all pending discontinuity events provoked by the state change (you can retrieve these using ``testsOnly_pendingDiscontinuityEvents(for:)``)
         /// - the manager has performed all status changes provoked by the state change (this does _not_ include the case in which the state change provokes the creation of a transient disconnect timeout which subsequently provokes a status change; use ``testsOnly_subscribeToHandledTransientDisconnectTimeouts()`` to find out about those)
         /// - the manager has performed all contributor actions provoked by the state change, namely calls to ``RoomLifecycleContributorChannel.detach()`` or ``RoomLifecycleContributor.emitDiscontinuity(_:)``
         /// - the manager has recorded all transient disconnect timeouts provoked by the state change (you can retrieve this information using ``testsOnly_hasTransientDisconnectTimeout(for:) or ``testsOnly_idOfTransientDisconnectTimeout(for:)``)
