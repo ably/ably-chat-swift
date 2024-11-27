@@ -1352,7 +1352,7 @@ struct DefaultRoomLifecycleManagerTests {
             await contributor.channel.emitStateChange(contributorStateChange)
         }
 
-        // Then: The manager does not record a pending discontinuity event for this contributor, nor does it call `emitDiscontinuity` on the contributor (this is my interpretation of "no action should be taken" in CHA-RL4a1; i.e. that the actions described in CHA-RL4a3 and CHA-RL4a4 shouldn’t happen) (TODO: get clarification; have asked in https://github.com/ably/specification/pull/200#discussion_r1777385499)
+        // Then: The manager does not record a pending discontinuity event for this contributor, nor does it call `emitDiscontinuity` on the contributor; this shows us that the actions described in CHA-RL4a3 and CHA-RL4a4 haven’t been performed
         #expect(await manager.testsOnly_pendingDiscontinuityEvents(for: contributor).isEmpty)
         #expect(await contributor.emitDiscontinuityArguments.isEmpty)
     }
