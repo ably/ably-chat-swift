@@ -38,26 +38,25 @@ public enum ErrorCode: Int {
 
     /// The ``ARTErrorInfo.statusCode`` that should be returned for this error.
     internal var statusCode: Int {
-        // TODO: These are currently a guess, revisit once outstanding spec question re status codes is answered (https://github.com/ably/specification/pull/200#discussion_r1755222945), and also revisit in https://github.com/ably-labs/ably-chat-swift/issues/32
+        // These status codes are taken from the "Chat-specific Error Codes" section of the spec.
         switch self {
         case .nonspecific,
              .inconsistentRoomOptions,
-             .messagesDetachmentFailed,
-             .presenceDetachmentFailed,
-             .reactionsDetachmentFailed,
-             .occupancyDetachmentFailed,
-             .typingDetachmentFailed,
              .roomInFailedState,
              .roomIsReleasing,
              .roomIsReleased:
             400
         case
-            // TODO: These *AttachmentFailed ones are currently a best guess based on the limited status code information given in the spec at time of writing (i.e. CHA-RL1h4); it's not clear to me whether these error codes are always meant to have the same status code. Revisit once aforementioned spec question re status codes answered.
             .messagesAttachmentFailed,
             .presenceAttachmentFailed,
             .reactionsAttachmentFailed,
             .occupancyAttachmentFailed,
             .typingAttachmentFailed,
+            .messagesDetachmentFailed,
+            .presenceDetachmentFailed,
+            .reactionsDetachmentFailed,
+            .occupancyDetachmentFailed,
+            .typingDetachmentFailed,
             // CHA-RL9c
             .roomInInvalidState:
             500
