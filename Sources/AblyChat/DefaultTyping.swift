@@ -160,7 +160,7 @@ internal final class DefaultTyping: Typing {
     }
 
     // (CHA-T7) Users may subscribe to discontinuity events to know when there’s been a break in typing indicators. Their listener will be called when a discontinuity event is triggered from the room lifecycle. For typing, there shouldn’t need to be user action as the underlying core SDK will heal the presence set.
-    internal func subscribeToDiscontinuities() async -> Subscription<ARTErrorInfo?> {
+    internal func subscribeToDiscontinuities() async -> Subscription<DiscontinuityEvent> {
         await featureChannel.subscribeToDiscontinuities()
     }
 

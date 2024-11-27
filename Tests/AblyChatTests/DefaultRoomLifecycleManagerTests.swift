@@ -54,7 +54,7 @@ struct DefaultRoomLifecycleManagerTests {
 
     private func createManager(
         forTestingWhatHappensWhenCurrentlyIn status: DefaultRoomLifecycleManager<MockRoomLifecycleContributor>.Status? = nil,
-        forTestingWhatHappensWhenHasPendingDiscontinuityEvents pendingDiscontinuityEvents: [MockRoomLifecycleContributor.ID: [ARTErrorInfo?]]? = nil,
+        forTestingWhatHappensWhenHasPendingDiscontinuityEvents pendingDiscontinuityEvents: [MockRoomLifecycleContributor.ID: [DiscontinuityEvent]]? = nil,
         forTestingWhatHappensWhenHasTransientDisconnectTimeoutForTheseContributorIDs idsOfContributorsWithTransientDisconnectTimeout: Set<MockRoomLifecycleContributor.ID>? = nil,
         contributors: [MockRoomLifecycleContributor] = [],
         clock: SimpleClock = MockSimpleClock()
@@ -262,9 +262,9 @@ struct DefaultRoomLifecycleManagerTests {
     func attach_uponSuccess_emitsPendingDiscontinuityEvents() async throws {
         // Given: A DefaultRoomLifecycleManager, all of whose contributors’ calls to `attach` succeed
         let contributors = (1 ... 3).map { _ in createContributor(attachBehavior: .success) }
-        let pendingDiscontinuityEvents: [MockRoomLifecycleContributor.ID: [ARTErrorInfo?]] = [
-            contributors[1].id: [.init(domain: "SomeDomain", code: 123) /* arbitrary */ ],
-            contributors[2].id: [.init(domain: "SomeDomain", code: 456) /* arbitrary */ ],
+        let pendingDiscontinuityEvents: [MockRoomLifecycleContributor.ID: [DiscontinuityEvent]] = [
+            contributors[1].id: [.init(error: .init(domain: "SomeDomain", code: 123) /* arbitrary */ )],
+            contributors[2].id: [.init(error: .init(domain: "SomeDomain", code: 456) /* arbitrary */ )],
         ]
         let manager = await createManager(
             forTestingWhatHappensWhenHasPendingDiscontinuityEvents: pendingDiscontinuityEvents,
@@ -282,7 +282,7 @@ struct DefaultRoomLifecycleManagerTests {
             let emitDiscontinuityArguments = await contributor.emitDiscontinuityArguments
             try #require(emitDiscontinuityArguments.count == expectedPendingDiscontinuityEvents.count)
             for (emitDiscontinuityArgument, expectedArgument) in zip(emitDiscontinuityArguments, expectedPendingDiscontinuityEvents) {
-                #expect(emitDiscontinuityArgument === expectedArgument)
+                #expect(emitDiscontinuityArgument == expectedArgument)
             }
         }
 
@@ -1385,7 +1385,7 @@ struct DefaultRoomLifecycleManagerTests {
         try #require(pendingDiscontinuityEvents.count == 1)
 
         let pendingDiscontinuityEvent = pendingDiscontinuityEvents[0]
-        #expect(pendingDiscontinuityEvent === contributorStateChange.reason)
+        #expect(pendingDiscontinuityEvent.error === contributorStateChange.reason)
     }
 
     // @spec CHA-RL4a4
@@ -1416,7 +1416,7 @@ struct DefaultRoomLifecycleManagerTests {
         try #require(emitDiscontinuityArguments.count == 1)
 
         let discontinuity = emitDiscontinuityArguments[0]
-        #expect(discontinuity === contributorStateChange.reason)
+        #expect(discontinuity.error === contributorStateChange.reason)
     }
 
     // @specPartial CHA-RL4b1 - Tests the case where the contributor has been attached previously (TODO: I have changed the criteria for deciding whether an ATTACHED status change represents a discontinuity, to be based on whether there was a previous ATTACHED state change instead of whether the `attach()` call has completed; see https://github.com/ably/specification/issues/239 and change this back to specOneOf(1/2) once we’re aligned with spec again)
@@ -1466,7 +1466,7 @@ struct DefaultRoomLifecycleManagerTests {
         try #require(pendingDiscontinuityEvents.count == 1)
 
         let pendingDiscontinuityEvent = pendingDiscontinuityEvents[0]
-        #expect(pendingDiscontinuityEvent === contributorStateChange.reason)
+        #expect(pendingDiscontinuityEvent.error === contributorStateChange.reason)
 
         // Teardown: Allow performDetachOperation() call to complete
         contributorDetachOperation.complete(behavior: .success)

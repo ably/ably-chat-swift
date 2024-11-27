@@ -80,12 +80,12 @@ struct DefaultMessagesTests {
         let messages = await DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
 
         // When: The feature channel emits a discontinuity through `subscribeToDiscontinuities`
-        let featureChannelDiscontinuity = ARTErrorInfo.createUnknownError() // arbitrary
+        let featureChannelDiscontinuity = DiscontinuityEvent(error: ARTErrorInfo.createUnknownError() /* arbitrary */ )
         let messagesDiscontinuitySubscription = await messages.subscribeToDiscontinuities()
         await featureChannel.emitDiscontinuity(featureChannelDiscontinuity)
 
         // Then: The DefaultMessages instance emits this discontinuity through `subscribeToDiscontinuities`
         let messagesDiscontinuity = try #require(await messagesDiscontinuitySubscription.first { _ in true })
-        #expect(messagesDiscontinuity === featureChannelDiscontinuity)
+        #expect(messagesDiscontinuity == featureChannelDiscontinuity)
     }
 }

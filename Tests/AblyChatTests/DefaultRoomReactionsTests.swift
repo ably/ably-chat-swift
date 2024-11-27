@@ -71,12 +71,12 @@ struct DefaultRoomReactionsTests {
         let roomReactions = await DefaultRoomReactions(featureChannel: featureChannel, clientID: "mockClientId", roomID: "basketball", logger: TestLogger())
 
         // When: The feature channel emits a discontinuity through `subscribeToDiscontinuities`
-        let featureChannelDiscontinuity = ARTErrorInfo.createUnknownError() // arbitrary
+        let featureChannelDiscontinuity = DiscontinuityEvent(error: ARTErrorInfo.createUnknownError() /* arbitrary */ )
         let messagesDiscontinuitySubscription = await roomReactions.subscribeToDiscontinuities()
         await featureChannel.emitDiscontinuity(featureChannelDiscontinuity)
 
         // Then: The DefaultRoomReactions instance emits this discontinuity through `subscribeToDiscontinuities`
         let messagesDiscontinuity = try #require(await messagesDiscontinuitySubscription.first { _ in true })
-        #expect(messagesDiscontinuity === featureChannelDiscontinuity)
+        #expect(messagesDiscontinuity == featureChannelDiscontinuity)
     }
 }

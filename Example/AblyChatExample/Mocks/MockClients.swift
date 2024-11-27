@@ -144,7 +144,7 @@ actor MockMessages: Messages {
         return message
     }
 
-    func subscribeToDiscontinuities() -> Subscription<ARTErrorInfo?> {
+    func subscribeToDiscontinuities() -> Subscription<DiscontinuityEvent> {
         fatalError("Not yet implemented")
     }
 }
@@ -195,7 +195,7 @@ actor MockRoomReactions: RoomReactions {
         .init(mockAsyncSequence: createSubscription())
     }
 
-    func subscribeToDiscontinuities() -> Subscription<ARTErrorInfo?> {
+    func subscribeToDiscontinuities() -> Subscription<DiscontinuityEvent> {
         fatalError("Not yet implemented")
     }
 }
@@ -244,7 +244,7 @@ actor MockTyping: Typing {
         }
     }
 
-    func subscribeToDiscontinuities() -> Subscription<ARTErrorInfo?> {
+    func subscribeToDiscontinuities() -> Subscription<DiscontinuityEvent> {
         fatalError("Not yet implemented")
     }
 }
@@ -348,7 +348,7 @@ actor MockPresence: Presence {
         .init(mockAsyncSequence: createSubscription())
     }
 
-    func subscribeToDiscontinuities() -> Subscription<ARTErrorInfo?> {
+    func subscribeToDiscontinuities() -> Subscription<DiscontinuityEvent> {
         fatalError("Not yet implemented")
     }
 }
@@ -383,7 +383,7 @@ actor MockOccupancy: Occupancy {
         OccupancyEvent(connections: 10, presenceMembers: 5)
     }
 
-    func subscribeToDiscontinuities() -> Subscription<ARTErrorInfo?> {
+    func subscribeToDiscontinuities() -> Subscription<DiscontinuityEvent> {
         fatalError("Not yet implemented")
     }
 }
