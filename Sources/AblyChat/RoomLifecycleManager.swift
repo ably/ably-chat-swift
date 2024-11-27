@@ -577,6 +577,12 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
     }
 
     private func recordPendingDiscontinuityEvent(for contributor: Contributor, error: ARTErrorInfo?) {
+        // CHA-RL4a3, and I have assumed that the same behaviour is expected in CHA-RL4b1 too (https://github.com/ably/specification/pull/246 proposes this change).
+        guard contributorAnnotations[contributor].pendingDiscontinuityEvent == nil else {
+            logger.log(message: "Error \(String(describing: error)) will not replace existing pending discontinuity event for contributor \(contributor)", level: .info)
+            return
+        }
+
         let discontinuity = DiscontinuityEvent(error: error)
         logger.log(message: "Recording pending discontinuity event \(discontinuity) for contributor \(contributor)", level: .info)
         contributorAnnotations[contributor].pendingDiscontinuityEvent = discontinuity

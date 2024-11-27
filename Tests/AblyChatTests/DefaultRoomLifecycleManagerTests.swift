@@ -1355,7 +1355,7 @@ struct DefaultRoomLifecycleManagerTests {
         #expect(await contributor.emitDiscontinuityArguments.isEmpty)
     }
 
-    // @spec CHA-RL4a3
+    // @specOneOf(1/2) CHA-RL4a3
     @Test
     func contributorUpdate_withResumedFalse_withOperationInProgress_recordsPendingDiscontinuityEvent() async throws {
         // Given: A DefaultRoomLifecycleManager, with a room lifecycle operation in progress
@@ -1381,6 +1381,38 @@ struct DefaultRoomLifecycleManagerTests {
         // Then: The manager records a pending discontinuity event for this contributor, and this discontinuity event has error equal to the contributor UPDATE event’s `reason`
         let pendingDiscontinuityEvent = try #require(await manager.testsOnly_pendingDiscontinuityEvent(for: contributor))
         #expect(pendingDiscontinuityEvent.error === contributorStateChange.reason)
+    }
+
+    // @specOneOf(2/2) CHA-RL4a3 - tests the “though it must not overwrite any existing discontinuity event” part of the spec point
+    @Test
+    func contributorUpdate_withResumedFalse_withOperationInProgress_doesNotOverwriteExistingPendingDiscontinuityEvent() async throws {
+        // Given: A DefaultRoomLifecycleManager, with a room lifecycle operation in progress and with an existing pending discontinuity event for a given contributor
+        let contributor = createContributor()
+        let existingPendingDiscontinuityEvent = DiscontinuityEvent(error: .createUnknownError())
+        let manager = await createManager(
+            forTestingWhatHappensWhenCurrentlyIn: .attachingDueToAttachOperation(attachOperationID: UUID()), // case and ID arbitrary, just care that an operation is in progress
+            forTestingWhatHappensWhenHasPendingDiscontinuityEvents: [
+                contributor.id: existingPendingDiscontinuityEvent,
+            ],
+            contributors: [contributor]
+        )
+
+        // When: The aforementioned contributor emits an UPDATE event with `resumed` flag set to false
+        let contributorStateChange = ARTChannelStateChange(
+            current: .attached, // arbitrary
+            previous: .attached, // arbitrary
+            event: .update,
+            reason: ARTErrorInfo(domain: "SomeDomain", code: 123), // arbitrary
+            resumed: false
+        )
+
+        await waitForManager(manager, toHandleContributorStateChange: contributorStateChange) {
+            await contributor.channel.emitStateChange(contributorStateChange)
+        }
+
+        // Then: The manager does not replace the existing pending discontinuity event for this contributor
+        let pendingDiscontinuityEvent = try #require(await manager.testsOnly_pendingDiscontinuityEvent(for: contributor))
+        #expect(pendingDiscontinuityEvent == existingPendingDiscontinuityEvent)
     }
 
     // @spec CHA-RL4a4
