@@ -956,12 +956,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
                 switch contributorState {
                 case .failed:
                     // CHA-RL2h1
-                    guard let contributorError = await contributor.channel.errorReason else {
-                        // TODO: The spec assumes this will be populated, but working in a multi-threaded environment means it might not be (https://github.com/ably-labs/ably-chat-swift/issues/49)
-                        preconditionFailure("Contributor entered FAILED but its errorReason is not set")
-                    }
-
-                    let error = ARTErrorInfo(chatError: .detachmentFailed(feature: contributor.feature, underlyingError: contributorError))
+                    let error = ARTErrorInfo(chatError: .detachmentFailed(feature: contributor.feature, underlyingError: error))
 
                     if firstDetachError == nil {
                         // We’ll throw this after we’ve tried detaching all the channels

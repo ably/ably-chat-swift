@@ -688,8 +688,7 @@ struct DefaultRoomLifecycleManagerTests {
 
         // Then: It:
         // - calls `detach` on all of the contributors
-        // - emits a status change to FAILED and the call to `performDetachOperation()` fails; the error associated with the status change and the `performDetachOperation()` has the *DetachmentFailed code corresponding to contributor 1’s feature, and its `cause` is contributor 1’s `errorReason` (contributor 1 because it’s the "first feature to fail" as the spec says)
-        // TODO: Understand whether it’s `errorReason` or the contributor `detach` thrown error that’s meant to be use (outstanding question https://github.com/ably/specification/pull/200/files#r1763792152)
+        // - emits a status change to FAILED and the call to `performDetachOperation()` fails; the error associated with the status change and the `performDetachOperation()` has the *DetachmentFailed code corresponding to contributor 1’s feature, and its `cause` is the error thrown by contributor 1’s `detach()` call (contributor 1 because it’s the "first feature to fail" as the spec says)
         for contributor in contributors {
             #expect(await contributor.channel.detachCallCount > 0)
         }
