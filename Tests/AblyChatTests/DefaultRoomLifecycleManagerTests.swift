@@ -749,12 +749,18 @@ struct DefaultRoomLifecycleManagerTests {
         #expect(await contributor.channel.detachCallCount == 0)
     }
 
-    // @spec CHA-RL3b
-    @Test
-    func release_whenDetached() async throws {
-        // Given: A DefaultRoomLifecycleManager in the DETACHED status
+    @Test(
+        arguments: [
+            // @spec CHA-RL3b
+            .detached,
+            // @spec CHA-RL3j
+            .initialized,
+        ] as[DefaultRoomLifecycleManager<MockRoomLifecycleContributor>.Status]
+    )
+    func release_whenDetachedOrInitialized(status: DefaultRoomLifecycleManager<MockRoomLifecycleContributor>.Status) async throws {
+        // Given: A DefaultRoomLifecycleManager in the DETACHED or INITIALIZED status
         let contributor = createContributor()
-        let manager = await createManager(forTestingWhatHappensWhenCurrentlyIn: .detached, contributors: [contributor])
+        let manager = await createManager(forTestingWhatHappensWhenCurrentlyIn: status, contributors: [contributor])
 
         let statusChangeSubscription = await manager.onRoomStatusChange(bufferingPolicy: .unbounded)
         async let statusChange = statusChangeSubscription.first { _ in true }
@@ -777,7 +783,10 @@ struct DefaultRoomLifecycleManagerTests {
             // This allows us to prolong the execution of the RELEASE triggered in (1)
             detachBehavior: contributorDetachOperation.behavior
         )
-        let manager = await createManager(contributors: [contributor])
+        let manager = await createManager(
+            forTestingWhatHappensWhenCurrentlyIn: .attached, // arbitrary non-{RELEASED, DETACHED, INITIALIZED} status, so that the first RELEASE gets as far as CHA-RL3l
+            contributors: [contributor]
+        )
 
         let firstReleaseOperationID = UUID()
         let secondReleaseOperationID = UUID()
@@ -823,6 +832,7 @@ struct DefaultRoomLifecycleManagerTests {
         let contributor = createContributor(detachBehavior: contributorDetachOperation.behavior)
 
         let manager = await createManager(
+            forTestingWhatHappensWhenCurrentlyIn: .attached, // arbitrary non-{RELEASED, DETACHED, INITIALIZED} status, so that we get as far as CHA-RL3l
             // We set a transient disconnect timeout, just so we can check that it gets cleared, as the spec point specifies
             forTestingWhatHappensWhenHasTransientDisconnectTimeoutForTheseContributorIDs: [contributor.id],
             contributors: [contributor]
@@ -857,7 +867,10 @@ struct DefaultRoomLifecycleManagerTests {
             createContributor(initialState: .detached /* arbitrary non-FAILED */, detachBehavior: .success),
         ]
 
-        let manager = await createManager(contributors: contributors)
+        let manager = await createManager(
+            forTestingWhatHappensWhenCurrentlyIn: .attached, // arbitrary non-{RELEASED, DETACHED, INITIALIZED} status, so that we get as far as CHA-RL3l
+            contributors: contributors
+        )
 
         let statusChangeSubscription = await manager.onRoomStatusChange(bufferingPolicy: .unbounded)
         async let releasedStatusChange = statusChangeSubscription.first { $0.current == .released }
@@ -897,7 +910,11 @@ struct DefaultRoomLifecycleManagerTests {
 
         let clock = MockSimpleClock()
 
-        let manager = await createManager(contributors: [contributor], clock: clock)
+        let manager = await createManager(
+            forTestingWhatHappensWhenCurrentlyIn: .attached, // arbitrary non-{RELEASED, DETACHED, INITIALIZED} status, so that we get as far as CHA-RL3l
+            contributors: [contributor],
+            clock: clock
+        )
 
         // Then: When `performReleaseOperation()` is called on the manager
         await manager.performReleaseOperation()
@@ -917,7 +934,11 @@ struct DefaultRoomLifecycleManagerTests {
 
         let clock = MockSimpleClock()
 
-        let manager = await createManager(contributors: [contributor], clock: clock)
+        let manager = await createManager(
+            forTestingWhatHappensWhenCurrentlyIn: .attached, // arbitrary non-{RELEASED, DETACHED, INITIALIZED} status, so that we get as far as CHA-RL3l
+            contributors: [contributor],
+            clock: clock
+        )
 
         let statusChangeSubscription = await manager.onRoomStatusChange(bufferingPolicy: .unbounded)
         async let releasedStatusChange = statusChangeSubscription.first { $0.current == .released }

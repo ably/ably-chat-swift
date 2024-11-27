@@ -1039,8 +1039,11 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
         case .released:
             // CHA-RL3a
             return
-        case .detached, .detachedDueToRetryOperation:
+        case
             // CHA-RL3b
+            .detached, .detachedDueToRetryOperation,
+            // CHA-RL3j
+            .initialized:
             changeStatus(to: .released)
             return
         case let .releasing(releaseOperationID):
@@ -1048,7 +1051,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
             // See note on waitForCompletionOfOperationWithID for the current need for this force try
             // swiftlint:disable:next force_try
             return try! await waitForCompletionOfOperationWithID(releaseOperationID, requester: .anotherOperation(operationID: operationID))
-        case .initialized, .attached, .attachingDueToAttachOperation, .attachingDueToRetryOperation, .attachingDueToContributorStateChange, .detaching, .suspendedAwaitingStartOfRetryOperation, .suspended, .failed:
+        case .attached, .attachingDueToAttachOperation, .attachingDueToRetryOperation, .attachingDueToContributorStateChange, .detaching, .suspendedAwaitingStartOfRetryOperation, .suspended, .failed:
             break
         }
 
