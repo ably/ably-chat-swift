@@ -309,7 +309,6 @@ struct DefaultRoomLifecycleManagerTests {
     }
 
     // @spec CHA-RL1h2
-    // @specOneOf(1/2) CHA-RL1h1 - tests that an error gets thrown when channel attach fails due to entering SUSPENDED (TODO: but I don’t yet fully understand the meaning of CHA-RL1h1; outstanding question https://github.com/ably/specification/pull/200/files#r1765476610)
     // @spec CHA-RL1h3
     @Test
     func attach_whenContributorFailsToAttachAndEntersSuspended_transitionsToSuspendedAndPerformsRetryOperation() async throws {
@@ -412,7 +411,6 @@ struct DefaultRoomLifecycleManagerTests {
         _ = try #require(await roomStatusChangeSubscription.first { $0.current == .attached }) // Room status changes to ATTACHED
     }
 
-    // @specOneOf(2/2) CHA-RL1h1 - tests that an error gets thrown when channel attach fails due to entering FAILED (TODO: but I don’t yet fully understand the meaning of CHA-RL1h1; outstanding question https://github.com/ably/specification/pull/200/files#r1765476610))
     // @spec CHA-RL1h4
     @Test
     func attach_whenContributorFailsToAttachAndEntersFailed_transitionsToFailed() async throws {
