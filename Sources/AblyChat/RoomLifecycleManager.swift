@@ -444,10 +444,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
 
             if hasOperationInProgress {
                 // CHA-RL4a3
-                let discontinuity = DiscontinuityEvent(error: reason)
-                logger.log(message: "Recording pending discontinuity event \(discontinuity) for contributor \(contributor)", level: .info)
-
-                contributorAnnotations[contributor].pendingDiscontinuityEvent = discontinuity
+                recordPendingDiscontinuityEvent(for: contributor, error: reason)
             } else {
                 // CHA-RL4a4
                 let discontinuity = DiscontinuityEvent(error: reason)
@@ -462,12 +459,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
             if hasOperationInProgress {
                 if !stateChange.resumed, hadAlreadyAttached {
                     // CHA-RL4b1
-
-                    let discontinuity = DiscontinuityEvent(error: stateChange.reason)
-
-                    logger.log(message: "Recording pending discontinuity event \(discontinuity) for contributor \(contributor)", level: .info)
-
-                    contributorAnnotations[contributor].pendingDiscontinuityEvent = discontinuity
+                    recordPendingDiscontinuityEvent(for: contributor, error: stateChange.reason)
                 }
             } else {
                 // CHA-RL4b10
@@ -582,6 +574,12 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
         for contributor in contributors {
             clearTransientDisconnectTimeouts(for: contributor)
         }
+    }
+
+    private func recordPendingDiscontinuityEvent(for contributor: Contributor, error: ARTErrorInfo?) {
+        let discontinuity = DiscontinuityEvent(error: error)
+        logger.log(message: "Recording pending discontinuity event \(discontinuity) for contributor \(contributor)", level: .info)
+        contributorAnnotations[contributor].pendingDiscontinuityEvent = discontinuity
     }
 
     // MARK: - Operation handling
