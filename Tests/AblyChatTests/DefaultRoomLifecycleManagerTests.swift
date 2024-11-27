@@ -1549,7 +1549,7 @@ struct DefaultRoomLifecycleManagerTests {
         #expect(await !manager.testsOnly_hasTransientDisconnectTimeoutForAnyContributor)
     }
 
-    // @spec CHA-RL4b6
+    // @specOneOf(1/2) CHA-RL4b7 - Tests that when a transient disconnect timeout already exists, a new one is not created
     func contributorAttachingEvent_withNoOperationInProgress_withTransientDisconnectTimeout() async throws {
         // Given: A DefaultRoomLifecycleManager, with no operation in progress, with a transient disconnect timeout for the contributor mentioned in "When:"
         let contributor = createContributor()
@@ -1573,11 +1573,11 @@ struct DefaultRoomLifecycleManagerTests {
             await contributor.channel.emitStateChange(contributorStateChange)
         }
 
-        // Then: It does not set a new transient disconnect timeout (this is my interpretation of CHA-RL4b6’s “no action is needed”, i.e. that the spec point intends to just be the contrapositive of CHA-RL4b7)
+        // Then: It does not set a new transient disconnect timeout
         #expect(await manager.testsOnly_idOfTransientDisconnectTimeout(for: contributor) == idOfExistingTransientDisconnectTimeout)
     }
 
-    // @spec CHA-RL4b7
+    // @specOneOf(2/2) CHA-RL4b7 - Tests that when the conditions of this spec point are fulfilled, a transient disconnect timeout is created
     @Test(
         arguments: [
             nil,
