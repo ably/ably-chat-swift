@@ -35,6 +35,10 @@ let package = Package(
             url: "https://github.com/JanGorman/Table.git",
             from: "1.1.1"
         ),
+        .package(
+            url: "https://github.com/apple/swift-docc-plugin",
+            from: "1.0.0"
+        ),
     ],
     targets: [
         .target(
