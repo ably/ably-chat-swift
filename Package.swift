@@ -20,8 +20,7 @@ let package = Package(
     dependencies: [
         .package(
             url: "https://github.com/ably/ably-cocoa",
-            // TODO: Switch back to using a tag (https://github.com/ably-labs/ably-chat-swift/issues/80)
-            branch: "main"
+            from: "1.2.35"
         ),
         .package(
             url: "https://github.com/apple/swift-argument-parser",
