@@ -1,9 +1,9 @@
 import Ably
 
 /**
- The error domain used for the ``Ably/ARTErrorInfo`` error instances thrown by the Ably Chat SDK.
+ The error domain used for the `ARTErrorInfo` error instances thrown by the Ably Chat SDK.
 
- See ``ErrorCode`` for the possible ``ARTErrorInfo/code`` values.
+ See ``ErrorCode`` for the possible `code` values.
  */
 public let errorDomain = "AblyChatErrorDomain"
 
