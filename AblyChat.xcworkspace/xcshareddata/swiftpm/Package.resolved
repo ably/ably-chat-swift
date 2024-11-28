@@ -1,13 +1,13 @@
 {
-  "originHash" : "1ad2d7338668d15feccbf564582941161acd47349bfca8f34374e11c69677ae8",
+  "originHash" : "1d806168af5c6dfac34494fc5941d89fb9d4f96e4803f3a16742053db45c2b49",
   "pins" : [
     {
       "identity" : "ably-cocoa",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/ably/ably-cocoa",
       "state" : {
-        "branch" : "main",
-        "revision" : "5a9b7ba3395ce24a002d552edcb395263fba961d"
+        "revision" : "aca9a7c00abb7eacda8d90dcff75372a60360e7d",
+        "version" : "1.2.35"
       }
     },
     {
