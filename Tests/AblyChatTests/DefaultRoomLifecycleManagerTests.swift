@@ -145,7 +145,7 @@ struct DefaultRoomLifecycleManagerTests {
         await #expect {
             try await manager.performAttachOperation()
         } throws: { error in
-            isChatError(error, withCode: .roomIsReleasing)
+            isChatError(error, withCodeAndStatusCode: .fixedStatusCode(.roomIsReleasing))
         }
     }
 
@@ -160,7 +160,7 @@ struct DefaultRoomLifecycleManagerTests {
         await #expect {
             try await manager.performAttachOperation()
         } throws: { error in
-            isChatError(error, withCode: .roomIsReleased)
+            isChatError(error, withCodeAndStatusCode: .fixedStatusCode(.roomIsReleased))
         }
     }
 
@@ -373,7 +373,7 @@ struct DefaultRoomLifecycleManagerTests {
         }
 
         for error in await [suspendedRoomStatusChange.error, manager.roomStatus.error, roomAttachError] {
-            #expect(isChatError(error, withCode: .messagesAttachmentFailed, cause: contributorAttachError))
+            #expect(isChatError(error, withCodeAndStatusCode: .fixedStatusCode(.messagesAttachmentFailed), cause: contributorAttachError))
         }
 
         // and:
@@ -454,7 +454,7 @@ struct DefaultRoomLifecycleManagerTests {
         }
 
         for error in await [failedStatusChange.error, manager.roomStatus.error, roomAttachError] {
-            #expect(isChatError(error, withCode: .messagesAttachmentFailed, cause: contributorAttachError))
+            #expect(isChatError(error, withCodeAndStatusCode: .fixedStatusCode(.messagesAttachmentFailed), cause: contributorAttachError))
         }
     }
 
@@ -561,7 +561,7 @@ struct DefaultRoomLifecycleManagerTests {
         await #expect {
             try await manager.performDetachOperation()
         } throws: { error in
-            isChatError(error, withCode: .roomIsReleasing)
+            isChatError(error, withCodeAndStatusCode: .fixedStatusCode(.roomIsReleasing))
         }
     }
 
@@ -576,7 +576,7 @@ struct DefaultRoomLifecycleManagerTests {
         await #expect {
             try await manager.performDetachOperation()
         } throws: { error in
-            isChatError(error, withCode: .roomIsReleased)
+            isChatError(error, withCodeAndStatusCode: .fixedStatusCode(.roomIsReleased))
         }
     }
 
@@ -595,7 +595,7 @@ struct DefaultRoomLifecycleManagerTests {
         await #expect {
             try await manager.performDetachOperation()
         } throws: { error in
-            isChatError(error, withCode: .roomInFailedState)
+            isChatError(error, withCodeAndStatusCode: .fixedStatusCode(.roomInFailedState))
         }
     }
 
@@ -694,7 +694,7 @@ struct DefaultRoomLifecycleManagerTests {
         let failedStatusChange = try #require(await maybeFailedStatusChange)
 
         for maybeError in [maybeRoomDetachError, failedStatusChange.error] {
-            #expect(isChatError(maybeError, withCode: .presenceDetachmentFailed, cause: contributor1DetachError))
+            #expect(isChatError(maybeError, withCodeAndStatusCode: .fixedStatusCode(.presenceDetachmentFailed), cause: contributor1DetachError))
         }
     }
 
@@ -1095,7 +1095,7 @@ struct DefaultRoomLifecycleManagerTests {
 
         #expect(roomStatus.isFailed)
         for error in [roomStatus.error, failedStatusChange.error] {
-            #expect(isChatError(error, withCode: .presenceDetachmentFailed, cause: contributor1DetachError))
+            #expect(isChatError(error, withCodeAndStatusCode: .fixedStatusCode(.presenceDetachmentFailed), cause: contributor1DetachError))
         }
 
         for contributor in contributors {
@@ -2096,7 +2096,7 @@ struct DefaultRoomLifecycleManagerTests {
         }
 
         let expectedCause = ARTErrorInfo(chatError: .attachmentFailed(feature: .messages, underlyingError: contributorAttachError)) // using our knowledge of CHA-RL1h4
-        #expect(isChatError(caughtError, withCode: .roomInInvalidState, cause: expectedCause))
+        #expect(isChatError(caughtError, withCodeAndStatusCode: .fixedStatusCode(.roomInInvalidState), cause: expectedCause))
     }
 
     // @specPartial CHA-PR3e - Tests the wait described in the spec point, but not that the feature actually performs this wait nor the side effect. TODO change this to a specOneOf once the feature is implemented
@@ -2137,7 +2137,7 @@ struct DefaultRoomLifecycleManagerTests {
         }
 
         // Then: It throws a presenceOperationRequiresRoomAttach error for that feature (which we just check via its error code, i.e. `.nonspecific`, and its message)
-        #expect(isChatError(caughtError, withCode: .nonspecific, message: "To perform this messages operation, you must first attach the room."))
+        #expect(isChatError(caughtError, withCodeAndStatusCode: .fixedStatusCode(.nonspecific), message: "To perform this messages operation, you must first attach the room."))
     }
 
     // @specPartial CHA-PR3f - Tests the wait described in the spec point, but not that the feature actually performs this wait. TODO change this to a specOneOf once the feature is implemented
@@ -2162,6 +2162,6 @@ struct DefaultRoomLifecycleManagerTests {
         }
 
         // Then: It throws a presenceOperationDisallowedForCurrentRoomStatus error for that feature (which we just check via its error code, i.e. `.nonspecific`, and its message)
-        #expect(isChatError(caughtError, withCode: .nonspecific, message: "This messages operation can not be performed given the current room status."))
+        #expect(isChatError(caughtError, withCodeAndStatusCode: .fixedStatusCode(.nonspecific), message: "This messages operation can not be performed given the current room status."))
     }
 }
