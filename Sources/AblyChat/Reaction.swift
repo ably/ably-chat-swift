@@ -1,6 +1,10 @@
 import Foundation
 
 public typealias ReactionHeaders = Headers
+
+/**
+ * {@link Metadata} type for chat messages.
+ */
 public typealias ReactionMetadata = Metadata
 
 // (CHA-ER2) A Reaction corresponds to a single reaction in a chat room. This is analogous to a single user-specified message on an Ably channel (NOTE: not a ProtocolMessage).

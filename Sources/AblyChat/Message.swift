@@ -1,6 +1,10 @@
 import Foundation
 
 public typealias MessageHeaders = Headers
+
+/**
+ * {@link Metadata} type for chat messages.
+ */
 public typealias MessageMetadata = Metadata
 
 // (CHA-M2) A Message corresponds to a single message in a chat room. This is analogous to a single user-specified message on an Ably channel (NOTE: not a ProtocolMessage).
