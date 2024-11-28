@@ -93,15 +93,46 @@ public struct SendMessageParams: Sendable {
     }
 }
 
+/**
+ * Options for querying messages in a chat room.
+ */
 public struct QueryOptions: Sendable {
     public enum ResultOrder: Sendable {
         case oldestFirst
         case newestFirst
     }
 
+    /**
+     * The start of the time window to query from. If provided, the response will include
+     * messages with timestamps equal to or greater than this value.
+     *
+     * @defaultValue The beginning of time
+     */
     public var start: Date?
+
+    /**
+     * The end of the time window to query from. If provided, the response will include
+     * messages with timestamps less than this value.
+     *
+     * @defaultValue Now
+     */
     public var end: Date?
+
+    /**
+     * The maximum number of messages to return in the response.
+     *
+     * @defaultValue 100
+     */
     public var limit: Int?
+
+    /**
+     * The direction to query messages in.
+     * If `forwards`, the response will include messages from the start of the time window to the end.
+     * If `backwards`, the response will include messages from the end of the time window to the start.
+     * If not provided, the default is `forwards`.
+     *
+     * @defaultValue forwards
+     */
     public var orderBy: ResultOrder?
 
     // (CHA-M5g) The subscribers subscription point must be additionally specified (internally, by us) in the fromSerial query parameter.
