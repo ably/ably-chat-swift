@@ -1,9 +1,25 @@
 import Ably
 
+/**
+ * Represents a connection to Ably.
+ */
 public protocol Connection: AnyObject, Sendable {
+    /**
+     * The current status of the connection.
+     */
     var status: ConnectionStatus { get async }
+
     // TODO: (https://github.com/ably-labs/ably-chat-swift/issues/12): consider how to avoid the need for an unwrap
+    /**
+     * The current error, if any, that caused the connection to enter the current status.
+     */
     var error: ARTErrorInfo? { get async }
+
+    /**
+     * Registers a listener that will be called whenever the connection status changes.
+     * @param listener The function to call when the status changes.
+     * @returns An object that can be used to unregister the listener.
+     */
     func onStatusChange(bufferingPolicy: BufferingPolicy) -> Subscription<ConnectionStatusChange>
 }
 
