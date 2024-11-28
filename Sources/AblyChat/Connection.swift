@@ -89,11 +89,30 @@ public enum ConnectionStatus: Sendable {
     }
 }
 
+/**
+ * Represents a change in the status of the connection.
+ */
 public struct ConnectionStatusChange: Sendable {
+    /**
+     * The new status of the connection.
+     */
     public var current: ConnectionStatus
+
+    /**
+     * The previous status of the connection.
+     */
     public var previous: ConnectionStatus
+
     // TODO: (https://github.com/ably-labs/ably-chat-swift/issues/12): consider how to avoid the need for an unwrap
+    /**
+     * An error that provides a reason why the connection has
+     * entered the new status, if applicable.
+     */
     public var error: ARTErrorInfo?
+
+    /**
+     * The time in milliseconds that the client will wait before attempting to reconnect.
+     */
     public var retryIn: TimeInterval
 
     public init(current: ConnectionStatus, previous: ConnectionStatus, error: ARTErrorInfo? = nil, retryIn: TimeInterval) {
