@@ -1225,17 +1225,14 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
             // TODO: decide what to do if nextRoomStatusChange is nil; I believe that this will happen if the current Task is cancelled. For now, will just treat it as an invalid status change. Handle it properly in https://github.com/ably-labs/ably-chat-swift/issues/29
             if nextRoomStatusChange?.current != .attached {
                 // CHA-RL9c
-                throw .init(chatError: .roomInInvalidState(cause: nextRoomStatusChange?.current.error))
+                throw .init(chatError: .roomTransitionedToInvalidStateForPresenceOperation(cause: nextRoomStatusChange?.current.error))
             }
         case .attached:
             // CHA-PR3e, CHA-PR10e, CHA-PR6d, CHA-T2d
             break
-        case .detached:
-            // CHA-PR3f, CHA-PR10f, CHA-PR6e, CHA-T2e
-            throw .init(chatError: .presenceOperationRequiresRoomAttach(feature: requester))
         default:
-            // CHA-PR3g, CHA-PR10g, CHA-PR6f, CHA-T2f
-            throw .init(chatError: .presenceOperationDisallowedForCurrentRoomStatus(feature: requester))
+            // CHA-PR3h, CHA-PR10h, CHA-PR6h, CHA-T2g
+            throw .init(chatError: .presenceOperationRequiresRoomAttach(feature: requester))
         }
     }
 
