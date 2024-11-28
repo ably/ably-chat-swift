@@ -46,9 +46,44 @@ public protocol Messages: AnyObject, Sendable, EmitsDiscontinuities {
     var channel: RealtimeChannelProtocol { get }
 }
 
+/**
+ * Params for sending a text message. Only `text` is mandatory.
+ */
 public struct SendMessageParams: Sendable {
+    /**
+     * The text of the message.
+     */
     public var text: String
+
+    /**
+     * Optional metadata of the message.
+     *
+     * The metadata is a map of extra information that can be attached to chat
+     * messages. It is not used by Ably and is sent as part of the realtime
+     * message payload. Example use cases are setting custom styling like
+     * background or text colors or fonts, adding links to external images,
+     * emojis, etc.
+     *
+     * Do not use metadata for authoritative information. There is no server-side
+     * validation. When reading the metadata treat it like user input.
+     *
+     */
     public var metadata: MessageMetadata?
+
+    /**
+     * Optional headers of the message.
+     *
+     * The headers are a flat key-value map and are sent as part of the realtime
+     * message's extras inside the `headers` property. They can serve similar
+     * purposes as the metadata but they are read by Ably and can be used for
+     * features such as
+     * [subscription filters](https://faqs.ably.com/subscription-filters).
+     *
+     * Do not use the headers for authoritative information. There is no
+     * server-side validation. When reading the headers treat them like user
+     * input.
+     *
+     */
     public var headers: MessageHeaders?
 
     public init(text: String, metadata: MessageMetadata? = nil, headers: MessageHeaders? = nil) {
