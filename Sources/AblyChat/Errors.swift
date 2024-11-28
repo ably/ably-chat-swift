@@ -11,8 +11,6 @@ public let errorDomain = "AblyChatErrorDomain"
  The error codes for errors in the ``errorDomain`` error domain.
  */
 public enum ErrorCode: Int {
-    case nonspecific = 40000
-
     /// ``Rooms.get(roomID:options:)`` was called with a different set of room options than was used on a previous call. You must first release the existing room instance using ``Rooms.release(roomID:)``.
     ///
     /// TODO this code is a guess, revisit in https://github.com/ably-labs/ably-chat-swift/issues/32
@@ -38,7 +36,6 @@ public enum ErrorCode: Int {
 
     /// Has a case for each of the ``ErrorCode`` cases that imply a fixed status code.
     internal enum CaseThatImpliesFixedStatusCode {
-        case nonspecific
         case inconsistentRoomOptions
         case messagesAttachmentFailed
         case presenceAttachmentFailed
@@ -53,12 +50,9 @@ public enum ErrorCode: Int {
         case roomInFailedState
         case roomIsReleasing
         case roomIsReleased
-        case roomInInvalidState
 
         internal var toNumericErrorCode: ErrorCode {
             switch self {
-            case .nonspecific:
-                .nonspecific
             case .inconsistentRoomOptions:
                 .inconsistentRoomOptions
             case .messagesAttachmentFailed:
@@ -87,8 +81,6 @@ public enum ErrorCode: Int {
                 .roomIsReleasing
             case .roomIsReleased:
                 .roomIsReleased
-            case .roomInInvalidState:
-                .roomInInvalidState
             }
         }
 
@@ -96,8 +88,7 @@ public enum ErrorCode: Int {
         internal var statusCode: Int {
             // These status codes are taken from the "Chat-specific Error Codes" section of the spec.
             switch self {
-            case .nonspecific,
-                 .inconsistentRoomOptions,
+            case .inconsistentRoomOptions,
                  .roomInFailedState,
                  .roomIsReleasing,
                  .roomIsReleased:
@@ -112,9 +103,7 @@ public enum ErrorCode: Int {
                 .presenceDetachmentFailed,
                 .reactionsDetachmentFailed,
                 .occupancyDetachmentFailed,
-                .typingDetachmentFailed,
-                // CHA-RL9c
-                .roomInInvalidState:
+                .typingDetachmentFailed:
                 500
             }
         }
@@ -122,8 +111,13 @@ public enum ErrorCode: Int {
 
     /// Has a case for each of the ``ErrorCode`` cases that do not imply a fixed status code.
     internal enum CaseThatImpliesVariableStatusCode {
+        case roomInInvalidState
+
         internal var toNumericErrorCode: ErrorCode {
-            switch self {}
+            switch self {
+            case .roomInInvalidState:
+                .roomInInvalidState
+            }
         }
     }
 }
@@ -169,8 +163,7 @@ internal enum ChatError {
     case roomIsReleasing
     case roomIsReleased
     case presenceOperationRequiresRoomAttach(feature: RoomFeature)
-    case presenceOperationDisallowedForCurrentRoomStatus(feature: RoomFeature)
-    case roomInInvalidState(cause: ARTErrorInfo?)
+    case roomTransitionedToInvalidStateForPresenceOperation(cause: ARTErrorInfo?)
 
     internal var codeAndStatusCode: ErrorCodeAndStatusCode {
         switch self {
@@ -208,11 +201,12 @@ internal enum ChatError {
             .fixedStatusCode(.roomIsReleasing)
         case .roomIsReleased:
             .fixedStatusCode(.roomIsReleased)
-        case .roomInInvalidState:
-            .fixedStatusCode(.roomInInvalidState)
-        case .presenceOperationRequiresRoomAttach,
-             .presenceOperationDisallowedForCurrentRoomStatus:
-            .fixedStatusCode(.nonspecific)
+        case .roomTransitionedToInvalidStateForPresenceOperation:
+            // CHA-RL9c
+            .variableStatusCode(.roomInInvalidState, statusCode: 500)
+        case .presenceOperationRequiresRoomAttach:
+            // CHA-PR3h, CHA-PR10h, CHA-PR6h, CHA-T2g
+            .variableStatusCode(.roomInInvalidState, statusCode: 400)
         }
     }
 
@@ -268,9 +262,7 @@ internal enum ChatError {
             "Cannot perform operation because the room is in a released state."
         case let .presenceOperationRequiresRoomAttach(feature):
             "To perform this \(Self.descriptionOfFeature(feature)) operation, you must first attach the room."
-        case let .presenceOperationDisallowedForCurrentRoomStatus(feature):
-            "This \(Self.descriptionOfFeature(feature)) operation can not be performed given the current room status."
-        case .roomInInvalidState:
+        case .roomTransitionedToInvalidStateForPresenceOperation:
             "The room operation failed because the room was in an invalid state."
         }
     }
@@ -282,14 +274,13 @@ internal enum ChatError {
             underlyingError
         case let .detachmentFailed(_, underlyingError):
             underlyingError
-        case let .roomInInvalidState(cause):
+        case let .roomTransitionedToInvalidStateForPresenceOperation(cause):
             cause
         case .inconsistentRoomOptions,
              .roomInFailedState,
              .roomIsReleasing,
              .roomIsReleased,
-             .presenceOperationRequiresRoomAttach,
-             .presenceOperationDisallowedForCurrentRoomStatus:
+             .presenceOperationRequiresRoomAttach:
             nil
         }
     }
