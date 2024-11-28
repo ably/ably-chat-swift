@@ -5,14 +5,14 @@ actor MockRoomLifecycleContributor: RoomLifecycleContributor {
     nonisolated let feature: RoomFeature
     nonisolated let channel: MockRoomLifecycleContributorChannel
 
-    private(set) var emitDiscontinuityArguments: [ARTErrorInfo?] = []
+    private(set) var emitDiscontinuityArguments: [DiscontinuityEvent] = []
 
     init(feature: RoomFeature, channel: MockRoomLifecycleContributorChannel) {
         self.feature = feature
         self.channel = channel
     }
 
-    func emitDiscontinuity(_ error: ARTErrorInfo?) async {
-        emitDiscontinuityArguments.append(error)
+    func emitDiscontinuity(_ discontinuity: DiscontinuityEvent) async {
+        emitDiscontinuityArguments.append(discontinuity)
     }
 }

@@ -58,7 +58,7 @@ internal struct DefaultFeatureChannel: FeatureChannel {
     internal var contributor: DefaultRoomLifecycleContributor
     internal var roomLifecycleManager: RoomLifecycleManager
 
-    internal func subscribeToDiscontinuities() async -> Subscription<ARTErrorInfo?> {
+    internal func subscribeToDiscontinuities() async -> Subscription<DiscontinuityEvent> {
         await contributor.subscribeToDiscontinuities()
     }
 
