@@ -1,9 +1,9 @@
 import Ably
 
 /**
- The error domain used for the ``Ably.ARTErrorInfo`` error instances thrown by the Ably Chat SDK.
+ The error domain used for the ``Ably/ARTErrorInfo`` error instances thrown by the Ably Chat SDK.
 
- See ``ErrorCode`` for the possible ``ARTErrorInfo.code`` values.
+ See ``ErrorCode`` for the possible ``ARTErrorInfo/code`` values.
  */
 public let errorDomain = "AblyChatErrorDomain"
 
@@ -11,7 +11,7 @@ public let errorDomain = "AblyChatErrorDomain"
  The error codes for errors in the ``errorDomain`` error domain.
  */
 public enum ErrorCode: Int {
-    /// ``Rooms.get(roomID:options:)`` was called with a different set of room options than was used on a previous call. You must first release the existing room instance using ``Rooms.release(roomID:)``.
+    /// ``Rooms/get(roomID:options:)`` was called with a different set of room options than was used on a previous call. You must first release the existing room instance using ``Rooms/release(roomID:)``.
     ///
     /// TODO this code is a guess, revisit in https://github.com/ably-labs/ably-chat-swift/issues/32
     case inconsistentRoomOptions = 1
@@ -84,7 +84,7 @@ public enum ErrorCode: Int {
             }
         }
 
-        /// The ``ARTErrorInfo.statusCode`` that should be returned for this error.
+        /// The ``ARTErrorInfo/statusCode`` that should be returned for this error.
         internal var statusCode: Int {
             // These status codes are taken from the "Chat-specific Error Codes" section of the spec.
             switch self {
@@ -129,7 +129,7 @@ internal enum ErrorCodeAndStatusCode {
     case fixedStatusCode(ErrorCode.CaseThatImpliesFixedStatusCode)
     case variableStatusCode(ErrorCode.CaseThatImpliesVariableStatusCode, statusCode: Int)
 
-    /// The ``ARTErrorInfo.code`` that should be returned for this error.
+    /// The ``ARTErrorInfo/code`` that should be returned for this error.
     internal var code: ErrorCode {
         switch self {
         case let .fixedStatusCode(code):
@@ -139,7 +139,7 @@ internal enum ErrorCodeAndStatusCode {
         }
     }
 
-    /// The ``ARTErrorInfo.statusCode`` that should be returned for this error.
+    /// The ``ARTErrorInfo/statusCode`` that should be returned for this error.
     internal var statusCode: Int {
         switch self {
         case let .fixedStatusCode(code):
@@ -245,7 +245,7 @@ internal enum ChatError {
         return "The \(descriptionOfFeature(feature)) feature failed to \(operationDescription)."
     }
 
-    /// The ``ARTErrorInfo.localizedDescription`` that should be returned for this error.
+    /// The ``ARTErrorInfo/localizedDescription`` that should be returned for this error.
     internal var localizedDescription: String {
         switch self {
         case let .inconsistentRoomOptions(requested, existing):
@@ -267,7 +267,7 @@ internal enum ChatError {
         }
     }
 
-    /// The ``ARTErrorInfo.cause`` that should be returned for this error.
+    /// The ``ARTErrorInfo/cause`` that should be returned for this error.
     internal var cause: ARTErrorInfo? {
         switch self {
         case let .attachmentFailed(_, underlyingError):

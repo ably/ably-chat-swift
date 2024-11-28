@@ -616,7 +616,7 @@ struct SpecCoverage: AsyncParsableCommand {
             var name: String
 
             /**
-             * The path of this target’s sources, relative to ``PackageDescribeOutput.path``.
+             * The path of this target’s sources, relative to ``PackageDescribeOutput/path``.
              */
             var path: String
 
