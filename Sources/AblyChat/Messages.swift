@@ -1,9 +1,48 @@
 import Ably
 
+/**
+ * This interface is used to interact with messages in a chat room: subscribing
+ * to new messages, fetching history, or sending messages.
+ *
+ * Get an instance via {@link Room.messages}.
+ */
 public protocol Messages: AnyObject, Sendable, EmitsDiscontinuities {
+    /**
+     * Subscribe to new messages in this chat room.
+     * @param listener callback that will be called
+     * @returns A response object that allows you to control the subscription.
+     */
     func subscribe(bufferingPolicy: BufferingPolicy) async throws -> MessageSubscription
+
+    /**
+     * Get messages that have been previously sent to the chat room, based on the provided options.
+     *
+     * @param options Options for the query.
+     * @returns A promise that resolves with the paginated result of messages. This paginated result can
+     * be used to fetch more messages if available.
+     */
     func get(options: QueryOptions) async throws -> any PaginatedResult<Message>
+
+    /**
+     * Send a message in the chat room.
+     *
+     * This method uses the Ably Chat API endpoint for sending messages.
+     *
+     * Note that the Promise may resolve before OR after the message is received
+     * from the realtime channel. This means you may see the message that was just
+     * sent in a callback to `subscribe` before the returned promise resolves.
+     *
+     * @param params an object containing {text, headers, metadata} for the message
+     * to be sent. Text is required, metadata and headers are optional.
+     * @returns A promise that resolves when the message was published.
+     */
     func send(params: SendMessageParams) async throws -> Message
+
+    /**
+     * Get the underlying Ably realtime channel used for the messages in this chat room.
+     *
+     * @returns The realtime channel.
+     */
     var channel: RealtimeChannelProtocol { get }
 }
 
