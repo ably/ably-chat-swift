@@ -23,18 +23,50 @@ public protocol Connection: AnyObject, Sendable {
     func onStatusChange(bufferingPolicy: BufferingPolicy) -> Subscription<ConnectionStatusChange>
 }
 
+/**
+ * The different states that the connection can be in through its lifecycle.
+ */
 public enum ConnectionStatus: Sendable {
     // (CHA-CS1a) The INITIALIZED status is a default status when the realtime client is first initialized. This value will only (likely) be seen if the realtime client doesn’t have autoconnect turned on.
+
+    /**
+     * A temporary state for when the library is first initialized.
+     */
     case initialized
+
     // (CHA-CS1b) The CONNECTING status is used when the client is in the process of connecting to Ably servers.
+
+    /**
+     * The library is currently connecting to Ably.
+     */
     case connecting
+
     // (CHA-CS1c) The CONNECTED status is used when the client connected to Ably servers.
+
+    /**
+     * The library is currently connected to Ably.
+     */
     case connected
+
     // (CHA-CS1d) The DISCONNECTED status is used when the client is not currently connected to Ably servers. This state may be temporary as the underlying Realtime SDK seeks to reconnect.
+
+    /**
+     * The library is currently disconnected from Ably, but will attempt to reconnect.
+     */
     case disconnected
+
     // (CHA-CS1e) The SUSPENDED status is used when the client is in an extended state of disconnection, but will attempt to reconnect.
+
+    /**
+     * The library is in an extended state of disconnection, but will attempt to reconnect.
+     */
     case suspended
+
     // (CHA-CS1f) The FAILED status is used when the client is disconnected from the Ably servers due to some non-retriable failure such as authentication failure. It will not attempt to reconnect.
+
+    /**
+     * The library is currently disconnected from Ably and will not attempt to reconnect.
+     */
     case failed
 
     internal init(from realtimeConnectionState: ARTRealtimeConnectionState) {
