@@ -148,13 +148,8 @@ struct ContentView: View {
             try await showPresence()
             try await showOccupancy()
             try await showTypings()
+            try await showRoomStatus()
             await printConnectionStatusChange()
-        }
-        .tryTask {
-            // NOTE: As we implement more features, move them out of the `if Environment.current == .mock` block and into the main block just above.
-            if Environment.current == .mock {
-                try await showRoomStatus()
-            }
         }
     }
 
