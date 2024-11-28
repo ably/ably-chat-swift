@@ -1,5 +1,8 @@
 import Foundation
 
+/**
+ * {@link Headers} type for chat messages.
+ */
 public typealias MessageHeaders = Headers
 
 /**
