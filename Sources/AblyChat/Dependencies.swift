@@ -22,7 +22,7 @@ public protocol RealtimeChannelsProtocol: ARTRealtimeChannelsProtocol, Sendable 
     func get(_ name: String, options: ARTRealtimeChannelOptions) -> Channel
 }
 
-/// Expresses the requirements of the object returned by ``RealtimeChannelsProtocol/get(_:)``.
+/// Expresses the requirements of the object returned by ``RealtimeChannelsProtocol/get(_:options:)``.
 public protocol RealtimeChannelProtocol: ARTRealtimeChannelProtocol, Sendable {}
 
 public protocol ConnectionProtocol: ARTConnectionProtocol, Sendable {}
