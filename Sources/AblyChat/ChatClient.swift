@@ -1,15 +1,48 @@
 import Ably
 
 public protocol ChatClient: AnyObject, Sendable {
+    /**
+     * Returns the rooms object, which provides access to chat rooms.
+     *
+     * - Returns: The rooms object.
+     */
     var rooms: any Rooms { get }
+
+    /**
+     * Returns the underlying connection to Ably, which can be used to monitor the clients
+     * connection to Ably servers.
+     *
+     * - Returns: The connection object.
+     */
     var connection: any Connection { get }
+
+    /**
+     * Returns the clientId of the current client.
+     *
+     * - Returns: The clientId.
+     */
     var clientID: String { get }
+
+    /**
+     * Returns the underlying Ably Realtime client.
+     *
+     * - Returns: The Ably Realtime client.
+     */
     var realtime: RealtimeClient { get }
+
+    /**
+     * Returns the resolved client options for the client, including any defaults that have been set.
+     *
+     * - Returns: The client options.
+     */
     var clientOptions: ClientOptions { get }
 }
 
 public typealias RealtimeClient = any RealtimeClientProtocol
 
+/**
+ * This is the core client for Ably chat. It provides access to chat rooms.
+ */
 public actor DefaultChatClient: ChatClient {
     public let realtime: RealtimeClient
     public nonisolated let clientOptions: ClientOptions
@@ -20,6 +53,13 @@ public actor DefaultChatClient: ChatClient {
     // (CHA-CS4) The chat client must allow its connection status to be observed by clients.
     public nonisolated let connection: any Connection
 
+    /**
+     * Constructor for Chat
+     *
+     * - Parameters:
+     *   - realtime: The Ably Realtime client.
+     *   - clientOptions: The client options.
+     */
     public init(realtime: RealtimeClient, clientOptions: ClientOptions?) {
         self.realtime = realtime
         self.clientOptions = clientOptions ?? .init()
