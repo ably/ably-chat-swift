@@ -74,8 +74,22 @@ public actor DefaultChatClient: ChatClient {
     }
 }
 
+/**
+ * Configuration options for the chat client.
+ */
 public struct ClientOptions: Sendable {
+    /**
+     * A custom log handler that will be used to log messages from the client.
+     *
+     * By default, the client will log messages to the console.
+     */
     public var logHandler: LogHandler?
+
+    /**
+     * The minimum log level at which messages will be logged.
+     *
+     * By default, LogLevel.error will be used.
+     */
     public var logLevel: LogLevel?
 
     public init(logHandler: (any LogHandler)? = nil, logLevel: LogLevel? = nil) {
