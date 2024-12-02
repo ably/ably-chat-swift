@@ -94,14 +94,19 @@ struct DefaultRoomsTests {
         let rooms = DefaultRooms(realtime: realtime, clientOptions: .init(), logger: TestLogger(), roomFactory: MockRoomFactory(room: roomToReturn))
 
         let roomID = "basketball"
+
+        // TODO we need something to know that the first room is waiting for the room release
         async let firstRoom = try await rooms.get(roomID: roomID, options: options)
 
-        // TODO here we need to wait for it to wait
-
         // When: get(roomID:options:) is called with the same room ID
+        let releaseOperationWaitSubscription = await rooms.testsOnly_subscribeToReleaseOperationWaitEvents()
         let secondRoom = try await rooms.get(roomID: roomID, options: options)
 
-        // Then: It returns the same room object
+        // Then: Once the CHA-RC1g release operation completes, the second call to get(roomID:options:) returns the same room object as the first call
+
+        // Wait for the room
+
+
         #expect(secondRoom === firstRoom)
     }
 
