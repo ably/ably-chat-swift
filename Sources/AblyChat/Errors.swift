@@ -11,8 +11,6 @@ public let errorDomain = "AblyChatErrorDomain"
  The error codes for errors in the ``errorDomain`` error domain.
  */
 public enum ErrorCode: Int {
-    case nonspecific = 40000
-
     /// ``Rooms.get(roomID:options:)`` was called with a different set of room options than was used on a previous call. You must first release the existing room instance using ``Rooms.release(roomID:)``.
     ///
     /// TODO this code is a guess, revisit in https://github.com/ably-labs/ably-chat-swift/issues/32
@@ -36,30 +34,118 @@ public enum ErrorCode: Int {
 
     case roomInInvalidState = 102_107
 
+    /// Has a case for each of the ``ErrorCode`` cases that imply a fixed status code.
+    internal enum CaseThatImpliesFixedStatusCode {
+        case inconsistentRoomOptions
+        case messagesAttachmentFailed
+        case presenceAttachmentFailed
+        case reactionsAttachmentFailed
+        case occupancyAttachmentFailed
+        case typingAttachmentFailed
+        case messagesDetachmentFailed
+        case presenceDetachmentFailed
+        case reactionsDetachmentFailed
+        case occupancyDetachmentFailed
+        case typingDetachmentFailed
+        case roomInFailedState
+        case roomIsReleasing
+        case roomIsReleased
+
+        internal var toNumericErrorCode: ErrorCode {
+            switch self {
+            case .inconsistentRoomOptions:
+                .inconsistentRoomOptions
+            case .messagesAttachmentFailed:
+                .messagesAttachmentFailed
+            case .presenceAttachmentFailed:
+                .presenceAttachmentFailed
+            case .reactionsAttachmentFailed:
+                .reactionsAttachmentFailed
+            case .occupancyAttachmentFailed:
+                .occupancyAttachmentFailed
+            case .typingAttachmentFailed:
+                .typingAttachmentFailed
+            case .messagesDetachmentFailed:
+                .messagesDetachmentFailed
+            case .presenceDetachmentFailed:
+                .presenceDetachmentFailed
+            case .reactionsDetachmentFailed:
+                .reactionsDetachmentFailed
+            case .occupancyDetachmentFailed:
+                .occupancyDetachmentFailed
+            case .typingDetachmentFailed:
+                .typingDetachmentFailed
+            case .roomInFailedState:
+                .roomInFailedState
+            case .roomIsReleasing:
+                .roomIsReleasing
+            case .roomIsReleased:
+                .roomIsReleased
+            }
+        }
+
+        /// The ``ARTErrorInfo.statusCode`` that should be returned for this error.
+        internal var statusCode: Int {
+            // These status codes are taken from the "Chat-specific Error Codes" section of the spec.
+            switch self {
+            case .inconsistentRoomOptions,
+                 .roomInFailedState,
+                 .roomIsReleasing,
+                 .roomIsReleased:
+                400
+            case
+                .messagesAttachmentFailed,
+                .presenceAttachmentFailed,
+                .reactionsAttachmentFailed,
+                .occupancyAttachmentFailed,
+                .typingAttachmentFailed,
+                .messagesDetachmentFailed,
+                .presenceDetachmentFailed,
+                .reactionsDetachmentFailed,
+                .occupancyDetachmentFailed,
+                .typingDetachmentFailed:
+                500
+            }
+        }
+    }
+
+    /// Has a case for each of the ``ErrorCode`` cases that do not imply a fixed status code.
+    internal enum CaseThatImpliesVariableStatusCode {
+        case roomInInvalidState
+
+        internal var toNumericErrorCode: ErrorCode {
+            switch self {
+            case .roomInInvalidState:
+                .roomInInvalidState
+            }
+        }
+    }
+}
+
+/**
+ * Represents a case of ``ErrorCode`` plus a status code.
+ */
+internal enum ErrorCodeAndStatusCode {
+    case fixedStatusCode(ErrorCode.CaseThatImpliesFixedStatusCode)
+    case variableStatusCode(ErrorCode.CaseThatImpliesVariableStatusCode, statusCode: Int)
+
+    /// The ``ARTErrorInfo.code`` that should be returned for this error.
+    internal var code: ErrorCode {
+        switch self {
+        case let .fixedStatusCode(code):
+            code.toNumericErrorCode
+        case let .variableStatusCode(code, _):
+            code.toNumericErrorCode
+        }
+    }
+
     /// The ``ARTErrorInfo.statusCode`` that should be returned for this error.
     internal var statusCode: Int {
-        // These status codes are taken from the "Chat-specific Error Codes" section of the spec.
         switch self {
-        case .nonspecific,
-             .inconsistentRoomOptions,
-             .roomInFailedState,
-             .roomIsReleasing,
-             .roomIsReleased:
-            400
-        case
-            .messagesAttachmentFailed,
-            .presenceAttachmentFailed,
-            .reactionsAttachmentFailed,
-            .occupancyAttachmentFailed,
-            .typingAttachmentFailed,
-            .messagesDetachmentFailed,
-            .presenceDetachmentFailed,
-            .reactionsDetachmentFailed,
-            .occupancyDetachmentFailed,
-            .typingDetachmentFailed,
-            // CHA-RL9c
-            .roomInInvalidState:
-            500
+        case let .fixedStatusCode(code):
+            code.statusCode
+        case let .variableStatusCode(_, statusCode):
+            statusCode
         }
     }
 }
@@ -77,51 +163,50 @@ internal enum ChatError {
     case roomIsReleasing
     case roomIsReleased
     case presenceOperationRequiresRoomAttach(feature: RoomFeature)
-    case presenceOperationDisallowedForCurrentRoomStatus(feature: RoomFeature)
-    case roomInInvalidState(cause: ARTErrorInfo?)
+    case roomTransitionedToInvalidStateForPresenceOperation(cause: ARTErrorInfo?)
 
-    /// The ``ARTErrorInfo.code`` that should be returned for this error.
-    internal var code: ErrorCode {
+    internal var codeAndStatusCode: ErrorCodeAndStatusCode {
         switch self {
         case .inconsistentRoomOptions:
-            .inconsistentRoomOptions
+            .fixedStatusCode(.inconsistentRoomOptions)
         case let .attachmentFailed(feature, _):
             switch feature {
             case .messages:
-                .messagesAttachmentFailed
+                .fixedStatusCode(.messagesAttachmentFailed)
             case .occupancy:
-                .occupancyAttachmentFailed
+                .fixedStatusCode(.occupancyAttachmentFailed)
             case .presence:
-                .presenceAttachmentFailed
+                .fixedStatusCode(.presenceAttachmentFailed)
             case .reactions:
-                .reactionsAttachmentFailed
+                .fixedStatusCode(.reactionsAttachmentFailed)
             case .typing:
-                .typingAttachmentFailed
+                .fixedStatusCode(.typingAttachmentFailed)
             }
         case let .detachmentFailed(feature, _):
             switch feature {
             case .messages:
-                .messagesDetachmentFailed
+                .fixedStatusCode(.messagesDetachmentFailed)
             case .occupancy:
-                .occupancyDetachmentFailed
+                .fixedStatusCode(.occupancyDetachmentFailed)
             case .presence:
-                .presenceDetachmentFailed
+                .fixedStatusCode(.presenceDetachmentFailed)
             case .reactions:
-                .reactionsDetachmentFailed
+                .fixedStatusCode(.reactionsDetachmentFailed)
             case .typing:
-                .typingDetachmentFailed
+                .fixedStatusCode(.typingDetachmentFailed)
             }
         case .roomInFailedState:
-            .roomInFailedState
+            .fixedStatusCode(.roomInFailedState)
         case .roomIsReleasing:
-            .roomIsReleasing
+            .fixedStatusCode(.roomIsReleasing)
         case .roomIsReleased:
-            .roomIsReleased
-        case .roomInInvalidState:
-            .roomInInvalidState
-        case .presenceOperationRequiresRoomAttach,
-             .presenceOperationDisallowedForCurrentRoomStatus:
-            .nonspecific
+            .fixedStatusCode(.roomIsReleased)
+        case .roomTransitionedToInvalidStateForPresenceOperation:
+            // CHA-RL9c
+            .variableStatusCode(.roomInInvalidState, statusCode: 500)
+        case .presenceOperationRequiresRoomAttach:
+            // CHA-PR3h, CHA-PR10h, CHA-PR6h, CHA-T2g
+            .variableStatusCode(.roomInInvalidState, statusCode: 400)
         }
     }
 
@@ -177,9 +262,7 @@ internal enum ChatError {
             "Cannot perform operation because the room is in a released state."
         case let .presenceOperationRequiresRoomAttach(feature):
             "To perform this \(Self.descriptionOfFeature(feature)) operation, you must first attach the room."
-        case let .presenceOperationDisallowedForCurrentRoomStatus(feature):
-            "This \(Self.descriptionOfFeature(feature)) operation can not be performed given the current room status."
-        case .roomInInvalidState:
+        case .roomTransitionedToInvalidStateForPresenceOperation:
             "The room operation failed because the room was in an invalid state."
         }
     }
@@ -191,14 +274,13 @@ internal enum ChatError {
             underlyingError
         case let .detachmentFailed(_, underlyingError):
             underlyingError
-        case let .roomInInvalidState(cause):
+        case let .roomTransitionedToInvalidStateForPresenceOperation(cause):
             cause
         case .inconsistentRoomOptions,
              .roomInFailedState,
              .roomIsReleasing,
              .roomIsReleased,
-             .presenceOperationRequiresRoomAttach,
-             .presenceOperationDisallowedForCurrentRoomStatus:
+             .presenceOperationRequiresRoomAttach:
             nil
         }
     }
@@ -208,7 +290,7 @@ internal extension ARTErrorInfo {
     convenience init(chatError: ChatError) {
         var userInfo: [String: Any] = [:]
         // TODO: copied and pasted from implementation of -[ARTErrorInfo createWithCode:status:message:requestId:] because there’s no way to pass domain; revisit in https://github.com/ably-labs/ably-chat-swift/issues/32. Also the ARTErrorInfoStatusCode variable in ably-cocoa is not public.
-        userInfo["ARTErrorInfoStatusCode"] = chatError.code.statusCode
+        userInfo["ARTErrorInfoStatusCode"] = chatError.codeAndStatusCode.statusCode
         userInfo[NSLocalizedDescriptionKey] = chatError.localizedDescription
 
         // TODO: This is kind of an implementation detail (that NSUnderlyingErrorKey is what populates `cause`); consider documenting in ably-cocoa as part of https://github.com/ably-labs/ably-chat-swift/issues/32.
@@ -218,7 +300,7 @@ internal extension ARTErrorInfo {
 
         self.init(
             domain: errorDomain,
-            code: chatError.code.rawValue,
+            code: chatError.codeAndStatusCode.code.rawValue,
             userInfo: userInfo
         )
     }
