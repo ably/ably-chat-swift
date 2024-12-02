@@ -43,11 +43,11 @@ internal actor DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
             }
 
             return existingRoom
-        } else {
-            let room = try await roomFactory.createRoom(realtime: realtime, chatAPI: chatAPI, roomID: roomID, options: options, logger: logger)
-            rooms[roomID] = room
-            return room
         }
+
+        let room = try await roomFactory.createRoom(realtime: realtime, chatAPI: chatAPI, roomID: roomID, options: options, logger: logger)
+        rooms[roomID] = room
+        return room
     }
 
     #if DEBUG
