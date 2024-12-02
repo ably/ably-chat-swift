@@ -35,6 +35,7 @@ internal actor DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
     internal func get(roomID: String, options: RoomOptions) async throws -> any Room {
         // CHA-RC1b
         if let existingRoom = rooms[roomID] {
+            // CHA-RC1c
             if existingRoom.options != options {
                 throw ARTErrorInfo(
                     chatError: .inconsistentRoomOptions(requested: options, existing: existingRoom.options)
