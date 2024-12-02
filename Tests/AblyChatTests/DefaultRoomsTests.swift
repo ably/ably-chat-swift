@@ -3,6 +3,31 @@ import Testing
 
 // The channel name of basketball::$chat::$chatMessages is passed in to these tests due to `DefaultRoom` kicking off the `DefaultMessages` initialization. This in turn needs a valid `roomId` or else the `MockChannels` class will throw an error as it would be expecting a channel with the name \(roomID)::$chat::$chatMessages to exist (where `roomId` is the property passed into `rooms.get`).
 struct DefaultRoomsTests {
+    // TODO update this to match; try and figure out how to reduce some duplication
+    /// A mock implementation of a `SimpleClock`’s `sleep(timeInterval:)` operation. Its ``complete(result:)`` method allows you to signal to the mock that the sleep should complete.
+    final class SignallableReleaseOperation: Sendable {
+        private let continuation: AsyncStream<Void>.Continuation
+
+        /// When this behavior is set as a ``MockSimpleClock``’s `sleepBehavior`, calling ``complete(result:)`` will cause the corresponding `sleep(timeInterval:)` to complete with the result passed to that method.
+        ///
+        /// ``sleep(timeInterval:)`` will respond to task cancellation by throwing `CancellationError`.
+        let releaseImplementation: (@Sendable () async -> Void)
+
+        init() {
+            let (stream, continuation) = AsyncStream.makeStream(of: Void.self)
+            self.continuation = continuation
+
+            releaseImplementation = { @Sendable () async in
+                await (stream.first { _ in true }) // this will return if we yield to the continuation or if the Task is cancelled
+            }
+        }
+
+        /// Causes the async function embedded in ``behavior`` to return.
+        func complete() {
+            continuation.yield(())
+        }
+    }
+
     // MARK: - Get a room
 
     // @spec CHA-RC1a
@@ -31,10 +56,10 @@ struct DefaultRoomsTests {
         #expect(createRoomArguments.options == options)
     }
 
-    // @spec CHA-RC1b
+    // @specOneOf(1/2) CHA-RC1f2 - Tests the case where there is already a room in the room map
     @Test
-    func get_returnsExistingRoomWithGivenID() async throws {
-        // Given: an instance of DefaultRooms, on which get(roomID:options:) has already been called with a given ID
+    func get_whenRoomExistsInRoomMap_returnsExistingRoomWithGivenID() async throws {
+        // Given: an instance of DefaultRooms, which has, per CHA-RC1f3, a room in the room map with a given ID
         let realtime = MockRealtime.create(channels: .init(channels: [
             .init(name: "basketball::$chat::$chatMessages"),
         ]))
@@ -44,6 +69,34 @@ struct DefaultRoomsTests {
 
         let roomID = "basketball"
         let firstRoom = try await rooms.get(roomID: roomID, options: options)
+
+        // When: get(roomID:options:) is called with the same room ID and options
+        let secondRoom = try await rooms.get(roomID: roomID, options: options)
+
+        // Then: It returns the same room object
+        #expect(secondRoom === firstRoom)
+    }
+
+    // @specOneOf(2/2) CHA-RC1f2 - Tests the case where, per CHA-RC1f4, there is, in the spec’s language, a _future_ in the room map
+    // TODO what about when this future fails? another test?
+    @Test
+    func get_whenFutureExistsInRoomMap_returnsExistingRoomWithGivenID() async throws {
+        // Given: an instance of DefaultRooms, for which, per CHA-RC1f4, a previous call to get(roomID:options:) with a given ID is waiting for a CHA-RC1g release operation to complete
+        // TODO implement this condition
+        let realtime = MockRealtime.create(channels: .init(channels: [
+            .init(name: "basketball::$chat::$chatMessages"),
+        ]))
+        let options = RoomOptions()
+
+        let releaseOperation = SignallableReleaseOperation()
+        let roomToReturn = MockRoom(options: options, releaseImplementation: releaseOperation.releaseImplementation)
+
+        let rooms = DefaultRooms(realtime: realtime, clientOptions: .init(), logger: TestLogger(), roomFactory: MockRoomFactory(room: roomToReturn))
+
+        let roomID = "basketball"
+        async let firstRoom = try await rooms.get(roomID: roomID, options: options)
+
+        // TODO here we need to wait for it to wait
 
         // When: get(roomID:options:) is called with the same room ID
         let secondRoom = try await rooms.get(roomID: roomID, options: options)
@@ -60,6 +113,9 @@ struct DefaultRoomsTests {
             .init(name: "basketball::$chat::$chatMessages"),
         ]))
         let options = RoomOptions()
+
+        let roomReleaseOperation = SignallableReleaseOperation()
+
         let roomToReturn = MockRoom(options: options)
         let rooms = DefaultRooms(realtime: realtime, clientOptions: .init(), logger: TestLogger(), roomFactory: MockRoomFactory(room: roomToReturn))
 

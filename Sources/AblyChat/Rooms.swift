@@ -72,6 +72,23 @@ internal actor DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
         chatAPI = ChatAPI(realtime: realtime)
     }
 
+    #if DEBUG
+    internal struct ReleaseOperationWaitEvent {}
+
+    // TODO tidy up documentation
+
+    // TODO: clean up old subscriptions (https://github.com/ably-labs/ably-chat-swift/issues/36)
+    /// Supports the ``testsOnly_subscribeToOperationWaitEvents()`` method.
+    private var releaseOperationWaitEventSubscriptions: [Subscription<ReleaseOperationWaitEvent>] = []
+
+        /// Returns a subscription which emits an event each time one room lifecycle operation is going to wait for another to complete.
+        internal func testsOnly_subscribeToReleaseOperationWaitEvents() -> Subscription<ReleaseOperationWaitEvent> {
+            let subscription = Subscription<ReleaseOperationWaitEvent>(bufferingPolicy: .unbounded)
+            releaseOperationWaitEventSubscriptions.append(subscription)
+            return subscription
+        }
+    #endif
+
     internal func get(roomID: String, options: RoomOptions) async throws -> any Room {
         if let existingRoomState = roomStates[roomID] {
             switch existingRoomState {
@@ -135,6 +152,16 @@ internal actor DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
         return try await createRoom(roomID: roomID, options: options)
     }
 
+    private func waitForReleaseTask(_ releaseTask: Task<Void, Never>) async {
+        #if DEBUG
+                    let operationWaitEvent = ReleaseOperationWaitEvent()
+                    for subscription in releaseOperationWaitEventSubscriptions {
+                        subscription.emit(operationWaitEvent)
+                    }
+        #endif
+        await releaseTask.result
+    }
+
     private func createRoom(roomID: String, options: RoomOptions) async throws -> RoomFactory.Room {
         let room = try await roomFactory.createRoom(realtime: realtime, chatAPI: chatAPI, roomID: roomID, options: options, logger: logger)
         roomStates[roomID] = .roomMapEntry(.created(room: room))
@@ -157,7 +184,7 @@ internal actor DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
         switch roomState {
         case let .releaseOperationInProgress(releaseTask):
             // CHA-RC1g3
-            await releaseTask.value
+            await waitForReleaseTask(releaseTask)
         case let .roomMapEntry(
             .requestAwaitingRelease(
                 releaseTask: releaseTask,
@@ -168,7 +195,7 @@ internal actor DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
         ):
             // CHA-RC1g4
             failCreationTask(ARTErrorInfo(chatError: .roomReleasedBeforeOperationCompleted))
-            await releaseTask.value
+            await waitForReleaseTask(releaseTask)
         case let .roomMapEntry(.created(room: room)):
             // TODO: this (and creationTask) is a different approach to that taken in the lifecycle manager for waiting; maybe this is neater even though you could argue there's an unnecessary task here; also you don't have to worry about task priorities
             // TODO: explain that we expect releaseTask to happen afterwards, always, so that state changes happen in correct order
