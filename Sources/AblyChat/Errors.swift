@@ -32,6 +32,8 @@ public enum ErrorCode: Int {
     case roomIsReleasing = 102_102
     case roomIsReleased = 102_103
 
+    case roomReleasedBeforeOperationCompleted = 102_106
+
     case roomInInvalidState = 102_107
 
     /// Has a case for each of the ``ErrorCode`` cases that imply a fixed status code.
@@ -50,6 +52,7 @@ public enum ErrorCode: Int {
         case roomInFailedState
         case roomIsReleasing
         case roomIsReleased
+        case roomReleasedBeforeOperationCompleted
 
         internal var toNumericErrorCode: ErrorCode {
             switch self {
@@ -81,6 +84,8 @@ public enum ErrorCode: Int {
                 .roomIsReleasing
             case .roomIsReleased:
                 .roomIsReleased
+            case .roomReleasedBeforeOperationCompleted:
+                .roomReleasedBeforeOperationCompleted
             }
         }
 
@@ -91,7 +96,8 @@ public enum ErrorCode: Int {
             case .inconsistentRoomOptions,
                  .roomInFailedState,
                  .roomIsReleasing,
-                 .roomIsReleased:
+                 .roomIsReleased,
+                 .roomReleasedBeforeOperationCompleted:
                 400
             case
                 .messagesAttachmentFailed,
@@ -162,6 +168,7 @@ internal enum ChatError {
     case roomInFailedState
     case roomIsReleasing
     case roomIsReleased
+    case roomReleasedBeforeOperationCompleted
     case presenceOperationRequiresRoomAttach(feature: RoomFeature)
     case roomTransitionedToInvalidStateForPresenceOperation(cause: ARTErrorInfo?)
 
@@ -201,6 +208,8 @@ internal enum ChatError {
             .fixedStatusCode(.roomIsReleasing)
         case .roomIsReleased:
             .fixedStatusCode(.roomIsReleased)
+        case .roomReleasedBeforeOperationCompleted:
+            .fixedStatusCode(.roomReleasedBeforeOperationCompleted)
         case .roomTransitionedToInvalidStateForPresenceOperation:
             // CHA-RL9c
             .variableStatusCode(.roomInInvalidState, statusCode: 500)
@@ -260,6 +269,8 @@ internal enum ChatError {
             "Cannot perform operation because the room is in a releasing state."
         case .roomIsReleased:
             "Cannot perform operation because the room is in a released state."
+        case .roomReleasedBeforeOperationCompleted:
+            "Room was released before the operation could complete."
         case let .presenceOperationRequiresRoomAttach(feature):
             "To perform this \(Self.descriptionOfFeature(feature)) operation, you must first attach the room."
         case .roomTransitionedToInvalidStateForPresenceOperation:
@@ -280,6 +291,7 @@ internal enum ChatError {
              .roomInFailedState,
              .roomIsReleasing,
              .roomIsReleased,
+             .roomReleasedBeforeOperationCompleted,
              .presenceOperationRequiresRoomAttach:
             nil
         }
