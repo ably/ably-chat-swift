@@ -72,7 +72,7 @@ public struct Subscription<Element: Sendable>: Sendable, AsyncSequence {
     }
 
     // TODO: https://github.com/ably-labs/ably-chat-swift/issues/36 Revisit how we want to unsubscribe to fulfil CHA-M4b & CHA-ER4b. I think exposing this publicly for all Subscription types is suitable.
-    public func finish() {
+    public func unsubscribe() {
         switch mode {
         case let .default(_, continuation):
             continuation.finish()
