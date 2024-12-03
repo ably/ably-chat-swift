@@ -8,6 +8,7 @@ actor MockRoom: InternalRoom {
     init(options: RoomOptions, releaseImplementation: (@Sendable () async -> Void)? = nil) {
         self.options = options
         self.releaseImplementation = releaseImplementation
+        _releaseCallsAsyncSequence = AsyncStream<Void>.makeStream()
     }
 
     nonisolated var roomID: String {
@@ -52,9 +53,17 @@ actor MockRoom: InternalRoom {
 
     func release() async {
         releaseCallCount += 1
+        _releaseCallsAsyncSequence.continuation.yield(())
         guard let releaseImplementation else {
             fatalError("releaseImplementation must be set before calling `release`")
         }
         await releaseImplementation()
     }
+
+    /// Emits an element each time ``release()`` is called.
+    var releaseCallsAsyncSequence: AsyncStream<Void> {
+        _releaseCallsAsyncSequence.stream
+    }
+
+    private let _releaseCallsAsyncSequence: (stream: AsyncStream<Void>, continuation: AsyncStream<Void>.Continuation)
 }
