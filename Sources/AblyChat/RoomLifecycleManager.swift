@@ -192,6 +192,8 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
         // `retryOperationTask` is exposed so that tests can wait for the triggered RETRY operation to complete.
         case suspendedAwaitingStartOfRetryOperation(retryOperationTask: Task<Void, Never>, error: ARTErrorInfo)
         case suspended(retryOperationID: UUID, error: ARTErrorInfo)
+        case failedAwaitingStartOfRundownOperation(error: ARTErrorInfo)
+        case failedPerformingRundownOperation(rundownOperationID: UUID, error: ARTErrorInfo)
         case failed(error: ARTErrorInfo)
         case releasing(releaseOperationID: UUID)
         case released
@@ -216,6 +218,10 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
                 .suspended(error: error)
             case let .suspended(_, error):
                 .suspended(error: error)
+            case let .failedAwaitingStartOfRundownOperation(error):
+                .failed(error: error)
+            case let .failedPerformingRundownOperation(_, error):
+                .failed(error: error)
             case let .failed(error):
                 .failed(error: error)
             case .releasing:
@@ -239,9 +245,12 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
                 releaseOperationID
             case let .suspended(retryOperationID, _):
                 retryOperationID
+            case let .failedPerformingRundownOperation(rundownOperationID, _):
+                rundownOperationID
             case .initialized,
                  .attached,
                  .detached,
+                 .failedAwaitingStartOfRundownOperation,
                  .failed,
                  .released,
                  .attachingDueToContributorStateChange,
@@ -741,6 +750,8 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
     private enum OperationKind {
         /// The RETRY operation.
         case retry(triggeringContributor: Contributor, errorForSuspendedStatus: ARTErrorInfo)
+        /// The RUNDOWN operation.
+        case rundown(errorForFailedStatus: ARTErrorInfo)
     }
 
     /// Requests that a room lifecycle operation be performed asynchronously.
@@ -753,6 +764,10 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
                 await performRetryOperation(
                     triggeredByContributor: triggeringContributor,
                     errorForSuspendedStatus: errorForSuspendedStatus
+                )
+            case let .rundown(errorForFailedStatus):
+                await performRundownOperation(
+                    errorForFailedStatus: errorForFailedStatus
                 )
             }
         }
@@ -789,7 +804,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
         case .released:
             // CHA-RL1c
             throw ARTErrorInfo(chatError: .roomIsReleased)
-        case .initialized, .suspendedAwaitingStartOfRetryOperation, .suspended, .attachingDueToAttachOperation, .attachingDueToRetryOperation, .attachingDueToContributorStateChange, .detached, .detachedDueToRetryOperation, .detaching, .failed:
+        case .initialized, .suspendedAwaitingStartOfRetryOperation, .suspended, .attachingDueToAttachOperation, .attachingDueToRetryOperation, .attachingDueToContributorStateChange, .detached, .detachedDueToRetryOperation, .detaching, .failed, .failedAwaitingStartOfRundownOperation, .failedPerformingRundownOperation:
             break
         }
 
@@ -921,7 +936,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
         case .released:
             // CHA-RL2c
             throw ARTErrorInfo(chatError: .roomIsReleased)
-        case .failed:
+        case .failed, .failedAwaitingStartOfRundownOperation, .failedPerformingRundownOperation:
             // CHA-RL2d
             throw ARTErrorInfo(chatError: .roomInFailedState)
         case .initialized, .suspendedAwaitingStartOfRetryOperation, .suspended, .attachingDueToAttachOperation, .attachingDueToRetryOperation, .attachingDueToContributorStateChange, .attached, .detaching:
@@ -1056,7 +1071,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
             // See note on waitForCompletionOfOperationWithID for the current need for this force try
             // swiftlint:disable:next force_try
             return try! await waitForCompletionOfOperationWithID(releaseOperationID, requester: .anotherOperation(operationID: operationID))
-        case .attached, .attachingDueToAttachOperation, .attachingDueToRetryOperation, .attachingDueToContributorStateChange, .detaching, .suspendedAwaitingStartOfRetryOperation, .suspended, .failed:
+        case .attached, .attachingDueToAttachOperation, .attachingDueToRetryOperation, .attachingDueToContributorStateChange, .detaching, .suspendedAwaitingStartOfRetryOperation, .suspended, .failed, .failedAwaitingStartOfRundownOperation, .failedPerformingRundownOperation:
             break
         }
 
@@ -1195,6 +1210,34 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
                 return
             }
         }
+    }
+
+    // MARK: - RUNDOWN operation
+
+    /// Implements TODO’s RUNDOWN operation.
+    ///
+    /// - Parameters:
+    ///   - forcedOperationID: Allows tests to force the operation to have a given ID. In combination with the ``testsOnly_subscribeToOperationWaitEvents`` API, this allows tests to verify that one test-initiated operation is waiting for another test-initiated operation.
+    internal func performRundownOperation(testsOnly_forcingOperationID forcedOperationID: UUID? = nil, errorForFailedStatus: ARTErrorInfo) async {
+        // See note on performAnOperation for the current need for this force try
+        // swiftlint:disable:next force_try
+        try! await performAnOperation(forcingOperationID: forcedOperationID) { operationID in
+            await bodyOfRundownOperation(
+                operationID: operationID,
+                errorForFailedStatus: errorForFailedStatus
+            )
+        }
+    }
+
+    private func bodyOfRundownOperation(
+        operationID: UUID,
+        errorForFailedStatus: ARTErrorInfo
+    ) async {
+        changeStatus(to: .failedPerformingRundownOperation(rundownOperationID: operationID, error: errorForFailedStatus))
+
+        // TODO:
+
+        changeStatus(to: .failed(error: errorForFailedStatus))
     }
 
     // MARK: - Waiting to be able to perform presence operations
