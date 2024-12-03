@@ -40,7 +40,8 @@ struct DefaultRoomsTests {
         ]))
         let options = RoomOptions()
         let roomToReturn = MockRoom(options: options)
-        let rooms = DefaultRooms(realtime: realtime, clientOptions: .init(), logger: TestLogger(), roomFactory: MockRoomFactory(room: roomToReturn))
+        let roomFactory = MockRoomFactory(room: roomToReturn)
+        let rooms = DefaultRooms(realtime: realtime, clientOptions: .init(), logger: TestLogger(), roomFactory: roomFactory)
 
         let roomID = "basketball"
         let firstRoom = try await rooms.get(roomID: roomID, options: options)
@@ -48,7 +49,8 @@ struct DefaultRoomsTests {
         // When: get(roomID:options:) is called with the same room ID
         let secondRoom = try await rooms.get(roomID: roomID, options: options)
 
-        // Then: It returns the same room object
+        // Then: It does not create another room, and returns the same room object
+        #expect(await roomFactory.createRoomCallCount == 1)
         #expect(secondRoom === firstRoom)
     }
 
