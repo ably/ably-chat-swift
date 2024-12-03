@@ -67,18 +67,14 @@ struct DefaultRoomsTests {
         _ = try await rooms.get(roomID: roomID, options: options)
 
         // When: get(roomID:options:) is called with the same ID but different options
+        // Then: It throws an inconsistentRoomOptions error
         let differentOptions = RoomOptions(presence: .init(subscribe: false))
 
-        let caughtError: Error?
-        do {
-            _ = try await rooms.get(roomID: roomID, options: differentOptions)
-            caughtError = nil
-        } catch {
-            caughtError = error
+        await #expect {
+            try await rooms.get(roomID: roomID, options: differentOptions)
+        } throws: { error in
+            isChatError(error, withCodeAndStatusCode: .fixedStatusCode(.inconsistentRoomOptions))
         }
-
-        // Then: It throws an inconsistentRoomOptions error
-        #expect(isChatError(caughtError, withCodeAndStatusCode: .fixedStatusCode(.inconsistentRoomOptions)))
     }
 
     // MARK: - Release a room
