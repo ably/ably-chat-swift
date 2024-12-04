@@ -78,7 +78,7 @@ struct DefaultRoomsTests {
         }
 
         // Then: It throws an inconsistentRoomOptions error
-        #expect(isChatError(caughtError, withCode: .inconsistentRoomOptions))
+        #expect(isChatError(caughtError, withCodeAndStatusCode: .fixedStatusCode(.inconsistentRoomOptions)))
     }
 
     // MARK: - Release a room

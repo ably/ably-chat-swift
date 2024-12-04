@@ -145,7 +145,7 @@ struct DefaultRoomLifecycleManagerTests {
         await #expect {
             try await manager.performAttachOperation()
         } throws: { error in
-            isChatError(error, withCode: .roomIsReleasing)
+            isChatError(error, withCodeAndStatusCode: .fixedStatusCode(.roomIsReleasing))
         }
     }
 
@@ -160,7 +160,7 @@ struct DefaultRoomLifecycleManagerTests {
         await #expect {
             try await manager.performAttachOperation()
         } throws: { error in
-            isChatError(error, withCode: .roomIsReleased)
+            isChatError(error, withCodeAndStatusCode: .fixedStatusCode(.roomIsReleased))
         }
     }
 
@@ -373,7 +373,7 @@ struct DefaultRoomLifecycleManagerTests {
         }
 
         for error in await [suspendedRoomStatusChange.error, manager.roomStatus.error, roomAttachError] {
-            #expect(isChatError(error, withCode: .messagesAttachmentFailed, cause: contributorAttachError))
+            #expect(isChatError(error, withCodeAndStatusCode: .fixedStatusCode(.messagesAttachmentFailed), cause: contributorAttachError))
         }
 
         // and:
@@ -454,7 +454,7 @@ struct DefaultRoomLifecycleManagerTests {
         }
 
         for error in await [failedStatusChange.error, manager.roomStatus.error, roomAttachError] {
-            #expect(isChatError(error, withCode: .messagesAttachmentFailed, cause: contributorAttachError))
+            #expect(isChatError(error, withCodeAndStatusCode: .fixedStatusCode(.messagesAttachmentFailed), cause: contributorAttachError))
         }
     }
 
@@ -561,7 +561,7 @@ struct DefaultRoomLifecycleManagerTests {
         await #expect {
             try await manager.performDetachOperation()
         } throws: { error in
-            isChatError(error, withCode: .roomIsReleasing)
+            isChatError(error, withCodeAndStatusCode: .fixedStatusCode(.roomIsReleasing))
         }
     }
 
@@ -576,7 +576,7 @@ struct DefaultRoomLifecycleManagerTests {
         await #expect {
             try await manager.performDetachOperation()
         } throws: { error in
-            isChatError(error, withCode: .roomIsReleased)
+            isChatError(error, withCodeAndStatusCode: .fixedStatusCode(.roomIsReleased))
         }
     }
 
@@ -595,7 +595,7 @@ struct DefaultRoomLifecycleManagerTests {
         await #expect {
             try await manager.performDetachOperation()
         } throws: { error in
-            isChatError(error, withCode: .roomInFailedState)
+            isChatError(error, withCodeAndStatusCode: .fixedStatusCode(.roomInFailedState))
         }
     }
 
@@ -694,7 +694,7 @@ struct DefaultRoomLifecycleManagerTests {
         let failedStatusChange = try #require(await maybeFailedStatusChange)
 
         for maybeError in [maybeRoomDetachError, failedStatusChange.error] {
-            #expect(isChatError(maybeError, withCode: .presenceDetachmentFailed, cause: contributor1DetachError))
+            #expect(isChatError(maybeError, withCodeAndStatusCode: .fixedStatusCode(.presenceDetachmentFailed), cause: contributor1DetachError))
         }
     }
 
@@ -1095,7 +1095,7 @@ struct DefaultRoomLifecycleManagerTests {
 
         #expect(roomStatus.isFailed)
         for error in [roomStatus.error, failedStatusChange.error] {
-            #expect(isChatError(error, withCode: .presenceDetachmentFailed, cause: contributor1DetachError))
+            #expect(isChatError(error, withCodeAndStatusCode: .fixedStatusCode(.presenceDetachmentFailed), cause: contributor1DetachError))
         }
 
         for contributor in contributors {
@@ -2087,7 +2087,7 @@ struct DefaultRoomLifecycleManagerTests {
         let contributorAttachError = ARTErrorInfo.createUnknownError() // arbitrary
         contributorAttachOperation.complete(behavior: .completeAndChangeState(.failure(contributorAttachError), newState: .failed))
 
-        // Then: The call to `waitToBeAbleToPerformPresenceOperations(requestedByFeature:)` fails with a `roomInInvalidState` error, whose cause is the error associated with the room status change
+        // Then: The call to `waitToBeAbleToPerformPresenceOperations(requestedByFeature:)` fails with a `roomInInvalidState` error with status code 500, whose cause is the error associated with the room status change
         var caughtError: Error?
         do {
             try await waitToBeAbleToPerformPresenceOperationsResult
@@ -2096,7 +2096,7 @@ struct DefaultRoomLifecycleManagerTests {
         }
 
         let expectedCause = ARTErrorInfo(chatError: .attachmentFailed(feature: .messages, underlyingError: contributorAttachError)) // using our knowledge of CHA-RL1h4
-        #expect(isChatError(caughtError, withCode: .roomInInvalidState, cause: expectedCause))
+        #expect(isChatError(caughtError, withCodeAndStatusCode: .variableStatusCode(.roomInInvalidState, statusCode: 500), cause: expectedCause))
     }
 
     // @specPartial CHA-PR3e - Tests the wait described in the spec point, but not that the feature actually performs this wait nor the side effect. TODO change this to a specOneOf once the feature is implemented
@@ -2115,40 +2115,15 @@ struct DefaultRoomLifecycleManagerTests {
         try await manager.waitToBeAbleToPerformPresenceOperations(requestedByFeature: .messages /* arbitrary */ )
     }
 
-    // @specPartial CHA-PR3f - Tests the wait described in the spec point, but not that the feature actually performs this wait. TODO change this to a specOneOf once the feature is implemented
-    // @specPartial CHA-PR10f - Tests the wait described in the spec point, but not that the feature actually performs this wait. TODO change this to a specOneOf once the feature is implemented
-    // @specPartial CHA-PR6e - Tests the wait described in the spec point, but not that the feature actually performs this wait. TODO change this to a specOneOf once the feature is implemented
-    // @specPartial CHA-T2e - Tests the wait described in the spec point, but not that the feature actually performs this wait. TODO change this to a specOneOf once the feature is implemented
-    @Test
-    func waitToBeAbleToPerformPresenceOperations_whenDetached() async throws {
-        // Given: A DefaultRoomLifecycleManager in the DETACHED status
-        let manager = await createManager(
-            forTestingWhatHappensWhenCurrentlyIn: .detached
-        )
-
-        // (Note: I wanted to use #expect(…, throws:) below, but for some reason it made the compiler _crash_! No idea why. So, gave up on that.)
-
-        // When: `waitToBeAbleToPerformPresenceOperations(requestedByFeature:)` is called on the lifecycle manager
-        var caughtError: ARTErrorInfo?
-        do {
-            try await manager.waitToBeAbleToPerformPresenceOperations(requestedByFeature: .messages /* arbitrary */ )
-        } catch {
-            caughtError = error
-        }
-
-        // Then: It throws a presenceOperationRequiresRoomAttach error for that feature (which we just check via its error code, i.e. `.nonspecific`, and its message)
-        #expect(isChatError(caughtError, withCode: .nonspecific, message: "To perform this messages operation, you must first attach the room."))
-    }
-
-    // @specPartial CHA-PR3f - Tests the wait described in the spec point, but not that the feature actually performs this wait. TODO change this to a specOneOf once the feature is implemented
-    // @specPartial CHA-PR10f - Tests the wait described in the spec point, but not that the feature actually performs this wait. TODO change this to a specOneOf once the feature is implemented
-    // @specPartial CHA-PR6e - Tests the wait described in the spec point, but not that the feature actually performs this wait. TODO change this to a specOneOf once the feature is implemented
-    // @specPartial CHA-T2e - Tests the wait described in the spec point, but not that the feature actually performs this wait. TODO change this to a specOneOf once the feature is implemented
+    // @specPartial CHA-PR3h - Tests the wait described in the spec point, but not that the feature actually performs this wait. TODO change this to a specOneOf once the feature is implemented
+    // @specPartial CHA-PR10h - Tests the wait described in the spec point, but not that the feature actually performs this wait. TODO change this to a specOneOf once the feature is implemented
+    // @specPartial CHA-PR6h - Tests the wait described in the spec point, but not that the feature actually performs this wait. TODO change this to a specOneOf once the feature is implemented
+    // @specPartial CHA-T2g - Tests the wait described in the spec point, but not that the feature actually performs this wait. TODO change this to a specOneOf once the feature is implemented
     @Test
     func waitToBeAbleToPerformPresenceOperations_whenAnyOtherStatus() async throws {
-        // Given: A DefaultRoomLifecycleManager in a status other than ATTACHING, ATTACHED or DETACHED
+        // Given: A DefaultRoomLifecycleManager in a status other than ATTACHING or ATTACHED
         let manager = await createManager(
-            forTestingWhatHappensWhenCurrentlyIn: .detaching(detachOperationID: .init()) // arbitrary given the above constraints
+            forTestingWhatHappensWhenCurrentlyIn: .detached // arbitrary given the above constraints
         )
 
         // (Note: I wanted to use #expect(…, throws:) below, but for some reason it made the compiler _crash_! No idea why. So, gave up on that.)
@@ -2161,7 +2136,7 @@ struct DefaultRoomLifecycleManagerTests {
             caughtError = error
         }
 
-        // Then: It throws a presenceOperationDisallowedForCurrentRoomStatus error for that feature (which we just check via its error code, i.e. `.nonspecific`, and its message)
-        #expect(isChatError(caughtError, withCode: .nonspecific, message: "This messages operation can not be performed given the current room status."))
+        // Then: It throws a roomInInvalidState error for that feature, with status code 400, and a message explaining that the room must first be attached
+        #expect(isChatError(caughtError, withCodeAndStatusCode: .variableStatusCode(.roomInInvalidState, statusCode: 400), message: "To perform this messages operation, you must first attach the room."))
     }
 }
