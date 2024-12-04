@@ -104,7 +104,7 @@ actor MockMessages: Messages {
         let subscription = MockSubscription<Message>(randomElement: {
             Message(
                 serial: "\(Date().timeIntervalSince1970)",
-                latestAction: .create,
+                action: .create,
                 clientID: MockStrings.names.randomElement()!,
                 roomID: self.roomID,
                 text: MockStrings.randomPhrase(),
@@ -130,7 +130,7 @@ actor MockMessages: Messages {
     func send(params: SendMessageParams) async throws -> Message {
         let message = Message(
             serial: "\(Date().timeIntervalSince1970)",
-            latestAction: .create,
+            action: .create,
             clientID: clientID,
             roomID: roomID,
             text: params.text,

@@ -41,7 +41,7 @@ struct ChatAPITests {
         // Then
         let expectedMessage = Message(
             serial: "3446456",
-            latestAction: .create,
+            action: .create,
             clientID: "mockClientId",
             roomID: roomId,
             text: "hello",
@@ -91,7 +91,7 @@ struct ChatAPITests {
             items: [
                 Message(
                     serial: "3446456",
-                    latestAction: .create,
+                    action: .create,
                     clientID: "random",
                     roomID: roomId,
                     text: "hello",
@@ -101,7 +101,7 @@ struct ChatAPITests {
                 ),
                 Message(
                     serial: "3446457",
-                    latestAction: .create,
+                    action: .create,
                     clientID: "random",
                     roomID: roomId,
                     text: "hello response",

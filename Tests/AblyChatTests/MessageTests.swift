@@ -4,7 +4,7 @@ import Testing
 struct MessageTests {
     let earlierMessage = Message(
         serial: "ABC123@1631840000000-5:2",
-        latestAction: .create,
+        action: .create,
         clientID: "testClientID",
         roomID: "roomId",
         text: "hello",
@@ -15,7 +15,7 @@ struct MessageTests {
 
     let laterMessage = Message(
         serial: "ABC123@1631840000001-5:2",
-        latestAction: .create,
+        action: .create,
         clientID: "testClientID",
         roomID: "roomId",
         text: "hello",
@@ -26,7 +26,7 @@ struct MessageTests {
 
     let invalidMessage = Message(
         serial: "invalid",
-        latestAction: .create,
+        action: .create,
         clientID: "testClientID",
         roomID: "roomId",
         text: "hello",
@@ -70,7 +70,7 @@ struct MessageTests {
     func isEqual_whenMessageIsEqual_ReturnsTrue() async throws {
         let duplicateOfEarlierMessage = Message(
             serial: "ABC123@1631840000000-5:2",
-            latestAction: .create,
+            action: .create,
             clientID: "random",
             roomID: "",
             text: "",

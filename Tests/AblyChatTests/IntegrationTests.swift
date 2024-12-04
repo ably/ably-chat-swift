@@ -116,7 +116,36 @@ struct IntegrationTests {
         #expect(rxMessageFromSubscription == txMessageAfterRxSubscribe)
 
         // (7) Fetch historical messages from before subscribing, and check we get txMessageBeforeRxSubscribe
-        let rxMessagesBeforeSubscribing = try await rxMessageSubscription.getPreviousMessages(params: .init())
+
+        /*
+         TODO: This line should just be
+
+         let messages = try await rxMessageSubscription.getPreviousMessages(params: .init())
+
+         but sometimes `messages.items` is coming back empty. Andy said in
+         https://ably-real-time.slack.com/archives/C03JDBVM5MY/p1733220395208909
+         that
+
+         > new materialised history system doesn’t currently support “live”
+         > history (realtime implementation detail) - so we’re approximating the
+         > behaviour
+
+         and indicated that the right workaround for now is to introduce a
+         wait. So we retry the fetching of history until we get a non-empty
+         result.
+
+         Revert this (https://github.com/ably/ably-chat-swift/issues/175) once it’s fixed in Realtime.
+         */
+        let rxMessagesBeforeSubscribing = try await {
+            while true {
+                let messages = try await rxMessageSubscription.getPreviousMessages(params: .init())
+                if !messages.items.isEmpty {
+                    return messages
+                }
+                // Wait 1 second before retrying the history fetch
+                try await Task.sleep(nanoseconds: NSEC_PER_SEC)
+            }
+        }()
         try #require(rxMessagesBeforeSubscribing.items.count == 1)
         #expect(rxMessagesBeforeSubscribing.items[0] == txMessageBeforeRxSubscribe)
 
@@ -149,22 +178,26 @@ struct IntegrationTests {
         // (4) Enter presence on the other client and check that we receive the updated occupancy on the subscription
         try await txRoom.presence.enter(data: nil)
 
-        // It can take a moment for the occupancy to update from the clients entering presence above, so we’ll wait 2 seconds here.
-        try await Task.sleep(nanoseconds: 2_000_000_000)
+        // (5) Check that we received an updated presence count on the subscription
+        _ = try #require(await rxOccupancySubscription.first { occupancyEvent in
+            occupancyEvent.presenceMembers == 1 // 1 for txClient entering presence
+        })
 
-        // (5) Check that we received an updated presence count when getting the occupancy
-        let updatedCurrentOccupancy = try await rxRoom.occupancy.get()
-        #expect(updatedCurrentOccupancy.presenceMembers == 1) // 1 for txClient entering presence
+        // (6) Check that we received an updated presence count when getting the occupancy
+        let rxOccupancyAfterTxEnter = try await rxRoom.occupancy.get()
+        #expect(rxOccupancyAfterTxEnter.presenceMembers == 1) // 1 for txClient entering presence
 
-        // (6) Check that we received an updated presence count on the subscription
-        let rxOccupancyEventFromSubscription = try #require(await rxOccupancySubscription.first { _ in true })
-
-        #expect(rxOccupancyEventFromSubscription.presenceMembers == 1) // 1 for txClient entering presence
-
+        // (7) Leave presence on the other client and check that we receive the updated occupancy on the subscription
         try await txRoom.presence.leave(data: nil)
 
-        // It can take a moment for the occupancy to update from the clients leaving presence above, so we’ll wait 2 seconds here. Important for the occupancy tests below.
-        try await Task.sleep(nanoseconds: 2_000_000_000)
+        // (8) Check that we received an updated presence count on the subscription
+        _ = try #require(await rxOccupancySubscription.first { occupancyEvent in
+            occupancyEvent.presenceMembers == 0 // 0 for txClient leaving presence
+        })
+
+        // (9) Check that we received an updated presence count when getting the occupancy
+        let rxOccupancyAfterTxLeave = try await rxRoom.occupancy.get()
+        #expect(rxOccupancyAfterTxLeave.presenceMembers == 0) // 0 for txClient leaving presence
 
         // MARK: - Presence
 

@@ -9,7 +9,7 @@ public struct Message: Sendable, Codable, Identifiable, Equatable {
     public var id: String { serial }
 
     public var serial: String
-    public var latestAction: MessageAction
+    public var action: MessageAction
     public var clientID: String
     public var roomID: String
     public var text: String
@@ -17,9 +17,9 @@ public struct Message: Sendable, Codable, Identifiable, Equatable {
     public var metadata: MessageMetadata
     public var headers: MessageHeaders
 
-    public init(serial: String, latestAction: MessageAction, clientID: String, roomID: String, text: String, createdAt: Date?, metadata: MessageMetadata, headers: MessageHeaders) {
+    public init(serial: String, action: MessageAction, clientID: String, roomID: String, text: String, createdAt: Date?, metadata: MessageMetadata, headers: MessageHeaders) {
         self.serial = serial
-        self.latestAction = latestAction
+        self.action = action
         self.clientID = clientID
         self.roomID = roomID
         self.text = text
@@ -30,7 +30,7 @@ public struct Message: Sendable, Codable, Identifiable, Equatable {
 
     internal enum CodingKeys: String, CodingKey {
         case serial
-        case latestAction
+        case action
         case clientID = "clientId"
         case roomID = "roomId"
         case text
