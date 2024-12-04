@@ -184,13 +184,20 @@ struct IntegrationTests {
         })
 
         // (6) Check that we received an updated presence count when getting the occupancy
-        let updatedCurrentOccupancy = try await rxRoom.occupancy.get()
-        #expect(updatedCurrentOccupancy.presenceMembers == 1) // 1 for txClient entering presence
+        let rxOccupancyAfterTxEnter = try await rxRoom.occupancy.get()
+        #expect(rxOccupancyAfterTxEnter.presenceMembers == 1) // 1 for txClient entering presence
 
+        // (7) Leave presence on the other client and check that we receive the updated occupancy on the subscription
         try await txRoom.presence.leave(data: nil)
 
-        // It can take a moment for the occupancy to update from the clients leaving presence above, so we’ll wait 2 seconds here. Important for the occupancy tests below.
-        try await Task.sleep(nanoseconds: 2_000_000_000)
+        // (8) Check that we received an updated presence count on the subscription
+        _ = try #require(await rxOccupancySubscription.first { occupancyEvent in
+            occupancyEvent.presenceMembers == 0 // 0 for txClient leaving presence
+        })
+
+        // (9) Check that we received an updated presence count when getting the occupancy
+        let rxOccupancyAfterTxLeave = try await rxRoom.occupancy.get()
+        #expect(rxOccupancyAfterTxLeave.presenceMembers == 0) // 0 for txClient leaving presence
 
         // MARK: - Presence
 
