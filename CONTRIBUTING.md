@@ -100,3 +100,19 @@ Example:
 ```swift
 // @specUntested CHA-EX2b - I was unable to find a way to test this spec point in an environment in which concurrency is being used; there is no obvious moment at which to stop observing the emitted state changes in order to be sure that FAILED has not been emitted twice.
 ```
+
+## Release process
+
+For each release, the following needs to be done:
+
+- Create a new branch `release/x.x.x` (where `x.x.x` is the new version number) from the `main` branch
+- Update the `version` constant in [`Sources/AblyChat/Version.swift`](Sources/AblyChat/Version.swift)
+- Go to [Github releases](https://github.com/ably/ably-chat-swift/releases) and press the `Draft a new release` button. Choose your new branch as a target
+- Press the `Choose a tag` dropdown and start typing a new tag, Github will suggest the `Create new tag x.x.x on publish` option. After you select it Github will unveil the `Generate release notes` button
+- From the newly generated changes remove everything that don't make much sense to the library user
+- Copy the final list of changes to the top of the `CHANGELOG.md` file. Modify as necessary to fit the existing format of this file
+- Commit these changes and push to the origin `git add CHANGELOG.md && git commit -m "Update change log." && git push -u origin release/x.x.x`
+- Make a pull request against `main` and await approval of reviewer(s)
+- Once approved and/or any additional commits have been added, merge the PR
+- After merging the PR, wait for all CI jobs for `main` to pass.
+- Publish your drafted release (refer to previous releases for release notes format)
