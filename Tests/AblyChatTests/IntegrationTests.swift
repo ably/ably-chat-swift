@@ -116,7 +116,36 @@ struct IntegrationTests {
         #expect(rxMessageFromSubscription == txMessageAfterRxSubscribe)
 
         // (7) Fetch historical messages from before subscribing, and check we get txMessageBeforeRxSubscribe
-        let rxMessagesBeforeSubscribing = try await rxMessageSubscription.getPreviousMessages(params: .init())
+
+        /*
+         TODO: This line should just be
+
+         let messages = try await rxMessageSubscription.getPreviousMessages(params: .init())
+
+         but sometimes `messages.items` is coming back empty. Andy said in
+         https://ably-real-time.slack.com/archives/C03JDBVM5MY/p1733220395208909
+         that
+
+         > new materialised history system doesn’t currently support “live”
+         > history (realtime implementation detail) - so we’re approximating the
+         > behaviour
+
+         and indicated that the right workaround for now is to introduce a
+         wait. So we retry the fetching of history until we get a non-empty
+         result.
+
+         Revert this (https://github.com/ably/ably-chat-swift/issues/175) once it’s fixed in Realtime.
+         */
+        let rxMessagesBeforeSubscribing = try await {
+            while true {
+                let messages = try await rxMessageSubscription.getPreviousMessages(params: .init())
+                if !messages.items.isEmpty {
+                    return messages
+                }
+                // Wait 1 second before retrying the history fetch
+                try await Task.sleep(nanoseconds: NSEC_PER_SEC)
+            }
+        }()
         try #require(rxMessagesBeforeSubscribing.items.count == 1)
         #expect(rxMessagesBeforeSubscribing.items[0] == txMessageBeforeRxSubscribe)
 
