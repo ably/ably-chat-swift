@@ -178,17 +178,14 @@ struct IntegrationTests {
         // (4) Enter presence on the other client and check that we receive the updated occupancy on the subscription
         try await txRoom.presence.enter(data: nil)
 
-        // It can take a moment for the occupancy to update from the clients entering presence above, so we’ll wait 2 seconds here.
-        try await Task.sleep(nanoseconds: 2_000_000_000)
+        // (5) Check that we received an updated presence count on the subscription
+        _ = try #require(await rxOccupancySubscription.first { occupancyEvent in
+            occupancyEvent.presenceMembers == 1 // 1 for txClient entering presence
+        })
 
-        // (5) Check that we received an updated presence count when getting the occupancy
+        // (6) Check that we received an updated presence count when getting the occupancy
         let updatedCurrentOccupancy = try await rxRoom.occupancy.get()
         #expect(updatedCurrentOccupancy.presenceMembers == 1) // 1 for txClient entering presence
-
-        // (6) Check that we received an updated presence count on the subscription
-        let rxOccupancyEventFromSubscription = try #require(await rxOccupancySubscription.first { _ in true })
-
-        #expect(rxOccupancyEventFromSubscription.presenceMembers == 1) // 1 for txClient entering presence
 
         try await txRoom.presence.leave(data: nil)
 
