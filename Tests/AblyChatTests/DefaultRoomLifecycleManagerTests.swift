@@ -488,8 +488,8 @@ struct DefaultRoomLifecycleManagerTests {
 
         // Then:
         //
-        // - the lifecycle manager will call `detach` on contributors 0 and 2
-        // - the lifecycle manager will not call `detach` on contributor 1
+        // - the lifecycle manager calls `detach` on contributors 0 and 2
+        // - the lifecycle manager does not call `detach` on contributor 1
         #expect(await contributors[0].channel.detachCallCount > 0)
         #expect(await contributors[2].channel.detachCallCount > 0)
         #expect(await contributors[1].channel.detachCallCount == 0)
@@ -528,7 +528,7 @@ struct DefaultRoomLifecycleManagerTests {
         // When: `performAttachOperation()` is called on the lifecycle manager
         try? await manager.performAttachOperation()
 
-        // Then: the lifecycle manager will call `detach` twice on contributor 0 (i.e. it will retry the failed detach)
+        // Then: the lifecycle manager calls `detach` twice on contributor 0 (i.e. it retries the failed detach)
         #expect(await contributors[0].channel.detachCallCount == 2)
     }
 
