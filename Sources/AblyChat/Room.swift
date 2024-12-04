@@ -96,7 +96,6 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
             }
         }
 
-        /// The features are returned in CHA-RC2e order.
         static func fromRoomOptions(_ roomOptions: RoomOptions) -> [Self] {
             var result: [Self] = [.messages]
 
@@ -204,8 +203,6 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
     }
 
     /// Each feature in `featuresWithOptions` is guaranteed to appear in the `features` member of precisely one of the returned array’s values.
-    ///
-    /// The elements of `featuresWithOptions` must be in CHA-RC2e order.
     private static func createFeatureChannelPartialDependencies(roomID: String, featuresWithOptions: [RoomFeatureWithOptions], realtime: RealtimeClient) -> [(features: [RoomFeature], featureChannelPartialDependencies: FeatureChannelPartialDependencies)] {
         // CHA-RC3a
 
@@ -215,7 +212,7 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
 
         let featuresGroupedByChannelName = Dictionary(grouping: featuresWithOptions) { $0.toRoomFeature.channelNameForRoomID(roomID) }
 
-        return featuresGroupedByChannelName.map { channelName, features in
+        let unorderedResult = featuresGroupedByChannelName.map { channelName, features in
             var channelOptions = RealtimeChannelOptions()
 
             // channel setup for presence and occupancy
@@ -241,13 +238,16 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
             let channel = realtime.getChannel(channelName, opts: channelOptions)
 
             // Give the contributor the first of the enabled features that correspond to this channel, using CHA-RC2e ordering. This will determine which feature is used for atttachment and detachment errors.
-            let contributorFeature = features[0].toRoomFeature
+            let contributorFeature = features.map(\.toRoomFeature).sorted { RoomFeature.areInPrecedenceListOrder($0, $1) }[0]
 
             let contributor = DefaultRoomLifecycleContributor(channel: .init(underlyingChannel: channel), feature: contributorFeature)
             let featureChannelPartialDependencies = FeatureChannelPartialDependencies(channel: channel, contributor: contributor)
 
             return (features.map(\.toRoomFeature), featureChannelPartialDependencies)
         }
+
+        // Sort the result in CHA-RC2e order
+        return unorderedResult.sorted { RoomFeature.areInPrecedenceListOrder($0.1.contributor.feature, $1.1.contributor.feature) }
     }
 
     private static func createFeatureChannels(partialDependencies: [(features: [RoomFeature], featureChannelPartialDependencies: FeatureChannelPartialDependencies)], lifecycleManager: RoomLifecycleManager) -> [RoomFeature: DefaultFeatureChannel] {
