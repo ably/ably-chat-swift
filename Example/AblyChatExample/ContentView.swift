@@ -56,12 +56,7 @@ struct ContentView: View {
     private func room() async throws -> Room {
         try await chatClient.rooms.get(
             roomID: roomID,
-            options: .init(
-                presence: .init(),
-                typing: .init(),
-                reactions: .init(),
-                occupancy: .init()
-            )
+            options: .allFeaturesEnabled
         )
     }
 
