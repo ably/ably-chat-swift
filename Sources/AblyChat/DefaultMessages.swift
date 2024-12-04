@@ -83,7 +83,7 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
 
                 let message = Message(
                     serial: serial,
-                    latestAction: action,
+                    action: action,
                     clientID: clientID,
                     roomID: self.roomID,
                     text: text,

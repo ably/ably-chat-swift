@@ -46,7 +46,7 @@ internal final class ChatAPI: Sendable {
 
         let message = Message(
             serial: response.serial,
-            latestAction: .create,
+            action: .create,
             clientID: clientId,
             roomID: roomId,
             text: params.text,
