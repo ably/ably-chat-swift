@@ -22,7 +22,7 @@ internal final class DefaultTyping: Typing {
 
     // (CHA-T6) Users may subscribe to typing events – updates to a set of clientIDs that are typing. This operation, like all subscription operations, has no side-effects in relation to room lifecycle.
     internal func subscribe(bufferingPolicy: BufferingPolicy) async -> Subscription<TypingEvent> {
-        let subscription = Subscription<TypingEvent>(bufferingPolicy: .unbounded)
+        let subscription = Subscription<TypingEvent>(bufferingPolicy: bufferingPolicy)
         let eventTracker = EventTracker()
 
         channel.presence.subscribe { [weak self] message in
