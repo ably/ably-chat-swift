@@ -2,9 +2,19 @@ import Ably
 
 public protocol Messages: AnyObject, Sendable, EmitsDiscontinuities {
     func subscribe(bufferingPolicy: BufferingPolicy) async throws -> MessageSubscription
+    /// Same as calling ``subscribe(bufferingPolicy:)`` with ``BufferingPolicy.unbounded``.
+    ///
+    /// The `Messages` protocol provides a default implementation of this method.
+    func subscribe() async throws -> MessageSubscription
     func get(options: QueryOptions) async throws -> any PaginatedResult<Message>
     func send(params: SendMessageParams) async throws -> Message
     var channel: RealtimeChannelProtocol { get }
+}
+
+public extension Messages {
+    func subscribe() async throws -> MessageSubscription {
+        try await subscribe(bufferingPolicy: .unbounded)
+    }
 }
 
 public struct SendMessageParams: Sendable {

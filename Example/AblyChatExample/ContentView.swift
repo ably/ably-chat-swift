@@ -169,7 +169,7 @@ struct ContentView: View {
     }
 
     func showMessages() async throws {
-        let messagesSubscription = try await room().messages.subscribe(bufferingPolicy: .unbounded)
+        let messagesSubscription = try await room().messages.subscribe()
         let previousMessages = try await messagesSubscription.getPreviousMessages(params: .init())
 
         for message in previousMessages.items {
@@ -189,7 +189,7 @@ struct ContentView: View {
     }
 
     func showReactions() async throws {
-        let reactionSubscription = try await room().reactions.subscribe(bufferingPolicy: .unbounded)
+        let reactionSubscription = try await room().reactions.subscribe()
 
         // Continue listening for reactions on a background task so this function can return
         Task {
@@ -219,7 +219,7 @@ struct ContentView: View {
     }
 
     func showTypings() async throws {
-        let typingSubscription = try await room().typing.subscribe(bufferingPolicy: .unbounded)
+        let typingSubscription = try await room().typing.subscribe()
         // Continue listening for typing events on a background task so this function can return
         Task {
             for await typing in typingSubscription {
@@ -241,7 +241,7 @@ struct ContentView: View {
         }
 
         Task {
-            for await event in try await room().occupancy.subscribe(bufferingPolicy: .unbounded) {
+            for await event in try await room().occupancy.subscribe() {
                 withAnimation {
                     occupancyInfo = "Connections: \(event.presenceMembers) (\(event.connections))"
                 }
@@ -250,7 +250,7 @@ struct ContentView: View {
     }
 
     func printConnectionStatusChange() async {
-        let connectionSubsciption = chatClient.connection.onStatusChange(bufferingPolicy: .unbounded)
+        let connectionSubsciption = chatClient.connection.onStatusChange()
 
         // Continue listening for connection status change on a background task so this function can return
         Task {
@@ -263,7 +263,7 @@ struct ContentView: View {
     func showRoomStatus() async throws {
         // Continue listening for status change events on a background task so this function can return
         Task {
-            for await status in try await room().onStatusChange(bufferingPolicy: .unbounded) {
+            for await status in try await room().onStatusChange() {
                 withAnimation {
                     if status.current.isAttaching {
                         statusInfo = "\(status.current)...".capitalized

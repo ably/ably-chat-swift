@@ -55,7 +55,7 @@ struct DefaultRoomReactionsTests {
         let defaultRoomReactions = await DefaultRoomReactions(featureChannel: featureChannel, clientID: "mockClientId", roomID: "basketball", logger: TestLogger())
 
         // When
-        let subscription: Subscription<Reaction>? = await defaultRoomReactions.subscribe(bufferingPolicy: .unbounded)
+        let subscription: Subscription<Reaction>? = await defaultRoomReactions.subscribe()
 
         // Then
         #expect(subscription != nil)

@@ -57,8 +57,8 @@ internal struct DefaultFeatureChannel: FeatureChannel {
     internal var contributor: DefaultRoomLifecycleContributor
     internal var roomLifecycleManager: RoomLifecycleManager
 
-    internal func subscribeToDiscontinuities() async -> Subscription<DiscontinuityEvent> {
-        await contributor.subscribeToDiscontinuities()
+    internal func subscribeToDiscontinuities(bufferingPolicy: BufferingPolicy) async -> Subscription<DiscontinuityEvent> {
+        await contributor.subscribeToDiscontinuities(bufferingPolicy: bufferingPolicy)
     }
 
     internal func waitToBeAbleToPerformPresenceOperations(requestedByFeature requester: RoomFeature) async throws(ARTErrorInfo) {
