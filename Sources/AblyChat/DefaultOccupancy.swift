@@ -50,7 +50,7 @@ internal final class DefaultOccupancy: Occupancy, EmitsDiscontinuities {
     }
 
     // (CHA-O5) Users may subscribe to discontinuity events to know when there’s been a break in occupancy. Their listener will be called when a discontinuity event is triggered from the room lifecycle. For occupancy, there shouldn’t need to be user action as most channels will send occupancy updates regularly as clients churn.
-    internal func subscribeToDiscontinuities(bufferingPolicy: BufferingPolicy) async -> Subscription<DiscontinuityEvent> {
-        await featureChannel.subscribeToDiscontinuities(bufferingPolicy: bufferingPolicy)
+    internal func onDiscontinuity(bufferingPolicy: BufferingPolicy) async -> Subscription<DiscontinuityEvent> {
+        await featureChannel.onDiscontinuity(bufferingPolicy: bufferingPolicy)
     }
 }

@@ -194,8 +194,8 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
     }
 
     // (CHA-PR8) Users may subscribe to discontinuity events to know when there’s been a break in presence. Their listener will be called when a discontinuity event is triggered from the room lifecycle. For presence, there shouldn’t need to be user action as the underlying core SDK will heal the presence set.
-    internal func subscribeToDiscontinuities(bufferingPolicy: BufferingPolicy) async -> Subscription<DiscontinuityEvent> {
-        await featureChannel.subscribeToDiscontinuities(bufferingPolicy: bufferingPolicy)
+    internal func onDiscontinuity(bufferingPolicy: BufferingPolicy) async -> Subscription<DiscontinuityEvent> {
+        await featureChannel.onDiscontinuity(bufferingPolicy: bufferingPolicy)
     }
 
     private func decodePresenceData(from data: Any?) -> PresenceData? {

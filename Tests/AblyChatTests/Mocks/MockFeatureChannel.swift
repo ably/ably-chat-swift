@@ -15,7 +15,7 @@ final actor MockFeatureChannel: FeatureChannel {
         resultOfWaitToBeAbleToPerformPresenceOperations = resultOfWaitToBeAblePerformPresenceOperations
     }
 
-    func subscribeToDiscontinuities(bufferingPolicy: BufferingPolicy) async -> Subscription<DiscontinuityEvent> {
+    func onDiscontinuity(bufferingPolicy: BufferingPolicy) async -> Subscription<DiscontinuityEvent> {
         let subscription = Subscription<DiscontinuityEvent>(bufferingPolicy: bufferingPolicy)
         discontinuitySubscriptions.append(subscription)
         return subscription
