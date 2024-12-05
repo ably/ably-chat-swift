@@ -35,22 +35,20 @@ public enum PresenceCustomData: Sendable, Codable, Equatable {
     }
 }
 
-public typealias UserCustomData = [String: PresenceCustomData]
+public typealias PresenceData = [String: PresenceCustomData]
 
 // (CHA-PR2a) The presence data format is a JSON object as described below. Customers may specify content of an arbitrary type to be placed in the userCustomData field.
-public struct PresenceData: Codable, Sendable {
-    public var userCustomData: UserCustomData?
+internal struct PresenceDataDTO: Codable, Sendable {
+    internal var userCustomData: PresenceData?
 
-    public init(userCustomData: UserCustomData? = nil) {
+    internal init(userCustomData: PresenceData? = nil) {
         self.userCustomData = userCustomData
     }
-}
 
-internal extension PresenceData {
     /// Returns a dictionary that `JSONSerialization` can serialize to a JSON "object" value.
     ///
     /// Suitable to pass as the `data` argument of an ably-cocoa presence operation.
-    func asJSONObject() -> [String: Any] {
+    internal func asJSONObject() -> [String: Any] {
         // Return an empty userCustomData string if no custom data is available
         guard let userCustomData else {
             return ["userCustomData": ""]
@@ -75,28 +73,6 @@ internal extension PresenceData {
 
         // Return the final dictionary
         return ["userCustomData": userCustomDataDict]
-    }
-}
-
-// TODO: document
-internal struct PresenceDataDTO {
-    internal var presenceData: PresenceData?
-
-    /// Returns a dictionary that `JSONSerialization` can serialize to a JSON "object" value, or returns `nil`.
-    ///
-    /// Either way, the return value is suitable to pass as the `data` argument of an ably-cocoa presence operation.
-    internal func asJSONObject() -> [String: Any]? {
-        guard let presenceData else {
-            return nil
-        }
-
-        return presenceData.asJSONObject()
-    }
-}
-
-extension PresenceDataDTO: Decodable {
-    internal init(from decoder: Decoder) throws {
-        presenceData = try .init(from: decoder)
     }
 }
 

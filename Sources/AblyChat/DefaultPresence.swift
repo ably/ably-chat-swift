@@ -104,7 +104,7 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
             throw error
         }
 
-        let dto = PresenceDataDTO(presenceData: data)
+        let dto = PresenceDataDTO(userCustomData: data)
 
         return try await withCheckedThrowingContinuation { continuation in
             channel.presence.enterClient(clientID, data: dto.asJSONObject()) { [logger] error in
@@ -130,7 +130,7 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
             throw error
         }
 
-        let dto = PresenceDataDTO(presenceData: data)
+        let dto = PresenceDataDTO(userCustomData: data)
 
         return try await withCheckedThrowingContinuation { continuation in
             channel.presence.update(dto.asJSONObject()) { [logger] error in
@@ -156,7 +156,7 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
             throw error
         }
 
-        let dto = PresenceDataDTO(presenceData: data)
+        let dto = PresenceDataDTO(userCustomData: data)
 
         return try await withCheckedThrowingContinuation { continuation in
             channel.presence.leave(dto.asJSONObject()) { [logger] error in
@@ -214,7 +214,7 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
         do {
             let jsonData = try JSONSerialization.data(withJSONObject: userData, options: [])
             let presenceDataDTO = try JSONDecoder().decode(PresenceDataDTO.self, from: jsonData)
-            return presenceDataDTO.presenceData
+            return presenceDataDTO.userCustomData
         } catch {
             print("Failed to decode PresenceDataDTO: \(error)")
             logger.log(message: "Failed to decode PresenceDataDTO: \(error)", level: .error)

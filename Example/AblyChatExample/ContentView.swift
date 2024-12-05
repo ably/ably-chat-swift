@@ -202,13 +202,13 @@ struct ContentView: View {
     }
 
     func showPresence() async throws {
-        try await room().presence.enter(data: .init(userCustomData: ["status": .string("📱 Online")]))
+        try await room().presence.enter(data: ["status": .string("📱 Online")])
 
         // Continue listening for new presence events on a background task so this function can return
         Task {
             for await event in try await room().presence.subscribe(events: [.enter, .leave, .update]) {
                 withAnimation {
-                    let status = event.data?.userCustomData?["status"]?.value as? String
+                    let status = event.data?["status"]?.value as? String
                     let clientPresenceChangeMessage = "\(event.clientID) \(event.action.displayedText)"
                     let presenceMessage = status != nil ? "\(clientPresenceChangeMessage) with status: \(status!)" : clientPresenceChangeMessage
 
