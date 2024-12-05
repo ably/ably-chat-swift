@@ -29,8 +29,10 @@ public struct SendReactionParams: Sendable {
 }
 
 internal extension SendReactionParams {
-    // Same as `ARTDataQuery.asQueryItems` from ably-cocoa.
-    func asQueryItems() -> [String: String] {
+    /// Returns a dictionary that `JSONSerialization` can serialize to a JSON "object" value.
+    ///
+    /// Suitable to pass as the `data` argument of an ably-cocoa publish operation.
+    func asJSONObject() -> [String: String] {
         var dict: [String: String] = [:]
         dict["type"] = "\(type)"
         dict["metadata"] = "\(metadata ?? [:])"

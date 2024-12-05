@@ -104,7 +104,7 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
             throw error
         }
         return try await withCheckedThrowingContinuation { continuation in
-            channel.presence.enterClient(clientID, data: data?.asQueryItems()) { [logger] error in
+            channel.presence.enterClient(clientID, data: data?.asJSONObject()) { [logger] error in
                 if let error {
                     logger.log(message: "Error entering presence: \(error)", level: .error)
                     continuation.resume(throwing: error)
@@ -128,7 +128,7 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
         }
 
         return try await withCheckedThrowingContinuation { continuation in
-            channel.presence.update(data?.asQueryItems()) { [logger] error in
+            channel.presence.update(data?.asJSONObject()) { [logger] error in
                 if let error {
                     logger.log(message: "Error updating presence: \(error)", level: .error)
                     continuation.resume(throwing: error)
@@ -151,7 +151,7 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
             throw error
         }
         return try await withCheckedThrowingContinuation { continuation in
-            channel.presence.leave(data?.asQueryItems()) { [logger] error in
+            channel.presence.leave(data?.asJSONObject()) { [logger] error in
                 if let error {
                     logger.log(message: "Error leaving presence: \(error)", level: .error)
                     continuation.resume(throwing: error)

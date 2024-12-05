@@ -24,7 +24,7 @@ internal final class DefaultRoomReactions: RoomReactions, EmitsDiscontinuities {
     internal func send(params: SendReactionParams) async throws {
         logger.log(message: "Sending reaction with params: \(params)", level: .debug)
         let extras = ["headers": params.headers ?? [:]] as ARTJsonCompatible
-        channel.publish(RoomReactionEvents.reaction.rawValue, data: params.asQueryItems(), extras: extras)
+        channel.publish(RoomReactionEvents.reaction.rawValue, data: params.asJSONObject(), extras: extras)
     }
 
     // (CHA-ER4) A user may subscribe to reaction events in Realtime.
