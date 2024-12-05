@@ -71,7 +71,7 @@ struct DefaultMessagesTests {
 
     // @spec CHA-M7
     @Test
-    func subscribeToDiscontinuities() async throws {
+    func onDiscontinuity() async throws {
         // Given: A DefaultMessages instance
         let realtime = MockRealtime.create()
         let chatAPI = ChatAPI(realtime: realtime)
@@ -79,12 +79,12 @@ struct DefaultMessagesTests {
         let featureChannel = MockFeatureChannel(channel: channel)
         let messages = await DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
 
-        // When: The feature channel emits a discontinuity through `subscribeToDiscontinuities`
+        // When: The feature channel emits a discontinuity through `onDiscontinuity`
         let featureChannelDiscontinuity = DiscontinuityEvent(error: ARTErrorInfo.createUnknownError() /* arbitrary */ )
-        let messagesDiscontinuitySubscription = await messages.subscribeToDiscontinuities()
+        let messagesDiscontinuitySubscription = await messages.onDiscontinuity()
         await featureChannel.emitDiscontinuity(featureChannelDiscontinuity)
 
-        // Then: The DefaultMessages instance emits this discontinuity through `subscribeToDiscontinuities`
+        // Then: The DefaultMessages instance emits this discontinuity through `onDiscontinuity`
         let messagesDiscontinuity = try #require(await messagesDiscontinuitySubscription.first { _ in true })
         #expect(messagesDiscontinuity == featureChannelDiscontinuity)
     }

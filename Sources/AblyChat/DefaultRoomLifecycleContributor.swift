@@ -18,7 +18,7 @@ internal actor DefaultRoomLifecycleContributor: RoomLifecycleContributor, EmitsD
         }
     }
 
-    internal func subscribeToDiscontinuities(bufferingPolicy: BufferingPolicy) -> Subscription<DiscontinuityEvent> {
+    internal func onDiscontinuity(bufferingPolicy: BufferingPolicy) -> Subscription<DiscontinuityEvent> {
         let subscription = Subscription<DiscontinuityEvent>(bufferingPolicy: bufferingPolicy)
         // TODO: clean up old subscriptions (https://github.com/ably-labs/ably-chat-swift/issues/36)
         discontinuitySubscriptions.append(subscription)

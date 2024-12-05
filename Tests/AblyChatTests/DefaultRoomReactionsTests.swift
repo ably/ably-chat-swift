@@ -63,19 +63,19 @@ struct DefaultRoomReactionsTests {
 
     // @spec CHA-ER5
     @Test
-    func subscribeToDiscontinuities() async throws {
+    func onDiscontinuity() async throws {
         // all setup values here are arbitrary
         // Given: A DefaultRoomReactions instance
         let channel = MockRealtimeChannel()
         let featureChannel = MockFeatureChannel(channel: channel)
         let roomReactions = await DefaultRoomReactions(featureChannel: featureChannel, clientID: "mockClientId", roomID: "basketball", logger: TestLogger())
 
-        // When: The feature channel emits a discontinuity through `subscribeToDiscontinuities`
+        // When: The feature channel emits a discontinuity through `onDiscontinuity`
         let featureChannelDiscontinuity = DiscontinuityEvent(error: ARTErrorInfo.createUnknownError() /* arbitrary */ )
-        let messagesDiscontinuitySubscription = await roomReactions.subscribeToDiscontinuities()
+        let messagesDiscontinuitySubscription = await roomReactions.onDiscontinuity()
         await featureChannel.emitDiscontinuity(featureChannelDiscontinuity)
 
-        // Then: The DefaultRoomReactions instance emits this discontinuity through `subscribeToDiscontinuities`
+        // Then: The DefaultRoomReactions instance emits this discontinuity through `onDiscontinuity`
         let messagesDiscontinuity = try #require(await messagesDiscontinuitySubscription.first { _ in true })
         #expect(messagesDiscontinuity == featureChannelDiscontinuity)
     }
