@@ -1,41 +1,7 @@
 import Ably
 
-// TODO: (https://github.com/ably-labs/ably-chat-swift/issues/13): try to improve this type
-public enum PresenceCustomData: Sendable, Codable, Equatable {
-    case string(String)
-    case number(Int) // Changed from NSNumber to Int to conform to Codable. Address in linked issue above.
-    case bool(Bool)
-    case null
-
-    public var value: Any? {
-        switch self {
-        case let .string(value):
-            value
-        case let .number(value):
-            value
-        case let .bool(value):
-            value
-        case .null:
-            nil
-        }
-    }
-
-    public init(from decoder: Decoder) throws {
-        let container = try decoder.singleValueContainer()
-
-        if let value = try? container.decode(String.self) {
-            self = .string(value)
-        } else if let value = try? container.decode(Int.self) {
-            self = .number(value)
-        } else if let value = try? container.decode(Bool.self) {
-            self = .bool(value)
-        } else {
-            self = .null
-        }
-    }
-}
-
-public typealias PresenceData = [String: PresenceCustomData]
+// TODO: double-check whether it's this or a dictionary
+public typealias PresenceData = JSONValue
 
 // (CHA-PR2a) The presence data format is a JSON object as described below. Customers may specify content of an arbitrary type to be placed in the userCustomData field.
 internal struct PresenceDataDTO: Codable, Sendable {
@@ -54,25 +20,7 @@ internal struct PresenceDataDTO: Codable, Sendable {
             return ["userCustomData": ""]
         }
 
-        // Create a dictionary for userCustomData
-        var userCustomDataDict: [String: Any] = [:]
-
-        // Iterate over the custom data and handle different PresenceCustomData cases
-        for (key, value) in userCustomData {
-            switch value {
-            case let .string(stringValue):
-                userCustomDataDict[key] = stringValue
-            case let .number(numberValue):
-                userCustomDataDict[key] = numberValue
-            case let .bool(boolValue):
-                userCustomDataDict[key] = boolValue
-            case .null:
-                userCustomDataDict[key] = NSNull() // Use NSNull to represent null in the dictionary
-            }
-        }
-
-        // Return the final dictionary
-        return ["userCustomData": userCustomDataDict]
+        return ["userCustomData": userCustomData.asJSONSerializable]
     }
 }
 
