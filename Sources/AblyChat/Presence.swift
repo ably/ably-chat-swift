@@ -78,6 +78,28 @@ internal extension PresenceData {
     }
 }
 
+// TODO: document
+internal struct PresenceDataDTO {
+    internal var presenceData: PresenceData?
+
+    /// Returns a dictionary that `JSONSerialization` can serialize to a JSON "object" value, or returns `nil`.
+    ///
+    /// Either way, the return value is suitable to pass as the `data` argument of an ably-cocoa presence operation.
+    internal func asJSONObject() -> [String: Any]? {
+        guard let presenceData else {
+            return nil
+        }
+
+        return presenceData.asJSONObject()
+    }
+}
+
+extension PresenceDataDTO: Decodable {
+    internal init(from decoder: Decoder) throws {
+        presenceData = try .init(from: decoder)
+    }
+}
+
 public protocol Presence: AnyObject, Sendable, EmitsDiscontinuities {
     func get() async throws -> [PresenceMember]
     func get(params: PresenceQuery) async throws -> [PresenceMember]

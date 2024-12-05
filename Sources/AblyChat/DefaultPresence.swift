@@ -103,8 +103,11 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
             logger.log(message: "Error waiting to be able to perform presence enter operation: \(error)", level: .error)
             throw error
         }
+
+        let dto = PresenceDataDTO(presenceData: data)
+
         return try await withCheckedThrowingContinuation { continuation in
-            channel.presence.enterClient(clientID, data: data?.asJSONObject()) { [logger] error in
+            channel.presence.enterClient(clientID, data: dto.asJSONObject()) { [logger] error in
                 if let error {
                     logger.log(message: "Error entering presence: \(error)", level: .error)
                     continuation.resume(throwing: error)
@@ -127,8 +130,10 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
             throw error
         }
 
+        let dto = PresenceDataDTO(presenceData: data)
+
         return try await withCheckedThrowingContinuation { continuation in
-            channel.presence.update(data?.asJSONObject()) { [logger] error in
+            channel.presence.update(dto.asJSONObject()) { [logger] error in
                 if let error {
                     logger.log(message: "Error updating presence: \(error)", level: .error)
                     continuation.resume(throwing: error)
@@ -150,8 +155,11 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
             logger.log(message: "Error waiting to be able to perform presence leave operation: \(error)", level: .error)
             throw error
         }
+
+        let dto = PresenceDataDTO(presenceData: data)
+
         return try await withCheckedThrowingContinuation { continuation in
-            channel.presence.leave(data?.asJSONObject()) { [logger] error in
+            channel.presence.leave(dto.asJSONObject()) { [logger] error in
                 if let error {
                     logger.log(message: "Error leaving presence: \(error)", level: .error)
                     continuation.resume(throwing: error)
@@ -205,11 +213,11 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
 
         do {
             let jsonData = try JSONSerialization.data(withJSONObject: userData, options: [])
-            let presenceData = try JSONDecoder().decode(PresenceData.self, from: jsonData)
-            return presenceData
+            let presenceDataDTO = try JSONDecoder().decode(PresenceDataDTO.self, from: jsonData)
+            return presenceDataDTO.presenceData
         } catch {
-            print("Failed to decode PresenceData: \(error)")
-            logger.log(message: "Failed to decode PresenceData: \(error)", level: .error)
+            print("Failed to decode PresenceDataDTO: \(error)")
+            logger.log(message: "Failed to decode PresenceDataDTO: \(error)", level: .error)
             return nil
         }
     }
