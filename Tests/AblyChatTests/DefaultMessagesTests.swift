@@ -17,7 +17,7 @@ struct DefaultMessagesTests {
         // Then
         await #expect(throws: ARTErrorInfo.create(withCode: 40000, status: 400, message: "channel is attached, but channelSerial is not defined"), performing: {
             // When
-            try await defaultMessages.subscribe(bufferingPolicy: .unbounded)
+            try await defaultMessages.subscribe()
         })
     }
 
@@ -56,7 +56,7 @@ struct DefaultMessagesTests {
         )
         let featureChannel = MockFeatureChannel(channel: channel)
         let defaultMessages = await DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
-        let subscription = try await defaultMessages.subscribe(bufferingPolicy: .unbounded)
+        let subscription = try await defaultMessages.subscribe()
         let expectedPaginatedResult = PaginatedResultWrapper<Message>(
             paginatedResponse: MockHTTPPaginatedResponse.successGetMessagesWithNoItems,
             items: []
@@ -81,7 +81,7 @@ struct DefaultMessagesTests {
 
         // When: The feature channel emits a discontinuity through `subscribeToDiscontinuities`
         let featureChannelDiscontinuity = DiscontinuityEvent(error: ARTErrorInfo.createUnknownError() /* arbitrary */ )
-        let messagesDiscontinuitySubscription = await messages.subscribeToDiscontinuities(bufferingPolicy: .unbounded)
+        let messagesDiscontinuitySubscription = await messages.subscribeToDiscontinuities()
         await featureChannel.emitDiscontinuity(featureChannelDiscontinuity)
 
         // Then: The DefaultMessages instance emits this discontinuity through `subscribeToDiscontinuities`

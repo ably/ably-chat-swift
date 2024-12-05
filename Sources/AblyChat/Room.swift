@@ -14,9 +14,19 @@ public protocol Room: AnyObject, Sendable {
     // TODO: change to `status`
     var status: RoomStatus { get async }
     func onStatusChange(bufferingPolicy: BufferingPolicy) async -> Subscription<RoomStatusChange>
+    /// Same as calling ``onStatusChange(bufferingPolicy:)`` with ``BufferingPolicy.unbounded``.
+    ///
+    /// The `Room` protocol provides a default implementation of this method.
+    func onStatusChange() async -> Subscription<RoomStatusChange>
     func attach() async throws
     func detach() async throws
     var options: RoomOptions { get }
+}
+
+public extension Room {
+    func onStatusChange() async -> Subscription<RoomStatusChange> {
+        await onStatusChange(bufferingPolicy: .unbounded)
+    }
 }
 
 /// A ``Room`` that exposes additional functionality for use within the SDK.

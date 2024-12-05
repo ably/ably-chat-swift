@@ -5,6 +5,16 @@ public protocol Connection: AnyObject, Sendable {
     // TODO: (https://github.com/ably-labs/ably-chat-swift/issues/12): consider how to avoid the need for an unwrap
     var error: ARTErrorInfo? { get async }
     func onStatusChange(bufferingPolicy: BufferingPolicy) -> Subscription<ConnectionStatusChange>
+    /// Same as calling ``onStatusChange(bufferingPolicy:)`` with ``BufferingPolicy.unbounded``.
+    ///
+    /// The `Connection` protocol provides a default implementation of this method.
+    func onStatusChange() -> Subscription<ConnectionStatusChange>
+}
+
+public extension Connection {
+    func onStatusChange() -> Subscription<ConnectionStatusChange> {
+        onStatusChange(bufferingPolicy: .unbounded)
+    }
 }
 
 public enum ConnectionStatus: Sendable {

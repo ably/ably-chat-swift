@@ -84,7 +84,7 @@ struct IntegrationTests {
         )
 
         // (3) Subscribe to room status
-        let rxRoomStatusSubscription = await rxRoom.onStatusChange(bufferingPolicy: .unbounded)
+        let rxRoomStatusSubscription = await rxRoom.onStatusChange()
 
         // (4) Attach the room so we can receive messages on it
         try await rxRoom.attach()
@@ -98,7 +98,7 @@ struct IntegrationTests {
         // (1) Send a message before subscribing to messages, so that later on we can check history works.
 
         // (2) Create a throwaway subscription and wait for it to receive a message. This is to make sure that rxRoom has seen the message that we send here, so that the first message we receive on the subscription created in (5) is that which we’ll send in (6), and not that which we send here.
-        let throwawayRxMessageSubscription = try await rxRoom.messages.subscribe(bufferingPolicy: .unbounded)
+        let throwawayRxMessageSubscription = try await rxRoom.messages.subscribe()
 
         // (3) Send the message
         let txMessageBeforeRxSubscribe = try await txRoom.messages.send(params: .init(text: "Hello from txRoom, before rxRoom subscribe"))
@@ -108,7 +108,7 @@ struct IntegrationTests {
         #expect(throwawayRxMessage == txMessageBeforeRxSubscribe)
 
         // (5) Subscribe to messages
-        let rxMessageSubscription = try await rxRoom.messages.subscribe(bufferingPolicy: .unbounded)
+        let rxMessageSubscription = try await rxRoom.messages.subscribe()
 
         // (6) Now that we’re subscribed to messages, send a message on the other client and check that we receive it on the subscription
         let txMessageAfterRxSubscribe = try await txRoom.messages.send(params: .init(text: "Hello from txRoom, after rxRoom subscribe"))
@@ -152,7 +152,7 @@ struct IntegrationTests {
         // MARK: - Reactions
 
         // (1) Subscribe to reactions
-        let rxReactionSubscription = await rxRoom.reactions.subscribe(bufferingPolicy: .unbounded)
+        let rxReactionSubscription = await rxRoom.reactions.subscribe()
 
         // (2) Now that we’re subscribed to reactions, send a reaction on the other client and check that we receive it on the subscription
         try await txRoom.reactions.send(params: .init(type: "heart"))
@@ -170,7 +170,7 @@ struct IntegrationTests {
         #expect(currentOccupancy.presenceMembers == 0) // not yet entered presence
 
         // (2) Subscribe to occupancy
-        let rxOccupancySubscription = await rxRoom.occupancy.subscribe(bufferingPolicy: .unbounded)
+        let rxOccupancySubscription = await rxRoom.occupancy.subscribe()
 
         // (3) Attach the room so we can perform presence operations
         try await txRoom.attach()
@@ -202,7 +202,7 @@ struct IntegrationTests {
         // MARK: - Presence
 
         // (1) Subscribe to presence
-        let rxPresenceSubscription = await rxRoom.presence.subscribe(events: [.enter, .leave, .update], bufferingPolicy: .unbounded)
+        let rxPresenceSubscription = await rxRoom.presence.subscribe(events: [.enter, .leave, .update])
 
         // (2) Send `.enter` presence event with custom data on the other client and check that we receive it on the subscription
         try await txRoom.presence.enter(data: .init(userCustomData: ["randomData": .string("randomValue")]))
@@ -243,7 +243,7 @@ struct IntegrationTests {
         // MARK: - Typing Indicators
 
         // (1) Subscribe to typing indicators
-        let rxTypingSubscription = await rxRoom.typing.subscribe(bufferingPolicy: .unbounded)
+        let rxTypingSubscription = await rxRoom.typing.subscribe()
 
         // (2) Start typing on txRoom and check that we receive the typing event on the subscription
         try await txRoom.typing.start()

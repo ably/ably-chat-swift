@@ -83,7 +83,25 @@ public protocol Presence: AnyObject, Sendable, EmitsDiscontinuities {
     func update(data: PresenceData?) async throws
     func leave(data: PresenceData?) async throws
     func subscribe(event: PresenceEventType, bufferingPolicy: BufferingPolicy) async -> Subscription<PresenceEvent>
+    /// Same as calling ``subscribe(event:bufferingPolicy:)`` with ``BufferingPolicy.unbounded``.
+    ///
+    /// The `Presence` protocol provides a default implementation of this method.
+    func subscribe(event: PresenceEventType) async -> Subscription<PresenceEvent>
     func subscribe(events: [PresenceEventType], bufferingPolicy: BufferingPolicy) async -> Subscription<PresenceEvent>
+    /// Same as calling ``subscribe(events:bufferingPolicy:)`` with ``BufferingPolicy.unbounded``.
+    ///
+    /// The `Presence` protocol provides a default implementation of this method.
+    func subscribe(events: [PresenceEventType]) async -> Subscription<PresenceEvent>
+}
+
+public extension Presence {
+    func subscribe(event: PresenceEventType) async -> Subscription<PresenceEvent> {
+        await subscribe(event: event, bufferingPolicy: .unbounded)
+    }
+
+    func subscribe(events: [PresenceEventType]) async -> Subscription<PresenceEvent> {
+        await subscribe(events: events, bufferingPolicy: .unbounded)
+    }
 }
 
 public struct PresenceMember: Sendable {

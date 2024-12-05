@@ -284,7 +284,7 @@ struct DefaultRoomTests {
 
         // When: The room lifecycle manager emits a status change through `subscribeToState`
         let managerStatusChange = RoomStatusChange(current: .detached, previous: .detaching) // arbitrary
-        let roomStatusSubscription = await room.onStatusChange(bufferingPolicy: .unbounded)
+        let roomStatusSubscription = await room.onStatusChange()
         await lifecycleManager.emitStatusChange(managerStatusChange)
 
         // Then: The room emits this status change through `onStatusChange`
