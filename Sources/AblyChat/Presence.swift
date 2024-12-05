@@ -47,7 +47,10 @@ public struct PresenceData: Codable, Sendable {
 }
 
 internal extension PresenceData {
-    func asQueryItems() -> [String: Any] {
+    /// Returns a dictionary that `JSONSerialization` can serialize to a JSON "object" value.
+    ///
+    /// Suitable to pass as the `data` argument of an ably-cocoa presence operation.
+    func asJSONObject() -> [String: Any] {
         // Return an empty userCustomData string if no custom data is available
         guard let userCustomData else {
             return ["userCustomData": ""]
