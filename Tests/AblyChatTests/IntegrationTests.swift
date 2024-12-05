@@ -202,7 +202,7 @@ struct IntegrationTests {
         // MARK: - Presence
 
         // (1) Subscribe to presence
-        let rxPresenceSubscription = await rxRoom.presence.subscribe(events: [.enter, .leave, .update])
+        let rxPresenceSubscription = await rxRoom.presence.subscribe(events: [.enter, .leave, .update], bufferingPolicy: .unbounded)
 
         // (2) Send `.enter` presence event with custom data on the other client and check that we receive it on the subscription
         try await txRoom.presence.enter(data: .init(userCustomData: ["randomData": .string("randomValue")]))

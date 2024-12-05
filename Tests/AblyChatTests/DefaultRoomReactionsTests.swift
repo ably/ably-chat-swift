@@ -72,7 +72,7 @@ struct DefaultRoomReactionsTests {
 
         // When: The feature channel emits a discontinuity through `subscribeToDiscontinuities`
         let featureChannelDiscontinuity = DiscontinuityEvent(error: ARTErrorInfo.createUnknownError() /* arbitrary */ )
-        let messagesDiscontinuitySubscription = await roomReactions.subscribeToDiscontinuities()
+        let messagesDiscontinuitySubscription = await roomReactions.subscribeToDiscontinuities(bufferingPolicy: .unbounded)
         await featureChannel.emitDiscontinuity(featureChannelDiscontinuity)
 
         // Then: The DefaultRoomReactions instance emits this discontinuity through `subscribeToDiscontinuities`

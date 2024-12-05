@@ -164,9 +164,9 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
 
     // (CHA-PR7a) Users may provide a listener to subscribe to all presence events in a room.
     // (CHA-PR7b) Users may provide a listener and a list of selected presence events, to subscribe to just those events in a room.
-    internal func subscribe(event: PresenceEventType) async -> Subscription<PresenceEvent> {
+    internal func subscribe(event: PresenceEventType, bufferingPolicy: BufferingPolicy) async -> Subscription<PresenceEvent> {
         logger.log(message: "Subscribing to presence events", level: .debug)
-        let subscription = Subscription<PresenceEvent>(bufferingPolicy: .unbounded)
+        let subscription = Subscription<PresenceEvent>(bufferingPolicy: bufferingPolicy)
         channel.presence.subscribe(event.toARTPresenceAction()) { [processPresenceSubscribe, logger] message in
             logger.log(message: "Received presence message: \(message)", level: .debug)
             Task {
@@ -178,9 +178,9 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
         return subscription
     }
 
-    internal func subscribe(events: [PresenceEventType]) async -> Subscription<PresenceEvent> {
+    internal func subscribe(events: [PresenceEventType], bufferingPolicy: BufferingPolicy) async -> Subscription<PresenceEvent> {
         logger.log(message: "Subscribing to presence events", level: .debug)
-        let subscription = Subscription<PresenceEvent>(bufferingPolicy: .unbounded)
+        let subscription = Subscription<PresenceEvent>(bufferingPolicy: bufferingPolicy)
         for event in events {
             channel.presence.subscribe(event.toARTPresenceAction()) { [processPresenceSubscribe, logger] message in
                 logger.log(message: "Received presence message: \(message)", level: .debug)
@@ -194,8 +194,8 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
     }
 
     // (CHA-PR8) Users may subscribe to discontinuity events to know when there’s been a break in presence. Their listener will be called when a discontinuity event is triggered from the room lifecycle. For presence, there shouldn’t need to be user action as the underlying core SDK will heal the presence set.
-    internal func subscribeToDiscontinuities() async -> Subscription<DiscontinuityEvent> {
-        await featureChannel.subscribeToDiscontinuities()
+    internal func subscribeToDiscontinuities(bufferingPolicy: BufferingPolicy) async -> Subscription<DiscontinuityEvent> {
+        await featureChannel.subscribeToDiscontinuities(bufferingPolicy: bufferingPolicy)
     }
 
     private func decodePresenceData(from data: Any?) -> PresenceData? {

@@ -81,7 +81,7 @@ struct DefaultMessagesTests {
 
         // When: The feature channel emits a discontinuity through `subscribeToDiscontinuities`
         let featureChannelDiscontinuity = DiscontinuityEvent(error: ARTErrorInfo.createUnknownError() /* arbitrary */ )
-        let messagesDiscontinuitySubscription = await messages.subscribeToDiscontinuities()
+        let messagesDiscontinuitySubscription = await messages.subscribeToDiscontinuities(bufferingPolicy: .unbounded)
         await featureChannel.emitDiscontinuity(featureChannelDiscontinuity)
 
         // Then: The DefaultMessages instance emits this discontinuity through `subscribeToDiscontinuities`

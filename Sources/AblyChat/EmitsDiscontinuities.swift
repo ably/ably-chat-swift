@@ -10,5 +10,5 @@ public struct DiscontinuityEvent: Sendable, Equatable {
 }
 
 public protocol EmitsDiscontinuities {
-    func subscribeToDiscontinuities() async -> Subscription<DiscontinuityEvent>
+    func subscribeToDiscontinuities(bufferingPolicy: BufferingPolicy) async -> Subscription<DiscontinuityEvent>
 }
