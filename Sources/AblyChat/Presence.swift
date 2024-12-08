@@ -35,6 +35,9 @@ public enum PresenceCustomData: Sendable, Codable, Equatable {
     }
 }
 
+/**
+ * Type for PresenceData. Any JSON serializable data type.
+ */
 public typealias UserCustomData = [String: PresenceCustomData]
 
 // (CHA-PR2a) The presence data format is a JSON object as described below. Customers may specify content of an arbitrary type to be placed in the userCustomData field.
@@ -75,19 +78,72 @@ internal extension PresenceData {
     }
 }
 
+/**
+ * This interface is used to interact with presence in a chat room: subscribing to presence events,
+ * fetching presence members, or sending presence events (join,update,leave).
+ *
+ * Get an instance via {@link Room.presence}.
+ */
 public protocol Presence: AnyObject, Sendable, EmitsDiscontinuities {
+    /**
+     * Same as ``get(params: PresenceQuery)``, but with defaults params.
+     */
     func get() async throws -> [PresenceMember]
+
+    /**
+     * Method to get list of the current online users and returns the latest presence messages associated to it.
+     * @param {Ably.RealtimePresenceParams} params - Parameters that control how the presence set is retrieved.
+     * @returns {Promise<PresenceMessage[]>} or upon failure, the promise will be rejected with an {@link Ably.ErrorInfo} object which explains the error.
+     */
     func get(params: PresenceQuery) async throws -> [PresenceMember]
+
+    /**
+     * Method to check if user with supplied clientId is online
+     * @param {string} clientId - The client ID to check if it is present in the room.
+     * @returns {Promise<{boolean}>} or upon failure, the promise will be rejected with an {@link Ably.ErrorInfo} object which explains the error.
+     */
     func isUserPresent(clientID: String) async throws -> Bool
+
+    /**
+     * Method to join room presence, will emit an enter event to all subscribers. Repeat calls will trigger more enter events.
+     * @param {PresenceData} data - The users data, a JSON serializable object that will be sent to all subscribers.
+     * @returns {Promise<void>} or upon failure, the promise will be rejected with an {@link Ably.ErrorInfo} object which explains the error.
+     */
     func enter(data: PresenceData?) async throws
+
+    /**
+     * Method to update room presence, will emit an update event to all subscribers. If the user is not present, it will be treated as a join event.
+     * @param {PresenceData} data - The users data, a JSON serializable object that will be sent to all subscribers.
+     * @returns {Promise<void>} or upon failure, the promise will be rejected with an {@link Ably.ErrorInfo} object which explains the error.
+     */
     func update(data: PresenceData?) async throws
+
+    /**
+     * Method to leave room presence, will emit a leave event to all subscribers. If the user is not present, it will be treated as a no-op.
+     * @param {PresenceData} data - The users data, a JSON serializable object that will be sent to all subscribers.
+     * @returns {Promise<void>} or upon failure, the promise will be rejected with an {@link Ably.ErrorInfo} object which explains the error.
+     */
     func leave(data: PresenceData?) async throws
+
+    /**
+     * Subscribe the given listener from the given list of events.
+     * @param event {'enter' | 'leave' | 'update' | 'present'} single event name to subscribe to
+     * @param listener listener to subscribe
+     */
     func subscribe(event: PresenceEventType, bufferingPolicy: BufferingPolicy) async -> Subscription<PresenceEvent>
+    
     /// Same as calling ``subscribe(event:bufferingPolicy:)`` with ``BufferingPolicy.unbounded``.
     ///
     /// The `Presence` protocol provides a default implementation of this method.
     func subscribe(event: PresenceEventType) async -> Subscription<PresenceEvent>
+
+    /**
+     * Subscribe the given listener from the given list of events.
+     * @param eventOrEvents {'enter' | 'leave' | 'update' | 'present'} single event name or array of events to subscribe to
+     * @param listener listener to subscribe
+     */
     func subscribe(events: [PresenceEventType], bufferingPolicy: BufferingPolicy) async -> Subscription<PresenceEvent>
+
     /// Same as calling ``subscribe(events:bufferingPolicy:)`` with ``BufferingPolicy.unbounded``.
     ///
     /// The `Presence` protocol provides a default implementation of this method.
@@ -104,6 +160,9 @@ public extension Presence {
     }
 }
 
+/**
+ * Type for PresenceMember
+ */
 public struct PresenceMember: Sendable {
     public enum Action: Sendable {
         case present
@@ -140,18 +199,52 @@ public struct PresenceMember: Sendable {
         self.updatedAt = updatedAt
     }
 
+    /**
+     * The clientId of the presence member.
+     */
     public var clientID: String
+    
+    /**
+     * The data associated with the presence member.
+     */
     public var data: PresenceData?
+    
+    /**
+     * The current state of the presence member.
+     */
     public var action: Action
+    
     // TODO: (https://github.com/ably-labs/ably-chat-swift/issues/13): try to improve this type
+    
+    /**
+     * The extras associated with the presence member.
+     */
     public var extras: (any Sendable)?
     public var updatedAt: Date
 }
 
+/**
+ * Enum representing presence events.
+ */
 public enum PresenceEventType: Sendable {
+    /**
+     * Event triggered when a user enters.
+     */
     case enter
+    
+    /**
+     * Event triggered when a user leaves.
+     */
     case leave
+    
+    /**
+     * Event triggered when a user updates their presence data.
+     */
     case update
+    
+    /**
+     * Event triggered when a user initially subscribes to presence.
+     */
     case present
 
     internal func toARTPresenceAction() -> ARTPresenceAction {
@@ -168,10 +261,28 @@ public enum PresenceEventType: Sendable {
     }
 }
 
+/**
+ * Type for PresenceEvent
+ */
 public struct PresenceEvent: Sendable {
+    /**
+     * The type of the presence event.
+     */
     public var action: PresenceEventType
+    
+    /**
+     * The clientId of the client that triggered the presence event.
+     */
     public var clientID: String
+    
+    /**
+     * The timestamp of the presence event.
+     */
     public var timestamp: Date
+    
+    /**
+     * The data associated with the presence event.
+     */
     public var data: PresenceData?
 
     public init(action: PresenceEventType, clientID: String, timestamp: Date, data: PresenceData?) {
