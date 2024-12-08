@@ -16,22 +16,74 @@ public enum ErrorCode: Int {
     /// TODO this code is a guess, revisit in https://github.com/ably-labs/ably-chat-swift/issues/32
     case inconsistentRoomOptions = 1
 
+    /**
+     * The messages feature failed to attach.
+     */
     case messagesAttachmentFailed = 102_001
+
+    /**
+     * The presence feature failed to attach.
+     */
     case presenceAttachmentFailed = 102_002
+
+    /**
+     * The reactions feature failed to attach.
+     */
     case reactionsAttachmentFailed = 102_003
+
+    /**
+     * The occupancy feature failed to attach.
+     */
     case occupancyAttachmentFailed = 102_004
+
+    /**
+     * The typing feature failed to attach.
+     */
     case typingAttachmentFailed = 102_005
 
+    /**
+     * The messages feature failed to detach.
+     */
     case messagesDetachmentFailed = 102_050
+
+    /**
+     * The presence feature failed to detach.
+     */
     case presenceDetachmentFailed = 102_051
+
+    /**
+     * The reactions feature failed to detach.
+     */
     case reactionsDetachmentFailed = 102_052
+
+    /**
+     * The occupancy feature failed to detach.
+     */
     case occupancyDetachmentFailed = 102_053
+
+    /**
+     * The typing feature failed to detach.
+     */
     case typingDetachmentFailed = 102_054
 
+    /**
+     * Cannot perform operation because the room is in a failed state.
+     */
     case roomInFailedState = 102_101
+
+    /**
+     * Cannot perform operation because the room is in a releasing state.
+     */
     case roomIsReleasing = 102_102
+
+    /**
+     * Cannot perform operation because the room is in a released state.
+     */
     case roomIsReleased = 102_103
 
+    /**
+     * Room was released before the operation could complete.
+     */
     case roomReleasedBeforeOperationCompleted = 102_106
 
     case roomInInvalidState = 102_107
