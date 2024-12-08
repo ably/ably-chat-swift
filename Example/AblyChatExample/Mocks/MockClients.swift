@@ -104,7 +104,7 @@ actor MockMessages: Messages {
         let subscription = MockSubscription<Message>(randomElement: {
             Message(
                 serial: "\(Date().timeIntervalSince1970)",
-                latestAction: .create,
+                action: .create,
                 clientID: MockStrings.names.randomElement()!,
                 roomID: self.roomID,
                 text: MockStrings.randomPhrase(),
@@ -130,7 +130,7 @@ actor MockMessages: Messages {
     func send(params: SendMessageParams) async throws -> Message {
         let message = Message(
             serial: "\(Date().timeIntervalSince1970)",
-            latestAction: .create,
+            action: .create,
             clientID: clientID,
             roomID: roomID,
             text: params.text,
@@ -144,7 +144,7 @@ actor MockMessages: Messages {
         return message
     }
 
-    func subscribeToDiscontinuities() -> Subscription<DiscontinuityEvent> {
+    func onDiscontinuity(bufferingPolicy _: BufferingPolicy) -> Subscription<DiscontinuityEvent> {
         fatalError("Not yet implemented")
     }
 }
@@ -195,7 +195,7 @@ actor MockRoomReactions: RoomReactions {
         .init(mockAsyncSequence: createSubscription())
     }
 
-    func subscribeToDiscontinuities() -> Subscription<DiscontinuityEvent> {
+    func onDiscontinuity(bufferingPolicy _: BufferingPolicy) -> Subscription<DiscontinuityEvent> {
         fatalError("Not yet implemented")
     }
 }
@@ -244,7 +244,7 @@ actor MockTyping: Typing {
         }
     }
 
-    func subscribeToDiscontinuities() -> Subscription<DiscontinuityEvent> {
+    func onDiscontinuity(bufferingPolicy _: BufferingPolicy) -> Subscription<DiscontinuityEvent> {
         fatalError("Not yet implemented")
     }
 }
@@ -340,15 +340,15 @@ actor MockPresence: Presence {
         }
     }
 
-    func subscribe(event _: PresenceEventType) -> Subscription<PresenceEvent> {
+    func subscribe(event _: PresenceEventType, bufferingPolicy _: BufferingPolicy) -> Subscription<PresenceEvent> {
         .init(mockAsyncSequence: createSubscription())
     }
 
-    func subscribe(events _: [PresenceEventType]) -> Subscription<PresenceEvent> {
+    func subscribe(events _: [PresenceEventType], bufferingPolicy _: BufferingPolicy) -> Subscription<PresenceEvent> {
         .init(mockAsyncSequence: createSubscription())
     }
 
-    func subscribeToDiscontinuities() -> Subscription<DiscontinuityEvent> {
+    func onDiscontinuity(bufferingPolicy _: BufferingPolicy) -> Subscription<DiscontinuityEvent> {
         fatalError("Not yet implemented")
     }
 }
@@ -383,7 +383,7 @@ actor MockOccupancy: Occupancy {
         OccupancyEvent(connections: 10, presenceMembers: 5)
     }
 
-    func subscribeToDiscontinuities() -> Subscription<DiscontinuityEvent> {
+    func onDiscontinuity(bufferingPolicy _: BufferingPolicy) -> Subscription<DiscontinuityEvent> {
         fatalError("Not yet implemented")
     }
 }

@@ -6,6 +6,14 @@ public struct RoomOptions: Sendable, Equatable {
     public var reactions: RoomReactionsOptions?
     public var occupancy: OccupancyOptions?
 
+    /// A `RoomOptions` which enables all room features, using the default settings for each feature.
+    public static let allFeaturesEnabled: Self = .init(
+        presence: .init(),
+        typing: .init(),
+        reactions: .init(),
+        occupancy: .init()
+    )
+
     public init(presence: PresenceOptions? = nil, typing: TypingOptions? = nil, reactions: RoomReactionsOptions? = nil, occupancy: OccupancyOptions? = nil) {
         self.presence = presence
         self.typing = typing

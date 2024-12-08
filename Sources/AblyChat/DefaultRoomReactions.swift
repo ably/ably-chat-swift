@@ -80,8 +80,8 @@ internal final class DefaultRoomReactions: RoomReactions, EmitsDiscontinuities {
     }
 
     // (CHA-ER5) Users may subscribe to discontinuity events to know when there’s been a break in reactions that they need to resolve. Their listener will be called when a discontinuity event is triggered from the room lifecycle.
-    internal func subscribeToDiscontinuities() async -> Subscription<DiscontinuityEvent> {
-        await featureChannel.subscribeToDiscontinuities()
+    internal func onDiscontinuity(bufferingPolicy: BufferingPolicy) async -> Subscription<DiscontinuityEvent> {
+        await featureChannel.onDiscontinuity(bufferingPolicy: bufferingPolicy)
     }
 
     private enum RoomReactionsError: Error {

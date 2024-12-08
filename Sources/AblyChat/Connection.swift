@@ -21,6 +21,16 @@ public protocol Connection: AnyObject, Sendable {
      * @returns An object that can be used to unregister the listener.
      */
     func onStatusChange(bufferingPolicy: BufferingPolicy) -> Subscription<ConnectionStatusChange>
+    /// Same as calling ``onStatusChange(bufferingPolicy:)`` with ``BufferingPolicy.unbounded``.
+    ///
+    /// The `Connection` protocol provides a default implementation of this method.
+    func onStatusChange() -> Subscription<ConnectionStatusChange>
+}
+
+public extension Connection {
+    func onStatusChange() -> Subscription<ConnectionStatusChange> {
+        onStatusChange(bufferingPolicy: .unbounded)
+    }
 }
 
 /**

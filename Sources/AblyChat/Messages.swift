@@ -14,6 +14,11 @@ public protocol Messages: AnyObject, Sendable, EmitsDiscontinuities {
      */
     func subscribe(bufferingPolicy: BufferingPolicy) async throws -> MessageSubscription
 
+    /// Same as calling ``subscribe(bufferingPolicy:)`` with ``BufferingPolicy/unbounded``.
+    ///
+    /// The `Messages` protocol provides a default implementation of this method.
+    func subscribe() async throws -> MessageSubscription
+
     /**
      * Get messages that have been previously sent to the chat room, based on the provided options.
      *
@@ -44,6 +49,12 @@ public protocol Messages: AnyObject, Sendable, EmitsDiscontinuities {
      * @returns The realtime channel.
      */
     var channel: RealtimeChannelProtocol { get }
+}
+
+public extension Messages {
+    func subscribe() async throws -> MessageSubscription {
+        try await subscribe(bufferingPolicy: .unbounded)
+    }
 }
 
 /**

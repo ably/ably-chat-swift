@@ -99,7 +99,7 @@ extension MockHTTPPaginatedResponse {
             [
                 "clientId": "random",
                 "serial": "3446456",
-                "latestAction": "message.create",
+                "action": "message.create",
                 "createdAt": 1_730_943_049_269,
                 "roomId": "basketball::$chat::$chatMessages",
                 "text": "hello",
@@ -109,7 +109,7 @@ extension MockHTTPPaginatedResponse {
             [
                 "clientId": "random",
                 "serial": "3446457",
-                "latestAction": "message.create",
+                "action": "message.create",
                 "roomId": "basketball::$chat::$chatMessages",
                 "text": "hello response",
                 "metadata": [:],

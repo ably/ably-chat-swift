@@ -41,6 +41,16 @@ public protocol RoomReactions: AnyObject, Sendable, EmitsDiscontinuities {
      * listener before this promise resolves.
      */
     func subscribe(bufferingPolicy: BufferingPolicy) async -> Subscription<Reaction>
+    /// Same as calling ``subscribe(bufferingPolicy:)`` with ``BufferingPolicy.unbounded``.
+    ///
+    /// The `RoomReactions` protocol provides a default implementation of this method.
+    func subscribe() async -> Subscription<Reaction>
+}
+
+public extension RoomReactions {
+    func subscribe() async -> Subscription<Reaction> {
+        await subscribe(bufferingPolicy: .unbounded)
+    }
 }
 
 /**

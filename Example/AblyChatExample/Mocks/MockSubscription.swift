@@ -20,7 +20,7 @@ struct MockSubscription<T: Sendable>: Sendable, AsyncSequence {
     }
 
     init(randomElement: @escaping @Sendable () -> Element, interval: Double) {
-        let (stream, continuation) = AsyncStream.makeStream(of: Element.self, bufferingPolicy: .unbounded)
+        let (stream, continuation) = AsyncStream.makeStream(of: Element.self)
         self.continuation = continuation
         let timer: AsyncTimerSequence<ContinuousClock> = .init(interval: .seconds(interval), clock: .init())
         mergedSequence = merge(stream, timer.map { _ in
