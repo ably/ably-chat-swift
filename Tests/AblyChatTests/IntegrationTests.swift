@@ -176,7 +176,7 @@ struct IntegrationTests {
         try await txRoom.attach()
 
         // (4) Enter presence on the other client and check that we receive the updated occupancy on the subscription
-        try await txRoom.presence.enter(data: nil)
+        try await txRoom.presence.enter()
 
         // (5) Check that we received an updated presence count on the subscription
         _ = try #require(await rxOccupancySubscription.first { occupancyEvent in
@@ -188,7 +188,7 @@ struct IntegrationTests {
         #expect(rxOccupancyAfterTxEnter.presenceMembers == 1) // 1 for txClient entering presence
 
         // (7) Leave presence on the other client and check that we receive the updated occupancy on the subscription
-        try await txRoom.presence.leave(data: nil)
+        try await txRoom.presence.leave()
 
         // (8) Check that we received an updated presence count on the subscription
         _ = try #require(await rxOccupancySubscription.first { occupancyEvent in
