@@ -30,7 +30,7 @@ public struct SendMessageParams: Sendable {
 }
 
 public struct QueryOptions: Sendable {
-    public enum ResultOrder: Sendable {
+    public enum OrderBy: Sendable {
         case oldestFirst
         case newestFirst
     }
@@ -38,12 +38,12 @@ public struct QueryOptions: Sendable {
     public var start: Date?
     public var end: Date?
     public var limit: Int?
-    public var orderBy: ResultOrder?
+    public var orderBy: OrderBy?
 
     // (CHA-M5g) The subscribers subscription point must be additionally specified (internally, by us) in the fromSerial query parameter.
     internal var fromSerial: String?
 
-    public init(start: Date? = nil, end: Date? = nil, limit: Int? = nil, orderBy: QueryOptions.ResultOrder? = nil) {
+    public init(start: Date? = nil, end: Date? = nil, limit: Int? = nil, orderBy: QueryOptions.OrderBy? = nil) {
         self.start = start
         self.end = end
         self.limit = limit
