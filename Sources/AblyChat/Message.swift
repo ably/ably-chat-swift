@@ -1,12 +1,12 @@
 import Foundation
 
 /**
- * {@link Headers} type for chat messages.
+ * ``Headers`` type for chat messages.
  */
 public typealias MessageHeaders = Headers
 
 /**
- * {@link Metadata} type for chat messages.
+ * ``Metadata`` type for chat messages.
  */
 public typealias MessageMetadata = Metadata
 
@@ -67,7 +67,7 @@ public struct Message: Sendable, Codable, Identifiable, Equatable {
      * time of a livestream video or flagging this message as important or pinned.
      *
      * Headers are part of the Ably realtime message extras.headers and they can be used
-     * for Filtered Subscriptions and similar.
+     * for [Filtered Subscriptions](https://faqs.ably.com/subscription-filters) and similar.
      *
      * This value is always set. If there are no headers, this is an empty object.
      *

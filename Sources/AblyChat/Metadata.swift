@@ -17,6 +17,5 @@ public enum MetadataValue: Sendable, Codable, Equatable {
  *
  * Do not use metadata for authoritative information. There is no server-side
  * validation. When reading the metadata treat it like user input.
- *
  */
 public typealias Metadata = [String: MetadataValue?]

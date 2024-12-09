@@ -5,9 +5,11 @@ public typealias LogContext = [String: any Sendable]
 public protocol LogHandler: AnyObject, Sendable {
     /**
      * A function that can be used to handle log messages.
-     * @param message The message to log.
-     * @param level The log level of the message.
-     * @param context The context of the log message as key-value pairs.
+     *
+     * - Parameters:
+     *   - message: The message to log.
+     *   - level: The log level of the message.
+     *   - context: The context of the log message as key-value pairs.
      */
     func log(message: String, level: LogLevel, context: LogContext?)
 }

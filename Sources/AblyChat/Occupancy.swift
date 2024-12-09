@@ -4,14 +4,16 @@ import Ably
  * This interface is used to interact with occupancy in a chat room: subscribing to occupancy updates and
  * fetching the current room occupancy metrics.
  *
- * Get an instance via {@link Room.occupancy}.
+ * Get an instance via ``Room/occupancy``.
  */
 public protocol Occupancy: AnyObject, Sendable, EmitsDiscontinuities {
     /**
-     * Subscribe a given listener to occupancy updates of the chat room.
+     * Subscribes a given listener to occupancy updates of the chat room.
      *
-     * @param listener A listener to be called when the occupancy of the room changes.
-     * @returns A promise resolves to the channel attachment state change event from the implicit channel attach operation.
+     * - Parameters:
+     *   - bufferingPolicy: The ``BufferingPolicy`` for the created subscription.
+     *
+     * - Returns: A subscription ``AsyncSequence`` that can be used to iterate through ``OccupancyEvent`` events.
      */
     func subscribe(bufferingPolicy: BufferingPolicy) async -> Subscription<OccupancyEvent>
 
@@ -23,14 +25,14 @@ public protocol Occupancy: AnyObject, Sendable, EmitsDiscontinuities {
     /**
      * Get the current occupancy of the chat room.
      *
-     * @returns A promise that resolves to the current occupancy of the chat room.
+     * - Returns: A current occupancy of the chat room.
      */
     func get() async throws -> OccupancyEvent
     
     /**
      * Get underlying Ably channel for occupancy events.
      *
-     * @returns The underlying Ably channel for occupancy events.
+     * - Returns: The underlying Ably channel for occupancy events.
      */
     var channel: RealtimeChannelProtocol { get }
 }

@@ -4,13 +4,16 @@ import Ably
  * This interface is used to interact with messages in a chat room: subscribing
  * to new messages, fetching history, or sending messages.
  *
- * Get an instance via {@link Room.messages}.
+ * Get an instance via ``Room/messages``.
  */
 public protocol Messages: AnyObject, Sendable, EmitsDiscontinuities {
     /**
      * Subscribe to new messages in this chat room.
-     * @param listener callback that will be called
-     * @returns A response object that allows you to control the subscription.
+     *
+     * - Parameters:
+     *   - bufferingPolicy: The ``BufferingPolicy`` for the created subscription.
+     *
+     * - Returns: A subscription ``MessageSubscription`` that can be used to iterate through new messages.
      */
     func subscribe(bufferingPolicy: BufferingPolicy) async throws -> MessageSubscription
 
@@ -22,9 +25,10 @@ public protocol Messages: AnyObject, Sendable, EmitsDiscontinuities {
     /**
      * Get messages that have been previously sent to the chat room, based on the provided options.
      *
-     * @param options Options for the query.
-     * @returns A promise that resolves with the paginated result of messages. This paginated result can
-     * be used to fetch more messages if available.
+     * - Parameters:
+     *   - options: Options for the query.
+     *
+     * - Returns: A paginated result object that can be used to fetch more messages if available.
      */
     func get(options: QueryOptions) async throws -> any PaginatedResult<Message>
 
@@ -33,20 +37,19 @@ public protocol Messages: AnyObject, Sendable, EmitsDiscontinuities {
      *
      * This method uses the Ably Chat API endpoint for sending messages.
      *
-     * Note that the Promise may resolve before OR after the message is received
-     * from the realtime channel. This means you may see the message that was just
-     * sent in a callback to `subscribe` before the returned promise resolves.
+     * - Parameters:
+     *   - params: An object containing ``text``, ``headers`` and ``metadata`` for the message.
      *
-     * @param params an object containing {text, headers, metadata} for the message
-     * to be sent. Text is required, metadata and headers are optional.
-     * @returns A promise that resolves when the message was published.
+     * - Returns: The published message.
+     *
+     * - Note: It is possible to receive your own message via the messages subscription before this method returns.
      */
     func send(params: SendMessageParams) async throws -> Message
 
     /**
      * Get the underlying Ably realtime channel used for the messages in this chat room.
      *
-     * @returns The realtime channel.
+     * - Returns: The realtime channel.
      */
     var channel: RealtimeChannelProtocol { get }
 }
@@ -117,7 +120,7 @@ public struct QueryOptions: Sendable {
      * The start of the time window to query from. If provided, the response will include
      * messages with timestamps equal to or greater than this value.
      *
-     * @defaultValue The beginning of time
+     * Defaults to the beginning of time.
      */
     public var start: Date?
 
@@ -125,24 +128,23 @@ public struct QueryOptions: Sendable {
      * The end of the time window to query from. If provided, the response will include
      * messages with timestamps less than this value.
      *
-     * @defaultValue Now
+     * Defaults to the current time.
      */
     public var end: Date?
 
     /**
      * The maximum number of messages to return in the response.
      *
-     * @defaultValue 100
+     * Defaults to 100.
      */
     public var limit: Int?
 
     /**
      * The direction to query messages in.
-     * If `forwards`, the response will include messages from the start of the time window to the end.
-     * If `backwards`, the response will include messages from the end of the time window to the start.
-     * If not provided, the default is `forwards`.
+     * If ``ResultOrder/oldestFirst``, the response will include messages from the start of the time window to the end.
+     * If ``ResultOrder/newestFirst``, the response will include messages from the end of the time window to the start.
      *
-     * @defaultValue forwards
+     * Defaults to `oldestFirst`.
      */
     public var orderBy: ResultOrder?
 

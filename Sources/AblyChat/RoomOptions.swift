@@ -6,26 +6,25 @@ import Foundation
 public struct RoomOptions: Sendable, Equatable {
     /**
      * The presence options for the room. To enable presence in the room, set this property. You may
-     * use {@link RoomOptionsDefaults.presence} to enable presence with default options.
-     * @defaultValue undefined
+     * use ``RoomOptions/allFeaturesEnabled`` to enable presence with default options.
      */
     public var presence: PresenceOptions?
 
     /**
-     * The typing options for the room. To enable typing in the room, set this property. You may use
-     * {@link RoomOptionsDefaults.typing} to enable typing with default options.
+     * The typing options for the room. To enable typing in the room, set this property. You may
+     * use ``RoomOptions/allFeaturesEnabled`` to enable typing with default options.
      */
     public var typing: TypingOptions?
 
     /**
-     * The reactions options for the room. To enable reactions in the room, set this property. You may use
-     * {@link RoomOptionsDefaults.reactions} to enable reactions with default options.
+     * The reactions options for the room. To enable reactions in the room, set this property. You may
+     * use ``RoomOptions/allFeaturesEnabled`` to enable reactions with default options.
      */
     public var reactions: RoomReactionsOptions?
 
     /**
-     * The occupancy options for the room. To enable occupancy in the room, set this property. You may use
-     * {@link RoomOptionsDefaults.occupancy} to enable occupancy with default options.
+     * The occupancy options for the room. To enable occupancy in the room, set this property. You may
+     * use ``RoomOptions/allFeaturesEnabled`` to enable occupancy with default options.
      */
     public var occupancy: OccupancyOptions?
 
@@ -55,17 +54,17 @@ public struct RoomOptions: Sendable, Equatable {
 public struct PresenceOptions: Sendable, Equatable {
     /**
      * Whether the underlying Realtime channel should use the presence enter mode, allowing entry into presence.
-     * This property does not affect the presence lifecycle, and users must still call {@link Presence.enter}
+     * This property does not affect the presence lifecycle, and users must still call ``Presence/enter``
      * in order to enter presence.
-     * @defaultValue true
+     * Defaults to true.
      */
     public var enter = true
 
     /**
      * Whether the underlying Realtime channel should use the presence subscribe mode, allowing subscription to presence.
-     * This property does not affect the presence lifecycle, and users must still call {@link Presence.subscribe}
+     * This property does not affect the presence lifecycle, and users must still call ``Presence/subscribe``
      * in order to subscribe to presence.
-     * @defaultValue true
+     * Defaults to true.
      */
     public var subscribe = true
 
@@ -82,9 +81,9 @@ public struct PresenceOptions: Sendable, Equatable {
  */
 public struct TypingOptions: Sendable, Equatable {
     /**
-     * The timeout for typing events in seconds. If typing.start() is not called for this amount of time, a stop
+     * The timeout for typing events in seconds. If ``Typing/start()`` is not called for this amount of time, a stop
      * typing event will be fired, resulting in the user being removed from the currently typing set.
-     * @defaultValue 5
+     * Defaults to 5 seconds.
      */
     public var timeout: TimeInterval = 5
 

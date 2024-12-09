@@ -14,9 +14,12 @@ public struct DiscontinuityEvent: Sendable, Equatable {
  */
 public protocol EmitsDiscontinuities {
     /**
-     * Register a listener to be called when a discontinuity is detected.
-     * @param listener The listener to be called when a discontinuity is detected.
-     * @returns A response that allows control of the subscription.
+     * Subscribes a given listener to a detected discontinuity.
+     *
+     * - Parameters:
+     *   - bufferingPolicy: The ``BufferingPolicy`` for the created subscription.
+     *
+     * - Returns: A subscription ``AsyncSequence`` that can be used to iterate through ``DiscontinuityEvent`` events.
      */
     func onDiscontinuity(bufferingPolicy: BufferingPolicy) async -> Subscription<DiscontinuityEvent>
 

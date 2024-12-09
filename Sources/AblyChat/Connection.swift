@@ -16,11 +16,15 @@ public protocol Connection: AnyObject, Sendable {
     var error: ARTErrorInfo? { get async }
 
     /**
-     * Registers a listener that will be called whenever the connection status changes.
-     * @param listener The function to call when the status changes.
-     * @returns An object that can be used to unregister the listener.
+     * Subscribes a given listener to a connection status changes.
+     *
+     * - Parameters:
+     *   - bufferingPolicy: The ``BufferingPolicy`` for the created subscription.
+     *
+     * - Returns: A subscription ``AsyncSequence`` that can be used to iterate through ``ConnectionStatusChange`` events.
      */
     func onStatusChange(bufferingPolicy: BufferingPolicy) -> Subscription<ConnectionStatusChange>
+
     /// Same as calling ``onStatusChange(bufferingPolicy:)`` with ``BufferingPolicy.unbounded``.
     ///
     /// The `Connection` protocol provides a default implementation of this method.

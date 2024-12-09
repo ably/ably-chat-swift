@@ -16,7 +16,7 @@ public enum HeadersValue: Sendable, Codable, Equatable {
  *
  * The headers are a flat key-value map and are sent as part of the realtime
  * message's extras inside the `headers` property. They can serve similar
- * purposes as Metadata but as opposed to Metadata they are read by Ably and
+ * purposes as ``Metadata`` but as opposed to `Metadata` they are read by Ably and
  * can be used for features such as
  * [subscription filters](https://faqs.ably.com/subscription-filters).
  *

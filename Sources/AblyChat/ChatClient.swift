@@ -88,7 +88,7 @@ public struct ClientOptions: Sendable {
     /**
      * The minimum log level at which messages will be logged.
      *
-     * By default, LogLevel.error will be used.
+     * By default, ``LogLevel/error`` will be used.
      */
     public var logLevel: LogLevel?
 

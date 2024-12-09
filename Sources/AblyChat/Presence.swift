@@ -36,7 +36,7 @@ public enum PresenceCustomData: Sendable, Codable, Equatable {
 }
 
 /**
- * Type for PresenceData. Any JSON serializable data type.
+ * Type for ``PresenceData``. Any JSON serializable data type.
  */
 public typealias UserCustomData = [String: PresenceCustomData]
 
@@ -80,9 +80,9 @@ internal extension PresenceData {
 
 /**
  * This interface is used to interact with presence in a chat room: subscribing to presence events,
- * fetching presence members, or sending presence events (join,update,leave).
+ * fetching presence members, or sending presence events (`enter`, `update`, `leave`).
  *
- * Get an instance via {@link Room.presence}.
+ * Get an instance via ``Room/presence``.
  */
 public protocol Presence: AnyObject, Sendable, EmitsDiscontinuities {
     /**
@@ -92,55 +92,82 @@ public protocol Presence: AnyObject, Sendable, EmitsDiscontinuities {
 
     /**
      * Method to get list of the current online users and returns the latest presence messages associated to it.
-     * @param {Ably.RealtimePresenceParams} params - Parameters that control how the presence set is retrieved.
-     * @returns {Promise<PresenceMessage[]>} or upon failure, the promise will be rejected with an {@link Ably.ErrorInfo} object which explains the error.
+     *
+     * - Parameters:
+     *   - params: ``PresenceQuery`` that control how the presence set is retrieved.
+     *
+     * - Returns: An array of ``PresenceMember``s.
+     *
+     * - Throws: An ``ARTErrorInfo``.
      */
     func get(params: PresenceQuery) async throws -> [PresenceMember]
 
     /**
-     * Method to check if user with supplied clientId is online
-     * @param {string} clientId - The client ID to check if it is present in the room.
-     * @returns {Promise<{boolean}>} or upon failure, the promise will be rejected with an {@link Ably.ErrorInfo} object which explains the error.
+     * Method to check if user with supplied clientId is online.
+     *
+     * - Parameters:
+     *   - clientId: The client ID to check if it is present in the room.
+     *
+     * - Returns: A boolean value indicating whether the user is present in the room.
+     *
+     * - Throws: An ``ARTErrorInfo``.
      */
     func isUserPresent(clientID: String) async throws -> Bool
 
     /**
      * Method to join room presence, will emit an enter event to all subscribers. Repeat calls will trigger more enter events.
-     * @param {PresenceData} data - The users data, a JSON serializable object that will be sent to all subscribers.
-     * @returns {Promise<void>} or upon failure, the promise will be rejected with an {@link Ably.ErrorInfo} object which explains the error.
+     *
+     * - Parameters:
+     *   - data: The users data, a JSON serializable object that will be sent to all subscribers.
+     *
+     * - Throws: An ``ARTErrorInfo``.
      */
     func enter(data: PresenceData?) async throws
 
     /**
      * Method to update room presence, will emit an update event to all subscribers. If the user is not present, it will be treated as a join event.
-     * @param {PresenceData} data - The users data, a JSON serializable object that will be sent to all subscribers.
-     * @returns {Promise<void>} or upon failure, the promise will be rejected with an {@link Ably.ErrorInfo} object which explains the error.
+     *
+     * - Parameters:
+     *   - data: The users data, a JSON serializable object that will be sent to all subscribers.
+     *
+     * - Throws: An ``ARTErrorInfo``.
      */
     func update(data: PresenceData?) async throws
 
     /**
      * Method to leave room presence, will emit a leave event to all subscribers. If the user is not present, it will be treated as a no-op.
-     * @param {PresenceData} data - The users data, a JSON serializable object that will be sent to all subscribers.
-     * @returns {Promise<void>} or upon failure, the promise will be rejected with an {@link Ably.ErrorInfo} object which explains the error.
+     *
+     * - Parameters:
+     *   - data: The users data, a JSON serializable object that will be sent to all subscribers.
+     *
+     * - Throws: An ``ARTErrorInfo``.
      */
     func leave(data: PresenceData?) async throws
 
     /**
-     * Subscribe the given listener from the given list of events.
-     * @param event {'enter' | 'leave' | 'update' | 'present'} single event name to subscribe to
-     * @param listener listener to subscribe
+     * Subscribes a given listener to a particular presense event in the chat room.
+     *
+     * - Parameters:
+     *   - event: A single presense event type ``PresenceEventType`` to subscribe to.
+     *   - bufferingPolicy: The ``BufferingPolicy`` for the created subscription.
+     *
+     * - Returns: A subscription ``AsyncSequence`` that can be used to iterate through ``PresenceEvent`` events.
      */
     func subscribe(event: PresenceEventType, bufferingPolicy: BufferingPolicy) async -> Subscription<PresenceEvent>
-    
+
     /// Same as calling ``subscribe(event:bufferingPolicy:)`` with ``BufferingPolicy.unbounded``.
     ///
     /// The `Presence` protocol provides a default implementation of this method.
     func subscribe(event: PresenceEventType) async -> Subscription<PresenceEvent>
 
     /**
-     * Subscribe the given listener from the given list of events.
-     * @param eventOrEvents {'enter' | 'leave' | 'update' | 'present'} single event name or array of events to subscribe to
-     * @param listener listener to subscribe
+     * Subscribes a given listener to different presense events in the chat room.
+     *
+     * - Parameters:
+     *   - events: An array of presense event types ``PresenceEventType`` to subscribe to.
+     *   - bufferingPolicy: The ``BufferingPolicy`` for the created subscription.
+     *
+     * - Returns: A subscription ``AsyncSequence`` that can be used to iterate through ``PresenceEvent`` events.
      */
     func subscribe(events: [PresenceEventType], bufferingPolicy: BufferingPolicy) async -> Subscription<PresenceEvent>
 

@@ -6,59 +6,67 @@ import Ably
 public protocol Room: AnyObject, Sendable {
     /**
      * The unique identifier of the room.
-     * @returns The room identifier.
+     * - Returns: The room identifier.
      */
     var roomID: String { get }
 
     /**
      * Allows you to send, subscribe-to and query messages in the room.
-     * @returns The messages instance for the room.
+     *
+     * - Returns: The messages instance for the room.
      */
     var messages: any Messages { get }
 
     /**
      * Allows you to subscribe to presence events in the room.
      *
-     * @throws {@link ErrorInfo}} if presence is not enabled for the room.
-     * @returns The presence instance for the room.
+     * - Note: To access this property if presence is not enabled for the room is a programmer error, and will lead to `fatalError` being called.
+     *
+     * - Returns: The presence instance for the room.
      */
     var presence: any Presence { get }
 
     /**
      * Allows you to interact with room-level reactions.
      *
-     * @throws {@link ErrorInfo} if reactions are not enabled for the room.
-     * @returns The room reactions instance for the room.
+     * - Note: To access this property if presence is not enabled for the room is a programmer error, and will lead to `fatalError` being called.
+     *
+     * - Returns: The room reactions instance for the room.
      */
     var reactions: any RoomReactions { get }
 
     /**
      * Allows you to interact with typing events in the room.
      *
-     * @throws {@link ErrorInfo} if typing is not enabled for the room.
-     * @returns The typing instance for the room.
+     * - Note: To access this property if presence is not enabled for the room is a programmer error, and will lead to `fatalError` being called.
+     *
+     * - Returns: The typing instance for the room.
      */
     var typing: any Typing { get }
 
     /**
      * Allows you to interact with occupancy metrics for the room.
      *
-     * @throws {@link ErrorInfo} if occupancy is not enabled for the room.
-     * @returns The occupancy instance for the room.
+     * - Note: To access this property if presence is not enabled for the room is a programmer error, and will lead to `fatalError` being called.
+     *
+     * - Returns: The occupancy instance for the room.
      */
     var occupancy: any Occupancy { get }
 
     /**
      * The current status of the room.
      *
-     * @returns The current status.
+     * - Returns: The current room status.
      */
     var status: RoomStatus { get async }
 
     /**
-     * Registers a listener that will be called whenever the room status changes.
-     * @param listener The function to call when the status changes.
-     * @returns An object that can be used to unregister the listener.
+     * Subscribes a given listener to the room status changes.
+     *
+     * - Parameters:
+     *   - bufferingPolicy: The ``BufferingPolicy`` for the created subscription.
+     *
+     * - Returns: A subscription ``AsyncSequence`` that can be used to iterate through ``RoomStatusChange`` events.
      */
     func onStatusChange(bufferingPolicy: BufferingPolicy) async -> Subscription<RoomStatusChange>
 
@@ -77,21 +85,21 @@ public protocol Room: AnyObject, Sendable {
      * If the room enters the suspended state, then the call to attach will reject with the {@link ErrorInfo} that caused the suspension. However,
      * the room will automatically retry attaching after a delay.
      *
-     * @returns A promise that resolves when the room is attached.
+     * - Returns: A promise that resolves when the room is attached.
      */
     func attach() async throws
 
     /**
      * Detaches from the room to stop receiving events in realtime.
      *
-     * @returns A promise that resolves when the room is detached.
+     * - Returns: A promise that resolves when the room is detached.
      */
     func detach() async throws
 
     /**
      * Returns the room options.
      *
-     * @returns A copy of the options used to create the room.
+     * - Returns: A copy of the options used to create the room.
      */
     var options: RoomOptions { get }
 }

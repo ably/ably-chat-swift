@@ -3,20 +3,16 @@ import Ably
 /**
  * This interface is used to interact with room-level reactions in a chat room: subscribing to reactions and sending them.
  *
- * Get an instance via {@link Room.reactions}.
+ * Get an instance via ``Room/reactions``.
  */
 public protocol RoomReactions: AnyObject, Sendable, EmitsDiscontinuities {
     /**
      * Send a reaction to the room including some metadata.
      *
-     * This method accepts parameters for a room-level reaction. It accepts an object
+     * - Parameters:
+     *   - params: An object containing ``type`` and optional ``headers`` with ``metadata``.
      *
-     *
-     * @param params an object containing {type, headers, metadata} for the room
-     * reaction to be sent. Type is required, metadata and headers are optional.
-     * @returns The returned promise resolves when the reaction was sent. Note
-     * that it is possible to receive your own reaction via the reactions
-     * listener before this promise resolves.
+     * - Note: It is possible to receive your own reaction via the reactions subscription before this method returns.
      */
     func send(params: SendReactionParams) async throws
 
@@ -24,23 +20,20 @@ public protocol RoomReactions: AnyObject, Sendable, EmitsDiscontinuities {
      * Returns an instance of the Ably realtime channel used for room-level reactions.
      * Avoid using this directly unless special features that cannot otherwise be implemented are needed.
      *
-     * @returns The Ably realtime channel.
+     * - Returns: The realtime channel.
      */
     var channel: RealtimeChannelProtocol { get }
 
     /**
-     * Send a reaction to the room including some metadata.
+     * Subscribes a given listener to receive room-level reactions.
      *
-     * This method accepts parameters for a room-level reaction. It accepts an object
+     * - Parameters:
+     *   - bufferingPolicy: The ``BufferingPolicy`` for the created subscription.
      *
-     *
-     * @param params an object containing {type, headers, metadata} for the room
-     * reaction to be sent. Type is required, metadata and headers are optional.
-     * @returns The returned promise resolves when the reaction was sent. Note
-     * that it is possible to receive your own reaction via the reactions
-     * listener before this promise resolves.
+     * - Returns: A subscription ``AsyncSequence`` that can be used to iterate through ``Reaction`` events.
      */
     func subscribe(bufferingPolicy: BufferingPolicy) async -> Subscription<Reaction>
+
     /// Same as calling ``subscribe(bufferingPolicy:)`` with ``BufferingPolicy.unbounded``.
     ///
     /// The `RoomReactions` protocol provides a default implementation of this method.
@@ -58,9 +51,7 @@ public extension RoomReactions {
  */
 public struct SendReactionParams: Sendable {
     /**
-     * The type of the reaction, for example an emoji or a short string such as
-     * "like".
-     *
+     * The type of the reaction, for example an emoji or a short string such as "like".
      * It is the only mandatory parameter to send a room-level reaction.
      */
     public var type: String
@@ -74,7 +65,6 @@ public struct SendReactionParams: Sendable {
      *
      * Do not use metadata for authoritative information. There is no server-side
      * validation. When reading the metadata treat it like user input.
-     *
      */
     public var metadata: ReactionMetadata?
 
@@ -90,7 +80,6 @@ public struct SendReactionParams: Sendable {
      * Do not use the headers for authoritative information. There is no
      * server-side validation. When reading the headers treat them like user
      * input.
-     *
      */
     public var headers: ReactionHeaders?
 

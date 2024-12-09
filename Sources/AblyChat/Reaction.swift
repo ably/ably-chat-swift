@@ -1,12 +1,12 @@
 import Foundation
 
 /**
- * {@link Headers} type for chat messages.
+ * ``Headers`` type for chat reactions.
  */
 public typealias ReactionHeaders = Headers
 
 /**
- * {@link Metadata} type for chat messages.
+ * ``Metadata`` type for chat reactions.
  */
 public typealias ReactionMetadata = Metadata
 
