@@ -111,7 +111,7 @@ public struct SendMessageParams: Sendable {
  * Options for querying messages in a chat room.
  */
 public struct QueryOptions: Sendable {
-    public enum ResultOrder: Sendable {
+    public enum OrderBy: Sendable {
         case oldestFirst
         case newestFirst
     }
@@ -143,15 +143,13 @@ public struct QueryOptions: Sendable {
      * The direction to query messages in.
      * If ``ResultOrder/oldestFirst``, the response will include messages from the start of the time window to the end.
      * If ``ResultOrder/newestFirst``, the response will include messages from the end of the time window to the start.
-     *
-     * Defaults to `oldestFirst`.
      */
-    public var orderBy: ResultOrder?
+    public var orderBy: OrderBy?
 
     // (CHA-M5g) The subscribers subscription point must be additionally specified (internally, by us) in the fromSerial query parameter.
     internal var fromSerial: String?
 
-    public init(start: Date? = nil, end: Date? = nil, limit: Int? = nil, orderBy: QueryOptions.ResultOrder? = nil) {
+    public init(start: Date? = nil, end: Date? = nil, limit: Int? = nil, orderBy: QueryOptions.OrderBy? = nil) {
         self.start = start
         self.end = end
         self.limit = limit

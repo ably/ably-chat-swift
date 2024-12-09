@@ -155,11 +155,6 @@ public protocol Presence: AnyObject, Sendable, EmitsDiscontinuities {
      */
     func subscribe(event: PresenceEventType, bufferingPolicy: BufferingPolicy) async -> Subscription<PresenceEvent>
 
-    /// Same as calling ``subscribe(event:bufferingPolicy:)`` with ``BufferingPolicy.unbounded``.
-    ///
-    /// The `Presence` protocol provides a default implementation of this method.
-    func subscribe(event: PresenceEventType) async -> Subscription<PresenceEvent>
-
     /**
      * Subscribes a given listener to different presense events in the chat room.
      *
@@ -171,10 +166,44 @@ public protocol Presence: AnyObject, Sendable, EmitsDiscontinuities {
      */
     func subscribe(events: [PresenceEventType], bufferingPolicy: BufferingPolicy) async -> Subscription<PresenceEvent>
 
+    /// Same as calling ``enter(data:)`` with `nil`.
+    ///
+    /// The `Presence` protocol provides a default implementation of this method.
+    func enter() async throws
+
+    /// Same as calling ``update(data:)`` with `nil`.
+    ///
+    /// The `Presence` protocol provides a default implementation of this method.
+    func update() async throws
+
+    /// Same as calling ``leave(data:)`` with `nil`.
+    ///
+    /// The `Presence` protocol provides a default implementation of this method.
+    func leave() async throws
+
+    /// Same as calling ``subscribe(event:bufferingPolicy:)`` with ``BufferingPolicy.unbounded``.
+    ///
+    /// The `Presence` protocol provides a default implementation of this method.
+    func subscribe(event: PresenceEventType) async -> Subscription<PresenceEvent>
+
     /// Same as calling ``subscribe(events:bufferingPolicy:)`` with ``BufferingPolicy.unbounded``.
     ///
     /// The `Presence` protocol provides a default implementation of this method.
     func subscribe(events: [PresenceEventType]) async -> Subscription<PresenceEvent>
+}
+
+public extension Presence {
+    func enter() async throws {
+        try await enter(data: nil)
+    }
+
+    func update() async throws {
+        try await update(data: nil)
+    }
+
+    func leave() async throws {
+        try await leave(data: nil)
+    }
 }
 
 public extension Presence {
