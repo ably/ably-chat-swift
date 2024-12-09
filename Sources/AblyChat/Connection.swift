@@ -21,11 +21,11 @@ public protocol Connection: AnyObject, Sendable {
      * - Parameters:
      *   - bufferingPolicy: The ``BufferingPolicy`` for the created subscription.
      *
-     * - Returns: A subscription ``AsyncSequence`` that can be used to iterate through ``ConnectionStatusChange`` events.
+     * - Returns: A subscription `AsyncSequence` that can be used to iterate through ``ConnectionStatusChange`` events.
      */
     func onStatusChange(bufferingPolicy: BufferingPolicy) -> Subscription<ConnectionStatusChange>
 
-    /// Same as calling ``onStatusChange(bufferingPolicy:)`` with ``BufferingPolicy.unbounded``.
+    /// Same as calling ``onStatusChange(bufferingPolicy:)`` with ``BufferingPolicy/unbounded``.
     ///
     /// The `Connection` protocol provides a default implementation of this method.
     func onStatusChange() -> Subscription<ConnectionStatusChange>

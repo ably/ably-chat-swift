@@ -86,7 +86,7 @@ internal extension PresenceData {
  */
 public protocol Presence: AnyObject, Sendable, EmitsDiscontinuities {
     /**
-     * Same as ``get(params: PresenceQuery)``, but with defaults params.
+     * Same as ``get(params:)``, but with defaults params.
      */
     func get() async throws -> [PresenceMember]
 
@@ -98,7 +98,7 @@ public protocol Presence: AnyObject, Sendable, EmitsDiscontinuities {
      *
      * - Returns: An array of ``PresenceMember``s.
      *
-     * - Throws: An ``ARTErrorInfo``.
+     * - Throws: An `ARTErrorInfo`.
      */
     func get(params: PresenceQuery) async throws -> [PresenceMember]
 
@@ -106,11 +106,11 @@ public protocol Presence: AnyObject, Sendable, EmitsDiscontinuities {
      * Method to check if user with supplied clientId is online.
      *
      * - Parameters:
-     *   - clientId: The client ID to check if it is present in the room.
+     *   - clientID: The client ID to check if it is present in the room.
      *
      * - Returns: A boolean value indicating whether the user is present in the room.
      *
-     * - Throws: An ``ARTErrorInfo``.
+     * - Throws: An `ARTErrorInfo`.
      */
     func isUserPresent(clientID: String) async throws -> Bool
 
@@ -120,7 +120,7 @@ public protocol Presence: AnyObject, Sendable, EmitsDiscontinuities {
      * - Parameters:
      *   - data: The users data, a JSON serializable object that will be sent to all subscribers.
      *
-     * - Throws: An ``ARTErrorInfo``.
+     * - Throws: An `ARTErrorInfo`.
      */
     func enter(data: PresenceData?) async throws
 
@@ -130,7 +130,7 @@ public protocol Presence: AnyObject, Sendable, EmitsDiscontinuities {
      * - Parameters:
      *   - data: The users data, a JSON serializable object that will be sent to all subscribers.
      *
-     * - Throws: An ``ARTErrorInfo``.
+     * - Throws: An `ARTErrorInfo`.
      */
     func update(data: PresenceData?) async throws
 
@@ -140,7 +140,7 @@ public protocol Presence: AnyObject, Sendable, EmitsDiscontinuities {
      * - Parameters:
      *   - data: The users data, a JSON serializable object that will be sent to all subscribers.
      *
-     * - Throws: An ``ARTErrorInfo``.
+     * - Throws: An `ARTErrorInfo`.
      */
     func leave(data: PresenceData?) async throws
 
@@ -151,7 +151,7 @@ public protocol Presence: AnyObject, Sendable, EmitsDiscontinuities {
      *   - event: A single presense event type ``PresenceEventType`` to subscribe to.
      *   - bufferingPolicy: The ``BufferingPolicy`` for the created subscription.
      *
-     * - Returns: A subscription ``AsyncSequence`` that can be used to iterate through ``PresenceEvent`` events.
+     * - Returns: A subscription `AsyncSequence` that can be used to iterate through ``PresenceEvent`` events.
      */
     func subscribe(event: PresenceEventType, bufferingPolicy: BufferingPolicy) async -> Subscription<PresenceEvent>
 
@@ -162,7 +162,7 @@ public protocol Presence: AnyObject, Sendable, EmitsDiscontinuities {
      *   - events: An array of presense event types ``PresenceEventType`` to subscribe to.
      *   - bufferingPolicy: The ``BufferingPolicy`` for the created subscription.
      *
-     * - Returns: A subscription ``AsyncSequence`` that can be used to iterate through ``PresenceEvent`` events.
+     * - Returns: A subscription `AsyncSequence` that can be used to iterate through ``PresenceEvent`` events.
      */
     func subscribe(events: [PresenceEventType], bufferingPolicy: BufferingPolicy) async -> Subscription<PresenceEvent>
 
@@ -181,12 +181,12 @@ public protocol Presence: AnyObject, Sendable, EmitsDiscontinuities {
     /// The `Presence` protocol provides a default implementation of this method.
     func leave() async throws
 
-    /// Same as calling ``subscribe(event:bufferingPolicy:)`` with ``BufferingPolicy.unbounded``.
+    /// Same as calling ``subscribe(event:bufferingPolicy:)`` with ``BufferingPolicy/unbounded``.
     ///
     /// The `Presence` protocol provides a default implementation of this method.
     func subscribe(event: PresenceEventType) async -> Subscription<PresenceEvent>
 
-    /// Same as calling ``subscribe(events:bufferingPolicy:)`` with ``BufferingPolicy.unbounded``.
+    /// Same as calling ``subscribe(events:bufferingPolicy:)`` with ``BufferingPolicy/unbounded``.
     ///
     /// The `Presence` protocol provides a default implementation of this method.
     func subscribe(events: [PresenceEventType]) async -> Subscription<PresenceEvent>
@@ -259,19 +259,19 @@ public struct PresenceMember: Sendable {
      * The clientId of the presence member.
      */
     public var clientID: String
-    
+
     /**
      * The data associated with the presence member.
      */
     public var data: PresenceData?
-    
+
     /**
      * The current state of the presence member.
      */
     public var action: Action
-    
+
     // TODO: (https://github.com/ably-labs/ably-chat-swift/issues/13): try to improve this type
-    
+
     /**
      * The extras associated with the presence member.
      */
@@ -287,17 +287,17 @@ public enum PresenceEventType: Sendable {
      * Event triggered when a user enters.
      */
     case enter
-    
+
     /**
      * Event triggered when a user leaves.
      */
     case leave
-    
+
     /**
      * Event triggered when a user updates their presence data.
      */
     case update
-    
+
     /**
      * Event triggered when a user initially subscribes to presence.
      */
@@ -325,17 +325,17 @@ public struct PresenceEvent: Sendable {
      * The type of the presence event.
      */
     public var action: PresenceEventType
-    
+
     /**
      * The clientId of the client that triggered the presence event.
      */
     public var clientID: String
-    
+
     /**
      * The timestamp of the presence event.
      */
     public var timestamp: Date
-    
+
     /**
      * The data associated with the presence event.
      */

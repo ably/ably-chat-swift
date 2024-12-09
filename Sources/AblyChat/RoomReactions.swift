@@ -10,7 +10,7 @@ public protocol RoomReactions: AnyObject, Sendable, EmitsDiscontinuities {
      * Send a reaction to the room including some metadata.
      *
      * - Parameters:
-     *   - params: An object containing ``type`` and optional ``headers`` with ``metadata``.
+     *   - params: An object containing `type` and optional `headers` with `metadata`.
      *
      * - Note: It is possible to receive your own reaction via the reactions subscription before this method returns.
      */
@@ -30,11 +30,11 @@ public protocol RoomReactions: AnyObject, Sendable, EmitsDiscontinuities {
      * - Parameters:
      *   - bufferingPolicy: The ``BufferingPolicy`` for the created subscription.
      *
-     * - Returns: A subscription ``AsyncSequence`` that can be used to iterate through ``Reaction`` events.
+     * - Returns: A subscription `AsyncSequence` that can be used to iterate through ``Reaction`` events.
      */
     func subscribe(bufferingPolicy: BufferingPolicy) async -> Subscription<Reaction>
 
-    /// Same as calling ``subscribe(bufferingPolicy:)`` with ``BufferingPolicy.unbounded``.
+    /// Same as calling ``subscribe(bufferingPolicy:)`` with ``BufferingPolicy/unbounded``.
     ///
     /// The `RoomReactions` protocol provides a default implementation of this method.
     func subscribe() async -> Subscription<Reaction>

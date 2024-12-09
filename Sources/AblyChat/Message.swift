@@ -21,32 +21,32 @@ public struct Message: Sendable, Codable, Identifiable, Equatable {
      * The unique identifier of the message.
      */
     public var serial: String
-    
+
     /**
      * The action type of the message. This can be used to determine if the message was created, updated, or deleted.
      */
     public var action: MessageAction
-    
+
     /**
      * The clientId of the user who created the message.
      */
     public var clientID: String
-    
+
     /**
      * The roomId of the chat room to which the message belongs.
      */
     public var roomID: String
-    
+
     /**
      * The text of the message.
      */
     public var text: String
-    
+
     /**
      * The timestamp at which the message was created.
      */
     public var createdAt: Date?
-    
+
     /**
      * The metadata of a chat message. Allows for attaching extra info to a message,
      * which can be used for various features such as animations, effects, or simply
@@ -60,7 +60,7 @@ public struct Message: Sendable, Codable, Identifiable, Equatable {
      * validation. When reading the metadata treat it like user input.
      */
     public var metadata: MessageMetadata
-    
+
     /**
      * The headers of a chat message. Headers enable attaching extra info to a message,
      * which can be used for various features such as linking to a relative point in

@@ -19,7 +19,7 @@ public protocol EmitsDiscontinuities {
      * - Parameters:
      *   - bufferingPolicy: The ``BufferingPolicy`` for the created subscription.
      *
-     * - Returns: A subscription ``AsyncSequence`` that can be used to iterate through ``DiscontinuityEvent`` events.
+     * - Returns: A subscription `AsyncSequence` that can be used to iterate through ``DiscontinuityEvent`` events.
      */
     func onDiscontinuity(bufferingPolicy: BufferingPolicy) async -> Subscription<DiscontinuityEvent>
 

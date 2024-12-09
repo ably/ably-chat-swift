@@ -38,7 +38,7 @@ public protocol Messages: AnyObject, Sendable, EmitsDiscontinuities {
      * This method uses the Ably Chat API endpoint for sending messages.
      *
      * - Parameters:
-     *   - params: An object containing ``text``, ``headers`` and ``metadata`` for the message.
+     *   - params: An object containing `text`, `headers` and `metadata` for the message.
      *
      * - Returns: The published message.
      *
@@ -141,8 +141,8 @@ public struct QueryOptions: Sendable {
 
     /**
      * The direction to query messages in.
-     * If ``ResultOrder/oldestFirst``, the response will include messages from the start of the time window to the end.
-     * If ``ResultOrder/newestFirst``, the response will include messages from the end of the time window to the start.
+     * If ``OrderBy/oldestFirst``, the response will include messages from the start of the time window to the end.
+     * If ``OrderBy/newestFirst``, the response will include messages from the end of the time window to the start.
      */
     public var orderBy: OrderBy?
 

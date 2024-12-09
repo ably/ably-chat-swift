@@ -6,6 +6,7 @@ import Ably
 public protocol Room: AnyObject, Sendable {
     /**
      * The unique identifier of the room.
+     *
      * - Returns: The room identifier.
      */
     var roomID: String { get }
@@ -66,11 +67,11 @@ public protocol Room: AnyObject, Sendable {
      * - Parameters:
      *   - bufferingPolicy: The ``BufferingPolicy`` for the created subscription.
      *
-     * - Returns: A subscription ``AsyncSequence`` that can be used to iterate through ``RoomStatusChange`` events.
+     * - Returns: A subscription `AsyncSequence` that can be used to iterate through ``RoomStatusChange`` events.
      */
     func onStatusChange(bufferingPolicy: BufferingPolicy) async -> Subscription<RoomStatusChange>
 
-    /// Same as calling ``onStatusChange(bufferingPolicy:)`` with ``BufferingPolicy.unbounded``.
+    /// Same as calling ``onStatusChange(bufferingPolicy:)`` with ``BufferingPolicy/unbounded``.
     ///
     /// The `Room` protocol provides a default implementation of this method.
     func onStatusChange() async -> Subscription<RoomStatusChange>
@@ -78,21 +79,21 @@ public protocol Room: AnyObject, Sendable {
     /**
      * Attaches to the room to receive events in realtime.
      *
-     * If a room fails to attach, it will enter either the {@link RoomStatus.Suspended} or {@link RoomStatus.Failed} state.
+     * If a room fails to attach, it will enter either the ``RoomStatus/suspended(error:)`` or ``RoomStatus/failed(error:)`` state.
      *
      * If the room enters the failed state, then it will not automatically retry attaching and intervention is required.
      *
-     * If the room enters the suspended state, then the call to attach will reject with the {@link ErrorInfo} that caused the suspension. However,
+     * If the room enters the suspended state, then the call to attach will throw `ARTErrorInfo` with the cause of the suspension. However,
      * the room will automatically retry attaching after a delay.
      *
-     * - Returns: A promise that resolves when the room is attached.
+     * - Throws: An `ARTErrorInfo`.
      */
     func attach() async throws
 
     /**
      * Detaches from the room to stop receiving events in realtime.
      *
-     * - Returns: A promise that resolves when the room is detached.
+     * - Throws: An `ARTErrorInfo`.
      */
     func detach() async throws
 

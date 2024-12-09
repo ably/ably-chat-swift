@@ -54,7 +54,7 @@ public struct RoomOptions: Sendable, Equatable {
 public struct PresenceOptions: Sendable, Equatable {
     /**
      * Whether the underlying Realtime channel should use the presence enter mode, allowing entry into presence.
-     * This property does not affect the presence lifecycle, and users must still call ``Presence/enter``
+     * This property does not affect the presence lifecycle, and users must still call ``Presence/enter()``
      * in order to enter presence.
      * Defaults to true.
      */
@@ -62,7 +62,7 @@ public struct PresenceOptions: Sendable, Equatable {
 
     /**
      * Whether the underlying Realtime channel should use the presence subscribe mode, allowing subscription to presence.
-     * This property does not affect the presence lifecycle, and users must still call ``Presence/subscribe``
+     * This property does not affect the presence lifecycle, and users must still call ``Presence/subscribe(events:)``
      * in order to subscribe to presence.
      * Defaults to true.
      */

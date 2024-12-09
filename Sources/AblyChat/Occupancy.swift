@@ -13,11 +13,11 @@ public protocol Occupancy: AnyObject, Sendable, EmitsDiscontinuities {
      * - Parameters:
      *   - bufferingPolicy: The ``BufferingPolicy`` for the created subscription.
      *
-     * - Returns: A subscription ``AsyncSequence`` that can be used to iterate through ``OccupancyEvent`` events.
+     * - Returns: A subscription `AsyncSequence` that can be used to iterate through ``OccupancyEvent`` events.
      */
     func subscribe(bufferingPolicy: BufferingPolicy) async -> Subscription<OccupancyEvent>
 
-    /// Same as calling ``subscribe(bufferingPolicy:)`` with ``BufferingPolicy.unbounded``.
+    /// Same as calling ``subscribe(bufferingPolicy:)`` with ``BufferingPolicy/unbounded``.
     ///
     /// The `Occupancy` protocol provides a default implementation of this method.
     func subscribe() async -> Subscription<OccupancyEvent>
@@ -28,7 +28,7 @@ public protocol Occupancy: AnyObject, Sendable, EmitsDiscontinuities {
      * - Returns: A current occupancy of the chat room.
      */
     func get() async throws -> OccupancyEvent
-    
+
     /**
      * Get underlying Ably channel for occupancy events.
      *
@@ -53,7 +53,7 @@ public struct OccupancyEvent: Sendable, Encodable, Decodable {
      * The number of connections to the chat room.
      */
     public var connections: Int
-    
+
     /**
      * The number of presence members in the chat room - members who have entered presence.
      */

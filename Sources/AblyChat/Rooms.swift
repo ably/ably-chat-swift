@@ -44,7 +44,7 @@ public protocol Rooms: AnyObject, Sendable {
 
     /**
      * Get the client options used to create the chat instance.
-     * 
+     *
      * - Returns: ``ClientOptions`` object.
      */
     var clientOptions: ClientOptions { get }
