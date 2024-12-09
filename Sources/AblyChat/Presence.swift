@@ -37,44 +37,139 @@ public enum PresenceCustomData: Sendable, Codable, Equatable {
 
 public typealias UserCustomData = [String: PresenceCustomData]
 
-// (CHA-PR2a) The presence data format is a JSON object as described below. Customers may specify content of an arbitrary type to be placed in the userCustomData field.
-public struct PresenceData: Codable, Sendable {
-    public var userCustomData: UserCustomData?
+public typealias PresenceData = JSONValue
 
-    public init(userCustomData: UserCustomData? = nil) {
-        self.userCustomData = userCustomData
+// TODO: explain - wanted to use something that's not an optional because we already have `null` handling for JSON and double optionals or anything that looks like that will be confusing
+internal enum PresenceDataArgument {
+    case notSupplied
+    case supplied(JSONValue)
+}
+
+// (CHA-PR2a) The presence data format is a JSON object as described below. Customers may specify content of an arbitrary type to be placed in the userCustomData field.
+internal struct PresenceDataDTO {
+    enum UserCustomData {
+        case notSupplied
+        case supplied(PresenceData)
+
+        var asOptionalPresenceData: PresenceData? {
+            switch self {
+            case .notSupplied:
+                nil
+            case let .supplied(presenceData):
+                presenceData
+            }
+        }
+    }
+
+    var userCustomData: UserCustomData
+
+    // TODO: test (it's a bit of a pointless dance you could argue, but I really want to avoid using stuff like nil or null)
+    static func forPresenceOperationWithDataArgument(_ dataArgument: PresenceDataArgument) -> Self {
+        switch dataArgument {
+        case .notSupplied:
+            .init(userCustomData: .notSupplied)
+        case let .supplied(presenceData):
+            .init(userCustomData: .supplied(presenceData))
+        }
     }
 }
 
-internal extension PresenceData {
-    /// Returns a dictionary that `JSONSerialization` can serialize to a JSON "object" value.
-    ///
-    /// Suitable to pass as the `data` argument of an ably-cocoa presence operation.
-    func asJSONObject() -> [String: Any] {
-        // Return an empty userCustomData string if no custom data is available
-        guard let userCustomData else {
-            return ["userCustomData": ""]
+internal extension PresenceDataDTO {
+    private enum JSONKeys: String {
+        case userCustomData
+    }
+
+    // TODO: test and handle errors
+    init?(jsonValue: JSONValue) {
+        guard case let .object(jsonObject) = jsonValue else {
+            return nil
         }
 
-        // Create a dictionary for userCustomData
-        var userCustomDataDict: [String: Any] = [:]
+        if let userCustomDataValue = jsonObject[JSONKeys.userCustomData.rawValue] {
+            userCustomData = .supplied(userCustomDataValue)
+        } else {
+            userCustomData = .notSupplied
+        }
+    }
 
-        // Iterate over the custom data and handle different PresenceCustomData cases
-        for (key, value) in userCustomData {
-            switch value {
-            case let .string(stringValue):
-                userCustomDataDict[key] = stringValue
-            case let .number(numberValue):
-                userCustomDataDict[key] = numberValue
-            case let .bool(boolValue):
-                userCustomDataDict[key] = boolValue
-            case .null:
-                userCustomDataDict[key] = NSNull() // Use NSNull to represent null in the dictionary
-            }
+    // TODO: explain, and is the "object" in the name confusing?
+    var toJSONObject: [String: JSONValue] {
+        var result: [String: JSONValue] = [:]
+
+        switch userCustomData {
+        case .notSupplied:
+            break
+        case let .supplied(value):
+            result[JSONKeys.userCustomData.rawValue] = value
         }
 
-        // Return the final dictionary
-        return ["userCustomData": userCustomDataDict]
+        return result
+    }
+}
+
+// TODO: might users also want to do something with this? like encode or something
+public indirect enum JSONValue: Sendable, Equatable {
+    // TODO:
+    case object([String: JSONValue])
+    case array([JSONValue])
+    case string(String)
+    case number(Double)
+    case bool(Bool)
+    case null
+
+    // TODO: we could update everywhere to use this instead of the Encodable faffery
+
+    // TODO: test
+    init?(ablyCocoaPresenceData: Any?) {
+        // TODO: what if there is no presence data? I haven't figured this out from the JS handling
+        guard let ablyCocoaPresenceData else {
+            return nil
+        }
+
+        switch ablyCocoaPresenceData {
+        case let dictionary as [String: Any]:
+            // TODO: handle this failure
+            self = .object(dictionary.mapValues { .init(ablyCocoaPresenceData: $0)! })
+        case let array as [Any]:
+            // TODO: handle this failure
+            self = .array(array.map { .init(ablyCocoaPresenceData: $0)! })
+        case let string as String:
+            self = .string(string)
+        case let number as NSNumber:
+            // TODO: decide best way to handle this; should we preserve NSNumber?
+            self = .number(number.doubleValue)
+        case let bool as Bool:
+            self = .bool(bool)
+        case is NSNull:
+            self = .null
+        default:
+            fatalError("TODO")
+        }
+    }
+
+    // TODO: explain
+    fileprivate var toAblyCocoaPresenceDataValue: Any {
+        switch self {
+        case let .object(underlying):
+            underlying.toAblyCocoaPresenceData
+        case let .array(underlying):
+            underlying.map(\.toAblyCocoaPresenceDataValue)
+        case let .string(underlying):
+            underlying
+        case let .number(underlying):
+            underlying
+        case let .bool(underlying):
+            underlying
+        case .null:
+            NSNull()
+        }
+    }
+}
+
+internal extension [String: JSONValue] {
+    var toAblyCocoaPresenceData: [String: Any] {
+        // TODO: test
+        mapValues(\.toAblyCocoaPresenceDataValue)
     }
 }
 
@@ -82,11 +177,11 @@ public protocol Presence: AnyObject, Sendable, EmitsDiscontinuities {
     func get() async throws -> [PresenceMember]
     func get(params: PresenceQuery) async throws -> [PresenceMember]
     func isUserPresent(clientID: String) async throws -> Bool
-    func enter(data: PresenceData?) async throws
+    func enter(data: PresenceData) async throws
     func enter() async throws
-    func update(data: PresenceData?) async throws
+    func update(data: PresenceData) async throws
     func update() async throws
-    func leave(data: PresenceData?) async throws
+    func leave(data: PresenceData) async throws
     func leave() async throws
     func subscribe(event: PresenceEventType, bufferingPolicy: BufferingPolicy) async -> Subscription<PresenceEvent>
     /// Same as calling ``subscribe(event:bufferingPolicy:)`` with ``BufferingPolicy.unbounded``.
@@ -98,20 +193,6 @@ public protocol Presence: AnyObject, Sendable, EmitsDiscontinuities {
     ///
     /// The `Presence` protocol provides a default implementation of this method.
     func subscribe(events: [PresenceEventType]) async -> Subscription<PresenceEvent>
-}
-
-public extension Presence {
-    func enter() async throws {
-        try await enter(data: nil)
-    }
-
-    func update() async throws {
-        try await update(data: nil)
-    }
-
-    func leave() async throws {
-        try await leave(data: nil)
-    }
 }
 
 public extension Presence {
@@ -152,7 +233,7 @@ public struct PresenceMember: Sendable {
         }
     }
 
-    public init(clientID: String, data: PresenceData, action: PresenceMember.Action, extras: (any Sendable)?, updatedAt: Date) {
+    public init(clientID: String, data: PresenceData?, action: PresenceMember.Action, extras: (any Sendable)?, updatedAt: Date) {
         self.clientID = clientID
         self.data = data
         self.action = action
@@ -161,6 +242,8 @@ public struct PresenceMember: Sendable {
     }
 
     public var clientID: String
+    // TODO: are we sure we want to represent the absence of presence data by an optional? if so make it clear that optional is different to .null
+    // TODO: why was this non-optional in the initializer?
     public var data: PresenceData?
     public var action: Action
     // TODO: (https://github.com/ably-labs/ably-chat-swift/issues/13): try to improve this type

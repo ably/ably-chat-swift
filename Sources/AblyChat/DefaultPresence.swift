@@ -92,8 +92,16 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
         }
     }
 
+    internal func enter(data: PresenceData) async throws {
+        try await enter(dataArgument: .supplied(data))
+    }
+
+    internal func enter() async throws {
+        try await enter(dataArgument: .notSupplied)
+    }
+
     // (CHA-PR3a) Users may choose to enter presence, optionally providing custom data to enter with. The overall presence data must retain the format specified in CHA-PR2.
-    internal func enter(data: PresenceData? = nil) async throws {
+    private func enter(dataArgument: PresenceDataArgument) async throws {
         logger.log(message: "Entering presence", level: .debug)
 
         // CHA-PR3c to CHA-PR3g
@@ -103,8 +111,11 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
             logger.log(message: "Error waiting to be able to perform presence enter operation: \(error)", level: .error)
             throw error
         }
+
+        let dto = PresenceDataDTO.forPresenceOperationWithDataArgument(dataArgument)
+
         return try await withCheckedThrowingContinuation { continuation in
-            channel.presence.enterClient(clientID, data: data?.asJSONObject()) { [logger] error in
+            channel.presence.enterClient(clientID, data: dto.toJSONObject.toAblyCocoaPresenceData) { [logger] error in
                 if let error {
                     logger.log(message: "Error entering presence: \(error)", level: .error)
                     continuation.resume(throwing: error)
@@ -115,8 +126,16 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
         }
     }
 
+    internal func update(data: PresenceData) async throws {
+        try await update(dataArgument: .supplied(data))
+    }
+
+    internal func update() async throws {
+        try await update(dataArgument: .notSupplied)
+    }
+
     // (CHA-PR10a) Users may choose to update their presence data, optionally providing custom data to update with. The overall presence data must retain the format specified in CHA-PR2.
-    internal func update(data: PresenceData? = nil) async throws {
+    private func update(dataArgument: PresenceDataArgument) async throws {
         logger.log(message: "Updating presence", level: .debug)
 
         // CHA-PR10c to CHA-PR10g
@@ -127,8 +146,10 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
             throw error
         }
 
+        let dto = PresenceDataDTO.forPresenceOperationWithDataArgument(dataArgument)
+
         return try await withCheckedThrowingContinuation { continuation in
-            channel.presence.update(data?.asJSONObject()) { [logger] error in
+            channel.presence.update(dto.toJSONObject.toAblyCocoaPresenceData) { [logger] error in
                 if let error {
                     logger.log(message: "Error updating presence: \(error)", level: .error)
                     continuation.resume(throwing: error)
@@ -139,8 +160,16 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
         }
     }
 
+    internal func leave(data: PresenceData) async throws {
+        try await leave(dataArgument: .supplied(data))
+    }
+
+    internal func leave() async throws {
+        try await leave(dataArgument: .notSupplied)
+    }
+
     // (CHA-PR4a) Users may choose to leave presence, which results in them being removed from the Realtime presence set.
-    internal func leave(data: PresenceData? = nil) async throws {
+    internal func leave(dataArgument: PresenceDataArgument) async throws {
         logger.log(message: "Leaving presence", level: .debug)
 
         // CHA-PR6b to CHA-PR6f
@@ -150,8 +179,11 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
             logger.log(message: "Error waiting to be able to perform presence leave operation: \(error)", level: .error)
             throw error
         }
+
+        let dto = PresenceDataDTO.forPresenceOperationWithDataArgument(dataArgument)
+
         return try await withCheckedThrowingContinuation { continuation in
-            channel.presence.leave(data?.asJSONObject()) { [logger] error in
+            channel.presence.leave(dto.toJSONObject.toAblyCocoaPresenceData) { [logger] error in
                 if let error {
                     logger.log(message: "Error leaving presence: \(error)", level: .error)
                     continuation.resume(throwing: error)
@@ -198,20 +230,30 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
         await featureChannel.onDiscontinuity(bufferingPolicy: bufferingPolicy)
     }
 
-    private func decodePresenceData(from data: Any?) -> PresenceData? {
-        guard let userData = data as? [String: Any] else {
+    private func decodePresenceDataDTO(from ablyCocoaPresenceData: Any?) -> PresenceDataDTO? {
+        // TODO: this should not fail, right? so handle accordingly
+        guard let jsonValue = JSONValue(ablyCocoaPresenceData: ablyCocoaPresenceData) else {
             return nil
         }
 
-        do {
-            let jsonData = try JSONSerialization.data(withJSONObject: userData, options: [])
-            let presenceData = try JSONDecoder().decode(PresenceData.self, from: jsonData)
-            return presenceData
-        } catch {
-            print("Failed to decode PresenceData: \(error)")
-            logger.log(message: "Failed to decode PresenceData: \(error)", level: .error)
-            return nil
-        }
+        // TODO: handle failure
+        return PresenceDataDTO(jsonValue: jsonValue)
+
+        /*
+         guard let userData = ablyCocoaPresenceData as? [String: Any] else {
+             return nil
+         }
+
+         do {
+             let jsonData = try JSONSerialization.data(withJSONObject: userData, options: [])
+             let presenceData = try JSONDecoder().decode(PresenceData.self, from: jsonData)
+             return presenceData
+         } catch {
+             print("Failed to decode PresenceData: \(error)")
+             logger.log(message: "Failed to decode PresenceData: \(error)", level: .error)
+             return nil
+         }
+          */
     }
 
     private func processPresenceGet(members: [ARTPresenceMessage]?, error: ARTErrorInfo?) throws -> [PresenceMember] {
@@ -221,6 +263,7 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
             throw error
         }
         let presenceMembers = try members.map { member in
+            // TODO: this seems redundant?
             guard let data = member.data as? [String: Any] else {
                 let error = ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without data")
                 logger.log(message: error.message, level: .error)
@@ -239,14 +282,18 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
                 throw error
             }
 
-            let userCustomData = decodePresenceData(from: data)
+            guard let dto = decodePresenceDataDTO(from: data) else {
+                let error = ARTErrorInfo.create(withCode: 50000, status: 500, message: "TODO")
+                logger.log(message: error.message, level: .error)
+                throw error
+            }
 
             // Seems like we want to just forward on `extras` from the cocoa SDK but that is an `ARTJsonCompatible` type which is not `Sendable`... currently just converting this to a `Sendable` type (`String`) until we know what to do with this.
             let extras = member.extras?.toJSONString()
 
             let presenceMember = PresenceMember(
                 clientID: clientID,
-                data: userCustomData ?? .init(),
+                data: dto.userCustomData.asOptionalPresenceData,
                 action: PresenceMember.Action(from: member.action),
                 extras: extras,
                 updatedAt: timestamp
@@ -271,13 +318,18 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
             throw error
         }
 
-        let userCustomDataDecoded = decodePresenceData(from: message.data)
+        // TODO: how to handle?
+        guard let dto = decodePresenceDataDTO(from: message.data) else {
+            let error = ARTErrorInfo.create(withCode: 50000, status: 500, message: "TODO")
+            logger.log(message: error.message, level: .error)
+            throw error
+        }
 
         let presenceEvent = PresenceEvent(
             action: event,
             clientID: clientID,
             timestamp: timestamp,
-            data: userCustomDataDecoded ?? .init()
+            data: dto.userCustomData.asOptionalPresenceData
         )
 
         logger.log(message: "Returning presence event: \(presenceEvent)", level: .debug)
