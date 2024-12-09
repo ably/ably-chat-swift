@@ -424,7 +424,7 @@ struct DefaultRoomLifecycleManagerTests {
                 createContributor(
                     feature: .occupancy, // arbitrary, just needs to be different to that used for the other contributor
                     attachBehavior: .success,
-                    // The room is going to try to detach per CHA-RL1h5, so even though that's not what this test is testing, we need a detachBehavior so the mock doesn’t blow up
+                    // The room is going to try to detach per CHA-RL1h5 (the RUNDOWN operation), so even though that's not what this test is testing, we need a detachBehavior so the mock doesn’t blow up
                     detachBehavior: .success
                 )
             }
@@ -458,9 +458,9 @@ struct DefaultRoomLifecycleManagerTests {
         }
     }
 
-    // @specPartial CHA-RL1h5 - My initial understanding of this spec point was that the "detach all non-failed channels" was meant to happen _inside_ the ATTACH operation, and that’s what I implemented. Andy subsequently updated the spec to clarify that it’s meant to happen _outside_ the ATTACH operation. I’ll implement this as a separate piece of work later (TODO: https://github.com/ably-labs/ably-chat-swift/issues/50)
+    // @specOneOf(1/2) CHA-RL1h5 - Tests that the RUNDOWN operation is triggered - see TODO on `performRundownOperation` for my interpretation of CHA-RL1h5, in which I introduce RUNDOWN
     @Test
-    func attach_whenAttachPutsChannelIntoFailedState_detachesAllNonFailedChannels() async throws {
+    func attach_whenAttachPutsChannelIntoFailedState_schedulesRundownOperation() async throws {
         // Given: A room with the following contributors, in the following order:
         //
         // 0. a channel for whom calling `attach` will complete successfully, putting it in the ATTACHED state (i.e. an arbitrarily-chosen state that is not FAILED)
@@ -483,53 +483,32 @@ struct DefaultRoomLifecycleManagerTests {
 
         let manager = await createManager(contributors: contributors)
 
+        let managerStatusSubscription = await manager.testsOnly_onStatusChange()
+
         // When: `performAttachOperation()` is called on the lifecycle manager
         try? await manager.performAttachOperation()
 
         // Then:
         //
-        // - the lifecycle manager will call `detach` on contributors 0 and 2
-        // - the lifecycle manager will not call `detach` on contributor 1
+        // - the lifecycle manager schedules a RUNDOWN operation
+        // - when we wait for this RUNDOWN operation to complete, we confirm that it has occured by checking for its side effects, namely that:
+        //   - the lifecycle manager has called `detach` on contributors 0 and 2
+        //   - the lifecycle manager has not called `detach` on contributor 1
+
+        let rundownOperationTask = try #require(await managerStatusSubscription.compactMap { managerStatusChange in
+            if case let .failedAwaitingStartOfRundownOperation(rundownOperationTask, _) = managerStatusChange.current {
+                rundownOperationTask
+            } else {
+                nil
+            }
+        }
+        .first { _ in true })
+
+        _ = await rundownOperationTask.value
+
         #expect(await contributors[0].channel.detachCallCount > 0)
         #expect(await contributors[2].channel.detachCallCount > 0)
         #expect(await contributors[1].channel.detachCallCount == 0)
-    }
-
-    // @spec CHA-RL1h6
-    @Test
-    func attach_whenChannelDetachTriggered_ifADetachFailsItIsRetriedUntilSuccess() async throws {
-        // Given: A room with the following contributors, in the following order:
-        //
-        // 0. a channel:
-        //     - for whom calling `attach` will complete successfully, putting it in the ATTACHED state (i.e. an arbitrarily-chosen state that is not FAILED)
-        //     - and for whom subsequently calling `detach` will fail on the first attempt and succeed on the second
-        // 1. a channel for whom calling `attach` will fail, putting it in the FAILED state (we won’t make any assertions about this channel; it’s just to trigger the room’s channel detach behaviour)
-
-        let detachResult = { @Sendable (callCount: Int) async -> MockRoomLifecycleContributorChannel.AttachOrDetachBehavior in
-            if callCount == 1 {
-                return .failure(.create(withCode: 123, message: ""))
-            } else {
-                return .success
-            }
-        }
-
-        let contributors = [
-            createContributor(
-                attachBehavior: .completeAndChangeState(.success, newState: .attached),
-                detachBehavior: .fromFunction(detachResult)
-            ),
-            createContributor(
-                attachBehavior: .completeAndChangeState(.failure(.create(withCode: 123, message: "")), newState: .failed)
-            ),
-        ]
-
-        let manager = await createManager(contributors: contributors)
-
-        // When: `performAttachOperation()` is called on the lifecycle manager
-        try? await manager.performAttachOperation()
-
-        // Then: the lifecycle manager will call `detach` twice on contributor 0 (i.e. it will retry the failed detach)
-        #expect(await contributors[0].channel.detachCallCount == 2)
     }
 
     // MARK: - DETACH operation
@@ -1306,7 +1285,7 @@ struct DefaultRoomLifecycleManagerTests {
         let contributors = [
             createContributor(
                 attachBehavior: .success,
-                detachBehavior: .success, // So that the detach performed by CHA-RL1h5’s rollback of the attachment cycle succeeds
+                detachBehavior: .success, // So that the detach performed by CHA-RL1h5’s triggered RUNDOWN succeeds
                 subscribeToStateBehavior: .addSubscriptionAndEmitStateChange(
                     .init(
                         current: .attached,
@@ -1322,7 +1301,7 @@ struct DefaultRoomLifecycleManagerTests {
             ),
             createContributor(
                 attachBehavior: .success,
-                detachBehavior: .success // So that the CHA-RL5a detachment cycle completes (not related to this test) and so that the detach performed by CHA-RL1h5’s rollback of the attachment cycle succeeds
+                detachBehavior: .success // So that the CHA-RL5a detachment cycle completes (not related to this test) and so that the detach performed by CHA-RL1h5’s triggered RUNDOWN succeeds
             ),
         ]
 
@@ -1333,20 +1312,103 @@ struct DefaultRoomLifecycleManagerTests {
         let roomStatusSubscription = await manager.onRoomStatusChange(bufferingPolicy: .unbounded)
         async let failedStatusChange = roomStatusSubscription.failedElements().first { _ in true }
 
+        let managerStatusSubscription = await manager.testsOnly_onStatusChange()
+
         // When: `performRetryOperation(triggeredByContributor:errorForSuspendedStatus:)` is called on the manager
         await manager.performRetryOperation(triggeredByContributor: contributors[0], errorForSuspendedStatus: .createUnknownError() /* arbitrary */ )
 
         // Then: The room performs a CHA-RL1e attachment cycle (we sufficiently satisfy ourselves of this fact by checking that it’s attempted to attach all of the channels up to and including the one for which attachment fails, and subsequently detached all channels except for the FAILED one), transitions to FAILED, and the RETRY operation completes
+
+        // We first wait for CHA-RLh5’s triggered RUNDOWN operation to complete, so that we can make assertions about its side effects
+        let rundownOperationTask = try #require(await managerStatusSubscription.compactMap { managerStatusChange in
+            if case let .failedAwaitingStartOfRundownOperation(rundownOperationTask, _) = managerStatusChange.current {
+                rundownOperationTask
+            } else {
+                nil
+            }
+        }
+        .first { _ in true })
+
+        _ = await rundownOperationTask.value
+
         #expect(await contributors[0].channel.attachCallCount == 1)
         #expect(await contributors[1].channel.attachCallCount == 1)
         #expect(await contributors[2].channel.attachCallCount == 0)
 
-        #expect(await contributors[0].channel.detachCallCount == 1) // from CHA-RL1h5’s rollback of the attachment cycle
+        #expect(await contributors[0].channel.detachCallCount == 1) // from CHA-RL1h5’s triggered RUNDOWN
         #expect(await contributors[1].channel.detachCallCount == 1) // from CHA-RL5a detachment cycle
-        #expect(await contributors[2].channel.detachCallCount == 2) // from CHA-RL5a detachment cycle and CHA-RL1h5’s rollback of the attachment cycle
+        #expect(await contributors[2].channel.detachCallCount == 2) // from CHA-RL5a detachment cycle and CHA-RL1h5’s triggered RUNDOWN
 
         _ = try #require(await failedStatusChange)
         #expect(await manager.roomStatus.isFailed)
+    }
+
+    // MARK: - RUNDOWN operation
+
+    // @specOneOf(2/2) CHA-RL1h5 - Tests the behaviour of the RUNDOWN operation - see TODO on `performRundownOperation` for my interpretation of CHA-RL1h5, in which I introduce RUNDOWN
+    @Test
+    func rundown_detachesAllNonFailedChannels() async throws {
+        // Given: A room with the following contributors, in the following order:
+        //
+        // 0. a channel in the ATTACHED state (i.e. an arbitrarily-chosen state that is not FAILED)
+        // 1. a channel in the FAILED state
+        // 2. a channel in the INITIALIZED state (another arbitrarily-chosen state that is not FAILED)
+        //
+        // for which, when `detach` is called on contributors 0 and 2 (i.e. the non-FAILED contributors), it completes successfully
+        let contributors = [
+            createContributor(
+                initialState: .attached,
+                detachBehavior: .success
+            ),
+            createContributor(
+                initialState: .failed
+            ),
+            createContributor(
+                detachBehavior: .success
+            ),
+        ]
+
+        let manager = await createManager(contributors: contributors)
+
+        // When: `performRundownOperation()` is called on the lifecycle manager
+        await manager.performRundownOperation(errorForFailedStatus: .createUnknownError() /* arbitrary */ )
+
+        // Then:
+        //
+        // - the lifecycle manager calls `detach` on contributors 0 and 2
+        // - the lifecycle manager does not call `detach` on contributor 1
+        // - the call to `performRundownOperation()` completes
+        #expect(await contributors[0].channel.detachCallCount == 1)
+        #expect(await contributors[2].channel.detachCallCount == 1)
+        #expect(await contributors[1].channel.detachCallCount == 0)
+    }
+
+    // @spec CHA-RL1h6 - see TODO on `performRundownOperation` for my interpretation of CHA-RL1h5, in which I introduce RUNDOWN
+    @Test
+    func rundown_ifADetachFailsItIsRetriedUntilSuccess() async throws {
+        // Given: A room with a contributor in the ATTACHED state (i.e. an arbitrarily-chosen state that is not FAILED) and for whom calling `detach` will fail on the first attempt and succeed on the second
+
+        let detachResult = { @Sendable (callCount: Int) async -> MockRoomLifecycleContributorChannel.AttachOrDetachBehavior in
+            if callCount == 1 {
+                return .failure(.create(withCode: 123, message: ""))
+            } else {
+                return .success
+            }
+        }
+
+        let contributors = [
+            createContributor(
+                detachBehavior: .fromFunction(detachResult)
+            ),
+        ]
+
+        let manager = await createManager(contributors: contributors)
+
+        // When: `performRundownOperation()` is called on the lifecycle manager
+        await manager.performRundownOperation(errorForFailedStatus: .createUnknownError() /* arbitrary */ )
+
+        // Then: the lifecycle manager calls `detach` twice on the contributor (i.e. it retries the failed detach)
+        #expect(await contributors[0].channel.detachCallCount == 2)
     }
 
     // MARK: - Handling contributor UPDATE events
