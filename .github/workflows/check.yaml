@@ -139,6 +139,21 @@ jobs:
       - name: Build example app
         run: swift run BuildTool build-example-app --platform ${{ matrix.platform }}
 
+  check-documentation:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      # This step can be removed once the runners’ default version of Xcode is 16 or above
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: 16
+
+      - name: Build documentation
+        run: swift run BuildTool build-documentation
+
   # We use this job as a marker that all of the required checks have completed.
   # This allows us to configure a single required status check in our branch
   # protection rules instead of having to type loads of different check names
@@ -152,6 +167,7 @@ jobs:
       - check-spm
       - check-xcode
       - check-example-app
+      - check-documentation
 
     steps:
       - name: No-op

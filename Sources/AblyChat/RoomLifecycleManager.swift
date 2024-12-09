@@ -18,7 +18,7 @@ internal protocol RoomLifecycleContributorChannel: Sendable {
     var state: ARTRealtimeChannelState { get async }
     var errorReason: ARTErrorInfo? { get async }
 
-    /// Equivalent to subscribing to a `RealtimeChannelProtocol` object’s state changes via its `on(_:)` method. The subscription should use the ``BufferingPolicy.unbounded`` buffering policy.
+    /// Equivalent to subscribing to a `RealtimeChannelProtocol` object’s state changes via its `on(_:)` method. The subscription should use the ``BufferingPolicy/unbounded`` buffering policy.
     ///
     /// It is marked as `async` purely to make it easier to write mocks for this method (i.e. to use an actor as a mock).
     func subscribeToState() async -> Subscription<ARTChannelStateChange>
@@ -84,7 +84,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
     // MARK: - Variable properties
 
     private var status: Status
-    /// Manager state that relates to individual contributors, keyed by contributors’ ``Contributor.id``. Stored separately from ``contributors`` so that the latter can be a `let`, to make it clear that the contributors remain fixed for the lifetime of the manager.
+    /// Manager state that relates to individual contributors, keyed by contributors’ ``Contributor/id``. Stored separately from ``contributors`` so that the latter can be a `let`, to make it clear that the contributors remain fixed for the lifetime of the manager.
     private var contributorAnnotations: ContributorAnnotations
     private var listenForStateChangesTask: Task<Void, Never>!
     // TODO: clean up old subscriptions (https://github.com/ably-labs/ably-chat-swift/issues/36)
@@ -397,7 +397,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
         /// - (if the state change is ATTACHED) the manager has recorded that an ATTACHED state change has been observed for the contributor
         /// - the manager has recorded all pending discontinuity events provoked by the state change (you can retrieve these using ``testsOnly_pendingDiscontinuityEvent(for:)``)
         /// - the manager has performed all status changes provoked by the state change (this does _not_ include the case in which the state change provokes the creation of a transient disconnect timeout which subsequently provokes a status change; use ``testsOnly_subscribeToHandledTransientDisconnectTimeouts()`` to find out about those)
-        /// - the manager has performed all contributor actions provoked by the state change, namely calls to ``RoomLifecycleContributorChannel.detach()`` or ``RoomLifecycleContributor.emitDiscontinuity(_:)``
+        /// - the manager has performed all contributor actions provoked by the state change, namely calls to ``RoomLifecycleContributorChannel/detach()`` or ``RoomLifecycleContributor/emitDiscontinuity(_:)``
         /// - the manager has recorded all transient disconnect timeouts provoked by the state change (you can retrieve this information using ``testsOnly_hasTransientDisconnectTimeout(for:) or ``testsOnly_idOfTransientDisconnectTimeout(for:)``)
         /// - the manager has performed all transient disconnect timeout cancellations provoked by the state change (you can retrieve this information using ``testsOnly_hasTransientDisconnectTimeout(for:) or ``testsOnly_idOfTransientDisconnectTimeout(for:)``)
         internal func testsOnly_subscribeToHandledContributorStateChanges() -> Subscription<ARTChannelStateChange> {

@@ -52,9 +52,9 @@ internal protocol FeatureChannel: Sendable, EmitsDiscontinuities {
     ///
     /// Implements the checks described by CHA-PR3d, CHA-PR3e, and CHA-PR3h (and similar ones described by other functionality that performs contributor presence operations). Namely:
     ///
-    /// - CHA-RL9, which is invoked by CHA-PR3d, CHA-PR10d, CHA-PR6c, CHA-T2c: If the room is in the ATTACHING status, it waits for the next room status change. If the new status is ATTACHED, it returns. Else, it throws an `ARTErrorInfo` derived from ``ChatError.roomTransitionedToInvalidStateForPresenceOperation(cause:)``.
+    /// - CHA-RL9, which is invoked by CHA-PR3d, CHA-PR10d, CHA-PR6c, CHA-T2c: If the room is in the ATTACHING status, it waits for the next room status change. If the new status is ATTACHED, it returns. Else, it throws an `ARTErrorInfo` derived from ``ChatError/roomTransitionedToInvalidStateForPresenceOperation(cause:)``.
     /// - CHA-PR3e, CHA-PR10e, CHA-PR6d, CHA-T2d: If the room is in the ATTACHED status, it returns immediately.
-    /// - CHA-PR3h, CHA-PR10h, CHA-PR6h, CHA-T2g: If the room is in any other status, it throws an `ARTErrorInfo` derived from ``ChatError.presenceOperationRequiresRoomAttach(feature:)``.
+    /// - CHA-PR3h, CHA-PR10h, CHA-PR6h, CHA-T2g: If the room is in any other status, it throws an `ARTErrorInfo` derived from ``ChatError/presenceOperationRequiresRoomAttach(feature:)``.
     ///
     /// - Parameters:
     ///   - requester: The room feature that wishes to perform a presence operation. This is only used for customising the message of the thrown error.
