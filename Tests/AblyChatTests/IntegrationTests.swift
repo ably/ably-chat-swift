@@ -205,40 +205,40 @@ struct IntegrationTests {
         let rxPresenceSubscription = await rxRoom.presence.subscribe(events: [.enter, .leave, .update])
 
         // (2) Send `.enter` presence event with custom data on the other client and check that we receive it on the subscription
-        try await txRoom.presence.enter(data: .init(userCustomData: ["randomData": .string("randomValue")]))
+        try await txRoom.presence.enter(data: ["randomData": "randomValue"])
         let rxPresenceEnterTxEvent = try #require(await rxPresenceSubscription.first { _ in true })
         #expect(rxPresenceEnterTxEvent.action == .enter)
-        #expect(rxPresenceEnterTxEvent.data?.userCustomData?["randomData"]?.value as? String == "randomValue")
+        #expect(rxPresenceEnterTxEvent.data == ["randomData": "randomValue"])
 
         // (3) Send `.update` presence event with custom data on the other client and check that we receive it on the subscription
-        try await txRoom.presence.update(data: .init(userCustomData: ["randomData": .string("randomValue")]))
+        try await txRoom.presence.update(data: ["randomData": "randomValue"])
         let rxPresenceUpdateTxEvent = try #require(await rxPresenceSubscription.first { _ in true })
         #expect(rxPresenceUpdateTxEvent.action == .update)
-        #expect(rxPresenceUpdateTxEvent.data?.userCustomData?["randomData"]?.value as? String == "randomValue")
+        #expect(rxPresenceUpdateTxEvent.data == ["randomData": "randomValue"])
 
         // (4) Send `.leave` presence event with custom data on the other client and check that we receive it on the subscription
-        try await txRoom.presence.leave(data: .init(userCustomData: ["randomData": .string("randomValue")]))
+        try await txRoom.presence.leave(data: ["randomData": "randomValue"])
         let rxPresenceLeaveTxEvent = try #require(await rxPresenceSubscription.first { _ in true })
         #expect(rxPresenceLeaveTxEvent.action == .leave)
-        #expect(rxPresenceLeaveTxEvent.data?.userCustomData?["randomData"]?.value as? String == "randomValue")
+        #expect(rxPresenceLeaveTxEvent.data == ["randomData": "randomValue"])
 
         // (5) Send `.enter` presence event with custom data on our client and check that we receive it on the subscription
-        try await txRoom.presence.enter(data: .init(userCustomData: ["randomData": .string("randomValue")]))
+        try await txRoom.presence.enter(data: ["randomData": "randomValue"])
         let rxPresenceEnterRxEvent = try #require(await rxPresenceSubscription.first { _ in true })
         #expect(rxPresenceEnterRxEvent.action == .enter)
-        #expect(rxPresenceEnterRxEvent.data?.userCustomData?["randomData"]?.value as? String == "randomValue")
+        #expect(rxPresenceEnterRxEvent.data == ["randomData": "randomValue"])
 
         // (6) Send `.update` presence event with custom data on our client and check that we receive it on the subscription
-        try await txRoom.presence.update(data: .init(userCustomData: ["randomData": .string("randomValue")]))
+        try await txRoom.presence.update(data: ["randomData": "randomValue"])
         let rxPresenceUpdateRxEvent = try #require(await rxPresenceSubscription.first { _ in true })
         #expect(rxPresenceUpdateRxEvent.action == .update)
-        #expect(rxPresenceUpdateRxEvent.data?.userCustomData?["randomData"]?.value as? String == "randomValue")
+        #expect(rxPresenceUpdateRxEvent.data == ["randomData": "randomValue"])
 
         // (7) Send `.leave` presence event with custom data on our client and check that we receive it on the subscription
-        try await txRoom.presence.leave(data: .init(userCustomData: ["randomData": .string("randomValue")]))
+        try await txRoom.presence.leave(data: ["randomData": "randomValue"])
         let rxPresenceLeaveRxEvent = try #require(await rxPresenceSubscription.first { _ in true })
         #expect(rxPresenceLeaveRxEvent.action == .leave)
-        #expect(rxPresenceLeaveRxEvent.data?.userCustomData?["randomData"]?.value as? String == "randomValue")
+        #expect(rxPresenceLeaveRxEvent.data == ["randomData": "randomValue"])
 
         // MARK: - Typing Indicators
 
