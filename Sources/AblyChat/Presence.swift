@@ -80,8 +80,11 @@ public protocol Presence: AnyObject, Sendable, EmitsDiscontinuities {
     func get(params: PresenceQuery) async throws -> [PresenceMember]
     func isUserPresent(clientID: String) async throws -> Bool
     func enter(data: PresenceData?) async throws
+    func enter() async throws
     func update(data: PresenceData?) async throws
+    func update() async throws
     func leave(data: PresenceData?) async throws
+    func leave() async throws
     func subscribe(event: PresenceEventType, bufferingPolicy: BufferingPolicy) async -> Subscription<PresenceEvent>
     /// Same as calling ``subscribe(event:bufferingPolicy:)`` with ``BufferingPolicy.unbounded``.
     ///
@@ -92,6 +95,20 @@ public protocol Presence: AnyObject, Sendable, EmitsDiscontinuities {
     ///
     /// The `Presence` protocol provides a default implementation of this method.
     func subscribe(events: [PresenceEventType]) async -> Subscription<PresenceEvent>
+}
+
+public extension Presence {
+    func enter() async throws {
+        try await enter(data: nil)
+    }
+
+    func update() async throws {
+        try await update(data: nil)
+    }
+
+    func leave() async throws {
+        try await leave(data: nil)
+    }
 }
 
 public extension Presence {
