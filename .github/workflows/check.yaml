@@ -74,7 +74,7 @@ jobs:
       - id: generation-step
         run: swift run BuildTool generate-matrices >> $GITHUB_OUTPUT
 
-  check-spm:
+  build-and-test-spm:
     name: SPM (Xcode ${{ matrix.tooling.xcodeVersion }})
     runs-on: macos-15
     needs: generate-matrices
@@ -94,7 +94,26 @@ jobs:
       - run: swift build -Xswiftc -warnings-as-errors
       - run: swift test -Xswiftc -warnings-as-errors
 
-  check-xcode:
+  build-release-configuration-spm:
+    name: SPM, `release` configuration (Xcode ${{ matrix.tooling.xcodeVersion }})
+    runs-on: macos-15
+    needs: generate-matrices
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.generate-matrices.outputs.matrix).withoutPlatform }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: ${{ matrix.tooling.xcodeVersion }}
+
+      # https://forums.swift.org/t/warnings-as-errors-for-libraries-frameworks/58393/2
+      - run: swift build -Xswiftc -warnings-as-errors --configuration release
+
+  build-and-test-xcode:
     name: Xcode, ${{matrix.platform}} (Xcode ${{ matrix.tooling.xcodeVersion }})
     runs-on: macos-15
     needs: generate-matrices
@@ -118,6 +137,26 @@ jobs:
 
       - name: Run tests
         run: swift run BuildTool test-library --platform ${{ matrix.platform }}
+
+  build-release-configuration-xcode:
+    name: Xcode, `release` configuration, ${{matrix.platform}} (Xcode ${{ matrix.tooling.xcodeVersion }})
+    runs-on: macos-15
+    needs: generate-matrices
+
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.generate-matrices.outputs.matrix).withPlatform }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: ${{ matrix.tooling.xcodeVersion }}
+
+      - name: Build library
+        run: swift run BuildTool build-library --platform ${{ matrix.platform }} --configuration release
 
   check-example-app:
     name: Example app, ${{matrix.platform}} (Xcode ${{ matrix.tooling.xcodeVersion }})
@@ -149,8 +188,10 @@ jobs:
     needs:
       - lint
       - spec-coverage
-      - check-spm
-      - check-xcode
+      - build-and-test-spm
+      - build-release-configuration-spm
+      - build-and-test-xcode
+      - build-release-configuration-xcode
       - check-example-app
 
     steps:

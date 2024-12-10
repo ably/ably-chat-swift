@@ -8,6 +8,7 @@ import Table
 struct BuildTool: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         subcommands: [
+            BuildLibrary.self,
             BuildLibraryForTesting.self,
             TestLibrary.self,
             BuildExampleApp.self,
@@ -16,6 +17,23 @@ struct BuildTool: AsyncParsableCommand {
             SpecCoverage.self,
         ]
     )
+}
+
+@available(macOS 14, *)
+struct BuildLibrary: AsyncParsableCommand {
+    static let configuration = CommandConfiguration(
+        abstract: "Build the AblyChat library"
+    )
+
+    @Option var configuration: Configuration?
+    @Option var platform: Platform
+
+    mutating func run() async throws {
+        let destinationSpecifier = try await platform.resolve()
+        let scheme = "AblyChat"
+
+        try await XcodeRunner.runXcodebuild(action: "build", configuration: configuration, scheme: scheme, destination: destinationSpecifier)
+    }
 }
 
 @available(macOS 14, *)
