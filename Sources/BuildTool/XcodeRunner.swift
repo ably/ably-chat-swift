@@ -2,11 +2,15 @@ import Foundation
 
 @available(macOS 14, *)
 enum XcodeRunner {
-    static func runXcodebuild(action: String?, scheme: String, destination: DestinationSpecifier) async throws {
+    static func runXcodebuild(action: String?, configuration: Configuration? = nil, scheme: String, destination: DestinationSpecifier) async throws {
         var arguments: [String] = []
 
         if let action {
             arguments.append(action)
+        }
+
+        if let configuration {
+            arguments.append(contentsOf: ["-configuration", configuration.rawValue])
         }
 
         arguments.append(contentsOf: ["-scheme", scheme])
