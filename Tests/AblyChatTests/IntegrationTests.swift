@@ -281,7 +281,7 @@ struct IntegrationTests {
         // MARK: - Release
 
         // (1) Release the room
-        try await rxClient.rooms.release(roomID: roomID)
+        await rxClient.rooms.release(roomID: roomID)
 
         // (2) Check that we received a RELEASED status change as a result of releasing the room
         _ = try #require(await rxRoomStatusSubscription.first { $0.current == .released })

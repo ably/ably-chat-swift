@@ -32,7 +32,7 @@ actor MockRooms: Rooms {
         return room
     }
 
-    func release(roomID _: String) async throws {
+    func release(roomID _: String) async {
         fatalError("Not yet implemented")
     }
 

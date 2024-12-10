@@ -2,7 +2,7 @@ import Ably
 
 public protocol Rooms: AnyObject, Sendable {
     func get(roomID: String, options: RoomOptions) async throws -> any Room
-    func release(roomID: String) async throws
+    func release(roomID: String) async
     var clientOptions: ClientOptions { get }
 }
 
@@ -258,7 +258,7 @@ internal actor DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
         }
     #endif
 
-    internal func release(roomID: String) async throws {
+    internal func release(roomID: String) async {
         guard let roomState = roomStates[roomID] else {
             // CHA-RC1g2 (no-op)
             return
