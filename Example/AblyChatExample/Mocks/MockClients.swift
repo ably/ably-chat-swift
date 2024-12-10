@@ -277,7 +277,7 @@ actor MockPresence: Presence {
         MockStrings.names.shuffled().map { name in
             PresenceMember(
                 clientID: name,
-                data: PresenceData(userCustomData: nil),
+                data: nil,
                 action: .present,
                 extras: nil,
                 updatedAt: Date()
@@ -289,7 +289,7 @@ actor MockPresence: Presence {
         MockStrings.names.shuffled().map { name in
             PresenceMember(
                 clientID: name,
-                data: PresenceData(userCustomData: nil),
+                data: nil,
                 action: .present,
                 extras: nil,
                 updatedAt: Date()

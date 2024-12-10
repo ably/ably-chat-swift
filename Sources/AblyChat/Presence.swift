@@ -152,7 +152,7 @@ public struct PresenceMember: Sendable {
         }
     }
 
-    public init(clientID: String, data: PresenceData, action: PresenceMember.Action, extras: (any Sendable)?, updatedAt: Date) {
+    public init(clientID: String, data: PresenceData?, action: PresenceMember.Action, extras: (any Sendable)?, updatedAt: Date) {
         self.clientID = clientID
         self.data = data
         self.action = action
