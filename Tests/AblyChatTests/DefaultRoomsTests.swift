@@ -251,7 +251,7 @@ struct DefaultRoomsTests {
         // When: `release(roomID:)` is called with this room ID
         // Then: The call to `release(roomID:)` completes (this is as much as I can do to test the spec’s “no-op”; i.e. check it doesn’t seem to wait for anything or have any obvious side effects)
         let roomID = "basketball"
-        try await rooms.release(roomID: roomID)
+        await rooms.release(roomID: roomID)
     }
 
     // @spec CHA-RC1g3
@@ -290,7 +290,7 @@ struct DefaultRoomsTests {
         roomReleaseOperation.complete()
 
         // Then: The second call to `release(roomID:)` completes, and this second release call does not trigger a CHA-RL3 room release operation (i.e. in the language of the spec it reuses the “future” of the existing CHA-RC1g release operation)
-        try await secondReleaseResult
+        await secondReleaseResult
         #expect(await roomToReturn.releaseCallCount == 1)
     }
 
@@ -344,7 +344,7 @@ struct DefaultRoomsTests {
         roomReleaseOperation.complete()
 
         // Then: The second call to `release(roomID:)` completes, and this second release call does not trigger a CHA-RL3 room release operation (i.e. in the language of the spec it reuses the “future” of the existing CHA-RC1g release operation)
-        try await secondReleaseResult
+        await secondReleaseResult
         #expect(await roomToReturn.releaseCallCount == 1)
     }
 
@@ -371,7 +371,7 @@ struct DefaultRoomsTests {
         try #require(await rooms.testsOnly_hasRoomMapEntryWithID(roomID))
 
         // When: `release(roomID:)` is called with this room ID
-        _ = try await rooms.release(roomID: roomID)
+        _ = await rooms.release(roomID: roomID)
 
         // Then:
         // 1. first, the room is removed from the room map
