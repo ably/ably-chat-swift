@@ -198,13 +198,15 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
         await featureChannel.onDiscontinuity(bufferingPolicy: bufferingPolicy)
     }
 
-    private func decodePresenceData(from data: Any?) -> PresenceData? {
-        guard let userData = data as? [String: Any] else {
-            return nil
+    private func decodePresenceData(from data: Any?) throws -> PresenceData? {
+        guard let data = data as? [String: Any] else {
+            let error = ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without data")
+            logger.log(message: error.message, level: .error)
+            throw error
         }
 
         do {
-            let jsonData = try JSONSerialization.data(withJSONObject: userData, options: [])
+            let jsonData = try JSONSerialization.data(withJSONObject: data, options: [])
             let presenceData = try JSONDecoder().decode(PresenceData.self, from: jsonData)
             return presenceData
         } catch {
@@ -221,11 +223,7 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
             throw error
         }
         let presenceMembers = try members.map { member in
-            guard let data = member.data as? [String: Any] else {
-                let error = ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without data")
-                logger.log(message: error.message, level: .error)
-                throw error
-            }
+            let userCustomData = try decodePresenceData(from: member.data)
 
             guard let clientID = member.clientId else {
                 let error = ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without clientId")
@@ -238,8 +236,6 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
                 logger.log(message: error.message, level: .error)
                 throw error
             }
-
-            let userCustomData = decodePresenceData(from: data)
 
             // Seems like we want to just forward on `extras` from the cocoa SDK but that is an `ARTJsonCompatible` type which is not `Sendable`... currently just converting this to a `Sendable` type (`String`) until we know what to do with this.
             let extras = member.extras?.toJSONString()
@@ -271,7 +267,7 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
             throw error
         }
 
-        let userCustomDataDecoded = decodePresenceData(from: message.data)
+        let userCustomDataDecoded = try decodePresenceData(from: message.data)
 
         let presenceEvent = PresenceEvent(
             action: event,
