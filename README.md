@@ -57,14 +57,15 @@ If there are other features you'd like us to prioritize, please [let us know](ht
 You will need the following prerequisites:
 
 - An Ably account
-    - You can [sign up](https://ably.com/signup) to the generous free tier.
+
+  - You can [sign up](https://ably.com/signup) to the generous free tier.
 
 - An Ably API key
-    - Use the default or create a new API key in an app within
-      your [Ably account dashboard](https://ably.com/dashboard).
-    - Make sure your API key has the
-      following [capabilities](https://ably.com/docs/auth/capabilities): `publish`, `subscribe`, `presence`, `history` and
-      `channel-metadata`.
+  - Use the default or create a new API key in an app within
+    your [Ably account dashboard](https://ably.com/dashboard).
+  - Make sure your API key has the
+    following [capabilities](https://ably.com/docs/auth/capabilities): `publish`, `subscribe`, `presence`, `history` and
+    `channel-metadata`.
 
 To instantiate the Chat SDK, create an [Ably client](https://ably.com/docs/getting-started/setup) and pass it into the Chat constructor:
 
@@ -186,7 +187,7 @@ Once `release` is called, the room will become unusable and you will need to get
 
 > [!NOTE]
 > Releasing a room may be optional for many applications. If release is not called, the server will automatically tidy up
-connections and other resources associated with the room after a period of time.
+> connections and other resources associated with the room after a period of time.
 
 ### Monitoring room status
 
@@ -405,6 +406,7 @@ for await typing in typingSubscription {
     typingInfo = typing.currentlyTyping.isEmpty ? "" : "Typing: \(typing.currentlyTyping.joined(separator: ", "))..."
 }
 ```
+
 To stop listening for the typing events, call the `finish` method on the returned subscription instance.
 
 ## Occupancy of a chat room
@@ -421,6 +423,7 @@ for await event in occupancySubscription {
     occupancyInfo = "Connections: \(event.presenceMembers) (\(event.connections))"
 }
 ```
+
 To stop listening for the typing events, call the `finish` method on the returned subscription instance.
 
 Occupancy updates are delivered in near-real-time, with updates in quick succession batched together for performance.
@@ -462,6 +465,7 @@ for await reaction in reactionSubscription {
     print("Received a reaction of type \(reaction.type), and metadata \(reaction.metadata)")
 }
 ```
+
 To stop receiving reactions, call the `finish` method on the returned subscription instance.
 
 ## Example app
@@ -498,7 +502,7 @@ let messagesChannel = room.messages.channel
 For a given chat room, the channels used for features are as follows:
 
 | Feature   | Channel                              |
-|-----------|--------------------------------------|
+| --------- | ------------------------------------ |
 | Messages  | `<roomId>::$chat::$chatMessages`     |
 | Presence  | `<roomId>::$chat::$chatMessages`     |
 | Occupancy | `<roomId>::$chat::$chatMessages`     |
