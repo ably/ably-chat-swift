@@ -11,10 +11,8 @@ public let errorDomain = "AblyChatErrorDomain"
  The error codes for errors in the ``errorDomain`` error domain.
  */
 public enum ErrorCode: Int {
-    /// ``Rooms.get(roomID:options:)`` was called with a different set of room options than was used on a previous call. You must first release the existing room instance using ``Rooms.release(roomID:)``.
-    ///
-    /// TODO this code is a guess, revisit in https://github.com/ably-labs/ably-chat-swift/issues/32
-    case inconsistentRoomOptions = 1
+    /// The user attempted to perform an invalid action.
+    case badRequest = 40000
 
     case messagesAttachmentFailed = 102_001
     case presenceAttachmentFailed = 102_002
@@ -38,7 +36,7 @@ public enum ErrorCode: Int {
 
     /// Has a case for each of the ``ErrorCode`` cases that imply a fixed status code.
     internal enum CaseThatImpliesFixedStatusCode {
-        case inconsistentRoomOptions
+        case badRequest
         case messagesAttachmentFailed
         case presenceAttachmentFailed
         case reactionsAttachmentFailed
@@ -56,8 +54,8 @@ public enum ErrorCode: Int {
 
         internal var toNumericErrorCode: ErrorCode {
             switch self {
-            case .inconsistentRoomOptions:
-                .inconsistentRoomOptions
+            case .badRequest:
+                .badRequest
             case .messagesAttachmentFailed:
                 .messagesAttachmentFailed
             case .presenceAttachmentFailed:
@@ -93,7 +91,7 @@ public enum ErrorCode: Int {
         internal var statusCode: Int {
             // These status codes are taken from the "Chat-specific Error Codes" section of the spec.
             switch self {
-            case .inconsistentRoomOptions,
+            case .badRequest,
                  .roomInFailedState,
                  .roomIsReleasing,
                  .roomIsReleased,
@@ -175,7 +173,7 @@ internal enum ChatError {
     internal var codeAndStatusCode: ErrorCodeAndStatusCode {
         switch self {
         case .inconsistentRoomOptions:
-            .fixedStatusCode(.inconsistentRoomOptions)
+            .fixedStatusCode(.badRequest)
         case let .attachmentFailed(feature, _):
             switch feature {
             case .messages:

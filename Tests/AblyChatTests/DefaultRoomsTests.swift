@@ -143,13 +143,13 @@ struct DefaultRoomsTests {
         _ = try await rooms.get(roomID: roomID, options: options)
 
         // When: get(roomID:options:) is called with the same ID but different options
-        // Then: It throws an inconsistentRoomOptions error
+        // Then: It throws a `badRequest` error
         let differentOptions = RoomOptions(presence: .init(subscribe: false))
 
         await #expect {
             try await rooms.get(roomID: roomID, options: differentOptions)
         } throws: { error in
-            isChatError(error, withCodeAndStatusCode: .fixedStatusCode(.inconsistentRoomOptions))
+            isChatError(error, withCodeAndStatusCode: .fixedStatusCode(.badRequest))
         }
     }
 
@@ -183,13 +183,13 @@ struct DefaultRoomsTests {
         _ = await operationWaitSubscription.first { $0.waitingOperationType == .get && $0.waitedOperationType == .release }
 
         // When: get(roomID:options:) is called with the same ID but different options
-        // Then: The second call to get(roomID:options:) throws an inconsistentRoomOptions error
+        // Then: The second call to get(roomID:options:) throws a `badRequest` error
         let differentOptions = RoomOptions(presence: .init(subscribe: false))
 
         await #expect {
             try await rooms.get(roomID: roomID, options: differentOptions)
         } throws: { error in
-            isChatError(error, withCodeAndStatusCode: .fixedStatusCode(.inconsistentRoomOptions))
+            isChatError(error, withCodeAndStatusCode: .fixedStatusCode(.badRequest))
         }
 
         // Post-test: Allow the CHA-RC1g release operation to complete
