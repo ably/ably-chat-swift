@@ -1,6 +1,12 @@
 import Ably
 
+/**
+ * Chat Message Actions.
+ */
 public enum MessageAction: String, Codable, Sendable {
+    /**
+     * Action applied to a new message.
+     */
     case create = "message.create"
 
     internal static func fromRealtimeAction(_ action: ARTMessageAction) -> Self? {
@@ -21,7 +27,9 @@ public enum MessageAction: String, Codable, Sendable {
     }
 }
 
+/// Realtime chat message names.
 internal enum RealtimeMessageName: String, Sendable {
+    /// Represents a regular chat message.
     case chatMessage = "chat.message"
 }
 

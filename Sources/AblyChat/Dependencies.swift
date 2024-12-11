@@ -14,7 +14,7 @@ public protocol RealtimeClientProtocol: ARTRealtimeProtocol, Sendable {
     var connection: Connection { get }
 }
 
-/// Expresses the requirements of the object returned by ``RealtimeClientProtocol.channels``.
+/// Expresses the requirements of the object returned by ``RealtimeClientProtocol/channels``.
 public protocol RealtimeChannelsProtocol: ARTRealtimeChannelsProtocol, Sendable {
     associatedtype Channel: RealtimeChannelProtocol
 
@@ -22,7 +22,7 @@ public protocol RealtimeChannelsProtocol: ARTRealtimeChannelsProtocol, Sendable 
     func get(_ name: String, options: ARTRealtimeChannelOptions) -> Channel
 }
 
-/// Expresses the requirements of the object returned by ``RealtimeChannelsProtocol.get(_:)``.
+/// Expresses the requirements of the object returned by ``RealtimeChannelsProtocol/get(_:options:)``.
 public protocol RealtimeChannelProtocol: ARTRealtimeChannelProtocol, Sendable {}
 
 public protocol ConnectionProtocol: ARTConnectionProtocol, Sendable {}
