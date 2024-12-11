@@ -230,13 +230,13 @@ There may be instances where the connection to Ably is lost for a period of time
 circumstances, the connection will recover and operation will continue with no discontinuity of messages. However, during extended
 periods of disconnection, continuity cannot be guaranteed and you'll need to take steps to recover messages you might have missed.
 
-Each feature of the Chat SDK provides an `subscribeToDiscontinuities` method. Here you can register a listener that will be notified whenever a
+Each feature of the Chat SDK provides an `onDiscontinuity` method. Here you can register a listener that will be notified whenever a
 discontinuity in that feature has been observed.
 
 Taking messages as an example, you can listen for discontinuities like so:
 
 ```swift
-let subscription = room.messages.subscribeToDiscontinuities()
+let subscription = room.messages.onDiscontinuity()
 for await error in subscription {
     print("Recovering from the error: \(error)")
 }
@@ -307,7 +307,7 @@ if paginatedResult.hasNext {
 
 ### Retrieving online members
 
-You can get the complete list of currently online or present members, their state and data, by calling the `presence#get` method which returns
+You can get the complete list of currently online or present members, their state and data, by calling the `presence.get()` method which returns
 a list of the presence messages, where each message contains the most recent data for a member:
 
 ```swift
@@ -332,8 +332,7 @@ try await room.presence.enter(data: ["status": "Online"])
 
 ### Updating the presence data
 
-Updates allow you to make changes to the custom data associated with a present user. Common use-cases include updating the users'
-status:
+Updates allow you to make changes to the custom data associated with a present user. Common use-cases include updating the user's status:
 
 ```swift
 try await room.presence.update(data: ["status": "Busy"])
@@ -447,7 +446,7 @@ To send room-level reactions, you must be [attached](#attaching-to-a-room) to th
 
 ### Sending a reaction
 
-To send a reaction such as `"like"`:
+To send a reaction such as `like`:
 
 ```swift
 try await room.reactions.send(params: .init(type: "like"))
