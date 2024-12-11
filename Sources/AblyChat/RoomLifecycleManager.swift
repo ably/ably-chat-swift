@@ -908,6 +908,11 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
             break
         }
 
+        // CHA-RL2i
+        if let currentOperationID = status.operationID {
+            try? await waitForCompletionOfOperationWithID(currentOperationID, waitingOperationID: operationID)
+        }
+
         // CHA-RL2e
         clearTransientDisconnectTimeouts()
         changeStatus(to: .detaching(detachOperationID: operationID))
