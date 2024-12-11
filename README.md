@@ -106,16 +106,16 @@ let error = await chatClient.connection.error
 You can subscribe to connection status changes by registering a listener, like so:
 
 ```swift
-let subscription = chatClient.connection.onStatusChange(bufferingPolicy: .unbounded)
+let subscription = chatClient.connection.onStatusChange()
 for await statusChange in subscription {
     print("Connection status changed to: \(statusChange.current)")
 }
 ```
 
-To stop listening to changes, call the `finish` method on the returned subscription instance:
+To stop listening to changes, call the `unsubscribe` method on the returned subscription instance:
 
 ```swift
-subscription.finish()
+subscription.unsubscribe()
 ```
 
 ## Chat rooms
@@ -212,16 +212,16 @@ switch await room.status {
 You can also subscribe to changes in the room status and be notified whenever they happen by registering a listener:
 
 ```swift
-let statusSubscription = try await room.onStatusChange(bufferingPolicy: .unbounded)
+let statusSubscription = try await room.onStatusChange()
 for await status in statusSubscription {
     print("Room status: \(status)")
 }
 ```
 
-To stop listening to room status changes, call the `finish` method on the returned subscription instance:
+To stop listening to room status changes, call the `unsubscribe` method on the returned subscription instance:
 
 ```swift
-statusSubscription.finish()
+statusSubscription.unsubscribe()
 ```
 
 ## Handling discontinuity
@@ -242,7 +242,7 @@ for await error in subscription {
 }
 ```
 
-To stop listening to discontinuities, call `finish` method on returned subscription instance.
+To stop listening to discontinuities, call `unsubscribe` method on returned subscription instance.
 
 ## Chat messages
 
@@ -251,13 +251,13 @@ To stop listening to discontinuities, call `finish` method on returned subscript
 To subscribe to incoming messages you create a subscription for the room `messages` object:
 
 ```swift
-let messagesSubscription = try await room.messages.subscribe(bufferingPolicy: .unbounded)
+let messagesSubscription = try await room.messages.subscribe()
 for await message in messagesSubscription {
     print("Message received: \(message)")
 }
 ```
 
-To stop listening for the new messages, call the `finish` method on the returned subscription instance.
+To stop listening for the new messages, call the `unsubscribe` method on the returned subscription instance.
 
 ### Sending messages
 
@@ -291,7 +291,7 @@ method. It can be used to request historical messages in the chat room that were
 paginated response that can be used to request for more messages:
 
 ```swift
-let messagesSubscription = try await room.messages.subscribe(bufferingPolicy: .unbounded)
+let messagesSubscription = try await room.messages.subscribe()
 let paginatedResult = try await messagesSubscription.getPreviousMessages(params: .init(limit: 50)) // `orderBy` here is ignored and always `newestFirst`
 print(paginatedResult.items)
 
@@ -324,7 +324,7 @@ let isPresent = try await room.presence.isUserPresent(clientID: "clemons123")
 ### Entering the presence set
 
 To appear online for other users, you can enter the presence set of a chat room. While entering presence, you can provide optional data that
-will be associated with the presence message:
+will be associated with the presence message (can be a nested dictionary):
 
 ```swift
 try await room.presence.enter(data: ["status": "Online"])
@@ -359,7 +359,7 @@ for await event in presenceSubscription {
 }
 ```
 
-To stop listening for the presence updates, call the `finish` method on the returned subscription instance.
+To stop listening for the presence updates, call the `unsubscribe` method on the returned subscription instance.
 
 ## Typing indicators
 
@@ -405,13 +405,13 @@ try await room.typing.stop()
 To subscribe to typing events, create a subscription with the `subscribe` method:
 
 ```swift
-let typingSubscription = try await room.typing.subscribe(bufferingPolicy: .unbounded)
+let typingSubscription = try await room.typing.subscribe()
 for await typing in typingSubscription {
     typingInfo = typing.currentlyTyping.isEmpty ? "" : "Typing: \(typing.currentlyTyping.joined(separator: ", "))..."
 }
 ```
 
-To stop listening for the typing events, call the `finish` method on the returned subscription instance.
+To stop listening for the typing events, call the `unsubscribe` method on the returned subscription instance.
 
 ## Occupancy of a chat room
 
@@ -422,13 +422,13 @@ Occupancy tells you how many users are connected to the chat room.
 To subscribe to occupancy updates, subscribe a listener to the chat room `occupancy` member:
 
 ```swift
-let occupancySubscription = try await room.occupancy.subscribe(bufferingPolicy: .unbounded)
+let occupancySubscription = try await room.occupancy.subscribe()
 for await event in occupancySubscription {
     occupancyInfo = "Connections: \(event.presenceMembers) (\(event.connections))"
 }
 ```
 
-To stop listening for the typing events, call the `finish` method on the returned subscription instance.
+To stop listening for the typing events, call the `unsubscribe` method on the returned subscription instance.
 
 Occupancy updates are delivered in near-real-time, with updates in quick succession batched together for performance.
 
@@ -464,13 +464,13 @@ try await room.reactions.send(params: .init(type: "🎉", metadata: ["effect": .
 Subscribe to receive room-level reactions:
 
 ```swift
-let reactionSubscription = try await room.reactions.subscribe(bufferingPolicy: .unbounded)
+let reactionSubscription = try await room.reactions.subscribe()
 for await reaction in reactionSubscription {
     print("Received a reaction of type \(reaction.type), and metadata \(reaction.metadata)")
 }
 ```
 
-To stop receiving reactions, call the `finish` method on the returned subscription instance.
+To stop receiving reactions, call the `unsubscribe` method on the returned subscription instance.
 
 ## Example app
 
