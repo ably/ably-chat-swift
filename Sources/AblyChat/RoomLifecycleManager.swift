@@ -648,13 +648,42 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
         }
     #endif
 
-    // TODO what is this
-    private func waitForCompletionOfAnyInProgressOperation(
-        waitingOperationID: UUID
+    var waitingOperationIDs: [UUID] = []
+    var nextOperationIDTask: Task<UUID, Never>?
+
+    // TODO: what is this
+    private func waitToBeAbleToPerformOperationWithID(
+        _ waitingOperationID: UUID
     ) async {
-        // CHA-RL1d, CHA-RL2i, CHA-RL3k
-        if let currentOperationID = status.operationID {
-            try? await waitForCompletionOfOperationWithID(currentOperationID, waitingOperationID: waitingOperationID)
+        waitingOperationIDs.append(waitingOperationID)
+
+        while true {
+            // CHA-RL1d, CHA-RL2i, CHA-RL3k
+            if let currentOperationID = status.operationID {
+                try? await waitForCompletionOfOperationWithID(currentOperationID, waitingOperationID: waitingOperationID)
+            }
+
+            // so, a bunch of calls to `waitForCompletionOfAnyInProgressOperation` are completing around this time, and one of them will be the first to enter the `else` branch below, and then all of the calls will wait for this decision
+
+            let nextOperationID: UUID
+            if let nextOperationIDTask {
+                nextOperationID = await nextOperationIDTask.value
+            } else {
+                // This task will run once the current operation completes, and will choose the next operation that’s going to be run
+                let nextOperationIDTask = Task {
+                    // TODO: the correct criteria here
+                    logger.log(message: "The following operations are waiting: \(waitingOperationID), will allow \(waitingOperationIDs[0]) to proceed", level: .debug)
+                    let nextOperationID = waitingOperationIDs.remove(at: 0)
+                    return nextOperationID
+                }
+                self.nextOperationIDTask = nextOperationIDTask
+                nextOperationID = await nextOperationIDTask.value
+            }
+
+            if nextOperationID == waitingOperationID {
+                // It's our turn to execute
+                break
+            }
         }
     }
 
@@ -797,7 +826,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
         }
 
         // CHA-RL1d
-        await waitForCompletionOfAnyInProgressOperation(waitingOperationID: operationID)
+        await waitToBeAbleToPerformOperationWithID(operationID)
 
         // CHA-RL1e
         changeStatus(to: .attachingDueToAttachOperation(attachOperationID: operationID))
@@ -917,7 +946,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
         }
 
         // CHA-RL2i
-        await waitForCompletionOfAnyInProgressOperation(waitingOperationID: operationID)
+        await waitToBeAbleToPerformOperationWithID(operationID)
 
         // CHA-RL2e
         clearTransientDisconnectTimeouts()
@@ -1047,7 +1076,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
         }
 
         // CHA-RL3k
-        await waitForCompletionOfAnyInProgressOperation(waitingOperationID: operationID)
+        await waitToBeAbleToPerformOperationWithID(operationID)
 
         // CHA-RL3l
         clearTransientDisconnectTimeouts()
