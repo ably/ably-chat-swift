@@ -15,6 +15,7 @@ struct BuildTool: AsyncParsableCommand {
             GenerateMatrices.self,
             Lint.self,
             SpecCoverage.self,
+            BuildDocumentation.self,
         ]
     )
 }
@@ -634,7 +635,7 @@ struct SpecCoverage: AsyncParsableCommand {
             var name: String
 
             /**
-             * The path of this target’s sources, relative to ``PackageDescribeOutput.path``.
+             * The path of this target’s sources, relative to ``PackageDescribeOutput/path``.
              */
             var path: String
 
@@ -666,5 +667,40 @@ struct SpecCoverage: AsyncParsableCommand {
         return testTarget.sources.map { sourceRelativePath in
             targetSourcesAbsoluteURL.appending(component: sourceRelativePath)
         }
+    }
+}
+
+@available(macOS 14, *)
+struct BuildDocumentation: AsyncParsableCommand {
+    static let configuration = CommandConfiguration(
+        abstract: "Build documentation for the library"
+    )
+
+    mutating func run() async throws {
+        // For now, this is intended to just perform some validation of the documentation comments. We’ll generate HTML output in https://github.com/ably/ably-chat-swift/issues/2.
+
+        try await ProcessRunner.run(
+            executableName: "swift",
+            arguments: [
+                "package",
+                "generate-documentation",
+
+                "--product", "AblyChat",
+
+                // Useful because it alerts us about links to nonexistent symbols.
+                "--warnings-as-errors",
+
+                // Outputs the following information about which symbols have been documented and to what level of detail:
+                //
+                // - a table at the end of the CLI output
+                // - as a JSON file in ./.build/plugins/Swift-DocC/outputs/AblyChat.doccarchive/documentation-coverage.json
+                //
+                // I do not yet know how to make use of these (there’s all sorts of unexpected symbols that we didn’t directly declare there, e.g. `compactMap(_:)`), but maybe it’ll be a bit helpful still.
+                "--experimental-documentation-coverage",
+
+                // Increases the detail level of the aforementioned coverage table in CLI output.
+                "--coverage-summary-level", "detailed",
+            ]
+        )
     }
 }

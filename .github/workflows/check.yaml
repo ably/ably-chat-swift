@@ -178,6 +178,49 @@ jobs:
       - name: Build example app
         run: swift run BuildTool build-example-app --platform ${{ matrix.platform }}
 
+  check-documentation:
+    runs-on: macos-15
+
+    permissions:
+      deployments: write
+      id-token: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      # This step can be removed once the runners’ default version of Xcode is 16 or above
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: 16
+
+      # Build the documentation using Swift DocC
+      - name: Build documentation
+        run: |
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          swift package generate-documentation --target AblyChat --disable-indexing \
+          --hosting-base-path "/builds/ably/ably-chat-swift/pull/${PR_NUMBER}/AblyChat"
+        working-directory: ${{ github.workspace }}
+
+      # Configure AWS credentials for uploading documentation
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: eu-west-2
+          role-to-assume: arn:aws:iam::${{ secrets.ABLY_AWS_ACCOUNT_ID_SDK }}:role/ably-sdk-builds-ably-chat-swift
+          role-session-name: "${{ github.run_id }}-${{ github.run_number }}"
+
+      # Upload the generated documentation
+      - name: Upload Documentation
+        uses: ably/sdk-upload-action@v2
+        with:
+          sourcePath: .build/plugins/Swift-DocC/outputs/AblyChat.doccarchive # Path to the Swift DocC output folder
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+          artifactName: AblyChat # Optional root-level directory name
+          destinationPath: "builds/ably/ably-chat-swift/pull/${{ github.event.pull_request.number }}/AblyChat" # Destination path on S3
+
   # We use this job as a marker that all of the required checks have completed.
   # This allows us to configure a single required status check in our branch
   # protection rules instead of having to type loads of different check names
@@ -193,6 +236,7 @@ jobs:
       - build-and-test-xcode
       - build-release-configuration-xcode
       - check-example-app
+      - check-documentation
 
     steps:
       - name: No-op

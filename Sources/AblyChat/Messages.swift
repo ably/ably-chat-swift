@@ -1,13 +1,56 @@
 import Ably
 
+/**
+ * This interface is used to interact with messages in a chat room: subscribing
+ * to new messages, fetching history, or sending messages.
+ *
+ * Get an instance via ``Room/messages``.
+ */
 public protocol Messages: AnyObject, Sendable, EmitsDiscontinuities {
+    /**
+     * Subscribe to new messages in this chat room.
+     *
+     * - Parameters:
+     *   - bufferingPolicy: The ``BufferingPolicy`` for the created subscription.
+     *
+     * - Returns: A subscription ``MessageSubscription`` that can be used to iterate through new messages.
+     */
     func subscribe(bufferingPolicy: BufferingPolicy) async throws -> MessageSubscription
-    /// Same as calling ``subscribe(bufferingPolicy:)`` with ``BufferingPolicy.unbounded``.
+
+    /// Same as calling ``subscribe(bufferingPolicy:)`` with ``BufferingPolicy/unbounded``.
     ///
     /// The `Messages` protocol provides a default implementation of this method.
     func subscribe() async throws -> MessageSubscription
+
+    /**
+     * Get messages that have been previously sent to the chat room, based on the provided options.
+     *
+     * - Parameters:
+     *   - options: Options for the query.
+     *
+     * - Returns: A paginated result object that can be used to fetch more messages if available.
+     */
     func get(options: QueryOptions) async throws -> any PaginatedResult<Message>
+
+    /**
+     * Send a message in the chat room.
+     *
+     * This method uses the Ably Chat API endpoint for sending messages.
+     *
+     * - Parameters:
+     *   - params: An object containing `text`, `headers` and `metadata` for the message.
+     *
+     * - Returns: The published message.
+     *
+     * - Note: It is possible to receive your own message via the messages subscription before this method returns.
+     */
     func send(params: SendMessageParams) async throws -> Message
+
+    /**
+     * Get the underlying Ably realtime channel used for the messages in this chat room.
+     *
+     * - Returns: The realtime channel.
+     */
     var channel: RealtimeChannelProtocol { get }
 }
 
@@ -17,9 +60,44 @@ public extension Messages {
     }
 }
 
+/**
+ * Params for sending a text message. Only `text` is mandatory.
+ */
 public struct SendMessageParams: Sendable {
+    /**
+     * The text of the message.
+     */
     public var text: String
+
+    /**
+     * Optional metadata of the message.
+     *
+     * The metadata is a map of extra information that can be attached to chat
+     * messages. It is not used by Ably and is sent as part of the realtime
+     * message payload. Example use cases are setting custom styling like
+     * background or text colors or fonts, adding links to external images,
+     * emojis, etc.
+     *
+     * Do not use metadata for authoritative information. There is no server-side
+     * validation. When reading the metadata treat it like user input.
+     *
+     */
     public var metadata: MessageMetadata?
+
+    /**
+     * Optional headers of the message.
+     *
+     * The headers are a flat key-value map and are sent as part of the realtime
+     * message's extras inside the `headers` property. They can serve similar
+     * purposes as the metadata but they are read by Ably and can be used for
+     * features such as
+     * [subscription filters](https://faqs.ably.com/subscription-filters).
+     *
+     * Do not use the headers for authoritative information. There is no
+     * server-side validation. When reading the headers treat them like user
+     * input.
+     *
+     */
     public var headers: MessageHeaders?
 
     public init(text: String, metadata: MessageMetadata? = nil, headers: MessageHeaders? = nil) {
@@ -29,15 +107,44 @@ public struct SendMessageParams: Sendable {
     }
 }
 
+/**
+ * Options for querying messages in a chat room.
+ */
 public struct QueryOptions: Sendable {
     public enum OrderBy: Sendable {
         case oldestFirst
         case newestFirst
     }
 
+    /**
+     * The start of the time window to query from. If provided, the response will include
+     * messages with timestamps equal to or greater than this value.
+     *
+     * Defaults to the beginning of time.
+     */
     public var start: Date?
+
+    /**
+     * The end of the time window to query from. If provided, the response will include
+     * messages with timestamps less than this value.
+     *
+     * Defaults to the current time.
+     */
     public var end: Date?
+
+    /**
+     * The maximum number of messages to return in the response.
+     *
+     * Defaults to 100.
+     */
     public var limit: Int?
+
+    /**
+     * The direction to query messages in.
+     * If ``OrderBy/oldestFirst``, the response will include messages from the start of the time window to the end.
+     * If ``OrderBy/newestFirst``, the response will include messages from the end of the time window to the start.
+     * If not provided, the default is ``OrderBy/newestFirst`.
+     */
     public var orderBy: OrderBy?
 
     // (CHA-M5g) The subscribers subscription point must be additionally specified (internally, by us) in the fromSerial query parameter.

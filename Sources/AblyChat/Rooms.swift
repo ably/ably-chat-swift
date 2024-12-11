@@ -1,8 +1,52 @@
 import Ably
 
+/**
+ * Manages the lifecycle of chat rooms.
+ */
 public protocol Rooms: AnyObject, Sendable {
+    /**
+     * Gets a room reference by ID. The Rooms class ensures that only one reference
+     * exists for each room. A new reference object is created if it doesn't already
+     * exist, or if the one used previously was released using ``release(roomID:)``.
+     *
+     * Always call `release(roomID:)` after the ``Room`` object is no longer needed.
+     *
+     * If a call to this method is made for a room that is currently being released, then this it returns only when
+     * the release operation is complete.
+     *
+     * If a call to this method is made, followed by a subsequent call to `release(roomID:)` before the `get(roomID:options:)` returns, then the
+     * promise will throw an error.
+     *
+     * - Parameters:
+     *   - roomID: The ID of the room.
+     *   - options: The options for the room.
+     *
+     * - Returns: A new or existing `Room` object.
+     *
+     * - Throws: `ARTErrorInfo` if a room with the same ID but different options already exists.
+     */
     func get(roomID: String, options: RoomOptions) async throws -> any Room
+
+    /**
+     * Release the ``Room`` object if it exists. This method only releases the reference
+     * to the Room object from the Rooms instance and detaches the room from Ably. It does not unsubscribe to any
+     * events.
+     *
+     * After calling this function, the room object is no-longer usable. If you wish to get the room object again,
+     * you must call ``Rooms/get(roomID:options:)``.
+     *
+     * Calling this function will abort any in-progress `get(roomID:options:)` calls for the same room.
+     *
+     * - Parameters:
+     *   - roomID: The ID of the room.
+     */
     func release(roomID: String) async
+
+    /**
+     * Get the client options used to create the chat instance.
+     *
+     * - Returns: ``ClientOptions`` object.
+     */
     var clientOptions: ClientOptions { get }
 }
 
