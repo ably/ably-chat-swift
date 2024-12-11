@@ -39,7 +39,7 @@ struct DefaultRoomReactionsTests {
 
         // Then
         #expect(channel.lastMessagePublishedName == RoomReactionEvents.reaction.rawValue)
-        #expect(channel.lastMessagePublishedData as? [String: String] == sendReactionParams.asQueryItems())
+        #expect(channel.lastMessagePublishedData as? [String: String] == sendReactionParams.asJSONObject())
         #expect(channel.lastMessagePublishedExtras as? Dictionary == ["headers": sendReactionParams.headers])
     }
 
