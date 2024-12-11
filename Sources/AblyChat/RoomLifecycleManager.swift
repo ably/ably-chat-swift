@@ -648,6 +648,16 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
         }
     #endif
 
+    // TODO what is this
+    private func waitForCompletionOfAnyInProgressOperation(
+        waitingOperationID: UUID
+    ) async {
+        // CHA-RL1d, CHA-RL2i, CHA-RL3k
+        if let currentOperationID = status.operationID {
+            try? await waitForCompletionOfOperationWithID(currentOperationID, waitingOperationID: waitingOperationID)
+        }
+    }
+
     /// Waits for the operation with ID `waitedOperationID` to complete, re-throwing any error thrown by that operation.
     ///
     /// Note that this method currently treats all waited operations as throwing. If you wish to wait for an operation that you _know_ to be non-throwing (which the RELEASE operation currently is) then you’ll need to call this method with `try!` or equivalent. (It might be possible to improve this in the future, but I didn’t want to put much time into figuring it out.)
@@ -787,9 +797,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
         }
 
         // CHA-RL1d
-        if let currentOperationID = status.operationID {
-            try? await waitForCompletionOfOperationWithID(currentOperationID, waitingOperationID: operationID)
-        }
+        await waitForCompletionOfAnyInProgressOperation(waitingOperationID: operationID)
 
         // CHA-RL1e
         changeStatus(to: .attachingDueToAttachOperation(attachOperationID: operationID))
@@ -909,9 +917,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
         }
 
         // CHA-RL2i
-        if let currentOperationID = status.operationID {
-            try? await waitForCompletionOfOperationWithID(currentOperationID, waitingOperationID: operationID)
-        }
+        await waitForCompletionOfAnyInProgressOperation(waitingOperationID: operationID)
 
         // CHA-RL2e
         clearTransientDisconnectTimeouts()
@@ -1041,9 +1047,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
         }
 
         // CHA-RL3k
-        if let currentOperationID = status.operationID {
-            try? await waitForCompletionOfOperationWithID(currentOperationID, waitingOperationID: operationID)
-        }
+        await waitForCompletionOfAnyInProgressOperation(waitingOperationID: operationID)
 
         // CHA-RL3l
         clearTransientDisconnectTimeouts()
