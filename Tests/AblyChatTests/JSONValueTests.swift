@@ -13,6 +13,8 @@ struct JSONValueTests {
         // string
         (ablyCocoaPresenceData: "someString", expectedResult: "someString"),
         // number
+        (ablyCocoaPresenceData: NSNumber(value: 0), expectedResult: 0),
+        (ablyCocoaPresenceData: NSNumber(value: 1), expectedResult: 1),
         (ablyCocoaPresenceData: NSNumber(value: 123), expectedResult: 123),
         (ablyCocoaPresenceData: NSNumber(value: 123.456), expectedResult: 123.456),
         // bool
@@ -33,6 +35,8 @@ struct JSONValueTests {
           "someArray": [
             {
               "someStringKey": "someString",
+              "zero": 0,
+              "one": 1,
               "someIntegerKey": 123,
               "someFloatKey": 123.456,
               "someTrueKey": true,
@@ -53,6 +57,8 @@ struct JSONValueTests {
             "someArray": [
                 [
                     "someStringKey": "someString",
+                    "zero": 0,
+                    "one": 1,
                     "someIntegerKey": 123,
                     "someFloatKey": 123.456,
                     "someTrueKey": true,
@@ -79,6 +85,8 @@ struct JSONValueTests {
         // string
         (value: "someString", expectedResult: "someString"),
         // number
+        (value: 0, expectedResult: NSNumber(value: 0)),
+        (value: 1, expectedResult: NSNumber(value: 1)),
         (value: 123, expectedResult: NSNumber(value: 123)),
         (value: 123.456, expectedResult: NSNumber(value: 123.456)),
         // bool
@@ -100,6 +108,8 @@ struct JSONValueTests {
             "someArray": [
                 [
                     "someStringKey": "someString",
+                    "zero": 0,
+                    "one": 1,
                     "someIntegerKey": 123,
                     "someFloatKey": 123.456,
                     "someTrueKey": true,
@@ -120,6 +130,8 @@ struct JSONValueTests {
               "someStringKey": "someString",
               "someIntegerKey": 123,
               "someFloatKey": 123.456,
+              "zero": 0,
+              "one": 1,
               "someTrueKey": true,
               "someFalseKey": false,
               "someNullKey": null

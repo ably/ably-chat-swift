@@ -136,11 +136,15 @@ internal extension JSONValue {
             self = .array(array.map { .init(ablyCocoaPresenceData: $0) })
         case let string as String:
             self = .string(string)
-        // The order here is important, since a Bool can satisfy the NSNumber check
-        case let bool as Bool:
-            self = .bool(bool)
         case let number as NSNumber:
-            self = .number(number.doubleValue)
+            // We need to be careful to distinguish booleans from numbers of value 0 or 1; technique taken from https://forums.swift.org/t/jsonserialization-turns-bool-value-to-nsnumber/31909/3
+            if number === kCFBooleanTrue {
+                self = .bool(true)
+            } else if number === kCFBooleanFalse {
+                self = .bool(false)
+            } else {
+                self = .number(number.doubleValue)
+            }
         case is NSNull:
             self = .null
         default:
