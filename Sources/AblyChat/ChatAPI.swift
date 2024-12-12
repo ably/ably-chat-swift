@@ -93,8 +93,7 @@ internal final class ChatAPI: Sendable {
 
     private func makePaginatedRequest<Response: Codable & Sendable & Equatable>(
         _ url: String,
-        params: [String: String]? = nil,
-        body: [String: Any]? = nil
+        params: [String: String]? = nil
     ) async throws -> any PaginatedResult<Response> {
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<PaginatedResultWrapper<Response>, _>) in
             do {
