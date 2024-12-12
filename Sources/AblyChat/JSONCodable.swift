@@ -1,5 +1,5 @@
 internal protocol JSONEncodable {
-    var toJSONObjectValue: [String: JSONValue] { get }
+    var toJSONValue: JSONValue { get }
 }
 
 internal protocol JSONDecodable {

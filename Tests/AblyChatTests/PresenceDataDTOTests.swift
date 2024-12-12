@@ -34,8 +34,8 @@ struct PresenceDataDTOTests {
             (userCustomData: .null, expectedJSONObject: ["userCustomData": .null]),
         ] as[(userCustomData: PresenceData?, expectedJSONObject: [String: JSONValue])]
     )
-    func toJSONObject(userCustomData: PresenceData?, expectedJSONObject: [String: JSONValue]) {
+    func toJSONValue(userCustomData: PresenceData?, expectedJSONObject: [String: JSONValue]) {
         let dto = PresenceDataDTO(userCustomData: userCustomData)
-        #expect(dto.toJSONObjectValue == expectedJSONObject)
+        #expect(dto.toJSONValue == .object(expectedJSONObject))
     }
 }

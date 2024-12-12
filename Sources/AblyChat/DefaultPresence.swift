@@ -115,7 +115,7 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
         let dto = PresenceDataDTO(userCustomData: data)
 
         return try await withCheckedThrowingContinuation { continuation in
-            channel.presence.enterClient(clientID, data: JSONValue.object(dto.toJSONObjectValue).toAblyCocoaPresenceData) { [logger] error in
+            channel.presence.enterClient(clientID, data: dto.toJSONValue.toAblyCocoaPresenceData) { [logger] error in
                 if let error {
                     logger.log(message: "Error entering presence: \(error)", level: .error)
                     continuation.resume(throwing: error)
@@ -149,7 +149,7 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
         let dto = PresenceDataDTO(userCustomData: data)
 
         return try await withCheckedThrowingContinuation { continuation in
-            channel.presence.update(JSONValue.object(dto.toJSONObjectValue).toAblyCocoaPresenceData) { [logger] error in
+            channel.presence.update(dto.toJSONValue.toAblyCocoaPresenceData) { [logger] error in
                 if let error {
                     logger.log(message: "Error updating presence: \(error)", level: .error)
                     continuation.resume(throwing: error)
@@ -183,7 +183,7 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
         let dto = PresenceDataDTO(userCustomData: data)
 
         return try await withCheckedThrowingContinuation { continuation in
-            channel.presence.leave(JSONValue.object(dto.toJSONObjectValue).toAblyCocoaPresenceData) { [logger] error in
+            channel.presence.leave(dto.toJSONValue.toAblyCocoaPresenceData) { [logger] error in
                 if let error {
                     logger.log(message: "Error leaving presence: \(error)", level: .error)
                     continuation.resume(throwing: error)

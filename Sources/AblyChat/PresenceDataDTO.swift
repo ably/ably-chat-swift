@@ -22,13 +22,13 @@ extension PresenceDataDTO: JSONCodable {
         userCustomData = jsonObject[JSONKey.userCustomData.rawValue]
     }
 
-    internal var toJSONObjectValue: [String: JSONValue] {
+    internal var toJSONValue: JSONValue {
         var result: [String: JSONValue] = [:]
 
         if let userCustomData {
             result[JSONKey.userCustomData.rawValue] = userCustomData
         }
 
-        return result
+        return .object(result)
     }
 }
