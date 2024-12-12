@@ -3,7 +3,7 @@
 
 public enum MetadataValue: Sendable, Codable, Equatable {
     case string(String)
-    case number(Int) // Changed from NSNumber to Int to conform to Codable. Address in linked issue above.
+    case number(Double)
     case bool(Bool)
     case null
 }
