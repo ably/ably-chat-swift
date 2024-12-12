@@ -3,18 +3,18 @@ internal struct PresenceDataDTO: Equatable {
     internal var userCustomData: PresenceData?
 }
 
-// MARK: - Conversion to and from JSONValue
+// MARK: - JSONCodable
 
-internal extension PresenceDataDTO {
-    enum JSONKey: String {
+extension PresenceDataDTO: JSONCodable {
+    internal enum JSONKey: String {
         case userCustomData
     }
 
-    enum DecodingError: Error {
+    internal enum DecodingError: Error {
         case valueHasWrongType(key: JSONKey)
     }
 
-    init(jsonValue: JSONValue) throws {
+    internal init(jsonValue: JSONValue) throws {
         guard case let .object(jsonObject) = jsonValue else {
             throw DecodingError.valueHasWrongType(key: .userCustomData)
         }
@@ -22,7 +22,7 @@ internal extension PresenceDataDTO {
         userCustomData = jsonObject[JSONKey.userCustomData.rawValue]
     }
 
-    var toJSONObjectValue: [String: JSONValue] {
+    internal var toJSONObjectValue: [String: JSONValue] {
         var result: [String: JSONValue] = [:]
 
         if let userCustomData {
