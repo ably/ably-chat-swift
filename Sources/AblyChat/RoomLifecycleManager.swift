@@ -655,14 +655,18 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
     private func waitToBeAbleToPerformOperationWithID(
         _ waitingOperationID: UUID
     ) async {
+        guard let currentOperationID = status.operationID else {
+            return
+        }
+
+        // TODO I’m a bit confused about where the wait should be in all this
+
+        // CHA-RL1d, CHA-RL2i, CHA-RL3k
+        try? await waitForCompletionOfOperationWithID(currentOperationID, waitingOperationID: waitingOperationID)
+
         waitingOperationIDs.append(waitingOperationID)
 
         while true {
-            // CHA-RL1d, CHA-RL2i, CHA-RL3k
-            if let currentOperationID = status.operationID {
-                try? await waitForCompletionOfOperationWithID(currentOperationID, waitingOperationID: waitingOperationID)
-            }
-
             // so, a bunch of calls to `waitForCompletionOfAnyInProgressOperation` are completing around this time, and one of them will be the first to enter the `else` branch below, and then all of the calls will wait for this decision
 
             let nextOperationID: UUID
@@ -672,7 +676,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
                 // This task will run once the current operation completes, and will choose the next operation that’s going to be run
                 let nextOperationIDTask = Task {
                     // TODO: the correct criteria here
-                    logger.log(message: "The following operations are waiting: \(waitingOperationID), will allow \(waitingOperationIDs[0]) to proceed", level: .debug)
+                    logger.log(message: "The following operations are waiting to find out which operation can run next: \(waitingOperationIDs), will allow \(waitingOperationIDs[0]) to proceed", level: .debug)
                     let nextOperationID = waitingOperationIDs.remove(at: 0)
                     return nextOperationID
                 }
