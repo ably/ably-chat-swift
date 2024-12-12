@@ -3,7 +3,7 @@ import Foundation
 import Testing
 
 struct JSONValueTests {
-    // MARK: Conversion from ably-cocoa presence data
+    // MARK: Conversion from ably-cocoa data
 
     @Test(arguments: [
         // object
@@ -23,13 +23,13 @@ struct JSONValueTests {
         // null
         (ablyCocoaPresenceData: NSNull(), expectedResult: .null),
     ] as[(ablyCocoaPresenceData: Sendable, expectedResult: JSONValue?)])
-    func initWithAblyCocoaPresenceData(ablyCocoaPresenceData: Sendable, expectedResult: JSONValue?) {
-        #expect(JSONValue(ablyCocoaPresenceData: ablyCocoaPresenceData) == expectedResult)
+    func initWithAblyCocoaPresenceData(ablyCocoaData: Sendable, expectedResult: JSONValue?) {
+        #expect(JSONValue(ablyCocoaData: ablyCocoaData) == expectedResult)
     }
 
     // Tests that it correctly handles an object deserialized by `JSONSerialization` (which is what ably-cocoa uses for deserialization).
     @Test
-    func initWithAblyCocoaPresenceData_endToEnd() throws {
+    func initWithAblyCocoaData_endToEnd() throws {
         let jsonString = """
         {
           "someArray": [
@@ -51,7 +51,7 @@ struct JSONValueTests {
         }
         """
 
-        let ablyCocoaPresenceData = try JSONSerialization.jsonObject(with: #require(jsonString.data(using: .utf8)))
+        let ablyCocoaData = try JSONSerialization.jsonObject(with: #require(jsonString.data(using: .utf8)))
 
         let expected: JSONValue = [
             "someArray": [
@@ -72,10 +72,10 @@ struct JSONValueTests {
             ],
         ]
 
-        #expect(JSONValue(ablyCocoaPresenceData: ablyCocoaPresenceData) == expected)
+        #expect(JSONValue(ablyCocoaData: ablyCocoaData) == expected)
     }
 
-    // MARK: Conversion to ably-cocoa presence data
+    // MARK: Conversion to ably-cocoa data
 
     @Test(arguments: [
         // object
@@ -95,15 +95,15 @@ struct JSONValueTests {
         // null
         (value: .null, expectedResult: NSNull()),
     ] as[(value: JSONValue, expectedResult: Sendable)])
-    func toAblyCocoaPresenceData(value: JSONValue, expectedResult: Sendable) throws {
-        let resultAsNSObject = try #require(value.toAblyCocoaPresenceData as? NSObject)
+    func toAblyCocoaData(value: JSONValue, expectedResult: Sendable) throws {
+        let resultAsNSObject = try #require(value.toAblyCocoaData as? NSObject)
         let expectedResultAsNSObject = try #require(expectedResult as? NSObject)
         #expect(resultAsNSObject == expectedResultAsNSObject)
     }
 
     // Tests that it creates an object that can be serialized by `JSONSerialization` (which is what ably-cocoa uses for serialization), and that the result of this serialization is what we’d expect.
     @Test
-    func toAblyCocoaPresenceData_endToEnd() throws {
+    func toAblyCocoaData_endToEnd() throws {
         let value: JSONValue = [
             "someArray": [
                 [
@@ -146,7 +146,7 @@ struct JSONValueTests {
 
         let jsonSerializationOptions: JSONSerialization.WritingOptions = [.sortedKeys]
 
-        let valueData = try JSONSerialization.data(withJSONObject: value.toAblyCocoaPresenceData, options: jsonSerializationOptions)
+        let valueData = try JSONSerialization.data(withJSONObject: value.toAblyCocoaData, options: jsonSerializationOptions)
         let expectedData = try {
             let serialized = try JSONSerialization.jsonObject(with: #require(expectedJSONString.data(using: .utf8)))
             return try JSONSerialization.data(withJSONObject: serialized, options: jsonSerializationOptions)

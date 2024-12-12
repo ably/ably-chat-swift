@@ -128,12 +128,19 @@ extension JSONValue: ExpressibleByBooleanLiteral {
 // MARK: - Bridging with ably-cocoa
 
 internal extension JSONValue {
-    init(ablyCocoaPresenceData: Any) {
-        switch ablyCocoaPresenceData {
+    /// Creates a `JSONValue` from an ably-cocoa deserialized JSON object.
+    ///
+    /// Specifically, `ablyCocoaData` can be:
+    ///
+    /// - a non-`nil` value of `ARTPresenceMessage`’s `data` property
+    /// - a non-`nil` value of `ARTMessage`’s `data` property
+    /// - the return value of the `toJSON()` method of a non-`nil` value of `ARTMessage`’s `extras` property
+    init(ablyCocoaData: Any) {
+        switch ablyCocoaData {
         case let dictionary as [String: Any]:
-            self = .object(dictionary.mapValues { .init(ablyCocoaPresenceData: $0) })
+            self = .object(dictionary.mapValues { .init(ablyCocoaData: $0) })
         case let array as [Any]:
-            self = .array(array.map { .init(ablyCocoaPresenceData: $0) })
+            self = .array(array.map { .init(ablyCocoaData: $0) })
         case let string as String:
             self = .string(string)
         case let number as NSNumber:
@@ -149,16 +156,22 @@ internal extension JSONValue {
             self = .null
         default:
             // ably-cocoa is not conforming to our assumptions; either its behaviour is wrong or our assumptions are wrong. Either way, bring this loudly to our attention instead of trying to carry on
-            preconditionFailure("JSONValue(ablyCocoaPresenceData:) was given \(ablyCocoaPresenceData)")
+            preconditionFailure("JSONValue(ablyCocoaData:) was given \(ablyCocoaData)")
         }
     }
 
-    var toAblyCocoaPresenceData: Any {
+    /// Creates an ably-cocoa deserialized JSON object from a `JSONValue`.
+    ///
+    /// Specifically, the value of this property can be used as:
+    ///
+    /// - `ARTPresenceMessage`’s `data` property
+    /// - the `data` argument that’s passed to `ARTRealtime`’s `request(…)` method
+    var toAblyCocoaData: Any {
         switch self {
         case let .object(underlying):
-            underlying.mapValues(\.toAblyCocoaPresenceData)
+            underlying.mapValues(\.toAblyCocoaData)
         case let .array(underlying):
-            underlying.map(\.toAblyCocoaPresenceData)
+            underlying.map(\.toAblyCocoaData)
         case let .string(underlying):
             underlying
         case let .number(underlying):
