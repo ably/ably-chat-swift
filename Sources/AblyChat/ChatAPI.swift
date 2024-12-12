@@ -15,9 +15,14 @@ internal final class ChatAPI: Sendable {
         return try await makePaginatedRequest(endpoint, params: params.asQueryItems())
     }
 
-    internal struct SendMessageResponse: Codable {
+    internal struct SendMessageResponse: JSONObjectDecodable {
         internal let serial: String
         internal let createdAt: Int64
+
+        internal init(jsonObject: [String: JSONValue]) throws {
+            serial = try jsonObject.stringValueForKey("serial")
+            createdAt = try Int64(jsonObject.numberValueForKey("createdAt"))
+        }
     }
 
     // (CHA-M3) Messages are sent to Ably via the Chat REST API, using the send method.
@@ -62,8 +67,7 @@ internal final class ChatAPI: Sendable {
         return try await makeRequest(endpoint, method: "GET")
     }
 
-    // TODO: https://github.com/ably-labs/ably-chat-swift/issues/84 - Improve how we're decoding via `JSONSerialization` within the `DictionaryDecoder`
-    private func makeRequest<Response: Codable>(_ url: String, method: String, body: [String: JSONValue]? = nil) async throws -> Response {
+    private func makeRequest<Response: JSONDecodable>(_ url: String, method: String, body: [String: JSONValue]? = nil) async throws -> Response {
         let ablyCocoaBody: Any? = if let body {
             JSONValue.object(body).toAblyCocoaData
         } else {
@@ -85,7 +89,8 @@ internal final class ChatAPI: Sendable {
                     }
 
                     do {
-                        let decodedResponse = try DictionaryDecoder().decode(Response.self, from: firstItem)
+                        let jsonValue = JSONValue(ablyCocoaData: firstItem)
+                        let decodedResponse = try Response(jsonValue: jsonValue)
                         continuation.resume(returning: decodedResponse)
                     } catch {
                         continuation.resume(throwing: error)
@@ -97,7 +102,7 @@ internal final class ChatAPI: Sendable {
         }
     }
 
-    private func makePaginatedRequest<Response: Codable & Sendable & Equatable>(
+    private func makePaginatedRequest<Response: JSONDecodable & Sendable & Equatable>(
         _ url: String,
         params: [String: String]? = nil
     ) async throws -> any PaginatedResult<Response> {
@@ -114,28 +119,5 @@ internal final class ChatAPI: Sendable {
 
     internal enum ChatError: Error {
         case noItemInResponse
-    }
-}
-
-internal struct DictionaryDecoder {
-    private let decoder = {
-        var decoder = JSONDecoder()
-
-        // Ably’s REST APIs always serialise dates as milliseconds since Unix epoch
-        decoder.dateDecodingStrategy = .millisecondsSince1970
-
-        return decoder
-    }()
-
-    // Function to decode from a dictionary
-    internal func decode<T: Decodable>(_: T.Type, from dictionary: NSDictionary) throws -> T {
-        let data = try JSONSerialization.data(withJSONObject: dictionary)
-        return try decoder.decode(T.self, from: data)
-    }
-
-    // Function to decode from a dictionary array
-    internal func decode<T: Decodable>(_: T.Type, from dictionary: [NSDictionary]) throws -> T {
-        let data = try JSONSerialization.data(withJSONObject: dictionary)
-        return try decoder.decode(T.self, from: data)
     }
 }

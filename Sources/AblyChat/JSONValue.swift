@@ -136,6 +136,7 @@ internal extension JSONValue {
     /// - a non-`nil` value of `ARTPresenceMessage`’s `data` property
     /// - a non-`nil` value of `ARTMessage`’s `data` property
     /// - the return value of the `toJSON()` method of a non-`nil` value of `ARTMessage`’s `extras` property
+    /// - an element of `ARTHTTPPaginatedResult`’s `items` array
     init(ablyCocoaData: Any) {
         switch ablyCocoaData {
         case let dictionary as [String: Any]:

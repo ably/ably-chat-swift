@@ -1,8 +1,8 @@
 // TODO: https://github.com/ably-labs/ably-chat-swift/issues/13 - try to improve this type
 
-public enum HeadersValue: Sendable, Codable, Equatable {
+public enum HeadersValue: Sendable, Equatable {
     case string(String)
-    case number(Double) // Changed from NSNumber to Double to conform to Codable. Address in linked issue above.
+    case number(Double)
     case bool(Bool)
     case null
 }
