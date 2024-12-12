@@ -52,6 +52,52 @@ struct ChatAPITests {
         #expect(message == expectedMessage)
     }
 
+    @Test
+    func sendMessage_includesHeadersInBody() async throws {
+        // Given
+        let realtime = MockRealtime.create {
+            (MockHTTPPaginatedResponse.successSendMessage, nil)
+        }
+        let chatAPI = ChatAPI(realtime: realtime)
+
+        // When
+        _ = try await chatAPI.sendMessage(
+            roomId: "", // arbitrary
+            params: .init(
+                text: "", // arbitrary
+                // The exact value here is arbitrary, just want to check it gets serialized
+                headers: ["numberKey": .number(10), "stringKey": .string("hello")]
+            )
+        )
+
+        // Then
+        let requestBody = try #require(realtime.requestArguments.first?.body as? NSDictionary)
+        #expect(try #require(requestBody["headers"] as? NSObject) == ["numberKey": 10, "stringKey": "hello"] as NSObject)
+    }
+
+    @Test
+    func sendMessage_includesMetadataInBody() async throws {
+        // Given
+        let realtime = MockRealtime.create {
+            (MockHTTPPaginatedResponse.successSendMessage, nil)
+        }
+        let chatAPI = ChatAPI(realtime: realtime)
+
+        // When
+        _ = try await chatAPI.sendMessage(
+            roomId: "", // arbitrary
+            params: .init(
+                text: "", // arbitrary
+                // The exact value here is arbitrary, just want to check it gets serialized
+                metadata: ["numberKey": .number(10), "stringKey": .string("hello")]
+            )
+        )
+
+        // Then
+        let requestBody = try #require(realtime.requestArguments.first?.body as? NSDictionary)
+        #expect(try #require(requestBody["metadata"] as? NSObject) == ["numberKey": 10, "stringKey": "hello"] as NSObject)
+    }
+
     // MARK: getMessages Tests
 
     // @specOneOf(1/2) CHA-M6

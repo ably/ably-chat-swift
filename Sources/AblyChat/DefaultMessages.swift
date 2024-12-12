@@ -56,13 +56,16 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
         channel.subscribe(RealtimeMessageName.chatMessage.rawValue) { message in
             Task {
                 // TODO: Revisit errors thrown as part of https://github.com/ably-labs/ably-chat-swift/issues/32
-                guard let data = message.data as? [String: Any],
-                      let text = data["text"] as? String
+                guard let ablyCocoaData = message.data,
+                      let data = JSONValue(ablyCocoaData: ablyCocoaData).objectValue,
+                      let text = data["text"]?.stringValue
                 else {
                     throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without data or text")
                 }
 
-                guard let extras = try message.extras?.toJSON() else {
+                guard let ablyCocoaExtras = message.extras,
+                      let extras = try JSONValue(ablyCocoaData: ablyCocoaExtras.toJSON()).objectValue
+                else {
                     throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without extras")
                 }
 
@@ -74,8 +77,16 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
                     throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without clientId")
                 }
 
-                let metadata = data["metadata"] as? Metadata
-                let headers = extras["headers"] as? Headers
+                let metadata: Metadata? = if let metadataJSONObject = data["metadata"]?.objectValue {
+                    try metadataJSONObject.mapValues { try MetadataValue(jsonValue: $0) }
+                } else {
+                    nil
+                }
+                let headers: Headers? = if let headersJSONObject = extras["headers"]?.objectValue {
+                    try headersJSONObject.mapValues { try HeadersValue(jsonValue: $0) }
+                } else {
+                    nil
+                }
 
                 guard let action = MessageAction.fromRealtimeAction(message.action) else {
                     return

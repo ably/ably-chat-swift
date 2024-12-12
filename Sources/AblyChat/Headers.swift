@@ -7,6 +7,42 @@ public enum HeadersValue: Sendable, Codable, Equatable {
     case null
 }
 
+extension HeadersValue: JSONDecodable {
+    internal enum JSONDecodingError: Error {
+        case unsupportedJSONValue(JSONValue)
+    }
+
+    internal init(jsonValue: JSONValue) throws {
+        self = switch jsonValue {
+        case let .string(value):
+            .string(value)
+        case let .number(value):
+            .number(value)
+        case let .bool(value):
+            .bool(value)
+        case .null:
+            .null
+        default:
+            throw JSONDecodingError.unsupportedJSONValue(jsonValue)
+        }
+    }
+}
+
+extension HeadersValue: JSONEncodable {
+    internal var toJSONValue: JSONValue {
+        switch self {
+        case let .string(value):
+            .string(value)
+        case let .number(value):
+            .number(Double(value))
+        case let .bool(value):
+            .bool(value)
+        case .null:
+            .null
+        }
+    }
+}
+
 // The corresponding type in TypeScript is
 // Record<string, number | string | boolean | null | undefined>
 // There may be a better way to represent it in Swift; this will do for now. Have omitted `undefined` because I don’t know how that would occur.

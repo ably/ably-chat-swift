@@ -17,16 +17,27 @@ final class MockRealtimeChannel: NSObject, RealtimeChannelProtocol {
     nonisolated(unsafe) var lastMessagePublishedData: Any?
     nonisolated(unsafe) var lastMessagePublishedExtras: (any ARTJsonCompatible)?
 
+    // TODO: If we tighten up the types we then we should be able to get rid of the `@unchecked Sendable` here, but I’m in a rush. Revisit in https://github.com/ably/ably-chat-swift/issues/195
+    struct MessageToEmit: @unchecked Sendable {
+        var action: ARTMessageAction
+        var serial: String
+        var clientID: String
+        var data: Any
+        var extras: NSDictionary
+    }
+
     init(
         name: String? = nil,
         properties: ARTChannelProperties = .init(),
         state _: ARTRealtimeChannelState = .suspended,
         attachResult: AttachOrDetachResult? = nil,
-        detachResult: AttachOrDetachResult? = nil
+        detachResult: AttachOrDetachResult? = nil,
+        messageToEmitOnSubscribe: MessageToEmit? = nil
     ) {
         _name = name
         self.attachResult = attachResult
         self.detachResult = detachResult
+        self.messageToEmitOnSubscribe = messageToEmitOnSubscribe
         attachSerial = properties.attachSerial
         channelSerial = properties.channelSerial
     }
@@ -121,6 +132,8 @@ final class MockRealtimeChannel: NSObject, RealtimeChannelProtocol {
         detachResult.performCallback(callback)
     }
 
+    let messageToEmitOnSubscribe: MessageToEmit?
+
     func subscribe(_: @escaping ARTMessageCallback) -> ARTEventListener? {
         fatalError("Not implemented")
     }
@@ -129,8 +142,16 @@ final class MockRealtimeChannel: NSObject, RealtimeChannelProtocol {
         fatalError("Not implemented")
     }
 
-    func subscribe(_: String, callback _: @escaping ARTMessageCallback) -> ARTEventListener? {
-        ARTEventListener()
+    func subscribe(_: String, callback: @escaping ARTMessageCallback) -> ARTEventListener? {
+        if let messageToEmitOnSubscribe {
+            let message = ARTMessage(name: nil, data: messageToEmitOnSubscribe.data)
+            message.action = messageToEmitOnSubscribe.action
+            message.serial = messageToEmitOnSubscribe.serial
+            message.clientId = messageToEmitOnSubscribe.clientID
+            message.extras = messageToEmitOnSubscribe.extras
+            callback(message)
+        }
+        return ARTEventListener()
     }
 
     func subscribe(_: String, onAttach _: ARTCallback?, callback _: @escaping ARTMessageCallback) -> ARTEventListener? {
