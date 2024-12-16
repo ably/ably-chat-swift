@@ -28,15 +28,15 @@ internal final class ChatAPI: Sendable {
         }
 
         let endpoint = "\(apiVersionV2)/rooms/\(roomId)/messages"
-        var body: [String: Any] = ["text": params.text]
+        var body: [String: JSONValue] = ["text": .string(params.text)]
 
         // (CHA-M3b) A message may be sent without metadata or headers. When these are not specified by the user, they must be omitted from the REST payload.
         if let metadata = params.metadata {
-            body["metadata"] = metadata
+            body["metadata"] = .object(metadata.mapValues(\.toJSONValue))
         }
 
         if let headers = params.headers {
-            body["headers"] = headers
+            body["headers"] = .object(headers.mapValues(\.toJSONValue))
         }
 
         let response: SendMessageResponse = try await makeRequest(endpoint, method: "POST", body: body)
@@ -63,10 +63,16 @@ internal final class ChatAPI: Sendable {
     }
 
     // TODO: https://github.com/ably-labs/ably-chat-swift/issues/84 - Improve how we're decoding via `JSONSerialization` within the `DictionaryDecoder`
-    private func makeRequest<Response: Codable>(_ url: String, method: String, body: [String: Any]? = nil) async throws -> Response {
-        try await withCheckedThrowingContinuation { continuation in
+    private func makeRequest<Response: Codable>(_ url: String, method: String, body: [String: JSONValue]? = nil) async throws -> Response {
+        let ablyCocoaBody: Any? = if let body {
+            JSONValue.object(body).toAblyCocoaData
+        } else {
+            nil
+        }
+
+        return try await withCheckedThrowingContinuation { continuation in
             do {
-                try realtime.request(method, path: url, params: [:], body: body, headers: [:]) { paginatedResponse, error in
+                try realtime.request(method, path: url, params: [:], body: ablyCocoaBody, headers: [:]) { paginatedResponse, error in
                     if let error {
                         // (CHA-M3e) If an error is returned from the REST API, its ErrorInfo representation shall be thrown as the result of the send call.
                         continuation.resume(throwing: ARTErrorInfo.create(from: error))
@@ -93,8 +99,7 @@ internal final class ChatAPI: Sendable {
 
     private func makePaginatedRequest<Response: Codable & Sendable & Equatable>(
         _ url: String,
-        params: [String: String]? = nil,
-        body: [String: Any]? = nil
+        params: [String: String]? = nil
     ) async throws -> any PaginatedResult<Response> {
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<PaginatedResultWrapper<Response>, _>) in
             do {

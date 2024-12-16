@@ -2,7 +2,7 @@
 import Testing
 
 struct PresenceDataDTOTests {
-    // MARK: - Creating from JSON value
+    // MARK: - JSONDecodable
 
     @Test(arguments: [
         // If the `userCustomData` key is missing (indicating that no data was passed when performing the presence operation), then the DTO’s `userCustomData` should be nil
@@ -22,7 +22,7 @@ struct PresenceDataDTOTests {
         }
     }
 
-    // MARK: - Conversion to JSON object value
+    // MARK: - JSONCodable
 
     @Test(
         arguments: [
@@ -34,8 +34,8 @@ struct PresenceDataDTOTests {
             (userCustomData: .null, expectedJSONObject: ["userCustomData": .null]),
         ] as[(userCustomData: PresenceData?, expectedJSONObject: [String: JSONValue])]
     )
-    func toJSONObject(userCustomData: PresenceData?, expectedJSONObject: [String: JSONValue]) {
+    func toJSONValue(userCustomData: PresenceData?, expectedJSONObject: [String: JSONValue]) {
         let dto = PresenceDataDTO(userCustomData: userCustomData)
-        #expect(dto.toJSONObjectValue == expectedJSONObject)
+        #expect(dto.toJSONValue == .object(expectedJSONObject))
     }
 }

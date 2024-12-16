@@ -69,6 +69,73 @@ struct DefaultMessagesTests {
         #expect(previousMessages == expectedPaginatedResult)
     }
 
+    @Test
+    func subscribe_extractsHeadersFromChannelMessage() async throws {
+        // Given
+        let realtime = MockRealtime.create()
+        let chatAPI = ChatAPI(realtime: realtime)
+
+        let channel = MockRealtimeChannel(
+            properties: .init(
+                attachSerial: "001",
+                channelSerial: "001"
+            ),
+            messageToEmitOnSubscribe: .init(
+                action: .create, // arbitrary
+                serial: "", // arbitrary
+                clientID: "", // arbitrary
+                data: [
+                    "text": "", // arbitrary
+                ],
+                extras: [
+                    "headers": ["numberKey": 10, "stringKey": "hello"],
+                ]
+            )
+        )
+        let featureChannel = MockFeatureChannel(channel: channel)
+        let defaultMessages = await DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
+
+        // When
+        let messagesSubscription = try await defaultMessages.subscribe()
+
+        // Then
+        let receivedMessage = try #require(await messagesSubscription.first { _ in true })
+        #expect(receivedMessage.headers == ["numberKey": .number(10), "stringKey": .string("hello")])
+    }
+
+    @Test
+    func subscribe_extractsMetadataFromChannelMessage() async throws {
+        // Given
+        let realtime = MockRealtime.create()
+        let chatAPI = ChatAPI(realtime: realtime)
+
+        let channel = MockRealtimeChannel(
+            properties: .init(
+                attachSerial: "001",
+                channelSerial: "001"
+            ),
+            messageToEmitOnSubscribe: .init(
+                action: .create, // arbitrary
+                serial: "", // arbitrary
+                clientID: "", // arbitrary
+                data: [
+                    "text": "", // arbitrary
+                    "metadata": ["numberKey": 10, "stringKey": "hello"],
+                ],
+                extras: [:]
+            )
+        )
+        let featureChannel = MockFeatureChannel(channel: channel)
+        let defaultMessages = await DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
+
+        // When
+        let messagesSubscription = try await defaultMessages.subscribe()
+
+        // Then
+        let receivedMessage = try #require(await messagesSubscription.first { _ in true })
+        #expect(receivedMessage.metadata == ["numberKey": .number(10), "stringKey": .string("hello")])
+    }
+
     // @spec CHA-M7
     @Test
     func onDiscontinuity() async throws {

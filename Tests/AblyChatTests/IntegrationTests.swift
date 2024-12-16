@@ -101,7 +101,11 @@ struct IntegrationTests {
         let throwawayRxMessageSubscription = try await rxRoom.messages.subscribe()
 
         // (3) Send the message
-        let txMessageBeforeRxSubscribe = try await txRoom.messages.send(params: .init(text: "Hello from txRoom, before rxRoom subscribe"))
+        let txMessageBeforeRxSubscribe = try await txRoom.messages.send(
+            params: .init(
+                text: "Hello from txRoom, before rxRoom subscribe"
+            )
+        )
 
         // (4) Wait for rxRoom to see the message we just sent
         let throwawayRxMessage = try #require(await throwawayRxMessageSubscription.first { _ in true })
@@ -111,7 +115,13 @@ struct IntegrationTests {
         let rxMessageSubscription = try await rxRoom.messages.subscribe()
 
         // (6) Now that we’re subscribed to messages, send a message on the other client and check that we receive it on the subscription
-        let txMessageAfterRxSubscribe = try await txRoom.messages.send(params: .init(text: "Hello from txRoom, after rxRoom subscribe"))
+        let txMessageAfterRxSubscribe = try await txRoom.messages.send(
+            params: .init(
+                text: "Hello from txRoom, after rxRoom subscribe",
+                metadata: ["someMetadataKey": .number(123), "someOtherMetadataKey": .string("foo")],
+                headers: ["someHeadersKey": .number(456), "someOtherHeadersKey": .string("bar")]
+            )
+        )
         let rxMessageFromSubscription = try #require(await rxMessageSubscription.first { _ in true })
         #expect(rxMessageFromSubscription == txMessageAfterRxSubscribe)
 
