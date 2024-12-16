@@ -3,9 +3,20 @@ import os
 public typealias LogContext = [String: any Sendable]
 
 public protocol LogHandler: AnyObject, Sendable {
+    /**
+     * A function that can be used to handle log messages.
+     *
+     * - Parameters:
+     *   - message: The message to log.
+     *   - level: The log level of the message.
+     *   - context: The context of the log message as key-value pairs.
+     */
     func log(message: String, level: LogLevel, context: LogContext?)
 }
 
+/**
+ * Represents the different levels of logging that can be used.
+ */
 public enum LogLevel: Sendable, Comparable {
     case trace
     case debug

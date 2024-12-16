@@ -1,20 +1,80 @@
 import Foundation
 
+/**
+ * ``Headers`` type for chat messages.
+ */
 public typealias MessageHeaders = Headers
+
+/**
+ * ``Metadata`` type for chat messages.
+ */
 public typealias MessageMetadata = Metadata
 
-// (CHA-M2) A Message corresponds to a single message in a chat room. This is analogous to a single user-specified message on an Ably channel (NOTE: not a ProtocolMessage).
+/**
+ * Represents a single message in a chat room.
+ */
 public struct Message: Sendable, Codable, Identifiable, Equatable {
     // id to meet Identifiable conformance. 2 messages in the same channel cannot have the same serial.
     public var id: String { serial }
 
+    /**
+     * The unique identifier of the message.
+     */
     public var serial: String
+
+    /**
+     * The action type of the message. This can be used to determine if the message was created, updated, or deleted.
+     */
     public var action: MessageAction
+
+    /**
+     * The clientId of the user who created the message.
+     */
+
     public var clientID: String
+
+    /**
+     * The roomId of the chat room to which the message belongs.
+     */
     public var roomID: String
+
+    /**
+     * The text of the message.
+     */
     public var text: String
+
+    /**
+     * The timestamp at which the message was created.
+     */
     public var createdAt: Date?
+
+    /**
+     * The metadata of a chat message. Allows for attaching extra info to a message,
+     * which can be used for various features such as animations, effects, or simply
+     * to link it to other resources such as images, relative points in time, etc.
+     *
+     * Metadata is part of the Ably Pub/sub message content and is not read by Ably.
+     *
+     * This value is always set. If there is no metadata, this is an empty object.
+     *
+     * Do not use metadata for authoritative information. There is no server-side
+     * validation. When reading the metadata treat it like user input.
+     */
     public var metadata: MessageMetadata
+
+    /**
+     * The headers of a chat message. Headers enable attaching extra info to a message,
+     * which can be used for various features such as linking to a relative point in
+     * time of a livestream video or flagging this message as important or pinned.
+     *
+     * Headers are part of the Ably realtime message extras.headers and they can be used
+     * for [Filtered Subscriptions](https://faqs.ably.com/subscription-filters) and similar.
+     *
+     * This value is always set. If there are no headers, this is an empty object.
+     *
+     * Do not use the headers for authoritative information. There is no server-side
+     * validation. When reading the headers treat them like user input.
+     */
     public var headers: MessageHeaders
 
     public init(serial: String, action: MessageAction, clientID: String, roomID: String, text: String, createdAt: Date?, metadata: MessageMetadata, headers: MessageHeaders) {

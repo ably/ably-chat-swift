@@ -1,25 +1,107 @@
 import Ably
 
+/**
+ * Represents a chat room.
+ */
 public protocol Room: AnyObject, Sendable {
+    /**
+     * The unique identifier of the room.
+     *
+     * - Returns: The room identifier.
+     */
     var roomID: String { get }
+
+    /**
+     * Allows you to send, subscribe-to and query messages in the room.
+     *
+     * - Returns: The messages instance for the room.
+     */
     var messages: any Messages { get }
-    // To access this property if presence is not enabled for the room is a programmer error, and will lead to `fatalError` being called.
+
+    /**
+     * Allows you to subscribe to presence events in the room.
+     *
+     * - Note: To access this property if presence is not enabled for the room is a programmer error, and will lead to `fatalError` being called.
+     *
+     * - Returns: The presence instance for the room.
+     */
     var presence: any Presence { get }
-    // To access this property if reactions are not enabled for the room is a programmer error, and will lead to `fatalError` being called.
+
+    /**
+     * Allows you to interact with room-level reactions.
+     *
+     * - Note: To access this property if presence is not enabled for the room is a programmer error, and will lead to `fatalError` being called.
+     *
+     * - Returns: The room reactions instance for the room.
+     */
     var reactions: any RoomReactions { get }
-    // To access this property if typing is not enabled for the room is a programmer error, and will lead to `fatalError` being called.
+
+    /**
+     * Allows you to interact with typing events in the room.
+     *
+     * - Note: To access this property if presence is not enabled for the room is a programmer error, and will lead to `fatalError` being called.
+     *
+     * - Returns: The typing instance for the room.
+     */
     var typing: any Typing { get }
-    // To access this property if occupancy is not enabled for the room is a programmer error, and will lead to `fatalError` being called.
+
+    /**
+     * Allows you to interact with occupancy metrics for the room.
+     *
+     * - Note: To access this property if presence is not enabled for the room is a programmer error, and will lead to `fatalError` being called.
+     *
+     * - Returns: The occupancy instance for the room.
+     */
     var occupancy: any Occupancy { get }
-    // TODO: change to `status`
+
+    /**
+     * The current status of the room.
+     *
+     * - Returns: The current room status.
+     */
     var status: RoomStatus { get async }
+
+    /**
+     * Subscribes a given listener to the room status changes.
+     *
+     * - Parameters:
+     *   - bufferingPolicy: The ``BufferingPolicy`` for the created subscription.
+     *
+     * - Returns: A subscription `AsyncSequence` that can be used to iterate through ``RoomStatusChange`` events.
+     */
     func onStatusChange(bufferingPolicy: BufferingPolicy) async -> Subscription<RoomStatusChange>
-    /// Same as calling ``onStatusChange(bufferingPolicy:)`` with ``BufferingPolicy.unbounded``.
+
+    /// Same as calling ``onStatusChange(bufferingPolicy:)`` with ``BufferingPolicy/unbounded``.
     ///
     /// The `Room` protocol provides a default implementation of this method.
     func onStatusChange() async -> Subscription<RoomStatusChange>
+
+    /**
+     * Attaches to the room to receive events in realtime.
+     *
+     * If a room fails to attach, it will enter either the ``RoomStatus/suspended(error:)`` or ``RoomStatus/failed(error:)`` state.
+     *
+     * If the room enters the failed state, then it will not automatically retry attaching and intervention is required.
+     *
+     * If the room enters the suspended state, then the call to attach will throw `ARTErrorInfo` with the cause of the suspension. However,
+     * the room will automatically retry attaching after a delay.
+     *
+     * - Throws: An `ARTErrorInfo`.
+     */
     func attach() async throws
+
+    /**
+     * Detaches from the room to stop receiving events in realtime.
+     *
+     * - Throws: An `ARTErrorInfo`.
+     */
     func detach() async throws
+
+    /**
+     * Returns the room options.
+     *
+     * - Returns: A copy of the options used to create the room.
+     */
     var options: RoomOptions { get }
 }
 
@@ -34,8 +116,18 @@ internal protocol InternalRoom: Room {
     func release() async
 }
 
+/**
+ * Represents a change in the status of the room.
+ */
 public struct RoomStatusChange: Sendable, Equatable {
+    /**
+     * The new status of the room.
+     */
     public var current: RoomStatus
+
+    /**
+     * The previous status of the room.
+     */
     public var previous: RoomStatus
 
     public init(current: RoomStatus, previous: RoomStatus) {
