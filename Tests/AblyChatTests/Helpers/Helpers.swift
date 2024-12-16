@@ -21,3 +21,10 @@ func isChatError(_ maybeError: (any Error)?, withCodeAndStatusCode codeAndStatus
             return ablyError.message == message
         }()
 }
+
+extension ARTPresenceMessage {
+    convenience init(clientId: String) {
+        self.init()
+        self.clientId = clientId
+    }
+}

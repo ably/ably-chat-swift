@@ -5,7 +5,7 @@ import Testing
 struct DefaultRoomOccupancyTests {
     // @spec CHA-O1
     @Test
-    func init_channelNameIsSetAsChatMessagesChannelName() async throws {
+    func channelNameIsSetAsChatMessagesChannelName() async throws {
         // Given
         let realtime = MockRealtime.create()
         let chatAPI = ChatAPI(realtime: realtime)
