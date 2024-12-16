@@ -18,7 +18,7 @@ struct PresenceDataDTOTests {
 
     @Test
     func initWithJSONValue_failsIfNotObject() {
-        #expect(throws: PresenceDataDTO.DecodingError.self) {
+        #expect(throws: JSONValueDecodingError.self) {
             try PresenceDataDTO(jsonValue: "hello")
         }
     }
