@@ -1,3 +1,4 @@
+import Ably
 import Foundation
 
 /// A JSON value (where "value" has the meaning defined by the [JSON specification](https://www.json.org)).
@@ -166,6 +167,7 @@ internal extension JSONValue {
     ///
     /// - `ARTPresenceMessage`’s `data` property
     /// - the `data` argument that’s passed to `ARTRealtime`’s `request(…)` method
+    /// - the `data` argument that’s passed to `ARTRealtime`’s `publish(…)` method
     var toAblyCocoaData: Any {
         switch self {
         case let .object(underlying):
@@ -191,7 +193,13 @@ internal extension [String: JSONValue] {
     ///
     /// - `ARTPresenceMessage`’s `data` property
     /// - the `data` argument that’s passed to `ARTRealtime`’s `request(…)` method
+    /// - the `data` argument that’s passed to `ARTRealtime`’s `publish(…)` method
     var toAblyCocoaDataDictionary: [String: Any] {
         mapValues(\.toAblyCocoaData)
+    }
+
+    /// Creates an ably-cocoa `ARTJsonCompatible` object from a dictionary that has string keys and `JSONValue` values.
+    var toARTJsonCompatible: ARTJsonCompatible {
+        toAblyCocoaDataDictionary as ARTJsonCompatible
     }
 }

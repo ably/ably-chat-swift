@@ -39,8 +39,8 @@ struct DefaultRoomReactionsTests {
 
         // Then
         #expect(channel.lastMessagePublishedName == RoomReactionEvents.reaction.rawValue)
-        #expect(channel.lastMessagePublishedData as? [String: String] == sendReactionParams.asJSONObject())
-        #expect(channel.lastMessagePublishedExtras as? Dictionary == ["headers": sendReactionParams.headers])
+        #expect(channel.lastMessagePublishedData as? NSObject == ["type": "like", "metadata": ["someMetadataKey": "someMetadataValue"]] as NSObject)
+        #expect(channel.lastMessagePublishedExtras as? Dictionary == ["headers": ["someHeadersKey": "someHeadersValue"]])
     }
 
     // @spec CHA-ER4

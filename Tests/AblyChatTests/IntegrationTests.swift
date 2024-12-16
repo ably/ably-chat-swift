@@ -165,9 +165,17 @@ struct IntegrationTests {
         let rxReactionSubscription = await rxRoom.reactions.subscribe()
 
         // (2) Now that we’re subscribed to reactions, send a reaction on the other client and check that we receive it on the subscription
-        try await txRoom.reactions.send(params: .init(type: "heart"))
+        try await txRoom.reactions.send(
+            params: .init(
+                type: "heart",
+                metadata: ["someMetadataKey": .number(123), "someOtherMetadataKey": .string("foo")],
+                headers: ["someHeadersKey": .number(456), "someOtherHeadersKey": .string("bar")]
+            )
+        )
         let rxReactionFromSubscription = try #require(await rxReactionSubscription.first { _ in true })
         #expect(rxReactionFromSubscription.type == "heart")
+        #expect(rxReactionFromSubscription.metadata == ["someMetadataKey": .number(123), "someOtherMetadataKey": .string("foo")])
+        #expect(rxReactionFromSubscription.headers == ["someHeadersKey": .number(456), "someOtherHeadersKey": .string("bar")])
 
         // MARK: - Occupancy
 
