@@ -11,12 +11,12 @@ extension PresenceDataDTO: JSONCodable {
     }
 
     internal enum DecodingError: Error {
-        case valueHasWrongType(key: JSONKey)
+        case topLevelValueHasWrongType
     }
 
     internal init(jsonValue: JSONValue) throws {
         guard case let .object(jsonObject) = jsonValue else {
-            throw DecodingError.valueHasWrongType(key: .userCustomData)
+            throw DecodingError.topLevelValueHasWrongType
         }
 
         userCustomData = jsonObject[JSONKey.userCustomData.rawValue]
