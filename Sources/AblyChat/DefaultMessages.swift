@@ -63,11 +63,11 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
                     throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without data or text")
                 }
 
-                guard let ablyCocoaExtras = message.extras,
-                      let extras = try JSONValue(ablyCocoaData: ablyCocoaExtras.toJSON()).objectValue
-                else {
+                guard let ablyCocoaExtras = message.extras else {
                     throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without extras")
                 }
+
+                let extras = JSONValue.objectFromAblyCocoaExtras(ablyCocoaExtras)
 
                 guard let serial = message.serial else {
                     throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without serial")

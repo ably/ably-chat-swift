@@ -134,7 +134,6 @@ internal extension JSONValue {
     /// Specifically, `ablyCocoaData` can be:
     ///
     /// - a non-`nil` value of `ARTBaseMessage`’s `data` property
-    /// - the return value of the `toJSON()` method of a non-`nil` value of `ARTBaseMessage`’s `extras` property
     /// - an element of `ARTHTTPPaginatedResult`’s `items` array
     init(ablyCocoaData: Any) {
         switch ablyCocoaData {
@@ -159,6 +158,19 @@ internal extension JSONValue {
             // ably-cocoa is not conforming to our assumptions; either its behaviour is wrong or our assumptions are wrong. Either way, bring this loudly to our attention instead of trying to carry on
             preconditionFailure("JSONValue(ablyCocoaData:) was given \(ablyCocoaData)")
         }
+    }
+
+    /// Creates a `JSONValue` from an ably-cocoa deserialized JSON message extras object. Specifically, `ablyCocoaExtras` can be a non-`nil` value of `ARTBaseMessage`’s `extras` property.
+    static func objectFromAblyCocoaExtras(_ ablyCocoaExtras: any ARTJsonCompatible) -> [String: JSONValue] {
+        // (This is based on the fact that, in reality, I believe that `extras` is always a JSON object; see https://github.com/ably/ably-cocoa/issues/2002 for improving ably-cocoa’s API to reflect this)
+
+        let jsonValue = JSONValue(ablyCocoaData: ablyCocoaExtras)
+        guard case let .object(jsonObject) = jsonValue else {
+            // ably-cocoa is not conforming to our assumptions; either its behaviour is wrong or our assumptions are wrong. Either way, bring this loudly to our attention instead of trying to carry on
+            preconditionFailure("JSONValue.objectFromAblyCocoaExtras(_:) was given \(ablyCocoaExtras)")
+        }
+
+        return jsonObject
     }
 
     /// Creates an ably-cocoa deserialized JSON object from a `JSONValue`.
