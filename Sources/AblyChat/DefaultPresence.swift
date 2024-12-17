@@ -268,8 +268,11 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
                 throw error
             }
 
-            // Seems like we want to just forward on `extras` from the cocoa SDK but that is an `ARTJsonCompatible` type which is not `Sendable`... currently just converting this to a `Sendable` type (`String`) until we know what to do with this.
-            let extras = member.extras?.toJSONString()
+            let extras: [String: JSONValue]? = if let ablyCocoaExtras = member.extras {
+                JSONValue.objectFromAblyCocoaExtras(ablyCocoaExtras)
+            } else {
+                nil
+            }
 
             let presenceMember = PresenceMember(
                 clientID: clientID,
