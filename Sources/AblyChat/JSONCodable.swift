@@ -63,7 +63,7 @@ internal extension [String: JSONValue] {
         return objectValue
     }
 
-    /// If this dictionary contains a value for `key`, and this value has case `object`, this returns the associated value. If this dictionary does not contain a value for `key`, or if the value for key has case `null`, it returns `nil`.
+    /// If this dictionary contains a value for `key`, and this value has case `object`, this returns the associated value. If this dictionary does not contain a value for `key`, or if the value for `key` has case `null`, it returns `nil`.
     ///
     /// - Throws: `JSONValueDecodingError.wrongTypeForKey` if the value does not have case `object` or `null`
     func optionalObjectValueForKey(_ key: String) throws -> [String: JSONValue]? {
@@ -99,7 +99,7 @@ internal extension [String: JSONValue] {
         return arrayValue
     }
 
-    /// If this dictionary contains a value for `key`, and this value has case `array`, this returns the associated value. If this dictionary does not contain a value for `key`, or if the value for key has case `null`, it returns `nil`.
+    /// If this dictionary contains a value for `key`, and this value has case `array`, this returns the associated value. If this dictionary does not contain a value for `key`, or if the value for `key` has case `null`, it returns `nil`.
     ///
     /// - Throws: `JSONValueDecodingError.wrongTypeForKey` if the value does not have case `array` or `null`
     func optionalArrayValueForKey(_ key: String) throws -> [JSONValue]? {
@@ -135,7 +135,7 @@ internal extension [String: JSONValue] {
         return stringValue
     }
 
-    /// If this dictionary contains a value for `key`, and this value has case `string`, this returns the associated value. If this dictionary does not contain a value for `key`, or if the value for key has case `null`, it returns `nil`.
+    /// If this dictionary contains a value for `key`, and this value has case `string`, this returns the associated value. If this dictionary does not contain a value for `key`, or if the value for `key` has case `null`, it returns `nil`.
     ///
     /// - Throws: `JSONValueDecodingError.wrongTypeForKey` if the value does not have case `string` or `null`
     func optionalStringValueForKey(_ key: String) throws -> String? {
@@ -171,7 +171,7 @@ internal extension [String: JSONValue] {
         return numberValue
     }
 
-    /// If this dictionary contains a value for `key`, and this value has case `number`, this returns the associated value. If this dictionary does not contain a value for `key`, or if the value for key has case `null`, it returns `nil`.
+    /// If this dictionary contains a value for `key`, and this value has case `number`, this returns the associated value. If this dictionary does not contain a value for `key`, or if the value for `key` has case `null`, it returns `nil`.
     ///
     /// - Throws: `JSONValueDecodingError.wrongTypeForKey` if the value does not have case `number` or `null`
     func optionalNumberValueForKey(_ key: String) throws -> Double? {
