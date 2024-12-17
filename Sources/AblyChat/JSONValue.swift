@@ -133,9 +133,8 @@ internal extension JSONValue {
     ///
     /// Specifically, `ablyCocoaData` can be:
     ///
-    /// - a non-`nil` value of `ARTPresenceMessage`’s `data` property
-    /// - a non-`nil` value of `ARTMessage`’s `data` property
-    /// - the return value of the `toJSON()` method of a non-`nil` value of `ARTMessage`’s `extras` property
+    /// - a non-`nil` value of `ARTBaseMessage`’s `data` property
+    /// - the return value of the `toJSON()` method of a non-`nil` value of `ARTBaseMessage`’s `extras` property
     /// - an element of `ARTHTTPPaginatedResult`’s `items` array
     init(ablyCocoaData: Any) {
         switch ablyCocoaData {
@@ -166,7 +165,7 @@ internal extension JSONValue {
     ///
     /// Specifically, the value of this property can be used as:
     ///
-    /// - `ARTPresenceMessage`’s `data` property
+    /// - `ARTBaseMessage`’s `data` property
     /// - the `data` argument that’s passed to `ARTRealtime`’s `request(…)` method
     /// - the `data` argument that’s passed to `ARTRealtime`’s `publish(…)` method
     var toAblyCocoaData: Any {
@@ -192,7 +191,7 @@ internal extension [String: JSONValue] {
     ///
     /// Specifically, the value of this property can be used as:
     ///
-    /// - `ARTPresenceMessage`’s `data` property
+    /// - `ARTBaseMessage`’s `data` property
     /// - the `data` argument that’s passed to `ARTRealtime`’s `request(…)` method
     /// - the `data` argument that’s passed to `ARTRealtime`’s `publish(…)` method
     var toAblyCocoaDataDictionary: [String: Any] {
