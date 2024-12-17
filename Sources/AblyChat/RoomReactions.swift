@@ -89,15 +89,3 @@ public struct SendReactionParams: Sendable {
         self.headers = headers
     }
 }
-
-internal extension SendReactionParams {
-    /// Returns a dictionary that `JSONSerialization` can serialize to a JSON "object" value.
-    ///
-    /// Suitable to pass as the `data` argument of an ably-cocoa publish operation.
-    func asJSONObject() -> [String: String] {
-        var dict: [String: String] = [:]
-        dict["type"] = "\(type)"
-        dict["metadata"] = "\(metadata ?? [:])"
-        return dict
-    }
-}

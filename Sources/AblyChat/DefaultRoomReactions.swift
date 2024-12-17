@@ -23,8 +23,14 @@ internal final class DefaultRoomReactions: RoomReactions, EmitsDiscontinuities {
     // (CHA-ER3a) Reactions are sent on the channel using a message in a particular format - see spec for format.
     internal func send(params: SendReactionParams) async throws {
         logger.log(message: "Sending reaction with params: \(params)", level: .debug)
-        let extras = ["headers": params.headers ?? [:]] as ARTJsonCompatible
-        channel.publish(RoomReactionEvents.reaction.rawValue, data: params.asJSONObject(), extras: extras)
+
+        let dto = RoomReactionDTO(type: params.type, metadata: params.metadata, headers: params.headers)
+
+        channel.publish(
+            RoomReactionEvents.reaction.rawValue,
+            data: dto.data.toJSONValue.toAblyCocoaData,
+            extras: dto.extras.toJSONObject.toARTJsonCompatible
+        )
     }
 
     // (CHA-ER4) A user may subscribe to reaction events in Realtime.
@@ -38,10 +44,8 @@ internal final class DefaultRoomReactions: RoomReactions, EmitsDiscontinuities {
             logger.log(message: "Received roomReaction message: \(message)", level: .debug)
             Task {
                 do {
-                    guard let data = message.data as? [String: Any],
-                          let reactionType = data["type"] as? String
-                    else {
-                        throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without data or text")
+                    guard let ablyCocoaData = message.data else {
+                        throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without data")
                     }
 
                     guard let messageClientID = message.clientId else {
@@ -52,18 +56,20 @@ internal final class DefaultRoomReactions: RoomReactions, EmitsDiscontinuities {
                         throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without timestamp")
                     }
 
-                    guard let extras = try message.extras?.toJSON() else {
+                    guard let ablyCocoaExtras = try message.extras?.toJSON() else {
                         throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without extras")
                     }
 
-                    let metadata = data["metadata"] as? Metadata
-                    let headers = extras["headers"] as? Headers
+                    let dto = try RoomReactionDTO(
+                        data: .init(jsonValue: .init(ablyCocoaData: ablyCocoaData)),
+                        extras: .init(jsonValue: .init(ablyCocoaData: ablyCocoaExtras))
+                    )
 
                     // (CHA-ER4d) Realtime events that are malformed (unknown fields should be ignored) shall not be emitted to listeners.
                     let reaction = Reaction(
-                        type: reactionType,
-                        metadata: metadata ?? .init(),
-                        headers: headers ?? .init(),
+                        type: dto.type,
+                        metadata: dto.metadata ?? [:],
+                        headers: dto.headers ?? [:],
                         createdAt: timestamp,
                         clientID: messageClientID,
                         isSelf: messageClientID == clientID

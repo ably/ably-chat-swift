@@ -77,12 +77,12 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
                     throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without clientId")
                 }
 
-                let metadata: Metadata? = if let metadataJSONObject = data["metadata"]?.objectValue {
+                let metadata: Metadata? = if let metadataJSONObject = try data.optionalObjectValueForKey("metadata") {
                     try metadataJSONObject.mapValues { try MetadataValue(jsonValue: $0) }
                 } else {
                     nil
                 }
-                let headers: Headers? = if let headersJSONObject = extras["headers"]?.objectValue {
+                let headers: Headers? = if let headersJSONObject = try extras.optionalObjectValueForKey("headers") {
                     try headersJSONObject.mapValues { try HeadersValue(jsonValue: $0) }
                 } else {
                     nil
