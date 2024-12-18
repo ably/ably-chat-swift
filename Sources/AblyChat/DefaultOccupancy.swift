@@ -22,8 +22,10 @@ internal final class DefaultOccupancy: Occupancy, EmitsDiscontinuities {
     // (CHA-04d) If an invalid occupancy event is received on the channel, it shall be dropped.
     internal func subscribe(bufferingPolicy: BufferingPolicy) async -> Subscription<OccupancyEvent> {
         logger.log(message: "Subscribing to occupancy events", level: .debug)
+
         let subscription = Subscription<OccupancyEvent>(bufferingPolicy: bufferingPolicy)
-        channel.subscribe(OccupancyEvents.meta.rawValue) { [logger] message in
+
+        let eventListener = channel.subscribe(OccupancyEvents.meta.rawValue) { [logger] message in
             logger.log(message: "Received occupancy message: \(message)", level: .debug)
             guard let data = message.data as? [String: Any],
                   let metrics = data["metrics"] as? [String: Any]
@@ -40,6 +42,13 @@ internal final class DefaultOccupancy: Occupancy, EmitsDiscontinuities {
             logger.log(message: "Emitting occupancy event: \(occupancyEvent)", level: .debug)
             subscription.emit(occupancyEvent)
         }
+
+        subscription.addTerminationHandler { [weak self] in
+            if let eventListener {
+                self?.channel.off(eventListener)
+            }
+        }
+
         return subscription
     }
 

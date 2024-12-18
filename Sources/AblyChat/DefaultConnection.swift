@@ -30,7 +30,7 @@ internal final class DefaultConnection: Connection {
         let subscription = Subscription<ConnectionStatusChange>(bufferingPolicy: bufferingPolicy)
 
         // (CHA-CS5) The chat client must monitor the underlying realtime connection for connection status changes.
-        realtime.connection.on { [weak self] stateChange in
+        let eventListener = realtime.connection.on { [weak self] stateChange in
             guard let self else {
                 return
             }
@@ -93,6 +93,10 @@ internal final class DefaultConnection: Connection {
                 await connectionStatusManager.updateError(to: stateChange.reason)
                 await connectionStatusManager.updateStatus(to: currentState)
             }
+        }
+
+        subscription.addTerminationHandler { [weak self] in
+            self?.realtime.connection.off(eventListener)
         }
 
         return subscription

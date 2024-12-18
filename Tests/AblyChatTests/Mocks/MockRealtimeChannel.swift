@@ -163,7 +163,7 @@ final class MockRealtimeChannel: NSObject, RealtimeChannelProtocol {
     }
 
     func unsubscribe(_: ARTEventListener?) {
-        fatalError("Not implemented")
+        // no-op; revisit if we need to test something that depends on this method actually stopping `subscribe` from emitting more events
     }
 
     func unsubscribe(_: String, listener _: ARTEventListener?) {
@@ -199,7 +199,7 @@ final class MockRealtimeChannel: NSObject, RealtimeChannelProtocol {
     }
 
     func off(_: ARTEventListener) {
-        fatalError("Not implemented")
+        // no-op; revisit if we need to test something that depends on this method actually stopping `on` from emitting more events
     }
 
     func off() {

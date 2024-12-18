@@ -15,7 +15,6 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
     private let clientID: String
     private let logger: InternalLogger
 
-    // TODO: https://github.com/ably-labs/ably-chat-swift/issues/36 - Handle unsubscribing in line with CHA-M4b
     // UUID acts as a unique identifier for each listener/subscription. MessageSubscriptionWrapper houses the subscription and the serial of when it was attached or resumed.
     private var subscriptionPoints: [UUID: MessageSubscriptionWrapper] = [:]
 
@@ -53,7 +52,7 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
         // (CHA-M4c) When a realtime message with name set to message.created is received, it is translated into a message event, which contains a type field with the event type as well as a message field containing the Message Struct. This event is then broadcast to all subscribers.
         // (CHA-M4d) If a realtime message with an unknown name is received, the SDK shall silently discard the message, though it may log at DEBUG or TRACE level.
         // (CHA-M5k) Incoming realtime events that are malformed (unknown field should be ignored) shall not be emitted to subscribers.
-        channel.subscribe(RealtimeMessageName.chatMessage.rawValue) { message in
+        let eventListener = channel.subscribe(RealtimeMessageName.chatMessage.rawValue) { message in
             Task {
                 // TODO: Revisit errors thrown as part of https://github.com/ably-labs/ably-chat-swift/issues/32
                 guard let ablyCocoaData = message.data,
@@ -101,6 +100,18 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
                 )
 
                 messageSubscription.emit(message)
+            }
+        }
+
+        messageSubscription.addTerminationHandler {
+            Task {
+                await MainActor.run { [weak self] () in
+                    guard let self else {
+                        return
+                    }
+                    channel.unsubscribe(eventListener)
+                    subscriptionPoints.removeValue(forKey: uuid)
+                }
             }
         }
 

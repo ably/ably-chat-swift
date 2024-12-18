@@ -40,7 +40,7 @@ internal final class DefaultRoomReactions: RoomReactions, EmitsDiscontinuities {
         let subscription = Subscription<Reaction>(bufferingPolicy: bufferingPolicy)
 
         // (CHA-ER4c) Realtime events with an unknown name shall be silently discarded.
-        channel.subscribe(RoomReactionEvents.reaction.rawValue) { [clientID, logger] message in
+        let eventListener = channel.subscribe(RoomReactionEvents.reaction.rawValue) { [clientID, logger] message in
             logger.log(message: "Received roomReaction message: \(message)", level: .debug)
             Task {
                 do {
@@ -80,6 +80,10 @@ internal final class DefaultRoomReactions: RoomReactions, EmitsDiscontinuities {
                     logger.log(message: "Error processing incoming reaction message: \(error)", level: .error)
                 }
             }
+        }
+
+        subscription.addTerminationHandler { [weak self] in
+            self?.channel.unsubscribe(eventListener)
         }
 
         return subscription

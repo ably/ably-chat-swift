@@ -199,12 +199,17 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
     internal func subscribe(event: PresenceEventType, bufferingPolicy: BufferingPolicy) async -> Subscription<PresenceEvent> {
         logger.log(message: "Subscribing to presence events", level: .debug)
         let subscription = Subscription<PresenceEvent>(bufferingPolicy: bufferingPolicy)
-        channel.presence.subscribe(event.toARTPresenceAction()) { [processPresenceSubscribe, logger] message in
+        let eventListener = channel.presence.subscribe(event.toARTPresenceAction()) { [processPresenceSubscribe, logger] message in
             logger.log(message: "Received presence message: \(message)", level: .debug)
             Task {
                 // processPresenceSubscribe is logging so we don't need to log here
                 let presenceEvent = try processPresenceSubscribe(message, event)
                 subscription.emit(presenceEvent)
+            }
+        }
+        subscription.addTerminationHandler { [weak channel] in
+            if let eventListener {
+                channel?.presence.unsubscribe(eventListener)
             }
         }
         return subscription
@@ -213,7 +218,8 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
     internal func subscribe(events: [PresenceEventType], bufferingPolicy: BufferingPolicy) async -> Subscription<PresenceEvent> {
         logger.log(message: "Subscribing to presence events", level: .debug)
         let subscription = Subscription<PresenceEvent>(bufferingPolicy: bufferingPolicy)
-        for event in events {
+
+        let eventListeners = events.map { event in
             channel.presence.subscribe(event.toARTPresenceAction()) { [processPresenceSubscribe, logger] message in
                 logger.log(message: "Received presence message: \(message)", level: .debug)
                 Task {
@@ -222,6 +228,15 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
                 }
             }
         }
+
+        subscription.addTerminationHandler { [weak self] in
+            for eventListener in eventListeners {
+                if let eventListener {
+                    self?.channel.presence.unsubscribe(eventListener)
+                }
+            }
+        }
+
         return subscription
     }
 

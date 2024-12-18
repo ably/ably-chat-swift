@@ -27,4 +27,10 @@ final class MockSubscription<T: Sendable>: Sendable, AsyncSequence {
             randomElement()
         })
     }
+
+    func setOnTermination(_ onTermination: @escaping @Sendable () -> Void) {
+        continuation.onTermination = { _ in
+            onTermination()
+        }
+    }
 }
