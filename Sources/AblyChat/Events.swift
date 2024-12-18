@@ -3,7 +3,7 @@ import Ably
 /**
  * Chat Message Actions.
  */
-public enum MessageAction: String, Codable, Sendable {
+public enum MessageAction: String, Sendable {
     /**
      * Action applied to a new message.
      */

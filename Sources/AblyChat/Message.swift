@@ -13,7 +13,7 @@ public typealias MessageMetadata = Metadata
 /**
  * Represents a single message in a chat room.
  */
-public struct Message: Sendable, Codable, Identifiable, Equatable {
+public struct Message: Sendable, Identifiable, Equatable {
     // id to meet Identifiable conformance. 2 messages in the same channel cannot have the same serial.
     public var id: String { serial }
 
@@ -87,15 +87,19 @@ public struct Message: Sendable, Codable, Identifiable, Equatable {
         self.metadata = metadata
         self.headers = headers
     }
+}
 
-    internal enum CodingKeys: String, CodingKey {
-        case serial
-        case action
-        case clientID = "clientId"
-        case roomID = "roomId"
-        case text
-        case createdAt
-        case metadata
-        case headers
+extension Message: JSONObjectDecodable {
+    internal init(jsonObject: [String: JSONValue]) throws {
+        try self.init(
+            serial: jsonObject.stringValueForKey("serial"),
+            action: jsonObject.rawRepresentableValueForKey("action"),
+            clientID: jsonObject.stringValueForKey("clientId"),
+            roomID: jsonObject.stringValueForKey("roomId"),
+            text: jsonObject.stringValueForKey("text"),
+            createdAt: jsonObject.optionalAblyProtocolDateValueForKey("createdAt"),
+            metadata: jsonObject.objectValueForKey("metadata").mapValues { try .init(jsonValue: $0) },
+            headers: jsonObject.objectValueForKey("headers").mapValues { try .init(jsonValue: $0) }
+        )
     }
 }

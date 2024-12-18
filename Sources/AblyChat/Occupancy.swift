@@ -48,7 +48,7 @@ public extension Occupancy {
 /**
  * Represents the occupancy of a chat room.
  */
-public struct OccupancyEvent: Sendable, Encodable, Decodable {
+public struct OccupancyEvent: Sendable {
     /**
      * The number of connections to the chat room.
      */
@@ -62,5 +62,14 @@ public struct OccupancyEvent: Sendable, Encodable, Decodable {
     public init(connections: Int, presenceMembers: Int) {
         self.connections = connections
         self.presenceMembers = presenceMembers
+    }
+}
+
+extension OccupancyEvent: JSONObjectDecodable {
+    internal init(jsonObject: [String: JSONValue]) throws {
+        try self.init(
+            connections: Int(jsonObject.numberValueForKey("connections")),
+            presenceMembers: Int(jsonObject.numberValueForKey("presenceMembers"))
+        )
     }
 }

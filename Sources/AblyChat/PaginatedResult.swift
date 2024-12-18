@@ -13,7 +13,7 @@ public protocol PaginatedResult<T>: AnyObject, Sendable, Equatable {
 }
 
 /// Used internally to reduce the amount of duplicate code when interacting with `ARTHTTPPaginatedCallback`'s. The wrapper takes in the callback result from the caller e.g. `realtime.request` and either throws the appropriate error, or decodes and returns the response.
-internal struct ARTHTTPPaginatedCallbackWrapper<Response: Codable & Sendable & Equatable> {
+internal struct ARTHTTPPaginatedCallbackWrapper<Response: JSONDecodable & Sendable & Equatable> {
     internal let callbackResult: (ARTHTTPPaginatedResponse?, ARTErrorInfo?)
 
     internal func handleResponse(continuation: CheckedContinuation<PaginatedResultWrapper<Response>, any Error>) {
@@ -32,7 +32,8 @@ internal struct ARTHTTPPaginatedCallbackWrapper<Response: Codable & Sendable & E
         }
 
         do {
-            let decodedResponse = try DictionaryDecoder().decode([Response].self, from: paginatedResponse.items)
+            let jsonValues = paginatedResponse.items.map { JSONValue(ablyCocoaData: $0) }
+            let decodedResponse = try jsonValues.map { try Response(jsonValue: $0) }
             let result = paginatedResponse.toPaginatedResult(items: decodedResponse)
             continuation.resume(returning: result)
         } catch {
@@ -46,7 +47,7 @@ internal struct ARTHTTPPaginatedCallbackWrapper<Response: Codable & Sendable & E
 }
 
 /// `PaginatedResult` protocol implementation allowing access to the underlying items from a lower level paginated response object e.g. `ARTHTTPPaginatedResponse`, whilst succinctly handling errors through the use of `ARTHTTPPaginatedCallbackWrapper`.
-internal final class PaginatedResultWrapper<T: Codable & Sendable & Equatable>: PaginatedResult {
+internal final class PaginatedResultWrapper<T: JSONDecodable & Sendable & Equatable>: PaginatedResult {
     internal let items: [T]
     internal let hasNext: Bool
     internal let isLast: Bool
@@ -96,7 +97,7 @@ internal final class PaginatedResultWrapper<T: Codable & Sendable & Equatable>: 
 
 private extension ARTHTTPPaginatedResponse {
     /// Converts an `ARTHTTPPaginatedResponse` to a `PaginatedResultWrapper` allowing for access to operations as per conformance to `PaginatedResult`.
-    func toPaginatedResult<T: Codable & Sendable>(items: [T]) -> PaginatedResultWrapper<T> {
+    func toPaginatedResult<T: JSONDecodable & Sendable>(items: [T]) -> PaginatedResultWrapper<T> {
         PaginatedResultWrapper(paginatedResponse: self, items: items)
     }
 }

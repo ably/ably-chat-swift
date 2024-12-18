@@ -1,3 +1,5 @@
+import Foundation
+
 internal protocol JSONEncodable {
     var toJSONValue: JSONValue { get }
 }
@@ -27,6 +29,7 @@ internal enum JSONValueDecodingError: Error {
     case valueIsNotObject
     case noValueForKey(String)
     case wrongTypeForKey(String, actualValue: JSONValue)
+    case failedToDecodeFromRawValue(String)
 }
 
 // Default implementation of `JSONDecodable` conformance for `JSONObjectDecodable`
@@ -42,7 +45,7 @@ internal extension JSONObjectDecodable {
 
 internal typealias JSONObjectCodable = JSONObjectDecodable & JSONObjectEncodable
 
-// MARK: - Extracting values from a dictionary
+// MARK: - Extracting primitive values from a dictionary
 
 /// This extension adds some helper methods for extracting values from a dictionary of `JSONValue` values; you may find them helpful when implementing `JSONCodable`.
 internal extension [String: JSONValue] {
@@ -63,7 +66,7 @@ internal extension [String: JSONValue] {
         return objectValue
     }
 
-    /// If this dictionary contains a value for `key`, and this value has case `object`, this returns the associated value. If this dictionary does not contain a value for `key`, or if the value for key has case `null`, it returns `nil`.
+    /// If this dictionary contains a value for `key`, and this value has case `object`, this returns the associated value. If this dictionary does not contain a value for `key`, or if the value for `key` has case `null`, it returns `nil`.
     ///
     /// - Throws: `JSONValueDecodingError.wrongTypeForKey` if the value does not have case `object` or `null`
     func optionalObjectValueForKey(_ key: String) throws -> [String: JSONValue]? {
@@ -99,7 +102,7 @@ internal extension [String: JSONValue] {
         return arrayValue
     }
 
-    /// If this dictionary contains a value for `key`, and this value has case `array`, this returns the associated value. If this dictionary does not contain a value for `key`, or if the value for key has case `null`, it returns `nil`.
+    /// If this dictionary contains a value for `key`, and this value has case `array`, this returns the associated value. If this dictionary does not contain a value for `key`, or if the value for `key` has case `null`, it returns `nil`.
     ///
     /// - Throws: `JSONValueDecodingError.wrongTypeForKey` if the value does not have case `array` or `null`
     func optionalArrayValueForKey(_ key: String) throws -> [JSONValue]? {
@@ -135,7 +138,7 @@ internal extension [String: JSONValue] {
         return stringValue
     }
 
-    /// If this dictionary contains a value for `key`, and this value has case `string`, this returns the associated value. If this dictionary does not contain a value for `key`, or if the value for key has case `null`, it returns `nil`.
+    /// If this dictionary contains a value for `key`, and this value has case `string`, this returns the associated value. If this dictionary does not contain a value for `key`, or if the value for `key` has case `null`, it returns `nil`.
     ///
     /// - Throws: `JSONValueDecodingError.wrongTypeForKey` if the value does not have case `string` or `null`
     func optionalStringValueForKey(_ key: String) throws -> String? {
@@ -171,7 +174,7 @@ internal extension [String: JSONValue] {
         return numberValue
     }
 
-    /// If this dictionary contains a value for `key`, and this value has case `number`, this returns the associated value. If this dictionary does not contain a value for `key`, or if the value for key has case `null`, it returns `nil`.
+    /// If this dictionary contains a value for `key`, and this value has case `number`, this returns the associated value. If this dictionary does not contain a value for `key`, or if the value for `key` has case `null`, it returns `nil`.
     ///
     /// - Throws: `JSONValueDecodingError.wrongTypeForKey` if the value does not have case `number` or `null`
     func optionalNumberValueForKey(_ key: String) throws -> Double? {
@@ -226,5 +229,72 @@ internal extension [String: JSONValue] {
         }
 
         return boolValue
+    }
+}
+
+// MARK: - Extracting dates from a dictionary
+
+internal extension [String: JSONValue] {
+    /// If this dictionary contains a value for `key`, and this value has case `number`, this returns a date created by interpreting this value as the number of milliseconds since the Unix epoch (which is the format used by Ably).
+    ///
+    /// - Throws:
+    ///   - `JSONValueDecodingError.noValueForKey` if the key is absent
+    ///   - `JSONValueDecodingError.wrongTypeForKey` if the value does not have case `number`
+    func ablyProtocolDateValueForKey(_ key: String) throws -> Date {
+        let millisecondsSinceEpoch = try numberValueForKey(key)
+
+        return dateFromMillisecondsSinceEpoch(millisecondsSinceEpoch)
+    }
+
+    /// If this dictionary contains a value for `key`, and this value has case `number`, this returns a date created by interpreting this value as the number of milliseconds since the Unix epoch (which is the format used by Ably). If this dictionary does not contain a value for `key`, or if the value for `key` has case `null`, it returns `nil`.
+    ///
+    /// - Throws: `JSONValueDecodingError.wrongTypeForKey` if the value does not have case `number` or `null`
+    func optionalAblyProtocolDateValueForKey(_ key: String) throws -> Date? {
+        guard let millisecondsSinceEpoch = try optionalNumberValueForKey(key) else {
+            return nil
+        }
+
+        return dateFromMillisecondsSinceEpoch(millisecondsSinceEpoch)
+    }
+
+    private func dateFromMillisecondsSinceEpoch(_ millisecondsSinceEpoch: Double) -> Date {
+        .init(timeIntervalSince1970: millisecondsSinceEpoch / 1000)
+    }
+}
+
+// MARK: - Extracting RawRepresentable values from a dictionary
+
+internal extension [String: JSONValue] {
+    /// If this dictionary contains a value for `key`, and this value has case `string`, this creates an instance of `T` using its `init(rawValue:)` initializer.
+    ///
+    /// - Throws:
+    ///   - `JSONValueDecodingError.noValueForKey` if the key is absent
+    ///   - `JSONValueDecodingError.wrongTypeForKey` if the value does not have case `string`
+    ///   - `JSONValueDecodingError.failedToDecodeFromRawValue` if `init(rawValue:)` returns `nil`
+    func rawRepresentableValueForKey<T: RawRepresentable>(_ key: String, type: T.Type = T.self) throws -> T where T.RawValue == String {
+        let rawValue = try stringValueForKey(key)
+
+        return try rawRepresentableValueFromRawValue(rawValue, type: T.self)
+    }
+
+    /// If this dictionary contains a value for `key`, and this value has case `string`, this creates an instance of `T` using its `init(rawValue:)` initializer. If this dictionary does not contain a value for `key`, or if the value for `key` has case `null`, it returns `nil`.
+    ///
+    /// - Throws:
+    ///   - `JSONValueDecodingError.wrongTypeForKey` if the value does not have case `string` or `null`
+    ///   - `JSONValueDecodingError.failedToDecodeFromRawValue` if `init(rawValue:)` returns `nil`
+    func optionalRawRepresentableValueForKey<T: RawRepresentable>(_ key: String, type: T.Type = T.self) throws -> T? where T.RawValue == String {
+        guard let rawValue = try optionalStringValueForKey(key) else {
+            return nil
+        }
+
+        return try rawRepresentableValueFromRawValue(rawValue, type: T.self)
+    }
+
+    private func rawRepresentableValueFromRawValue<T: RawRepresentable>(_ rawValue: String, type _: T.Type = T.self) throws -> T where T.RawValue == String {
+        guard let value = T(rawValue: rawValue) else {
+            throw JSONValueDecodingError.failedToDecodeFromRawValue(rawValue)
+        }
+
+        return value
     }
 }
