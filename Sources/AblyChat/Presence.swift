@@ -166,7 +166,7 @@ public struct PresenceMember: Sendable {
         }
     }
 
-    public init(clientID: String, data: PresenceData?, action: PresenceMember.Action, extras: (any Sendable)?, updatedAt: Date) {
+    public init(clientID: String, data: PresenceData?, action: PresenceMember.Action, extras: [String: JSONValue]?, updatedAt: Date) {
         self.clientID = clientID
         self.data = data
         self.action = action
@@ -195,7 +195,7 @@ public struct PresenceMember: Sendable {
     /**
      * The extras associated with the presence member.
      */
-    public var extras: (any Sendable)?
+    public var extras: [String: JSONValue]?
     public var updatedAt: Date
 }
 

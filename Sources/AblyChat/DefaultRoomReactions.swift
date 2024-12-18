@@ -56,13 +56,13 @@ internal final class DefaultRoomReactions: RoomReactions, EmitsDiscontinuities {
                         throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without timestamp")
                     }
 
-                    guard let ablyCocoaExtras = try message.extras?.toJSON() else {
+                    guard let ablyCocoaExtras = message.extras else {
                         throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without extras")
                     }
 
                     let dto = try RoomReactionDTO(
                         data: .init(jsonValue: .init(ablyCocoaData: ablyCocoaData)),
-                        extras: .init(jsonValue: .init(ablyCocoaData: ablyCocoaExtras))
+                        extras: .init(jsonObject: JSONValue.objectFromAblyCocoaExtras(ablyCocoaExtras))
                     )
 
                     // (CHA-ER4d) Realtime events that are malformed (unknown fields should be ignored) shall not be emitted to listeners.
