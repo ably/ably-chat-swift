@@ -1,4 +1,4 @@
-@preconcurrency import Ably
+import Ably
 import AsyncAlgorithms
 
 /// The interface that the lifecycle manager expects its contributing realtime channels to conform to.
