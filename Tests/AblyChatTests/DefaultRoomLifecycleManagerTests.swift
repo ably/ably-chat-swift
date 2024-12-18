@@ -1,4 +1,4 @@
-@preconcurrency import Ably
+import Ably
 @testable import AblyChat
 import Testing
 
