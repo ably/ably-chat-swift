@@ -1,6 +1,6 @@
 import os
 
-public typealias LogContext = [String: any Sendable]
+public typealias LogContext = [String: JSONValue]
 
 public protocol LogHandler: AnyObject, Sendable {
     /**
