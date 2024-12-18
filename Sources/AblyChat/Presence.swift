@@ -190,8 +190,6 @@ public struct PresenceMember: Sendable {
      */
     public var action: Action
 
-    // TODO: (https://github.com/ably-labs/ably-chat-swift/issues/13): try to improve this type
-
     /**
      * The extras associated with the presence member.
      */
