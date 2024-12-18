@@ -87,7 +87,7 @@ enum RoomReactionDTOTests {
                 ]
             )
 
-            #expect(data == .init(headers: ["someStringKey": .string("someStringValue"), "someNumberKey": .number(123)]))
+            #expect(data == .init(headers: ["someStringKey": "someStringValue", "someNumberKey": 123]))
         }
 
         // MARK: - JSONCodable
@@ -100,7 +100,7 @@ enum RoomReactionDTOTests {
 
         @Test
         func toJSONValue() {
-            let data = RoomReactionDTO.Extras(headers: ["someStringKey": .string("someStringValue"), "someNumberKey": .number(123)])
+            let data = RoomReactionDTO.Extras(headers: ["someStringKey": "someStringValue", "someNumberKey": 123])
 
             #expect(data.toJSONValue == [
                 "headers": [

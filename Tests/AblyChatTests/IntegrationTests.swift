@@ -119,7 +119,7 @@ struct IntegrationTests {
             params: .init(
                 text: "Hello from txRoom, after rxRoom subscribe",
                 metadata: ["someMetadataKey": 123, "someOtherMetadataKey": "foo"],
-                headers: ["someHeadersKey": .number(456), "someOtherHeadersKey": .string("bar")]
+                headers: ["someHeadersKey": 456, "someOtherHeadersKey": "bar"]
             )
         )
         let rxMessageFromSubscription = try #require(await rxMessageSubscription.first { _ in true })
@@ -169,7 +169,7 @@ struct IntegrationTests {
             params: .init(
                 type: "heart",
                 metadata: ["someMetadataKey": 123, "someOtherMetadataKey": "foo"],
-                headers: ["someHeadersKey": .number(456), "someOtherHeadersKey": .string("bar")]
+                headers: ["someHeadersKey": 456, "someOtherHeadersKey": "bar"]
             )
         )
         let rxReactionFromSubscription = try #require(await rxReactionSubscription.first { _ in true })

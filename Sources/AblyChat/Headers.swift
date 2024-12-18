@@ -1,10 +1,71 @@
-// TODO: https://github.com/ably-labs/ably-chat-swift/issues/13 - try to improve this type
-
+/// A value that can be used in ``Headers``. It is the same as ``JSONValue`` except it does not have the `object` or `array` cases.
 public enum HeadersValue: Sendable, Equatable {
     case string(String)
     case number(Double)
     case bool(Bool)
     case null
+
+    // MARK: - Convenience getters for associated values
+
+    /// If this `HeadersValue` has case `string`, this returns the associated value. Else, it returns `nil`.
+    public var stringValue: String? {
+        if case let .string(stringValue) = self {
+            stringValue
+        } else {
+            nil
+        }
+    }
+
+    /// If this `HeadersValue` has case `number`, this returns the associated value. Else, it returns `nil`.
+    public var numberValue: Double? {
+        if case let .number(numberValue) = self {
+            numberValue
+        } else {
+            nil
+        }
+    }
+
+    /// If this `HeadersValue` has case `bool`, this returns the associated value. Else, it returns `nil`.
+    public var boolValue: Bool? {
+        if case let .bool(boolValue) = self {
+            boolValue
+        } else {
+            nil
+        }
+    }
+
+    /// Returns true if and only if this `HeadersValue` has case `null`.
+    public var isNull: Bool {
+        if case .null = self {
+            true
+        } else {
+            false
+        }
+    }
+}
+
+extension HeadersValue: ExpressibleByStringLiteral {
+    public init(stringLiteral value: String) {
+        self = .string(value)
+    }
+}
+
+extension HeadersValue: ExpressibleByIntegerLiteral {
+    public init(integerLiteral value: Int) {
+        self = .number(Double(value))
+    }
+}
+
+extension HeadersValue: ExpressibleByFloatLiteral {
+    public init(floatLiteral value: Double) {
+        self = .number(value)
+    }
+}
+
+extension HeadersValue: ExpressibleByBooleanLiteral {
+    public init(booleanLiteral value: Bool) {
+        self = .bool(value)
+    }
 }
 
 extension HeadersValue: JSONDecodable {
@@ -42,10 +103,6 @@ extension HeadersValue: JSONEncodable {
         }
     }
 }
-
-// The corresponding type in TypeScript is
-// Record<string, number | string | boolean | null | undefined>
-// There may be a better way to represent it in Swift; this will do for now. Have omitted `undefined` because I don’t know how that would occur.
 
 /**
  * Headers are a flat key-value map that can be attached to chat messages.

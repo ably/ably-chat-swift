@@ -66,7 +66,7 @@ struct ChatAPITests {
             params: .init(
                 text: "", // arbitrary
                 // The exact value here is arbitrary, just want to check it gets serialized
-                headers: ["numberKey": .number(10), "stringKey": .string("hello")]
+                headers: ["numberKey": 10, "stringKey": "hello"]
             )
         )
 
