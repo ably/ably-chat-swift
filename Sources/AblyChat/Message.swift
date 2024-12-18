@@ -98,7 +98,7 @@ extension Message: JSONObjectDecodable {
             roomID: jsonObject.stringValueForKey("roomId"),
             text: jsonObject.stringValueForKey("text"),
             createdAt: jsonObject.optionalAblyProtocolDateValueForKey("createdAt"),
-            metadata: jsonObject.objectValueForKey("metadata").mapValues { try .init(jsonValue: $0) },
+            metadata: jsonObject.objectValueForKey("metadata"),
             headers: jsonObject.objectValueForKey("headers").mapValues { try .init(jsonValue: $0) }
         )
     }

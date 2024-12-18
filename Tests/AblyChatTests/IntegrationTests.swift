@@ -118,7 +118,7 @@ struct IntegrationTests {
         let txMessageAfterRxSubscribe = try await txRoom.messages.send(
             params: .init(
                 text: "Hello from txRoom, after rxRoom subscribe",
-                metadata: ["someMetadataKey": .number(123), "someOtherMetadataKey": .string("foo")],
+                metadata: ["someMetadataKey": 123, "someOtherMetadataKey": "foo"],
                 headers: ["someHeadersKey": .number(456), "someOtherHeadersKey": .string("bar")]
             )
         )
@@ -168,7 +168,7 @@ struct IntegrationTests {
         try await txRoom.reactions.send(
             params: .init(
                 type: "heart",
-                metadata: ["someMetadataKey": .number(123), "someOtherMetadataKey": .string("foo")],
+                metadata: ["someMetadataKey": 123, "someOtherMetadataKey": "foo"],
                 headers: ["someHeadersKey": .number(456), "someOtherHeadersKey": .string("bar")]
             )
         )

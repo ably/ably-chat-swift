@@ -42,13 +42,13 @@ extension RoomReactionDTO.Data: JSONObjectCodable {
 
     internal init(jsonObject: [String: JSONValue]) throws {
         type = try jsonObject.stringValueForKey(JSONKey.type.rawValue)
-        metadata = try jsonObject.optionalObjectValueForKey(JSONKey.metadata.rawValue)?.mapValues { try .init(jsonValue: $0) }
+        metadata = try jsonObject.optionalObjectValueForKey(JSONKey.metadata.rawValue)
     }
 
     internal var toJSONObject: [String: JSONValue] {
         [
             JSONKey.type.rawValue: .string(type),
-            JSONKey.metadata.rawValue: .object(metadata?.mapValues(\.toJSONValue) ?? [:]),
+            JSONKey.metadata.rawValue: .object(metadata ?? [:]),
         ]
     }
 }
