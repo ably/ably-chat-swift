@@ -31,7 +31,7 @@ struct DefaultRoomReactionsTests {
         let sendReactionParams = SendReactionParams(
             type: "like",
             metadata: ["someMetadataKey": "someMetadataValue"],
-            headers: ["someHeadersKey": HeadersValue.string("someHeadersValue")]
+            headers: ["someHeadersKey": "someHeadersValue"]
         )
 
         // When
