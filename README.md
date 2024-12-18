@@ -455,7 +455,7 @@ try await room.reactions.send(params: .init(type: "like"))
 You can also add any metadata and headers to reactions:
 
 ```swift
-try await room.reactions.send(params: .init(type: "🎉", metadata: ["effect": .string("fireworks")]))
+try await room.reactions.send(params: .init(type: "🎉", metadata: ["effect": "fireworks"]))
 ```
 
 ### Subscribing to room reactions

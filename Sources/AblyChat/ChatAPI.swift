@@ -37,7 +37,7 @@ internal final class ChatAPI: Sendable {
 
         // (CHA-M3b) A message may be sent without metadata or headers. When these are not specified by the user, they must be omitted from the REST payload.
         if let metadata = params.metadata {
-            body["metadata"] = .object(metadata.mapValues(\.toJSONValue))
+            body["metadata"] = .object(metadata)
         }
 
         if let headers = params.headers {
