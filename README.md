@@ -237,8 +237,8 @@ Taking messages as an example, you can listen for discontinuities like so:
 
 ```swift
 let subscription = room.messages.onDiscontinuity()
-for await error in subscription {
-    print("Recovering from the error: \(error)")
+for await discontinuityEvent in subscription {
+    print("Recovering from the error: \(discontinuityEvent.error)")
 }
 ```
 
