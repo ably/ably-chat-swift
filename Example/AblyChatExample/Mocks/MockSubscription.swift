@@ -2,7 +2,7 @@ import Ably
 import AblyChat
 import AsyncAlgorithms
 
-struct MockSubscription<T: Sendable>: Sendable, AsyncSequence {
+final class MockSubscription<T: Sendable>: Sendable, AsyncSequence {
     typealias Element = T
     typealias AsyncTimerMockSequence = AsyncMapSequence<AsyncTimerSequence<ContinuousClock>, Element>
     typealias MockMergedSequence = AsyncMerge2Sequence<AsyncStream<Element>, AsyncTimerMockSequence>
@@ -26,5 +26,11 @@ struct MockSubscription<T: Sendable>: Sendable, AsyncSequence {
         mergedSequence = merge(stream, timer.map { _ in
             randomElement()
         })
+    }
+
+    func setOnTermination(_ onTermination: @escaping @Sendable () -> Void) {
+        continuation.onTermination = { _ in
+            onTermination()
+        }
     }
 }

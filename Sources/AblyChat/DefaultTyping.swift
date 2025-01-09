@@ -25,7 +25,7 @@ internal final class DefaultTyping: Typing {
         let subscription = Subscription<TypingEvent>(bufferingPolicy: bufferingPolicy)
         let eventTracker = EventTracker()
 
-        channel.presence.subscribe { [weak self] message in
+        let eventListener = channel.presence.subscribe { [weak self] message in
             guard let self else {
                 return
             }
@@ -72,6 +72,13 @@ internal final class DefaultTyping: Typing {
                 logger.log(message: "Failed to fetch presence set after \(maxRetryDuration) seconds. Giving up.", level: .error)
             }
         }
+
+        subscription.addTerminationHandler { [weak self] in
+            if let eventListener {
+                self?.channel.presence.unsubscribe(eventListener)
+            }
+        }
+
         return subscription
     }
 

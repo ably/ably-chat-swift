@@ -1,3 +1,5 @@
+import Foundation
+
 // A non-throwing `AsyncSequence` (means that we can iterate over it without a `try`).
 //
 // This should respect the `BufferingPolicy` passed to the `subscribe(bufferingPolicy:)` method.
@@ -5,7 +7,11 @@
 // At some point we should define how this thing behaves when you iterate over it from multiple loops, or when you pass it around. I’m not yet sufficiently experienced with `AsyncSequence` to know what’s idiomatic. I tried the same thing out with `AsyncStream` (two tasks iterating over a single stream) and it appears that each element is delivered to precisely one consumer. But we can leave that for later. On a similar note consider whether it makes a difference whether this is a struct or a class.
 //
 // I wanted to implement this as a protocol (from which `MessageSubscription` would then inherit) but struggled to do so (see https://forums.swift.org/t/struggling-to-create-a-protocol-that-inherits-from-asyncsequence-with-primary-associated-type/73950 where someone suggested it’s a compiler bug), hence the struct. I was also hoping that upon switching to Swift 6 we could use AsyncSequence’s `Failure` associated type to simplify the way in which we show that the subscription is non-throwing, but it turns out this can only be done in macOS 15 etc. So I think that for now we’re stuck with things the way they are.
-public struct Subscription<Element: Sendable>: Sendable, AsyncSequence {
+
+/// A non-throwing `AsyncSequence`. The Chat SDK uses this type as the return value of the methods that allow you to find out about events such as typing events, connection status changes, discontinuity events etc.
+///
+/// You should only iterate over a given `Subscription` once; the results of iterating more than once are undefined.
+public final class Subscription<Element: Sendable>: @unchecked Sendable, AsyncSequence {
     private enum Mode: Sendable {
         case `default`(stream: AsyncStream<Element>, continuation: AsyncStream<Element>.Continuation)
         case mockAsyncSequence(AnyNonThrowingAsyncSequence)
@@ -45,6 +51,9 @@ public struct Subscription<Element: Sendable>: Sendable, AsyncSequence {
         }
     }
 
+    // Access must be synchronised using ``lock``.
+    private var terminationHandlers: [@Sendable () -> Void] = []
+    private let lock = NSLock()
     private let mode: Mode
 
     internal init(bufferingPolicy: BufferingPolicy) {
@@ -71,13 +80,24 @@ public struct Subscription<Element: Sendable>: Sendable, AsyncSequence {
         }
     }
 
-    // TODO: https://github.com/ably-labs/ably-chat-swift/issues/36 Revisit how we want to unsubscribe to fulfil CHA-M4b & CHA-ER4b. I think exposing this publicly for all Subscription types is suitable.
-    public func unsubscribe() {
+    internal func addTerminationHandler(_ terminationHandler: @escaping (@Sendable () -> Void)) {
+        var terminationHandlers: [@Sendable () -> Void]
+        lock.lock()
+        terminationHandlers = self.terminationHandlers
+        terminationHandlers.append(terminationHandler)
+        self.terminationHandlers = terminationHandlers
+        lock.unlock()
+
         switch mode {
         case let .default(_, continuation):
-            continuation.finish()
+            let constantTerminationHandlers = terminationHandlers
+            continuation.onTermination = { _ in
+                for terminationHandler in constantTerminationHandlers {
+                    terminationHandler()
+                }
+            }
         case .mockAsyncSequence:
-            fatalError("`finish` cannot be called on a Subscription that was created using init(mockAsyncSequence:)")
+            fatalError("`addTerminationHandler(_:)` cannot be called on a Subscription that was created using init(mockAsyncSequence:)")
         }
     }
 

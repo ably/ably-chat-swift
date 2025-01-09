@@ -103,19 +103,13 @@ let error = await chatClient.connection.error
 
 ### Subscribing to connection status changes
 
-You can subscribe to connection status changes by registering a listener, like so:
+To subscribe to connection status changes, create a subscription with the `onStatusChange` method. You can then iterate over it using its `AsyncSequence` interface:
 
 ```swift
 let subscription = chatClient.connection.onStatusChange()
 for await statusChange in subscription {
     print("Connection status changed to: \(statusChange.current)")
 }
-```
-
-To stop listening to changes, call the `unsubscribe` method on the returned subscription instance:
-
-```swift
-subscription.unsubscribe()
 ```
 
 ## Chat rooms
@@ -209,7 +203,7 @@ switch await room.status {
 
 ### Listening to room status updates
 
-You can also subscribe to changes in the room status and be notified whenever they happen by registering a listener:
+You can also subscribe to changes in the room status and be notified whenever they happen by creating a subscription using the room’s `onStatusChange` method and then iterating over this subscription using its `AsyncSequence` interface:
 
 ```swift
 let statusSubscription = try await room.onStatusChange()
@@ -218,31 +212,23 @@ for await status in statusSubscription {
 }
 ```
 
-To stop listening to room status changes, call the `unsubscribe` method on the returned subscription instance:
-
-```swift
-statusSubscription.unsubscribe()
-```
-
 ## Handling discontinuity
 
 There may be instances where the connection to Ably is lost for a period of time, for example, when the user enters a tunnel. In many
 circumstances, the connection will recover and operation will continue with no discontinuity of messages. However, during extended
 periods of disconnection, continuity cannot be guaranteed and you'll need to take steps to recover messages you might have missed.
 
-Each feature of the Chat SDK provides an `onDiscontinuity` method. Here you can register a listener that will be notified whenever a
+Each feature of the Chat SDK provides an `onDiscontinuity` method. Here you can create a subscription that will emit a discontinuity event on its `AsyncSequence` interface whenever a
 discontinuity in that feature has been observed.
 
 Taking messages as an example, you can listen for discontinuities like so:
 
 ```swift
 let subscription = room.messages.onDiscontinuity()
-for await error in subscription {
-    print("Recovering from the error: \(error)")
+for await discontinuityEvent in subscription {
+    print("Recovering from the error: \(discontinuityEvent.error)")
 }
 ```
-
-To stop listening to discontinuities, call `unsubscribe` method on returned subscription instance.
 
 ## Chat messages
 
@@ -256,8 +242,6 @@ for await message in messagesSubscription {
     print("Message received: \(message)")
 }
 ```
-
-To stop listening for the new messages, call the `unsubscribe` method on the returned subscription instance.
 
 ### Sending messages
 
@@ -286,8 +270,8 @@ if paginatedResult.hasNext {
 
 ### Retrieving message history for a subscribed listener
 
-In addition to being able to unsubscribe from messages, the return value from `messages.subscribe` also includes the `getPreviousMessages`
-method. It can be used to request historical messages in the chat room that were sent up to the point that a particular listener was subscribed. It returns a
+The return value from `messages.subscribe` includes the `getPreviousMessages`
+method, which can be used to request historical messages in the chat room that were sent up to the point that a particular listener was subscribed. It returns a
 paginated response that can be used to request for more messages:
 
 ```swift
@@ -349,7 +333,7 @@ try await room.presence.leave(data: ["status": "Bye!"])
 
 ### Subscribing to presence updates
 
-You can provide a single listener for all presence event types:
+You can create a single subscription for all presence event types:
 
 ```swift
 let presenceSubscription = try await room.presence.subscribe(events: [.enter, .leave, .update])
@@ -357,8 +341,6 @@ for await event in presenceSubscription {
     print("Presence event `\(event.action)` from `\(event.clientId)` with data `\(event.data)`")
 }
 ```
-
-To stop listening for the presence updates, call the `unsubscribe` method on the returned subscription instance.
 
 ## Typing indicators
 
@@ -401,7 +383,7 @@ try await room.typing.stop()
 
 ### Subscribing to typing updates
 
-To subscribe to typing events, create a subscription with the `subscribe` method:
+To subscribe to typing events, create a subscription with the `subscribe` method. You can then iterate over it using its `AsyncSequence` interface:
 
 ```swift
 let typingSubscription = try await room.typing.subscribe()
@@ -410,15 +392,13 @@ for await typing in typingSubscription {
 }
 ```
 
-To stop listening for the typing events, call the `unsubscribe` method on the returned subscription instance.
-
 ## Occupancy of a chat room
 
 Occupancy tells you how many users are connected to the chat room.
 
 ### Subscribing to occupancy updates
 
-To subscribe to occupancy updates, subscribe a listener to the chat room `occupancy` member:
+To subscribe to occupancy updates, create a subscription by calling the `subscribe` method on the chat room’s `occupancy` member. You can then iterate over it using its `AsyncSequence` interface:
 
 ```swift
 let occupancySubscription = try await room.occupancy.subscribe()
@@ -426,8 +406,6 @@ for await event in occupancySubscription {
     occupancyInfo = "Connections: \(event.presenceMembers) (\(event.connections))"
 }
 ```
-
-To stop listening for the typing events, call the `unsubscribe` method on the returned subscription instance.
 
 Occupancy updates are delivered in near-real-time, with updates in quick succession batched together for performance.
 
@@ -468,8 +446,6 @@ for await reaction in reactionSubscription {
     print("Received a reaction of type \(reaction.type), and metadata \(reaction.metadata)")
 }
 ```
-
-To stop receiving reactions, call the `unsubscribe` method on the returned subscription instance.
 
 ## Example app
 

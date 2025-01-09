@@ -192,10 +192,14 @@ internal extension QueryOptions {
 }
 
 // Currently a copy-and-paste of `Subscription`; see notes on that one. For `MessageSubscription`, my intention is that the `BufferingPolicy` passed to `subscribe(bufferingPolicy:)` will also define what the `MessageSubscription` does with messages that are received _before_ the user starts iterating over the sequence (this buffering will allow us to implement the requirement that there be no discontinuity between the the last message returned by `getPreviousMessages` and the first element you get when you iterate).
-public struct MessageSubscription: Sendable, AsyncSequence {
+
+/// A non-throwing `AsyncSequence` whose element is ``Message``. The Chat SDK uses this type as the return value of the ``Messages`` methods that allow you to find out about received chat messages.
+///
+/// You should only iterate over a given `MessageSubscription` once; the results of iterating more than once are undefined.
+public final class MessageSubscription: Sendable, AsyncSequence {
     public typealias Element = Message
 
-    private var subscription: Subscription<Element>
+    private let subscription: Subscription<Element>
 
     // can be set by either initialiser
     private let getPreviousMessages: @Sendable (QueryOptions) async throws -> any PaginatedResult<Message>
@@ -217,6 +221,10 @@ public struct MessageSubscription: Sendable, AsyncSequence {
 
     internal func emit(_ element: Element) {
         subscription.emit(element)
+    }
+
+    internal func addTerminationHandler(_ onTermination: @escaping (@Sendable () -> Void)) {
+        subscription.addTerminationHandler(onTermination)
     }
 
     public func getPreviousMessages(params: QueryOptions) async throws -> any PaginatedResult<Message> {
