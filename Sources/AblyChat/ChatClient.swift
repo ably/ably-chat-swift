@@ -60,9 +60,12 @@ public actor DefaultChatClient: ChatClient {
      *   - realtime: The Ably Realtime client.
      *   - clientOptions: The client options.
      */
-    public init(realtime: RealtimeClient, clientOptions: ClientOptions?) {
-        self.realtime = realtime
+    public init(realtime suppliedRealtime: any SuppliedRealtimeClientProtocol, clientOptions: ClientOptions?) {
+        self.realtime = suppliedRealtime
         self.clientOptions = clientOptions ?? .init()
+
+        let realtime = suppliedRealtime.createWrapperSDKProxy(with: .init(agents: agents))
+
         logger = DefaultInternalLogger(logHandler: self.clientOptions.logHandler, logLevel: self.clientOptions.logLevel)
         let roomFactory = DefaultRoomFactory()
         rooms = DefaultRooms(realtime: realtime, clientOptions: self.clientOptions, logger: logger, roomFactory: roomFactory)
