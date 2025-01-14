@@ -21,6 +21,7 @@ public protocol RealtimeChannelsProtocol: ARTRealtimeChannelsProtocol, Sendable 
 /// Expresses the requirements of the object returned by ``RealtimeChannelsProtocol/get(_:options:)``.
 public protocol RealtimeChannelProtocol: ARTRealtimeChannelProtocol, Sendable {}
 
+/// Expresses the requirements of the object returned by ``RealtimeClientProtocol/connection``.
 public protocol ConnectionProtocol: ARTConnectionProtocol, Sendable {}
 
 /// Like (a subset of) `ARTRealtimeChannelOptions` but with value semantics. (It’s unfortunate that `ARTRealtimeChannelOptions` doesn’t have a `-copy` method.)
