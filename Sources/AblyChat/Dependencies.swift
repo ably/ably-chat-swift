@@ -7,10 +7,7 @@ public protocol RealtimeClientProtocol: ARTRealtimeProtocol, Sendable {
     associatedtype Channels: RealtimeChannelsProtocol
     associatedtype Connection: ConnectionProtocol
 
-    // It’s not clear to me why ARTRealtimeProtocol doesn’t include this property. I briefly tried adding it but ran into compilation failures that it wasn’t immediately obvious how to fix.
     var channels: Channels { get }
-
-    // TODO: Expose `Connection` on ARTRealtimeProtocol so it can be used from RealtimeClientProtocol - https://github.com/ably-labs/ably-chat-swift/issues/123
     var connection: Connection { get }
 }
 
@@ -18,7 +15,6 @@ public protocol RealtimeClientProtocol: ARTRealtimeProtocol, Sendable {
 public protocol RealtimeChannelsProtocol: ARTRealtimeChannelsProtocol, Sendable {
     associatedtype Channel: RealtimeChannelProtocol
 
-    // It’s not clear to me why ARTRealtimeChannelsProtocol doesn’t include this function (https://github.com/ably/ably-cocoa/issues/1968).
     func get(_ name: String, options: ARTRealtimeChannelOptions) -> Channel
 }
 
