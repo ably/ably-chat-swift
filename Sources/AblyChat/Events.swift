@@ -14,12 +14,10 @@ public enum MessageAction: String, Sendable {
         case .create:
             .create
         // ignore any other actions except `message.create` for now
-        case .unset,
-             .update,
+        case .update,
              .delete,
-             .annotationCreate,
-             .annotationDelete,
-             .metaOccupancy:
+             .metaOccupancy,
+             .messageSummary:
             nil
         @unknown default:
             nil
