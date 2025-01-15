@@ -1,7 +1,6 @@
 # Ably Chat SDK for Swift
 
 <p style="text-align: left">
-    <img src="https://img.shields.io/badge/development_status-Private_Beta-ab7df8" alt="Development status" />
     <img src="https://badgen.net/github/license/3scale/saas-operator" alt="License" />
     <img src="https://img.shields.io/badge/version-0.1.0--SNAPSHOT-2ea44f" alt="version: 0.1.0-SNAPSHOT" />
 </p>
@@ -10,11 +9,6 @@ Ably Chat is a set of purpose-built APIs for a host of chat features enabling yo
 any scale. It is designed to meet a wide range of chat use cases, such as livestreams, in-game communication, customer support, or social
 interactions in SaaS products. Built on [Ably's](https://ably.com/) core service, it abstracts complex details to enable efficient chat
 architectures.
-
-> [!IMPORTANT]
-> This SDK is currently under development. If you are interested in being an early adopter and providing feedback then you
-> can [sign up to the private beta](https://forms.gle/vB2kXhCXrTQpzHLu5) and are welcome
-> to [provide us with feedback](https://forms.gle/mBw9M53NYuCBLFpMA). Coming soon: chat moderation, editing and deleting messages.
 
 Get started using the [📚 documentation](https://ably.com/docs/products/chat).
 
@@ -501,7 +495,4 @@ the community reported [Github issues](https://github.com/ably/ably-chat-swift/i
 
 To see what has changed in recent versions, see the [changelog](CHANGELOG.md).
 
-## Further reading
-
-- [Sign up](https://forms.gle/gRZa51erqNp1mSxVA) to the private beta and get started.
-- [Share feedback or request](https://forms.gle/mBw9M53NYuCBLFpMA) a new feature.
+[Share feedback or request](https://forms.gle/mBw9M53NYuCBLFpMA) a new feature.
