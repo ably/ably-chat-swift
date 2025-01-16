@@ -22,7 +22,7 @@ public protocol RoomReactions: AnyObject, Sendable, EmitsDiscontinuities {
      *
      * - Returns: The realtime channel.
      */
-    var channel: RealtimeChannelProtocol { get }
+    var channel: any RealtimeChannelProtocol { get }
 
     /**
      * Subscribes a given listener to receive room-level reactions.

@@ -46,7 +46,7 @@ internal enum RoomFeature: CaseIterable {
 /// - the discontinuities emitted by the room lifecycle
 /// - the presence-readiness wait mechanism supplied by the room lifecycle
 internal protocol FeatureChannel: Sendable, EmitsDiscontinuities {
-    var channel: RealtimeChannelProtocol { get }
+    var channel: any RealtimeChannelProtocol { get }
 
     /// Waits until we can perform presence operations on the contributors of this room without triggering an implicit attach.
     ///
@@ -62,7 +62,7 @@ internal protocol FeatureChannel: Sendable, EmitsDiscontinuities {
 }
 
 internal struct DefaultFeatureChannel: FeatureChannel {
-    internal var channel: RealtimeChannelProtocol
+    internal var channel: any RealtimeChannelProtocol
     internal var contributor: DefaultRoomLifecycleContributor
     internal var roomLifecycleManager: RoomLifecycleManager
 

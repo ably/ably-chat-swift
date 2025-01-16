@@ -2,12 +2,12 @@ import Ably
 @testable import AblyChat
 
 final actor MockFeatureChannel: FeatureChannel {
-    let channel: RealtimeChannelProtocol
+    let channel: any RealtimeChannelProtocol
     private var discontinuitySubscriptions = SubscriptionStorage<DiscontinuityEvent>()
     private let resultOfWaitToBeAbleToPerformPresenceOperations: Result<Void, ARTErrorInfo>?
 
     init(
-        channel: RealtimeChannelProtocol,
+        channel: any RealtimeChannelProtocol,
         resultOfWaitToBeAblePerformPresenceOperations: Result<Void, ARTErrorInfo>? = nil
     ) {
         self.channel = channel
