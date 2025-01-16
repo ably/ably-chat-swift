@@ -4,7 +4,7 @@ import Ably
 
 // Update this when you release a new version
 // Version information
-internal let version = "0.1.0"
+internal let version = "0.1.1"
 
 internal let channelOptionsAgentString = "chat-swift/\(version)"
 
