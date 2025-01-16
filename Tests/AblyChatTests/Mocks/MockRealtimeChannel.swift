@@ -2,9 +2,7 @@ import Ably
 import AblyChat
 
 final class MockRealtimeChannel: NSObject, RealtimeChannelProtocol {
-    var presence: ARTRealtimePresenceProtocol {
-        fatalError("Not implemented")
-    }
+    let presence = MockRealtimePresence()
 
     private let attachSerial: String?
     private let channelSerial: String?

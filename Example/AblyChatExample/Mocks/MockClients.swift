@@ -88,7 +88,7 @@ actor MockRoom: Room {
 actor MockMessages: Messages {
     let clientID: String
     let roomID: String
-    let channel: RealtimeChannelProtocol
+    let channel: any RealtimeChannelProtocol
 
     private let mockSubscriptions = MockSubscriptionStorage<Message>()
 
@@ -146,7 +146,7 @@ actor MockMessages: Messages {
 actor MockRoomReactions: RoomReactions {
     let clientID: String
     let roomID: String
-    let channel: RealtimeChannelProtocol
+    let channel: any RealtimeChannelProtocol
 
     private let mockSubscriptions = MockSubscriptionStorage<Reaction>()
 
@@ -193,7 +193,7 @@ actor MockRoomReactions: RoomReactions {
 actor MockTyping: Typing {
     let clientID: String
     let roomID: String
-    let channel: RealtimeChannelProtocol
+    let channel: any RealtimeChannelProtocol
 
     private let mockSubscriptions = MockSubscriptionStorage<TypingEvent>()
 
@@ -356,7 +356,7 @@ actor MockPresence: Presence {
 actor MockOccupancy: Occupancy {
     let clientID: String
     let roomID: String
-    let channel: RealtimeChannelProtocol
+    let channel: any RealtimeChannelProtocol
 
     private let mockSubscriptions = MockSubscriptionStorage<OccupancyEvent>()
 

@@ -23,7 +23,14 @@ public protocol RealtimeChannelsProtocol: ARTRealtimeChannelsProtocol, Sendable 
 }
 
 /// Expresses the requirements of the object returned by ``RealtimeChannelsProtocol/get(_:options:)``.
-public protocol RealtimeChannelProtocol: ARTRealtimeChannelProtocol, Sendable {}
+public protocol RealtimeChannelProtocol: ARTRealtimeChannelProtocol, Sendable {
+    associatedtype Presence: RealtimePresenceProtocol
+
+    var presence: Presence { get }
+}
+
+/// Expresses the requirements of the object returned by ``RealtimeChannelProtocol/presence``.
+public protocol RealtimePresenceProtocol: ARTRealtimePresenceProtocol, Sendable {}
 
 public protocol ConnectionProtocol: ARTConnectionProtocol, Sendable {}
 
