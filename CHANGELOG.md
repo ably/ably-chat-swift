@@ -1,5 +1,13 @@
 # Change Log
 
+## [0.1.1](https://github.com/ably/ably-chat-swift/tree/0.1.1)
+
+## What's Changed
+
+This release temporarily pins the SDK's required version of ably-cocoa (https://github.com/ably/ably-chat-swift/pull/213). This change will be reverted in an upcoming release in the near future.
+
+**Full Changelog**: https://github.com/ably/ably-chat-swift/compare/0.1.0...0.1.1
+
 ## [0.1.0](https://github.com/ably/ably-chat-swift/tree/0.1.0)
 
 Initial release of the Ably Chat SDK in Swift. It includes the following chat features:
