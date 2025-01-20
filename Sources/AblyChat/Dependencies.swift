@@ -38,37 +38,19 @@ public protocol RealtimePresenceProtocol: ARTRealtimePresenceProtocol, Sendable 
 /// Expresses the requirements of the object returned by ``RealtimeClientProtocol/connection``.
 public protocol ConnectionProtocol: ARTConnectionProtocol, Sendable {}
 
-/// Like (a subset of) `ARTRealtimeChannelOptions` but with value semantics. (It’s unfortunate that `ARTRealtimeChannelOptions` doesn’t have a `-copy` method.)
-internal struct RealtimeChannelOptions {
-    internal var modes: ARTChannelMode
-    internal var params: [String: String]?
-    internal var attachOnSubscribe: Bool
-
-    internal init() {
-        // Get our default values from ably-cocoa
-        let artRealtimeChannelOptions = ARTRealtimeChannelOptions()
-        modes = artRealtimeChannelOptions.modes
-        params = artRealtimeChannelOptions.params
-        attachOnSubscribe = artRealtimeChannelOptions.attachOnSubscribe
-    }
-
-    internal var toARTRealtimeChannelOptions: ARTRealtimeChannelOptions {
-        let result = ARTRealtimeChannelOptions()
-        result.modes = modes
-        result.params = params
-        result.attachOnSubscribe = attachOnSubscribe
-        return result
-    }
-}
-
 internal extension RealtimeClientProtocol {
     // Function to get the channel with Chat's default options
-    func getChannel(_ name: String, opts: RealtimeChannelOptions? = nil) -> any RealtimeChannelProtocol {
-        var resolvedOptions = opts ?? .init()
+    func getChannel(_ name: String, opts: ARTRealtimeChannelOptions? = nil) -> any RealtimeChannelProtocol {
+        let resolvedOptions: ARTRealtimeChannelOptions = if let opts {
+            // swiftlint:disable:next force_cast
+            opts.copy() as! ARTRealtimeChannelOptions
+        } else {
+            .init()
+        }
 
         // CHA-GP2a
         resolvedOptions.attachOnSubscribe = false
 
-        return channels.get(name, options: resolvedOptions.toARTRealtimeChannelOptions)
+        return channels.get(name, options: resolvedOptions)
     }
 }
