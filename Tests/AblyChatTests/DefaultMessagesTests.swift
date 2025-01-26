@@ -3,6 +3,50 @@ import Ably
 import Testing
 
 struct DefaultMessagesTests {
+    // MARK: CHA-M3
+
+    // @spec CHA-M3f
+    // @spec CHA-M3a
+    @Test
+    func clientMaySendMessageViaRESTChatAPI() async throws {
+        // Given
+        let realtime = MockRealtime.create { (MockHTTPPaginatedResponse(items: [["serial":"abc", "createdAt": Date().timeIntervalSince1970]]), nil) }
+        let chatAPI = ChatAPI(realtime: realtime)
+        let channel = MockRealtimeChannel(attachResult: .success)
+        let featureChannel = MockFeatureChannel(channel: channel)
+        let defaultMessages = await DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
+
+        // When
+        let message = try await defaultMessages.send(params: .init(text: "hey"))
+
+        // Then
+        #expect(message.text == "hey")
+    }
+
+    // @spec CHA-M3b
+    @Test
+    func whenMetadataAndHeadersAreNotSpecifiedByUserTheyAreOmittedFromRESTPayload() async throws {
+        //
+    }
+
+    // @spec CHA-M3e
+    @Test
+    func errorShouldBeThrownIfErrorIsReturnedFromRESTChatAPI() async throws {
+        // Given
+        let sendError = ARTErrorInfo(domain: "SomeDomain", code: 123)
+        let realtime = MockRealtime.create { (nil, sendError) }
+        let chatAPI = ChatAPI(realtime: realtime)
+        let channel = MockRealtimeChannel(attachResult: .success)
+        let featureChannel = MockFeatureChannel(channel: channel)
+        let defaultMessages = await DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
+
+        // Then
+        await #expect(throws: sendError, performing: {
+            _ = try await defaultMessages.send(params: .init(text: "hey"))
+        })
+    }
+
+    // @spec CHA-M5a
     @Test
     func subscribe_whenChannelIsAttachedAndNoChannelSerial_throwsError() async throws {
         // roomId and clientId values are arbitrary
