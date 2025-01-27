@@ -34,7 +34,7 @@ public protocol Occupancy: AnyObject, Sendable, EmitsDiscontinuities {
      *
      * - Returns: The underlying Ably channel for occupancy events.
      */
-    var channel: RealtimeChannelProtocol { get }
+    var channel: any RealtimeChannelProtocol { get }
 }
 
 public extension Occupancy {

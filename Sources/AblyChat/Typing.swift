@@ -54,7 +54,7 @@ public protocol Typing: AnyObject, Sendable, EmitsDiscontinuities {
      *
      * - Returns: The Ably realtime channel.
      */
-    var channel: RealtimeChannelProtocol { get }
+    var channel: any RealtimeChannelProtocol { get }
 }
 
 public extension Typing {

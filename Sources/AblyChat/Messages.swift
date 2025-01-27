@@ -51,7 +51,7 @@ public protocol Messages: AnyObject, Sendable, EmitsDiscontinuities {
      *
      * - Returns: The realtime channel.
      */
-    var channel: RealtimeChannelProtocol { get }
+    var channel: any RealtimeChannelProtocol { get }
 }
 
 public extension Messages {

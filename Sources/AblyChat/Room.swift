@@ -300,7 +300,7 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
     }
 
     private struct FeatureChannelPartialDependencies {
-        internal var channel: RealtimeChannelProtocol
+        internal var channel: any RealtimeChannelProtocol
         internal var contributor: DefaultRoomLifecycleContributor
     }
 

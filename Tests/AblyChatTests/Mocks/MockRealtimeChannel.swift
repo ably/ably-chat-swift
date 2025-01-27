@@ -9,7 +9,7 @@ final class MockRealtimeChannel: NSObject, RealtimeChannelProtocol {
 
     var properties: ARTChannelProperties { .init(attachSerial: attachSerial, channelSerial: channelSerial) }
 
-    var presence: ARTRealtimePresenceProtocol { mockPresence }
+    var presence: MockRealtimePresence { mockPresence }
 
     // I don't see why the nonisolated(unsafe) keyword would cause a problem when used for tests in this context.
     nonisolated(unsafe) var lastMessagePublishedName: String?

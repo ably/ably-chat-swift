@@ -1,5 +1,13 @@
 # Change Log
 
+## [0.1.2](https://github.com/ably/ably-chat-swift/tree/0.1.2)
+
+## What's Changed
+
+This release reverts the pinning of ably-cocoa that was introduced in version 0.1.1 (https://github.com/ably/ably-chat-swift/pull/215).
+
+**Full Changelog**: https://github.com/ably/ably-chat-swift/compare/0.1.1...0.1.2
+
 ## [0.1.1](https://github.com/ably/ably-chat-swift/tree/0.1.1)
 
 ## What's Changed
