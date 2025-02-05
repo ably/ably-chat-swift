@@ -44,7 +44,7 @@ public typealias RealtimeClient = any RealtimeClientProtocol
  * This is the core client for Ably chat. It provides access to chat rooms.
  */
 public actor DefaultChatClient: ChatClient {
-    public let realtime: RealtimeClient
+    public nonisolated let realtime: RealtimeClient
     public nonisolated let clientOptions: ClientOptions
     public nonisolated let rooms: Rooms
     private let logger: InternalLogger
