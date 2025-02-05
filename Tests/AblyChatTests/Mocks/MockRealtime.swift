@@ -30,37 +30,6 @@ final class MockRealtime: NSObject, RealtimeClientProtocol, @unchecked Sendable 
         self.connection = connection
     }
 
-    required init(options _: ARTClientOptions) {
-        channels = .init(channels: [])
-        connection = .init()
-        paginatedCallback = nil
-    }
-
-    required init(key _: String) {
-        channels = .init(channels: [])
-        connection = .init()
-        paginatedCallback = nil
-    }
-
-    required init(token _: String) {
-        channels = .init(channels: [])
-        connection = .init()
-        paginatedCallback = nil
-    }
-
-    /**
-     Creates an instance of MockRealtime.
-
-     This exists to give a convenient way to create an instance, because `init` is marked as unavailable in `ARTRealtimeProtocol`.
-     */
-    static func create(
-        channels: MockChannels = MockChannels(channels: []),
-        connection: MockConnection = MockConnection(),
-        paginatedCallback: (@Sendable () -> (ARTHTTPPaginatedResponse?, ARTErrorInfo?))? = nil
-    ) -> MockRealtime {
-        MockRealtime(channels: channels, connection: connection, paginatedCallback: paginatedCallback)
-    }
-
     func time(_: @escaping ARTDateTimeCallback) {
         fatalError("Not implemented")
     }

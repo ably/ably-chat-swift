@@ -5,7 +5,7 @@ struct DefaultChatClientTests {
     @Test
     func init_withoutClientOptions() {
         // Given: An instance of DefaultChatClient is created with nil clientOptions
-        let client = DefaultChatClient(realtime: MockRealtime.create(), clientOptions: nil)
+        let client = DefaultChatClient(realtime: MockRealtime(), clientOptions: nil)
 
         // Then: It uses the default client options
         let defaultOptions = ClientOptions()
@@ -15,7 +15,7 @@ struct DefaultChatClientTests {
     @Test
     func rooms() throws {
         // Given: An instance of DefaultChatClient
-        let realtime = MockRealtime.create()
+        let realtime = MockRealtime()
         let options = ClientOptions()
         let client = DefaultChatClient(realtime: realtime, clientOptions: options)
 

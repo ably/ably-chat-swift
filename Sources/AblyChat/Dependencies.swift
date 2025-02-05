@@ -3,7 +3,7 @@ import Ably
 /// Expresses the requirements of the Ably realtime client that is supplied to the Chat SDK.
 ///
 /// The `ARTRealtime` class from the ably-cocoa SDK implements this protocol.
-public protocol RealtimeClientProtocol: ARTRealtimeProtocol, Sendable {
+public protocol RealtimeClientProtocol: ARTRealtimeInstanceMethodsProtocol, Sendable {
     associatedtype Channels: RealtimeChannelsProtocol
     associatedtype Connection: ConnectionProtocol
 
