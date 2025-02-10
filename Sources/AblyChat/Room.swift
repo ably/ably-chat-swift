@@ -315,7 +315,7 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
         let featuresGroupedByChannelName = Dictionary(grouping: featuresWithOptions) { $0.toRoomFeature.channelNameForRoomID(roomID) }
 
         let unorderedResult = featuresGroupedByChannelName.map { channelName, features in
-            var channelOptions = RealtimeChannelOptions()
+            let channelOptions = ARTRealtimeChannelOptions()
 
             // channel setup for presence and occupancy
             for feature in features {

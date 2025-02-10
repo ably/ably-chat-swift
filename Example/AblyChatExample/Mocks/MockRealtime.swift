@@ -344,21 +344,6 @@ final class MockRealtime: NSObject, RealtimeClientProtocol, Sendable {
         }
     }
 
-    required init(options _: ARTClientOptions) {}
-
-    required init(key _: String) {}
-
-    required init(token _: String) {}
-
-    /**
-     Creates an instance of MockRealtime.
-
-     This exists to give a convenient way to create an instance, because `init` is marked as unavailable in `ARTRealtimeProtocol`.
-     */
-    static func create() -> MockRealtime {
-        MockRealtime(key: "")
-    }
-
     func time(_: @escaping ARTDateTimeCallback) {
         fatalError("Not implemented")
     }

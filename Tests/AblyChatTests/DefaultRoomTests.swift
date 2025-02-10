@@ -13,7 +13,7 @@ struct DefaultRoomTests {
             MockRealtimeChannel(name: "basketball::$chat::$chatMessages"),
         ]
         let channels = MockChannels(channels: channelsList)
-        let realtime = MockRealtime.create(channels: channels)
+        let realtime = MockRealtime(channels: channels)
         _ = try await DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), roomID: "basketball", options: .init(), logger: TestLogger(), lifecycleManagerFactory: MockRoomLifecycleManagerFactory())
 
         // Then: When it fetches a channel, it does so with the `attachOnSubscribe` channel option set to false
@@ -30,7 +30,7 @@ struct DefaultRoomTests {
             MockRealtimeChannel(name: "basketball::$chat::$chatMessages"),
         ]
         let channels = MockChannels(channels: channelsList)
-        let realtime = MockRealtime.create(channels: channels)
+        let realtime = MockRealtime(channels: channels)
         let roomOptions = RoomOptions(presence: PresenceOptions(), occupancy: OccupancyOptions())
         _ = try await DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), roomID: "basketball", options: roomOptions, logger: TestLogger(), lifecycleManagerFactory: MockRoomLifecycleManagerFactory())
 
@@ -54,7 +54,7 @@ struct DefaultRoomTests {
             MockRealtimeChannel(name: "basketball::$chat::$chatMessages"),
         ]
         let channels = MockChannels(channels: channelsList)
-        let realtime = MockRealtime.create(channels: channels)
+        let realtime = MockRealtime(channels: channels)
         let room = try await DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), roomID: "basketball", options: .init(), logger: TestLogger(), lifecycleManagerFactory: MockRoomLifecycleManagerFactory())
 
         // Then
@@ -73,7 +73,7 @@ struct DefaultRoomTests {
             MockRealtimeChannel(name: "basketball::$chat::$reactions"),
         ]
         let channels = MockChannels(channels: channelsList)
-        let realtime = MockRealtime.create(channels: channels)
+        let realtime = MockRealtime(channels: channels)
         let roomOptions = RoomOptions(
             presence: .init(),
             // Note that typing indicators are not enabled, to give us the aforementioned strict subset of features
@@ -111,7 +111,7 @@ struct DefaultRoomTests {
             MockRealtimeChannel(name: "basketball::$chat::$typingIndicators"),
         ]
         let channels = MockChannels(channels: channelsList)
-        let realtime = MockRealtime.create(channels: channels)
+        let realtime = MockRealtime(channels: channels)
         let lifecycleManagerFactory = MockRoomLifecycleManagerFactory()
         _ = try await DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), roomID: "basketball", options: .allFeaturesEnabled, logger: TestLogger(), lifecycleManagerFactory: lifecycleManagerFactory)
 
@@ -152,7 +152,7 @@ struct DefaultRoomTests {
             MockRealtimeChannel(name: name)
         }
         let channels = MockChannels(channels: channelsList)
-        let realtime = MockRealtime.create(channels: channels)
+        let realtime = MockRealtime(channels: channels)
         let room = try await DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), roomID: "basketball", options: roomOptions, logger: TestLogger(), lifecycleManagerFactory: MockRoomLifecycleManagerFactory())
 
         // When: We call the room’s getter for that feature
@@ -185,7 +185,7 @@ struct DefaultRoomTests {
             MockRealtimeChannel(name: "basketball::$chat::$chatMessages"),
         ]
         let channels = MockChannels(channels: channelsList)
-        let realtime = MockRealtime.create(channels: channels)
+        let realtime = MockRealtime(channels: channels)
 
         let lifecycleManager = MockRoomLifecycleManager(attachResult: managerAttachResult)
         let lifecycleManagerFactory = MockRoomLifecycleManagerFactory(manager: lifecycleManager)
@@ -221,7 +221,7 @@ struct DefaultRoomTests {
             MockRealtimeChannel(name: "basketball::$chat::$chatMessages"),
         ]
         let channels = MockChannels(channels: channelsList)
-        let realtime = MockRealtime.create(channels: channels)
+        let realtime = MockRealtime(channels: channels)
 
         let lifecycleManager = MockRoomLifecycleManager(detachResult: managerDetachResult)
         let lifecycleManagerFactory = MockRoomLifecycleManagerFactory(manager: lifecycleManager)
@@ -253,7 +253,7 @@ struct DefaultRoomTests {
             MockRealtimeChannel(name: "basketball::$chat::$chatMessages"),
         ]
         let channels = MockChannels(channels: channelsList)
-        let realtime = MockRealtime.create(channels: channels)
+        let realtime = MockRealtime(channels: channels)
 
         let lifecycleManager = MockRoomLifecycleManager()
         let lifecycleManagerFactory = MockRoomLifecycleManagerFactory(manager: lifecycleManager)
@@ -279,7 +279,7 @@ struct DefaultRoomTests {
             MockRealtimeChannel(name: "basketball::$chat::$chatMessages"),
         ]
         let channels = MockChannels(channels: channelsList)
-        let realtime = MockRealtime.create(channels: channels)
+        let realtime = MockRealtime(channels: channels)
 
         let lifecycleManagerRoomStatus = RoomStatus.attached // arbitrary
 
@@ -299,7 +299,7 @@ struct DefaultRoomTests {
             MockRealtimeChannel(name: "basketball::$chat::$chatMessages"),
         ]
         let channels = MockChannels(channels: channelsList)
-        let realtime = MockRealtime.create(channels: channels)
+        let realtime = MockRealtime(channels: channels)
 
         let lifecycleManager = MockRoomLifecycleManager()
         let lifecycleManagerFactory = MockRoomLifecycleManagerFactory(manager: lifecycleManager)

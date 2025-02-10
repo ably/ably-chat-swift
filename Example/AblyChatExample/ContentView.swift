@@ -16,7 +16,7 @@ private enum Environment: Equatable {
         switch self {
         case .mock:
             return MockChatClient(
-                realtime: MockRealtime.create(),
+                realtime: MockRealtime(),
                 clientOptions: ClientOptions()
             )
         case let .live(key: key, clientId: clientId):
