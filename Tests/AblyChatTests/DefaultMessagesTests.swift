@@ -26,7 +26,24 @@ struct DefaultMessagesTests {
     // @spec CHA-M3b
     @Test
     func whenMetadataAndHeadersAreNotSpecifiedByUserTheyAreOmittedFromRESTPayload() async throws {
-        //
+        // Given
+        let realtime = MockRealtime.create {
+            (MockHTTPPaginatedResponse.successSendMessage, nil)
+        }
+        let chatAPI = ChatAPI(realtime: realtime)
+
+        // When
+        _ = try await chatAPI.sendMessage(
+            roomId: "myroom", // arbitrary
+            params: .init(
+                text: "hey" // arbitrary
+            )
+        )
+
+        // Then
+        let requestBody = try #require(realtime.requestArguments.first?.body as? NSDictionary)
+        #expect(requestBody["headers"] == nil)
+        #expect(requestBody["metadata"] == nil)
     }
 
     // @spec CHA-M3e
