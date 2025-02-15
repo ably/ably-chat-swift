@@ -65,21 +65,56 @@ struct DefaultMessagesTests {
 
     // @spec CHA-M5a
     @Test
-    func subscribe_whenChannelIsAttachedAndNoChannelSerial_throwsError() async throws {
-        // roomId and clientId values are arbitrary
-
+    func subscriptionPointIsChannelSerialWhenUnderlyingRealtimeChannelIsAttached() async throws {
         // Given
-        let realtime = MockRealtime.create()
+        let realtime = MockRealtime.create {
+            (MockHTTPPaginatedResponse.successSendMessageWithNoItems, nil)
+        }
+        let channelSerial = "123"
         let chatAPI = ChatAPI(realtime: realtime)
-        let channel = MockRealtimeChannel(attachResult: .success)
+        let channel = MockRealtimeChannel(properties: ARTChannelProperties(attachSerial: nil, channelSerial: channelSerial), attachResult: .success)
         let featureChannel = MockFeatureChannel(channel: channel)
         let defaultMessages = await DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
 
-        // Then
-        await #expect(throws: ARTErrorInfo.create(withCode: 40000, status: 400, message: "channel is attached, but channelSerial is not defined"), performing: {
-            // When
-            try await defaultMessages.subscribe()
-        })
+        // When: subscription is added when the underlying realtime channel is ATTACHED
+        let subscription = try await defaultMessages.subscribe()
+        let _ = try await subscription.getPreviousMessages(params: .init())
+        
+        // Then: subscription point is the current channelSerial of the realtime channel.
+        let requestParams = try #require(realtime.requestArguments.first?.params)
+        #expect(requestParams["fromSerial"] == channelSerial)
+    }
+
+    // @spec CHA-M5b
+    @Test
+    func subscriptionPointIsAttachSerialWhenUnderlyingRealtimeChannelIsNotAttached() async throws {
+        // Given: A DefaultRoomLifecycleManager, with an ATTACH operation in progress and hence in the ATTACHING status
+        let contributor = RoomLifecycleHelper.createContributor(feature: .messages, attachBehavior: .completeAndChangeState(.success, newState: .attached, delayInMilliseconds: RoomLifecycleHelper.fakeNetworkDelay * 1000))
+        let lifecycleManager = await RoomLifecycleHelper.createManager(contributors: [contributor])
+
+        let realtime = MockRealtime.create {
+            (MockHTTPPaginatedResponse.successSendMessageWithNoItems, nil)
+        }
+        let attachSerial = "123"
+        let chatAPI = ChatAPI(realtime: realtime)
+        let channel = MockRealtimeChannel(properties: ARTChannelProperties(attachSerial: attachSerial, channelSerial: nil), state: .attaching, attachResult: .success)
+        let featureChannel = DefaultFeatureChannel(channel: channel, contributor: contributor, roomLifecycleManager: lifecycleManager)
+        let defaultMessages = await DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
+
+        // When: subscription is added when the underlying realtime channel is not ATTACHED
+        let subscription = try await defaultMessages.subscribe()
+
+        // Wait for room to become ATTACHING
+        let roomStatusSubscription = await lifecycleManager.onRoomStatusChange(bufferingPolicy: .unbounded)
+        async let _ = lifecycleManager.performAttachOperation(testsOnly_forcingOperationID: UUID())
+        _ = try #require(await roomStatusSubscription.attachingElements().first { _ in true })
+
+        // When: history get is called
+        let _ = try await subscription.getPreviousMessages(params: .init())
+        
+        // Then: subscription point becomes the attachSerial at the the moment of channel attachment
+        let requestParams = try #require(realtime.requestArguments.first?.params)
+        #expect(requestParams["fromSerial"] == attachSerial)
     }
 
     @Test

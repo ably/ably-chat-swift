@@ -6,7 +6,8 @@ final class MockRealtimeChannel: NSObject, RealtimeChannelProtocol {
     private let channelSerial: String?
     private let _name: String?
     private let mockPresence: MockRealtimePresence!
-
+    private let _state: ARTRealtimeChannelState?
+    
     var properties: ARTChannelProperties { .init(attachSerial: attachSerial, channelSerial: channelSerial) }
 
     var presence: ARTRealtimePresenceProtocol { mockPresence }
@@ -28,13 +29,14 @@ final class MockRealtimeChannel: NSObject, RealtimeChannelProtocol {
     init(
         name: String? = nil,
         properties: ARTChannelProperties = .init(),
-        state _: ARTRealtimeChannelState = .suspended,
+        state: ARTRealtimeChannelState? = nil,
         attachResult: AttachOrDetachResult? = nil,
         detachResult: AttachOrDetachResult? = nil,
         messageToEmitOnSubscribe: MessageToEmit? = nil,
         mockPresence: MockRealtimePresence! = nil
     ) {
         _name = name
+        _state = state
         self.attachResult = attachResult
         self.detachResult = detachResult
         self.messageToEmitOnSubscribe = messageToEmitOnSubscribe
@@ -72,7 +74,10 @@ final class MockRealtimeChannel: NSObject, RealtimeChannelProtocol {
     }
 
     var state: ARTRealtimeChannelState {
-        attachResult == .success ? .attached : .failed
+        if let _state {
+            return _state
+        }
+        return attachResult == .success ? .attached : .failed
     }
 
     var errorReason: ARTErrorInfo? {
@@ -183,8 +188,16 @@ final class MockRealtimeChannel: NSObject, RealtimeChannelProtocol {
         ARTEventListener()
     }
 
-    func on(_: @escaping (ARTChannelStateChange) -> Void) -> ARTEventListener {
-        ARTEventListener()
+    func on(_ callback: @escaping (ARTChannelStateChange) -> Void) -> ARTEventListener {
+        switch attachResult {
+        case .success:
+            callback(ARTChannelStateChange(current: .attached, previous: .attaching, event: .attached, reason: nil))
+        case let .failure(error):
+            callback(ARTChannelStateChange(current: .failed, previous: .attaching, event: .failed, reason: error))
+        case .none:
+            break
+        }
+        return ARTEventListener()
     }
 
     func once(_: ARTChannelEvent, callback _: @escaping (ARTChannelStateChange) -> Void) -> ARTEventListener {
