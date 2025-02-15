@@ -6,7 +6,8 @@ final class MockRealtimeChannel: NSObject, RealtimeChannelProtocol {
     private let channelSerial: String?
     private let _name: String?
     private let mockPresence: MockRealtimePresence!
-
+    private let _state: ARTRealtimeChannelState?
+    
     var properties: ARTChannelProperties { .init(attachSerial: attachSerial, channelSerial: channelSerial) }
 
     var presence: ARTRealtimePresenceProtocol { mockPresence }
@@ -15,6 +16,11 @@ final class MockRealtimeChannel: NSObject, RealtimeChannelProtocol {
     nonisolated(unsafe) var lastMessagePublishedName: String?
     nonisolated(unsafe) var lastMessagePublishedData: Any?
     nonisolated(unsafe) var lastMessagePublishedExtras: (any ARTJsonCompatible)?
+
+    typealias ARTChannelStateChangeCallback = (ARTChannelStateChange) -> Void
+
+    nonisolated(unsafe) private var stateCallback: ARTChannelStateChangeCallback?
+    nonisolated(unsafe) private var stateCallbacks = [ARTChannelEvent: ARTChannelStateChangeCallback]()
 
     // TODO: If we tighten up the types we then we should be able to get rid of the `@unchecked Sendable` here, but I’m in a rush. Revisit in https://github.com/ably/ably-chat-swift/issues/195
     struct MessageToEmit: @unchecked Sendable {
@@ -28,13 +34,14 @@ final class MockRealtimeChannel: NSObject, RealtimeChannelProtocol {
     init(
         name: String? = nil,
         properties: ARTChannelProperties = .init(),
-        state _: ARTRealtimeChannelState = .suspended,
+        state: ARTRealtimeChannelState? = nil,
         attachResult: AttachOrDetachResult? = nil,
         detachResult: AttachOrDetachResult? = nil,
         messageToEmitOnSubscribe: MessageToEmit? = nil,
         mockPresence: MockRealtimePresence! = nil
     ) {
         _name = name
+        _state = state
         self.attachResult = attachResult
         self.detachResult = detachResult
         self.messageToEmitOnSubscribe = messageToEmitOnSubscribe
@@ -72,7 +79,10 @@ final class MockRealtimeChannel: NSObject, RealtimeChannelProtocol {
     }
 
     var state: ARTRealtimeChannelState {
-        attachResult == .success ? .attached : .failed
+        if let _state {
+            return _state
+        }
+        return attachResult == .success ? .attached : .failed
     }
 
     var errorReason: ARTErrorInfo? {
@@ -84,7 +94,7 @@ final class MockRealtimeChannel: NSObject, RealtimeChannelProtocol {
     }
 
     func attach() {
-        fatalError("Not implemented")
+        attach(nil)
     }
 
     enum AttachOrDetachResult: Equatable {
@@ -101,11 +111,41 @@ final class MockRealtimeChannel: NSObject, RealtimeChannelProtocol {
         }
     }
 
+    @MainActor
+    func performStateAttachCallbacks() {
+        guard let attachResult else {
+            fatalError("attachResult must be set before attach is called")
+        }
+        switch attachResult {
+        case .success:
+            stateCallback?(ARTChannelStateChange(current: .attached, previous: .attaching, event: .attached, reason: nil))
+            stateCallbacks[.attached]?(ARTChannelStateChange(current: .attached, previous: .attaching, event: .attached, reason: nil))
+        case let .failure(error):
+            stateCallback?(ARTChannelStateChange(current: .failed, previous: .attaching, event: .attached, reason: error))
+            stateCallbacks[.attached]?(ARTChannelStateChange(current: .failed, previous: .attaching, event: .attached, reason: nil))
+        }
+    }
+
+    @MainActor
+    func performStateDetachCallbacks() {
+        guard let detachResult else {
+            fatalError("attachResult must be set before attach is called")
+        }
+        switch detachResult {
+        case .success:
+            stateCallback?(ARTChannelStateChange(current: .detached, previous: .detaching, event: .detached, reason: nil))
+            stateCallbacks[.detached]?(ARTChannelStateChange(current: .detached, previous: .detaching, event: .detached, reason: nil))
+        case let .failure(error):
+            stateCallback?(ARTChannelStateChange(current: .failed, previous: .detaching, event: .detached, reason: error))
+            stateCallbacks[.detached]?(ARTChannelStateChange(current: .failed, previous: .detaching, event: .detached, reason: nil))
+        }
+    }
+    
     private let attachResult: AttachOrDetachResult?
 
     let attachCallCounter = Counter()
 
-    func attach(_ callback: ARTCallback? = nil) {
+    func attach(_ callback: ARTCallback?) {
         attachCallCounter.increment()
 
         guard let attachResult else {
@@ -113,6 +153,10 @@ final class MockRealtimeChannel: NSObject, RealtimeChannelProtocol {
         }
 
         attachResult.performCallback(callback)
+
+        Task { @MainActor in
+            performStateAttachCallbacks()
+        }
     }
 
     private let detachResult: AttachOrDetachResult?
@@ -120,7 +164,7 @@ final class MockRealtimeChannel: NSObject, RealtimeChannelProtocol {
     let detachCallCounter = Counter()
 
     func detach() {
-        fatalError("Not implemented")
+        detach(nil)
     }
 
     func detach(_ callback: ARTCallback? = nil) {
@@ -131,6 +175,10 @@ final class MockRealtimeChannel: NSObject, RealtimeChannelProtocol {
         }
 
         detachResult.performCallback(callback)
+
+        Task { @MainActor in
+            performStateDetachCallbacks()
+        }
     }
 
     let messageToEmitOnSubscribe: MessageToEmit?
@@ -179,12 +227,14 @@ final class MockRealtimeChannel: NSObject, RealtimeChannelProtocol {
         fatalError("Not implemented")
     }
 
-    func on(_: ARTChannelEvent, callback _: @escaping (ARTChannelStateChange) -> Void) -> ARTEventListener {
-        ARTEventListener()
+    func on(_ event: ARTChannelEvent, callback: @escaping (ARTChannelStateChange) -> Void) -> ARTEventListener {
+        stateCallbacks[event] = callback
+        return ARTEventListener()
     }
 
-    func on(_: @escaping (ARTChannelStateChange) -> Void) -> ARTEventListener {
-        ARTEventListener()
+    func on(_ callback: @escaping (ARTChannelStateChange) -> Void) -> ARTEventListener {
+        stateCallback = callback
+        return ARTEventListener()
     }
 
     func once(_: ARTChannelEvent, callback _: @escaping (ARTChannelStateChange) -> Void) -> ARTEventListener {
