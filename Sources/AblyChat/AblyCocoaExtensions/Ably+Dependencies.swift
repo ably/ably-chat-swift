@@ -11,5 +11,6 @@ extension ARTRealtimeChannel: RealtimeChannelProtocol {}
 extension ARTWrapperSDKProxyRealtimeChannel: RealtimeChannelProtocol {}
 
 extension ARTRealtimePresence: RealtimePresenceProtocol {}
+extension ARTWrapperSDKProxyRealtimePresence: RealtimePresenceProtocol {}
 
 extension ARTConnection: ConnectionProtocol {}
