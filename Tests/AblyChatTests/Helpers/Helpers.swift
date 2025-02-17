@@ -64,6 +64,7 @@ enum RoomLifecycleHelper {
         initialState: ARTRealtimeChannelState = .initialized,
         initialErrorReason: ARTErrorInfo? = nil,
         feature: RoomFeature = .messages, // Arbitrarily chosen, its value only matters in test cases where we check which error is thrown
+        underlyingChannel: MockRealtimeChannel? = nil,
         attachBehavior: MockRoomLifecycleContributorChannel.AttachOrDetachBehavior? = nil,
         detachBehavior: MockRoomLifecycleContributorChannel.AttachOrDetachBehavior? = nil,
         subscribeToStateBehavior: MockRoomLifecycleContributorChannel.SubscribeToStateBehavior? = nil
@@ -71,6 +72,7 @@ enum RoomLifecycleHelper {
         .init(
             feature: feature,
             channel: .init(
+                underlyingChannel: underlyingChannel,
                 initialState: initialState,
                 initialErrorReason: initialErrorReason,
                 attachBehavior: attachBehavior,
