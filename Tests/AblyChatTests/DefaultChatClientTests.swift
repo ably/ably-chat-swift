@@ -26,6 +26,8 @@ struct DefaultChatClientTests {
         #expect(client.realtime === realtime)
     }
 
+    // @spec CHA-IN1a
+    // @spec CHA-IN1b
     @Test
     func createsWrapperSDKProxyRealtimeClientWithAgents() throws {
         let realtime = MockRealtime(createWrapperSDKProxyReturnValue: .init())
@@ -35,6 +37,7 @@ struct DefaultChatClientTests {
         #expect(realtime.createWrapperSDKProxyOptionsArgument?.agents == ["chat-swift": AblyChat.version])
     }
 
+    // @spec CHA-IN1d
     @Test
     func rooms() throws {
         // Given: An instance of DefaultChatClient
