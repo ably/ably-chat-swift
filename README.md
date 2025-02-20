@@ -2,7 +2,7 @@
 
 <p style="text-align: left">
     <img src="https://badgen.net/github/license/3scale/saas-operator" alt="License" />
-    <img src="https://img.shields.io/badge/version-0.1.0--SNAPSHOT-2ea44f" alt="version: 0.1.0-SNAPSHOT" />
+    <img alt="GitHub Release" src="https://img.shields.io/github/v/release/ably/ably-chat-swift">
 </p>
 
 Ably Chat is a set of purpose-built APIs for a host of chat features enabling you to create 1:1, 1:Many, Many:1 and Many:Many chat rooms for
