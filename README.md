@@ -81,6 +81,90 @@ environments.
 To use Chat you must also set a [`clientId`](https://ably.com/docs/auth/identified-clients) so that users are
 identifiable.
 
+## Getting Started
+
+At the end of this tutorial, you will have initialized the Ably Chat client and sent your first message.
+
+First of all, start by creating a Swift project and installing the Chat SDK using the instructions described above. Next, replace the contents of your `main.swift` file with
+the following code. This simple script initializes the Chat client, creates a chat room and sends a message, printing it to the console when it is received over the websocket connection.
+
+```swift
+import Ably
+import AblyChat
+import Foundation
+
+// Create the Ably Realtime client using your API key and use that to instantiate the Ably Chat client.
+// You can re-use these clients for the duration of your application
+let realtimeOptions = ARTClientOptions()
+realtimeOptions.key = "<API_KEY>"
+realtimeOptions.clientId = "ably-chat"
+let realtime = ARTRealtime(options: realtimeOptions)
+let chatClient = DefaultChatClient(realtime: realtime, clientOptions: nil)
+
+// Subscribe to connection state changes
+let connectionStateSubscription = chatClient.connection.onStatusChange()
+Task {
+    for await stateChange in connectionStateSubscription {
+        print("Connection status changed: \(stateChange.current)")
+    }
+}
+
+// Get a chat room for the tutorial - using the defaults to enable all features in the chat room
+let room = try await chatClient.rooms.get(
+    roomID: "readme-getting-started", options: RoomOptions.allFeaturesEnabled)
+
+// Add a listener to observe changes to the chat rooms status
+let statusSubscription = await room.onStatusChange()
+Task {
+    for await status in statusSubscription {
+        print("Room status changed: \(status.current)")
+    }
+}
+
+// Attach the chat room - this means we will begin to receive messages from the server
+try await room.attach()
+
+// Add a listener for new messages in the chat room
+let messagesSubscription = try await room.messages.subscribe()
+Task {
+    // Subscribe to messages
+    for await message in messagesSubscription {
+        print("Message received: \(message.text)")
+    }
+}
+
+// Send a message
+_ = try await room.messages.send(
+    params: .init(text: "Hello, World! This is my first message with Ably Chat!"))
+
+// Wait 5 seconds before closing the connection so we have plenty of time to receive the message we just sent
+// This disconnects the client from Ably servers
+try await Task.sleep(nanoseconds: 5 * NSEC_PER_SEC)
+await chatClient.rooms.release(roomID: "readme-getting-started")
+realtime.close()
+print("Connection closed")
+```
+
+Now run your script:
+
+```shell
+swift run
+```
+
+All being well, you should now see the following in your terminal:
+
+```
+Room status changed: attaching(error: nil)
+Connection status changed: connected
+Room status changed: attached
+Message received: Hello, World! This is my first message with Ably Chat!
+Room status changed: releasing
+Room status changed: released
+Connection closed
+```
+
+Congratulations! You have sent your first message using the Ably Chat SDK!
+
 ## Contributing
 
 For guidance on how to contribute to this project, see the [contributing guidelines](CONTRIBUTING.md).
