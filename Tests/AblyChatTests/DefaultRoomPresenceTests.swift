@@ -81,7 +81,7 @@ struct DefaultRoomPresenceTests {
         let attachError = ARTErrorInfo(domain: "SomeDomain", code: 123)
 
         // Given: A DefaultRoomLifecycleManager, with an ATTACH operation in progress and hence in the ATTACHING status
-        let contributor = RoomLifecycleHelper.createContributor(feature: .presence, attachBehavior: .completeAndChangeState(.failure(attachError), newState: .failed, delayInMilliseconds: RoomLifecycleHelper.fakeNetworkDelay)) // Without this delay most of the time attach fail happens before lifecycleManager has a chance to start waiting. I tried to use SignallableChannelOperation, but looks like `await #expect(...)` doesn't understand `let async x/try await x` syntax.
+        let contributor = RoomLifecycleHelper.createContributor(feature: .presence, attachBehavior: .completeAndChangeState(.failure(attachError), newState: .failed, delayInMilliseconds: RoomLifecycleHelper.fakeNetworkDelay * 2)) // Without this delay most of the time attach fail happens before lifecycleManager has a chance to start waiting. I tried to use SignallableChannelOperation, but looks like `await #expect(...)` doesn't understand `let async x/try await x` syntax.
         let lifecycleManager = await RoomLifecycleHelper.createManager(contributors: [contributor])
 
         // Given: A DefaultPresence with DefaultFeatureChannel and MockRoomLifecycleContributor
@@ -201,7 +201,7 @@ struct DefaultRoomPresenceTests {
         let attachError = ARTErrorInfo(domain: "SomeDomain", code: 123)
 
         // Given: A DefaultRoomLifecycleManager, with an ATTACH operation in progress and hence in the ATTACHING status
-        let contributor = RoomLifecycleHelper.createContributor(feature: .presence, attachBehavior: .completeAndChangeState(.failure(attachError), newState: .failed, delayInMilliseconds: RoomLifecycleHelper.fakeNetworkDelay))
+        let contributor = RoomLifecycleHelper.createContributor(feature: .presence, attachBehavior: .completeAndChangeState(.failure(attachError), newState: .failed, delayInMilliseconds: RoomLifecycleHelper.fakeNetworkDelay * 2))
         let lifecycleManager = await RoomLifecycleHelper.createManager(contributors: [contributor])
 
         // Given: A DefaultPresence with DefaultFeatureChannel and MockRoomLifecycleContributor
@@ -379,7 +379,7 @@ struct DefaultRoomPresenceTests {
         let attachError = ARTErrorInfo(domain: "SomeDomain", code: 123)
 
         // Given: A DefaultRoomLifecycleManager, with an ATTACH operation in progress and hence in the ATTACHING status
-        let contributor = RoomLifecycleHelper.createContributor(feature: .presence, attachBehavior: .completeAndChangeState(.failure(attachError), newState: .failed, delayInMilliseconds: RoomLifecycleHelper.fakeNetworkDelay))
+        let contributor = RoomLifecycleHelper.createContributor(feature: .presence, attachBehavior: .completeAndChangeState(.failure(attachError), newState: .failed, delayInMilliseconds: RoomLifecycleHelper.fakeNetworkDelay * 2))
         let lifecycleManager = await RoomLifecycleHelper.createManager(contributors: [contributor])
 
         // Given: A DefaultPresence with DefaultFeatureChannel and MockRoomLifecycleContributor
