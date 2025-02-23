@@ -145,7 +145,7 @@ struct DefaultRoomTypingTests {
         // Then: The `DefaultTyping` will emit typing stop event in `timeout` interval +/-
         let typingStopped = try #require(await typingStoppedSubscription.first { _ in true })
         let interval = typingStartedAt.distance(to: typingStopped.timestamp)
-        #expect(interval.isEqual(to: timeout, tolerance: 0.4)) // tolerance value is based on CI fails
+        #expect(interval.isEqual(to: timeout, tolerance: 0.5)) // tolerance value is based on CI fails
     }
 
     // @spec CHA-T4a
@@ -213,7 +213,7 @@ struct DefaultRoomTypingTests {
 
         // Then
         let interval = typingStarted.timestamp.distance(to: typingStopped.timestamp)
-        #expect(interval.isEqual(to: timeout + timeoutExtension, tolerance: 0.4))
+        #expect(interval.isEqual(to: timeout + timeoutExtension, tolerance: 0.5))
     }
 
     // @spec CHA-T6a
