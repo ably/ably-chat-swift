@@ -15,7 +15,7 @@ actor MockChatClient: ChatClient {
     }
 
     nonisolated var clientID: String {
-        fatalError("Not yet implemented")
+        realtime.clientId ?? "AblyTest"
     }
 }
 
@@ -108,7 +108,10 @@ actor MockMessages: Messages {
                 text: MockStrings.randomPhrase(),
                 createdAt: Date(),
                 metadata: [:],
-                headers: [:]
+                headers: [:],
+                version: "",
+                timestamp: Date(),
+                operation: nil
             )
         }, interval: 3)
     }
@@ -132,10 +135,21 @@ actor MockMessages: Messages {
             text: params.text,
             createdAt: Date(),
             metadata: params.metadata ?? [:],
-            headers: params.headers ?? [:]
+            headers: params.headers ?? [:],
+            version: "",
+            timestamp: Date(),
+            operation: nil
         )
         mockSubscriptions.emit(message)
         return message
+    }
+
+    func update(newMessage _: Message, description _: String?, metadata _: OperationMetadata?) async throws -> Message {
+        fatalError("Not yet implemented")
+    }
+
+    func delete(message _: Message, params _: DeleteMessageParams) async throws -> Message {
+        fatalError("Not yet implemented")
     }
 
     func onDiscontinuity(bufferingPolicy _: BufferingPolicy) -> Subscription<DiscontinuityEvent> {

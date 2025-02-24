@@ -10,7 +10,7 @@ final class MockRealtime: NSObject, RealtimeClientProtocol, Sendable {
     }
 
     var clientId: String? {
-        fatalError("Not implemented")
+        "AblyTest"
     }
 
     let channels = Channels()

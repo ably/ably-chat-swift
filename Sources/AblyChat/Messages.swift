@@ -40,11 +40,42 @@ public protocol Messages: AnyObject, Sendable, EmitsDiscontinuities {
      * - Parameters:
      *   - params: An object containing `text`, `headers` and `metadata` for the message.
      *
-     * - Returns: The published message.
+     * - Returns: The published message, with the action of the message set as `.create`.
      *
      * - Note: It is possible to receive your own message via the messages subscription before this method returns.
      */
     func send(params: SendMessageParams) async throws -> Message
+
+    /**
+     * Updates a message in the chat room.
+     *
+     * This method uses the Ably Chat API endpoint for updating messages.
+     *
+     * - Parameters:
+     *   - newMessage: A copy of the `Message` object with the intended edits applied. Use the provided `copy` method on the existing message.
+     *   - description: Optional description of the update action.
+     *   - metadata: Optional metadata of the update action. (The metadata of the message itself still resides within the newMessage object above).
+     *
+     * - Returns: The updated message, with the `action` of the message set as `.update`.
+     *
+     * - Note: It is possible to receive your own message via the messages subscription before this method returns.
+     */
+    func update(newMessage: Message, description: String?, metadata: OperationMetadata?) async throws -> Message
+
+    /**
+     * Deletes a message in the chat room.
+     *
+     * This method uses the Ably Chat API endpoint for deleting messages.
+     *
+     * - Parameters:
+     *   - message: The message you wish to delete.
+     *   - params: Contains an optional description and metadata of the delete action.
+     *
+     * - Returns: The deleted message, with the action of the message set as `.delete`.
+     *
+     * - Note: It is possible to receive your own message via the messages subscription before this method returns.
+     */
+    func delete(message: Message, params: DeleteMessageParams) async throws -> Message
 
     /**
      * Get the underlying Ably realtime channel used for the messages in this chat room.
@@ -104,6 +135,56 @@ public struct SendMessageParams: Sendable {
         self.text = text
         self.metadata = metadata
         self.headers = headers
+    }
+}
+
+/**
+ * Params for updating a text message.  All fields are updated and, if omitted, they are set to empty.
+ */
+public struct UpdateMessageParams: Sendable {
+    /**
+     * The params to update including the text of the message.
+     */
+    public var message: SendMessageParams
+
+    /**
+     * Optional description of the update action.
+     */
+    public var description: String?
+
+    /**
+     * Optional metadata of the update action.
+     *
+     * The metadata is a map of extra information that can be attached to the update action.
+     * It is not used by Ably and is sent as part of the realtime
+     * message payload. Example use cases are setting custom styling like
+     * background or text colors or fonts, adding links to external images,
+     * emojis, etc.
+     *
+     * Do not use metadata for authoritative information. There is no server-side
+     * validation. When reading the metadata treat it like user input.
+     *
+     */
+    public var metadata: OperationMetadata?
+
+    public init(message: SendMessageParams, description: String? = nil, metadata: OperationMetadata? = nil) {
+        self.message = message
+        self.description = description
+        self.metadata = metadata
+    }
+}
+
+/**
+ * Params for deleting a message.
+ */
+public struct DeleteMessageParams: Sendable {
+    public var description: String?
+
+    public var metadata: OperationMetadata?
+
+    public init(description: String? = nil, metadata: OperationMetadata? = nil) {
+        self.description = description
+        self.metadata = metadata
     }
 }
 

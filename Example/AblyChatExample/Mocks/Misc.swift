@@ -18,7 +18,10 @@ final class MockMessagesPaginatedResult: PaginatedResult {
                 text: MockStrings.randomPhrase(),
                 createdAt: Date(),
                 metadata: [:],
-                headers: [:]
+                headers: [:],
+                version: "",
+                timestamp: Date(),
+                operation: nil
             )
         }
     }

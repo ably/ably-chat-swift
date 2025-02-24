@@ -11,6 +11,11 @@ public typealias MessageHeaders = Headers
 public typealias MessageMetadata = Metadata
 
 /**
+ * ``Metadata`` type used for the metadata within an operation e.g. updating or deleting a message
+ */
+public typealias OperationMetadata = Metadata
+
+/**
  * Represents a single message in a chat room.
  */
 public struct Message: Sendable, Identifiable, Equatable {
@@ -77,7 +82,24 @@ public struct Message: Sendable, Identifiable, Equatable {
      */
     public var headers: MessageHeaders
 
-    public init(serial: String, action: MessageAction, clientID: String, roomID: String, text: String, createdAt: Date?, metadata: MessageMetadata, headers: MessageHeaders) {
+    // (CHA-M10a)
+    /**
+     * A unique identifier for the latest version of this message.
+     */
+    public var version: String
+
+    /**
+     * The timestamp at which this version was updated, deleted, or created.
+     */
+    public var timestamp: Date?
+
+    /**
+     * The details of the operation that modified the message. This is only set for update and delete actions. It contains
+     * information about the operation: the clientId of the user who performed the operation, a description, and metadata.
+     */
+    public var operation: MessageOperation?
+
+    public init(serial: String, action: MessageAction, clientID: String, roomID: String, text: String, createdAt: Date?, metadata: MessageMetadata, headers: MessageHeaders, version: String, timestamp: Date?, operation: MessageOperation? = nil) {
         self.serial = serial
         self.action = action
         self.clientID = clientID
@@ -86,11 +108,46 @@ public struct Message: Sendable, Identifiable, Equatable {
         self.createdAt = createdAt
         self.metadata = metadata
         self.headers = headers
+        self.version = version
+        self.timestamp = timestamp
+        self.operation = operation
     }
+
+    /**
+      * Helper function to copy a message with updated values. This is useful when updating a message e.g. `room().messages.update(newMessage: messageCopy...)`.
+      * If metadata/headers are not provided, it keeps the metadata/headers from the original message.
+      * If metadata/headers are explicitly passed in, the new `Message` will have these values. You can set them to `[:]` if you wish to remove them.
+     */
+    public func copy(
+        text: String? = nil,
+        metadata: MessageMetadata? = nil,
+        headers: MessageHeaders? = nil
+    ) -> Message {
+        Message(
+            serial: serial,
+            action: action,
+            clientID: clientID,
+            roomID: roomID,
+            text: text ?? self.text,
+            createdAt: createdAt,
+            metadata: metadata ?? self.metadata,
+            headers: headers ?? self.headers,
+            version: version,
+            timestamp: timestamp,
+            operation: operation
+        )
+    }
+}
+
+public struct MessageOperation: Sendable, Equatable {
+    public var clientID: String
+    public var description: String?
+    public var metadata: MessageMetadata?
 }
 
 extension Message: JSONObjectDecodable {
     internal init(jsonObject: [String: JSONValue]) throws {
+        let operation = try? jsonObject.objectValueForKey("operation")
         try self.init(
             serial: jsonObject.stringValueForKey("serial"),
             action: jsonObject.rawRepresentableValueForKey("action"),
@@ -99,7 +156,16 @@ extension Message: JSONObjectDecodable {
             text: jsonObject.stringValueForKey("text"),
             createdAt: jsonObject.optionalAblyProtocolDateValueForKey("createdAt"),
             metadata: jsonObject.objectValueForKey("metadata"),
-            headers: jsonObject.objectValueForKey("headers").mapValues { try .init(jsonValue: $0) }
+            headers: jsonObject.objectValueForKey("headers").mapValues { try .init(jsonValue: $0) },
+            version: jsonObject.stringValueForKey("version"),
+            timestamp: jsonObject.optionalAblyProtocolDateValueForKey("timestamp"),
+            operation: operation.map { op in
+                try .init(
+                    clientID: op.stringValueForKey("clientId"),
+                    description: try? op.stringValueForKey("description"),
+                    metadata: try? op.objectValueForKey("metadata")
+                )
+            }
         )
     }
 }

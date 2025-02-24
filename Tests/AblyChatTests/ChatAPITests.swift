@@ -47,7 +47,9 @@ struct ChatAPITests {
             text: "hello",
             createdAt: Date(timeIntervalSince1970: 1_631_840_000),
             metadata: [:],
-            headers: [:]
+            headers: [:],
+            version: "3446456",
+            timestamp: Date(timeIntervalSince1970: 1_631_840_000)
         )
         #expect(message == expectedMessage)
     }
@@ -143,7 +145,9 @@ struct ChatAPITests {
                     text: "hello",
                     createdAt: .init(timeIntervalSince1970: 1_730_943_049.269),
                     metadata: [:],
-                    headers: [:]
+                    headers: [:],
+                    version: "3446456",
+                    timestamp: Date(timeIntervalSince1970: 1_730_943_049.269)
                 ),
                 Message(
                     serial: "3446457",
@@ -153,7 +157,9 @@ struct ChatAPITests {
                     text: "hello response",
                     createdAt: nil,
                     metadata: [:],
-                    headers: [:]
+                    headers: [:],
+                    version: "3446457",
+                    timestamp: nil
                 ),
             ]
         )

@@ -159,6 +159,63 @@ struct IntegrationTests {
         try #require(rxMessagesBeforeSubscribing.items.count == 1)
         #expect(rxMessagesBeforeSubscribing.items[0] == txMessageBeforeRxSubscribe)
 
+        // MARK: - Editing and Deleting Messages
+
+        // Reuse message subscription and message from (5) and (6) above
+        let rxMessageEditDeleteSubscription = rxMessageSubscription
+        let messageToEditDelete = txMessageAfterRxSubscribe
+
+        // (1) Edit the message on the other client
+        let txEditedMessage = try await txRoom.messages.update(
+            newMessage: messageToEditDelete.copy(
+                text: "edited message",
+                metadata: ["someEditedKey": 123, "someOtherEditedKey": "foo"],
+                headers: nil
+            ),
+            description: "random",
+            metadata: nil
+        )
+
+        // (2) Check that we received the edited message on the subscription
+        let rxEditedMessageFromSubscription = try #require(await rxMessageEditDeleteSubscription.first { _ in true })
+
+        // The createdAt varies by milliseconds so we can't compare the entire objects directly
+        #expect(rxEditedMessageFromSubscription.roomID == txEditedMessage.roomID)
+        #expect(rxEditedMessageFromSubscription.serial == txEditedMessage.serial)
+        #expect(rxEditedMessageFromSubscription.clientID == txEditedMessage.clientID)
+        #expect(rxEditedMessageFromSubscription.version == txEditedMessage.version)
+        #expect(rxEditedMessageFromSubscription.id == txEditedMessage.id)
+        #expect(rxEditedMessageFromSubscription.operation == txEditedMessage.operation)
+        // Ensures text has been edited from original message
+        #expect(rxEditedMessageFromSubscription.text == txEditedMessage.text)
+        // Ensure headers are now null when compared to original message
+        #expect(rxEditedMessageFromSubscription.headers == txEditedMessage.headers)
+        // Ensures metadata has been updated from original message
+        #expect(rxEditedMessageFromSubscription.metadata == txEditedMessage.metadata)
+
+        // (3) Delete the message on the other client
+        let txDeleteMessage = try await txRoom.messages.delete(
+            message: rxEditedMessageFromSubscription,
+            params: .init(
+                description: "deleted in testing",
+                metadata: nil // TODO: Setting as nil for now as a metadata with any non-string value causes a decoding error atm... https://github.com/ably/ably-chat-swift/issues/226
+            )
+        )
+
+        // (4) Check that we received the deleted message on the subscription
+        let rxDeletedMessageFromSubscription = try #require(await rxMessageEditDeleteSubscription.first { _ in true })
+
+        // The createdAt varies by milliseconds so we can't compare the entire objects directly
+        #expect(rxDeletedMessageFromSubscription.roomID == txDeleteMessage.roomID)
+        #expect(rxDeletedMessageFromSubscription.serial == txDeleteMessage.serial)
+        #expect(rxDeletedMessageFromSubscription.clientID == txDeleteMessage.clientID)
+        #expect(rxDeletedMessageFromSubscription.version == txDeleteMessage.version)
+        #expect(rxDeletedMessageFromSubscription.id == txDeleteMessage.id)
+        #expect(rxDeletedMessageFromSubscription.operation == txDeleteMessage.operation)
+        #expect(rxDeletedMessageFromSubscription.text == txDeleteMessage.text)
+        #expect(rxDeletedMessageFromSubscription.headers == txDeleteMessage.headers)
+        #expect(rxDeletedMessageFromSubscription.metadata == txDeleteMessage.metadata)
+
         // MARK: - Reactions
 
         // (1) Subscribe to reactions

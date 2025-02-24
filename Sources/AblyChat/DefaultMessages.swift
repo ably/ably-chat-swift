@@ -76,6 +76,10 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
                     throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without clientId")
                 }
 
+                guard let version = message.version else {
+                    throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without version")
+                }
+
                 let metadata = try data.optionalObjectValueForKey("metadata")
 
                 let headers: Headers? = if let headersJSONObject = try extras.optionalObjectValueForKey("headers") {
@@ -88,7 +92,8 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
                     return
                 }
 
-                let message = Message(
+                // `message.operation?.toChatOperation()` is throwing but the linter prefers putting the `try` on Message initialization instead of having it nested.
+                let message = try Message(
                     serial: serial,
                     action: action,
                     clientID: clientID,
@@ -96,7 +101,10 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
                     text: text,
                     createdAt: message.timestamp,
                     metadata: metadata ?? .init(),
-                    headers: headers ?? .init()
+                    headers: headers ?? .init(),
+                    version: version,
+                    timestamp: message.timestamp,
+                    operation: message.operation?.toChatOperation()
                 )
 
                 messageSubscription.emit(message)
@@ -125,6 +133,14 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
 
     internal func send(params: SendMessageParams) async throws -> Message {
         try await chatAPI.sendMessage(roomId: roomID, params: params)
+    }
+
+    internal func update(newMessage: Message, description: String?, metadata: OperationMetadata?) async throws -> Message {
+        try await chatAPI.updateMessage(with: newMessage, description: description, metadata: metadata)
+    }
+
+    internal func delete(message: Message, params: DeleteMessageParams) async throws -> Message {
+        try await chatAPI.deleteMessage(message: message, params: params)
     }
 
     // (CHA-M7) Users may subscribe to discontinuity events to know when there’s been a break in messages that they need to resolve. Their listener will be called when a discontinuity event is triggered from the room lifecycle.
@@ -271,5 +287,18 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
 
     internal enum MessagesError: Error {
         case noReferenceToSelf
+    }
+}
+
+private extension ARTMessageOperation {
+    func toChatOperation() throws -> MessageOperation {
+        guard let clientId else {
+            throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message where Operation clientId is nil")
+        }
+        return MessageOperation(
+            clientID: clientId,
+            description: descriptionText,
+            metadata: metadata != nil ? JSONValue(ablyCocoaData: metadata!).objectValue : nil
+        )
     }
 }

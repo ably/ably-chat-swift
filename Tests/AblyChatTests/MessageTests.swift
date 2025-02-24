@@ -10,7 +10,9 @@ struct MessageTests {
         text: "hello",
         createdAt: nil,
         metadata: [:],
-        headers: [:]
+        headers: [:],
+        version: "ABC123@1631840000000-5:2",
+        timestamp: nil
     )
 
     let laterMessage = Message(
@@ -21,7 +23,9 @@ struct MessageTests {
         text: "hello",
         createdAt: nil,
         metadata: [:],
-        headers: [:]
+        headers: [:],
+        version: "ABC123@1631840000000-5:2",
+        timestamp: nil
     )
 
     let invalidMessage = Message(
@@ -32,7 +36,9 @@ struct MessageTests {
         text: "hello",
         createdAt: nil,
         metadata: [:],
-        headers: [:]
+        headers: [:],
+        version: "invalid",
+        timestamp: nil
     )
 
     // MARK: isBefore Tests
@@ -76,7 +82,9 @@ struct MessageTests {
             text: "",
             createdAt: nil,
             metadata: [:],
-            headers: [:]
+            headers: [:],
+            version: "ABC123@1631840000000-5:2",
+            timestamp: nil
         )
         #expect(earlierMessage.serial == duplicateOfEarlierMessage.serial)
     }
