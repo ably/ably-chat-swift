@@ -73,7 +73,10 @@ public actor DefaultChatClient: ChatClient {
     }
 
     public nonisolated var clientID: String {
-        fatalError("Not yet implemented")
+        guard let clientID = realtime.clientId else {
+            fatalError("Ensure your Realtime instance is initialized with a clientId.")
+        }
+        return clientID
     }
 }
 

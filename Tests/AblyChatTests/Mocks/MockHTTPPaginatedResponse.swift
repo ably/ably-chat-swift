@@ -105,6 +105,8 @@ extension MockHTTPPaginatedResponse {
                 "text": "hello",
                 "metadata": [:],
                 "headers": [:],
+                "version": "3446456",
+                "timestamp": 1_730_943_049_269,
             ],
             [
                 "clientId": "random",
@@ -114,6 +116,7 @@ extension MockHTTPPaginatedResponse {
                 "text": "hello response",
                 "metadata": [:],
                 "headers": [:],
+                "version": "3446457",
             ],
         ],
         statusCode: 200,

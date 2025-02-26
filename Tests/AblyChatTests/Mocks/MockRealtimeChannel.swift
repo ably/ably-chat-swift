@@ -22,6 +22,8 @@ final class MockRealtimeChannel: NSObject, RealtimeChannelProtocol {
         var clientID: String
         var data: Any
         var extras: NSDictionary
+        var operation: ARTMessageOperation?
+        var version: String
     }
 
     init(
@@ -147,6 +149,8 @@ final class MockRealtimeChannel: NSObject, RealtimeChannelProtocol {
             message.serial = messageToEmitOnSubscribe.serial
             message.clientId = messageToEmitOnSubscribe.clientID
             message.extras = messageToEmitOnSubscribe.extras
+            message.operation = messageToEmitOnSubscribe.operation
+            message.version = messageToEmitOnSubscribe.version
             callback(message)
         }
         return ARTEventListener()

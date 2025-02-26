@@ -89,7 +89,9 @@ struct DefaultMessagesTests {
                 ],
                 extras: [
                     "headers": ["numberKey": 10, "stringKey": "hello"],
-                ]
+                ],
+                operation: nil,
+                version: ""
             )
         )
         let featureChannel = MockFeatureChannel(channel: channel)
@@ -122,7 +124,9 @@ struct DefaultMessagesTests {
                     "text": "", // arbitrary
                     "metadata": ["numberKey": 10, "stringKey": "hello"],
                 ],
-                extras: [:]
+                extras: [:],
+                operation: nil,
+                version: ""
             )
         )
         let featureChannel = MockFeatureChannel(channel: channel)

@@ -25,6 +25,19 @@ internal final class ChatAPI: Sendable {
         }
     }
 
+    internal struct MessageOperationResponse: JSONObjectDecodable {
+        internal let version: String
+        internal let timestamp: Int64
+
+        internal init(jsonObject: [String: JSONValue]) throws {
+            version = try jsonObject.stringValueForKey("version")
+            timestamp = try Int64(jsonObject.numberValueForKey("timestamp"))
+        }
+    }
+
+    internal typealias UpdateMessageResponse = MessageOperationResponse
+    internal typealias DeleteMessageResponse = MessageOperationResponse
+
     // (CHA-M3) Messages are sent to Ably via the Chat REST API, using the send method.
     // (CHA-M3a) When a message is sent successfully, the caller shall receive a struct representing the Message in response (as if it were received via Realtime event).
     internal func sendMessage(roomId: String, params: SendMessageParams) async throws -> Message {
@@ -48,16 +61,110 @@ internal final class ChatAPI: Sendable {
 
         // response.createdAt is in milliseconds, convert it to seconds
         let createdAtInSeconds = TimeInterval(Double(response.createdAt) / 1000)
-
+        let createdAtDate = Date(timeIntervalSince1970: createdAtInSeconds)
         let message = Message(
             serial: response.serial,
             action: .create,
             clientID: clientId,
             roomID: roomId,
             text: params.text,
-            createdAt: Date(timeIntervalSince1970: createdAtInSeconds),
+            createdAt: createdAtDate,
             metadata: params.metadata ?? [:],
-            headers: params.headers ?? [:]
+            headers: params.headers ?? [:],
+            version: response.serial,
+            timestamp: createdAtDate
+        )
+        return message
+    }
+
+    // (CHA-M8) A client must be able to update a message in a room.
+    // (CHA-M8a) A client may update a message via the Chat REST API by calling the update method.
+    internal func updateMessage(with modifiedMessage: Message, description: String?, metadata: OperationMetadata?) async throws -> Message {
+        guard let clientID = realtime.clientId else {
+            throw ARTErrorInfo.create(withCode: 40000, message: "Ensure your Realtime instance is initialized with a clientId.")
+        }
+
+        let endpoint = "\(apiVersionV2)/rooms/\(modifiedMessage.roomID)/messages/\(modifiedMessage.serial)"
+        var body: [String: JSONValue] = [:]
+        let messageObject: [String: JSONValue] = [
+            "text": .string(modifiedMessage.text),
+            "metadata": .object(modifiedMessage.metadata),
+            "headers": .object(modifiedMessage.headers.mapValues(\.toJSONValue)),
+        ]
+
+        body["message"] = .object(messageObject)
+
+        if let description {
+            body["description"] = .string(description)
+        }
+
+        if let metadata {
+            body["metadata"] = .object(metadata)
+        }
+
+        // (CHA-M8c) An update operation has PUT semantics. If a field is not specified in the update, it is assumed to be removed.
+        let response: UpdateMessageResponse = try await makeRequest(endpoint, method: "PUT", body: body)
+
+        // response.timestamp is in milliseconds, convert it to seconds
+        let timestampInSeconds = TimeInterval(Double(response.timestamp) / 1000)
+
+        // (CHA-M8b) When a message is updated successfully via the REST API, the caller shall receive a struct representing the Message in response, as if it were received via Realtime event.
+        let message = Message(
+            serial: modifiedMessage.serial,
+            action: .update,
+            clientID: modifiedMessage.clientID,
+            roomID: modifiedMessage.roomID,
+            text: modifiedMessage.text,
+            createdAt: modifiedMessage.createdAt,
+            metadata: modifiedMessage.metadata,
+            headers: modifiedMessage.headers,
+            version: response.version,
+            timestamp: Date(timeIntervalSince1970: timestampInSeconds),
+            operation: .init(
+                clientID: clientID,
+                description: description,
+                metadata: metadata
+            )
+        )
+        return message
+    }
+
+    // (CHA-M9) A client must be able to delete a message in a room.
+    // (CHA-M9a) A client may delete a message via the Chat REST API by calling the delete method.
+    internal func deleteMessage(message: Message, params: DeleteMessageParams) async throws -> Message {
+        let endpoint = "\(apiVersionV2)/rooms/\(message.roomID)/messages/\(message.serial)/delete"
+        var body: [String: JSONValue] = [:]
+
+        if let description = params.description {
+            body["description"] = .string(description)
+        }
+
+        if let metadata = params.metadata {
+            body["metadata"] = .object(metadata)
+        }
+
+        let response: DeleteMessageResponse = try await makeRequest(endpoint, method: "POST", body: body)
+
+        // response.timestamp is in milliseconds, convert it to seconds
+        let timestampInSeconds = TimeInterval(Double(response.timestamp) / 1000)
+
+        // (CHA-M9b) When a message is deleted successfully via the REST API, the caller shall receive a struct representing the Message in response, as if it were received via Realtime event.
+        let message = Message(
+            serial: message.serial,
+            action: .delete,
+            clientID: message.clientID,
+            roomID: message.roomID,
+            text: message.text,
+            createdAt: message.createdAt,
+            metadata: message.metadata,
+            headers: message.headers,
+            version: response.version,
+            timestamp: Date(timeIntervalSince1970: timestampInSeconds),
+            operation: .init(
+                clientID: message.clientID,
+                description: params.description,
+                metadata: params.metadata
+            )
         )
         return message
     }
@@ -78,7 +185,7 @@ internal final class ChatAPI: Sendable {
             do {
                 try realtime.request(method, path: url, params: [:], body: ablyCocoaBody, headers: [:]) { paginatedResponse, error in
                     if let error {
-                        // (CHA-M3e) If an error is returned from the REST API, its ErrorInfo representation shall be thrown as the result of the send call.
+                        // (CHA-M3e & CHA-M8d & CHA-M9c) If an error is returned from the REST API, its ErrorInfo representation shall be thrown as the result of the send call.
                         continuation.resume(throwing: ARTErrorInfo.create(from: error))
                         return
                     }

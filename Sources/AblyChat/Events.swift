@@ -8,15 +8,19 @@ public enum MessageAction: String, Sendable {
      * Action applied to a new message.
      */
     case create = "message.create"
+    case update = "message.update"
+    case delete = "message.delete"
 
     internal static func fromRealtimeAction(_ action: ARTMessageAction) -> Self? {
         switch action {
         case .create:
             .create
+        case .update:
+            .update
+        case .delete:
+            .delete
         // ignore any other actions except `message.create` for now
-        case .update,
-             .delete,
-             .metaOccupancy,
+        case .metaOccupancy,
              .messageSummary:
             nil
         @unknown default:
