@@ -1,5 +1,18 @@
 # Change Log
 
+## [0.2.0](https://github.com/ably/ably-chat-swift/tree/0.2.0)
+
+## What's Changed
+
+The following features have been added in this release:
+
+- Updating messages in a chat room
+- Deleting messages in a chat room
+
+The included example app has been updated to demonstrate the new features.
+
+**Full Changelog**: https://github.com/ably/ably-chat-swift/compare/0.1.2...0.2.0
+
 ## [0.1.2](https://github.com/ably/ably-chat-swift/tree/0.1.2)
 
 ## What's Changed
