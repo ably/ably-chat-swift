@@ -143,6 +143,12 @@ public struct MessageOperation: Sendable, Equatable {
     public var clientID: String
     public var description: String?
     public var metadata: MessageMetadata?
+
+    public init(clientID: String, description: String? = nil, metadata: MessageMetadata? = nil) {
+        self.clientID = clientID
+        self.description = description
+        self.metadata = metadata
+    }
 }
 
 extension Message: JSONObjectDecodable {

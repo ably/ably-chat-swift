@@ -46,12 +46,28 @@ struct ContentView: View {
     @State private var chatClient = Environment.current.createChatClient()
 
     @State private var title = "Room"
-    @State private var messages = [BasicListItem]()
     @State private var reactions: [Reaction] = []
     @State private var newMessage = ""
     @State private var typingInfo = ""
     @State private var occupancyInfo = "Connections: 0"
     @State private var statusInfo = ""
+
+    @State private var listItems = [ListItem]()
+    @State private var editingItemID: String?
+
+    enum ListItem: Identifiable {
+        case message(MessageListItem)
+        case presence(PresenceListItem)
+
+        var id: String {
+            switch self {
+            case let .message(item):
+                item.message.id
+            case let .presence(item):
+                item.presence.timestamp.description
+            }
+        }
+    }
 
     private func room() async throws -> Room {
         try await chatClient.rooms.get(
@@ -61,7 +77,13 @@ struct ContentView: View {
     }
 
     private var sendTitle: String {
-        newMessage.isEmpty ? ReactionType.like.emoji : "Send"
+        if newMessage.isEmpty {
+            ReactionType.like.emoji
+        } else if editingItemID != nil {
+            "Update"
+        } else {
+            "Send"
+        }
     }
 
     var body: some View {
@@ -78,17 +100,51 @@ struct ContentView: View {
                 .font(.footnote)
                 .frame(height: 12)
                 .padding(.horizontal, 8)
-                List(messages, id: \.id) { item in
-                    MessageBasicView(item: item)
-                        .flip()
+                List(listItems, id: \.id) { item in
+                    switch item {
+                    case let .message(messageItem):
+                        if messageItem.message.action == .delete {
+                            DeletedMessageView(item: messageItem)
+                                .flip()
+                        } else {
+                            MessageView(
+                                item: messageItem,
+                                isEditing: Binding(get: {
+                                    editingItemID == messageItem.message.id
+                                }, set: { editing in
+                                    editingItemID = editing ? messageItem.message.id : nil
+                                    newMessage = editing ? messageItem.message.text : ""
+                                })
+                            ) {
+                                Task {
+                                    try await onMessageDelete(message: messageItem.message)
+                                }
+                            }.id(item.id)
+                                .flip()
+                        }
+                    case let .presence(item):
+                        PresenceMessageView(item: item)
+                            .flip()
+                    }
                 }
                 .flip()
                 .listStyle(PlainListStyle())
                 HStack {
                     TextField("Type a message...", text: $newMessage)
                         .onChange(of: newMessage) {
-                            Task {
-                                try await startTyping()
+                            // this ensures that typing events are sent only when the message is actually changed whilst editing
+                            if let index = listItems.firstIndex(where: { $0.id == editingItemID }) {
+                                if case let .message(messageItem) = listItems[index] {
+                                    if newMessage != messageItem.message.text {
+                                        Task {
+                                            try await startTyping()
+                                        }
+                                    }
+                                }
+                            } else {
+                                Task {
+                                    try await startTyping()
+                                }
                             }
                         }
                     #if !os(tvOS)
@@ -106,7 +162,16 @@ struct ContentView: View {
                             Text(sendTitle)
                         #endif
                     }
+                    if editingItemID != nil {
+                        Button("", systemImage: "xmark.circle.fill") {
+                            editingItemID = nil
+                            newMessage = ""
+                        }
+                        .foregroundStyle(.red.opacity(0.8))
+                        .transition(.scale.combined(with: .opacity))
+                    }
                 }
+                .animation(.easeInOut, value: editingItemID)
                 .padding(.horizontal, 12)
                 HStack {
                     Text(typingInfo)
@@ -153,6 +218,11 @@ struct ContentView: View {
             Task {
                 try await sendReaction(type: ReactionType.like.emoji)
             }
+        } else if editingItemID != nil {
+            Task {
+                try await sendEditedMessage()
+                editingItemID = nil
+            }
         } else {
             Task {
                 try await sendMessage()
@@ -173,16 +243,39 @@ struct ContentView: View {
         let previousMessages = try await messagesSubscription.getPreviousMessages(params: .init())
 
         for message in previousMessages.items {
-            withAnimation {
-                messages.append(BasicListItem(id: message.serial, title: message.clientID, text: message.text))
+            switch message.action {
+            case .create, .update, .delete:
+                withAnimation {
+                    listItems.append(.message(.init(message: message, isSender: message.clientID == chatClient.realtime.clientId)))
+                }
             }
         }
 
         // Continue listening for messages on a background task so this function can return
         Task {
             for await message in messagesSubscription {
-                withAnimation {
-                    messages.insert(BasicListItem(id: message.serial, title: message.clientID, text: message.text), at: 0)
+                switch message.action {
+                case .create:
+                    withAnimation {
+                        listItems.insert(
+                            .message(
+                                .init(
+                                    message: message,
+                                    isSender: message.clientID == chatClient.realtime.clientId
+                                )
+                            ),
+                            at: 0
+                        )
+                    }
+                case .update, .delete:
+                    if let index = listItems.firstIndex(where: { $0.id == message.id }) {
+                        listItems[index] = .message(
+                            .init(
+                                message: message,
+                                isSender: message.clientID == chatClient.realtime.clientId
+                            )
+                        )
+                    }
                 }
             }
         }
@@ -208,11 +301,14 @@ struct ContentView: View {
         Task {
             for await event in try await room().presence.subscribe(events: [.enter, .leave, .update]) {
                 withAnimation {
-                    let status = event.data?.objectValue?["status"]?.stringValue
-                    let clientPresenceChangeMessage = "\(event.clientID) \(event.action.displayedText)"
-                    let presenceMessage = status != nil ? "\(clientPresenceChangeMessage) with status: \(status!)" : clientPresenceChangeMessage
-
-                    messages.insert(BasicListItem(id: UUID().uuidString, title: "System", text: presenceMessage), at: 0)
+                    listItems.insert(
+                        .presence(
+                            .init(
+                                presence: event
+                            )
+                        ),
+                        at: 0
+                    )
                 }
             }
         }
@@ -291,12 +387,38 @@ struct ContentView: View {
         newMessage = ""
     }
 
+    func sendEditedMessage() async throws {
+        guard !newMessage.isEmpty else {
+            return
+        }
+
+        if let editingMessageItem = listItems.compactMap({ listItem -> MessageListItem? in
+            if case let .message(message) = listItem, message.message.id == editingItemID {
+                return message
+            }
+            return nil
+        }).first {
+            let editedMessage = editingMessageItem.message.copy(text: newMessage)
+            _ = try await room().messages.update(newMessage: editedMessage, description: nil, metadata: nil)
+        }
+
+        newMessage = ""
+    }
+
+    func onMessageDelete(message: Message) async throws {
+        _ = try await room().messages.delete(message: message, params: .init())
+    }
+
     func sendReaction(type: String) async throws {
         try await room().reactions.send(params: .init(type: type))
     }
 
     func startTyping() async throws {
-        try await room().typing.start()
+        if newMessage.isEmpty {
+            try await room().typing.stop()
+        } else {
+            try await room().typing.start()
+        }
     }
 }
 
@@ -360,41 +482,6 @@ extension ContentView {
     }
 }
 
-struct BasicListItem {
-    var id: String
-    var title: String
-    var text: String
-}
-
-struct MessageBasicView: View {
-    var item: BasicListItem
-
-    var body: some View {
-        HStack {
-            VStack {
-                Text("\(item.title):")
-                    .foregroundColor(.blue)
-                    .bold()
-                Spacer()
-            }
-            VStack {
-                Text(item.text)
-                Spacer()
-            }
-        }
-        #if !os(tvOS)
-        .listRowSeparator(.hidden)
-        #endif
-    }
-}
-
-extension View {
-    func flip() -> some View {
-        rotationEffect(.radians(.pi))
-            .scaleEffect(x: -1, y: 1, anchor: .center)
-    }
-}
-
 #Preview {
     ContentView()
 }
@@ -423,5 +510,10 @@ extension View {
                 print("Action can't be performed: \(error)") // TODO: replace with logger (+ message to the user?)
             }
         }
+    }
+
+    func flip() -> some View {
+        rotationEffect(.radians(.pi))
+            .scaleEffect(x: -1, y: 1, anchor: .center)
     }
 }

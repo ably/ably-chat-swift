@@ -144,12 +144,40 @@ actor MockMessages: Messages {
         return message
     }
 
-    func update(newMessage _: Message, description _: String?, metadata _: OperationMetadata?) async throws -> Message {
-        fatalError("Not yet implemented")
+    func update(newMessage: Message, description _: String?, metadata _: OperationMetadata?) async throws -> Message {
+        let message = Message(
+            serial: newMessage.serial,
+            action: .update,
+            clientID: clientID,
+            roomID: roomID,
+            text: newMessage.text,
+            createdAt: Date(),
+            metadata: newMessage.metadata,
+            headers: newMessage.headers,
+            version: "\(Date().timeIntervalSince1970)",
+            timestamp: Date(),
+            operation: .init(clientID: clientID)
+        )
+        mockSubscriptions.emit(message)
+        return message
     }
 
-    func delete(message _: Message, params _: DeleteMessageParams) async throws -> Message {
-        fatalError("Not yet implemented")
+    func delete(message: Message, params _: DeleteMessageParams) async throws -> Message {
+        let message = Message(
+            serial: message.serial,
+            action: .delete,
+            clientID: clientID,
+            roomID: roomID,
+            text: message.text,
+            createdAt: Date(),
+            metadata: message.metadata,
+            headers: message.headers,
+            version: "\(Date().timeIntervalSince1970)",
+            timestamp: Date(),
+            operation: .init(clientID: clientID)
+        )
+        mockSubscriptions.emit(message)
+        return message
     }
 
     func onDiscontinuity(bufferingPolicy _: BufferingPolicy) -> Subscription<DiscontinuityEvent> {
@@ -180,7 +208,7 @@ actor MockRoomReactions: RoomReactions {
                 clientID: self.clientID,
                 isSelf: false
             )
-        }, interval: Double.random(in: 0.1 ... 0.5))
+        }, interval: Double.random(in: 0.3 ... 0.6))
     }
 
     func send(params: SendReactionParams) async throws {
