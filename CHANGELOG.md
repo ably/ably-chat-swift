@@ -11,6 +11,10 @@ The following features have been added in this release:
 
 The included example app has been updated to demonstrate the new features.
 
+#### Breaking Changes
+
+- Renames `ClientOptions` within this SDK to `ChatClientOptions` (https://github.com/ably/ably-chat-swift/pull/230)
+
 **Full Changelog**: https://github.com/ably/ably-chat-swift/compare/0.1.2...0.2.0
 
 ## [0.1.2](https://github.com/ably/ably-chat-swift/tree/0.1.2)
