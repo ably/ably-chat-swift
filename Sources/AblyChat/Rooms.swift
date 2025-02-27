@@ -47,7 +47,7 @@ public protocol Rooms: AnyObject, Sendable {
      *
      * - Returns: ``ClientOptions`` object.
      */
-    var clientOptions: ClientOptions { get }
+    var clientOptions: ChatClientOptions { get }
 }
 
 internal actor DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
@@ -60,7 +60,7 @@ internal actor DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
         }
     #endif
 
-    internal nonisolated let clientOptions: ClientOptions
+    internal nonisolated let clientOptions: ChatClientOptions
 
     private let logger: InternalLogger
     private let roomFactory: RoomFactory
@@ -115,7 +115,7 @@ internal actor DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
     /// The value for a given room ID is the state that corresponds to that room ID.
     private var roomStates: [String: RoomState] = [:]
 
-    internal init(realtime: RealtimeClient, clientOptions: ClientOptions, logger: InternalLogger, roomFactory: RoomFactory) {
+    internal init(realtime: RealtimeClient, clientOptions: ChatClientOptions, logger: InternalLogger, roomFactory: RoomFactory) {
         self.realtime = realtime
         self.clientOptions = clientOptions
         self.logger = logger

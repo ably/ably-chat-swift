@@ -11,7 +11,7 @@ struct DefaultChatClientTests {
         )
 
         // Then: It uses the default client options
-        let defaultOptions = ClientOptions()
+        let defaultOptions = ChatClientOptions()
         #expect(client.clientOptions.isEqualForTestPurposes(defaultOptions))
     }
 
@@ -19,7 +19,7 @@ struct DefaultChatClientTests {
     func test_realtime() {
         // Given: An instance of DefaultChatClient
         let realtime = MockRealtime(createWrapperSDKProxyReturnValue: .init())
-        let options = ClientOptions()
+        let options = ChatClientOptions()
         let client = DefaultChatClient(realtime: realtime, clientOptions: options)
 
         // Then: Its `realtime` property returns the client that was passed to the initializer (i.e. as opposed to the proxy client created by `createWrapperSDKProxy(with:)`
@@ -31,7 +31,7 @@ struct DefaultChatClientTests {
     @Test
     func createsWrapperSDKProxyRealtimeClientWithAgents() throws {
         let realtime = MockRealtime(createWrapperSDKProxyReturnValue: .init())
-        let options = ClientOptions()
+        let options = ChatClientOptions()
         _ = DefaultChatClient(realtime: realtime, clientOptions: options)
 
         #expect(realtime.createWrapperSDKProxyOptionsArgument?.agents == ["chat-swift": AblyChat.version])
@@ -43,7 +43,7 @@ struct DefaultChatClientTests {
         // Given: An instance of DefaultChatClient
         let proxyClient = MockRealtime()
         let realtime = MockRealtime(createWrapperSDKProxyReturnValue: proxyClient)
-        let options = ClientOptions()
+        let options = ChatClientOptions()
         let client = DefaultChatClient(realtime: realtime, clientOptions: options)
 
         // Then: Its `rooms` property returns an instance of DefaultRooms with the wrapper SDK proxy realtime client and same client options

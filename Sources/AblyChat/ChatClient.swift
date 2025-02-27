@@ -35,7 +35,7 @@ public protocol ChatClient: AnyObject, Sendable {
      *
      * - Returns: The client options.
      */
-    var clientOptions: ClientOptions { get }
+    var clientOptions: ChatClientOptions { get }
 }
 
 public typealias RealtimeClient = any RealtimeClientProtocol
@@ -45,7 +45,7 @@ public typealias RealtimeClient = any RealtimeClientProtocol
  */
 public actor DefaultChatClient: ChatClient {
     public nonisolated let realtime: RealtimeClient
-    public nonisolated let clientOptions: ClientOptions
+    public nonisolated let clientOptions: ChatClientOptions
     public nonisolated let rooms: Rooms
     private let logger: InternalLogger
 
@@ -60,7 +60,7 @@ public actor DefaultChatClient: ChatClient {
      *   - realtime: The Ably Realtime client.
      *   - clientOptions: The client options.
      */
-    public init(realtime suppliedRealtime: any SuppliedRealtimeClientProtocol, clientOptions: ClientOptions?) {
+    public init(realtime suppliedRealtime: any SuppliedRealtimeClientProtocol, clientOptions: ChatClientOptions?) {
         self.realtime = suppliedRealtime
         self.clientOptions = clientOptions ?? .init()
 
@@ -83,7 +83,7 @@ public actor DefaultChatClient: ChatClient {
 /**
  * Configuration options for the chat client.
  */
-public struct ClientOptions: Sendable {
+public struct ChatClientOptions: Sendable {
     /**
      * A custom log handler that will be used to log messages from the client.
      *
@@ -104,7 +104,7 @@ public struct ClientOptions: Sendable {
     }
 
     /// Used for comparing these instances in tests without having to make this Equatable, which I’m not yet sure makes sense (we’ll decide in https://github.com/ably-labs/ably-chat-swift/issues/10)
-    internal func isEqualForTestPurposes(_ other: ClientOptions) -> Bool {
+    internal func isEqualForTestPurposes(_ other: ChatClientOptions) -> Bool {
         logHandler === other.logHandler && logLevel == other.logLevel
     }
 }

@@ -3,11 +3,11 @@ import AblyChat
 
 actor MockChatClient: ChatClient {
     let realtime: RealtimeClient
-    nonisolated let clientOptions: ClientOptions
+    nonisolated let clientOptions: ChatClientOptions
     nonisolated let rooms: Rooms
     nonisolated let connection: Connection
 
-    init(realtime: RealtimeClient, clientOptions: ClientOptions?) {
+    init(realtime: RealtimeClient, clientOptions: ChatClientOptions?) {
         self.realtime = realtime
         self.clientOptions = clientOptions ?? .init()
         connection = MockConnection(status: .connected, error: nil)
@@ -20,7 +20,7 @@ actor MockChatClient: ChatClient {
 }
 
 actor MockRooms: Rooms {
-    let clientOptions: ClientOptions
+    let clientOptions: ChatClientOptions
     private var rooms = [String: MockRoom]()
 
     func get(roomID: String, options: RoomOptions) async throws -> any Room {
@@ -36,7 +36,7 @@ actor MockRooms: Rooms {
         fatalError("Not yet implemented")
     }
 
-    init(clientOptions: ClientOptions) {
+    init(clientOptions: ChatClientOptions) {
         self.clientOptions = clientOptions
     }
 }
