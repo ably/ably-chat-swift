@@ -10,7 +10,7 @@ struct DefaultMessagesTests {
         // Given
         let realtime = MockRealtime()
         let chatAPI = ChatAPI(realtime: realtime)
-        let channel = MockRealtimeChannel()
+        let channel = MockRealtimeChannel(attachResult: .success)
         let featureChannel = MockFeatureChannel(channel: channel)
         let defaultMessages = await DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
 
@@ -28,7 +28,7 @@ struct DefaultMessagesTests {
         // Given
         let realtime = MockRealtime { (MockHTTPPaginatedResponse.successGetMessagesWithNoItems, nil) }
         let chatAPI = ChatAPI(realtime: realtime)
-        let channel = MockRealtimeChannel()
+        let channel = MockRealtimeChannel(attachResult: .success)
         let featureChannel = MockFeatureChannel(channel: channel)
         let defaultMessages = await DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
 
@@ -52,7 +52,8 @@ struct DefaultMessagesTests {
             properties: .init(
                 attachSerial: "001",
                 channelSerial: "001"
-            )
+            ),
+            attachResult: .success
         )
         let featureChannel = MockFeatureChannel(channel: channel)
         let defaultMessages = await DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
@@ -80,6 +81,7 @@ struct DefaultMessagesTests {
                 attachSerial: "001",
                 channelSerial: "001"
             ),
+            attachResult: .success,
             messageToEmitOnSubscribe: .init(
                 action: .create, // arbitrary
                 serial: "", // arbitrary
@@ -116,6 +118,7 @@ struct DefaultMessagesTests {
                 attachSerial: "001",
                 channelSerial: "001"
             ),
+            attachResult: .success,
             messageToEmitOnSubscribe: .init(
                 action: .create, // arbitrary
                 serial: "", // arbitrary
@@ -146,7 +149,7 @@ struct DefaultMessagesTests {
         // Given: A DefaultMessages instance
         let realtime = MockRealtime()
         let chatAPI = ChatAPI(realtime: realtime)
-        let channel = MockRealtimeChannel()
+        let channel = MockRealtimeChannel(attachResult: .success)
         let featureChannel = MockFeatureChannel(channel: channel)
         let messages = await DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
 
