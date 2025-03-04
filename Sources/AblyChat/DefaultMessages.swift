@@ -6,6 +6,10 @@ private struct MessageSubscriptionWrapper {
     var serial: String
 }
 
+#if DEBUG
+    extension ARTMessage: @retroactive @unchecked Sendable {}
+#endif
+
 // TODO: Don't have a strong understanding of why @MainActor is needed here. Revisit as part of https://github.com/ably-labs/ably-chat-swift/issues/83
 @MainActor
 internal final class DefaultMessages: Messages, EmitsDiscontinuities {
@@ -54,60 +58,70 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
         // (CHA-M5k) Incoming realtime events that are malformed (unknown field should be ignored) shall not be emitted to subscribers.
         let eventListener = channel.subscribe(RealtimeMessageName.chatMessage.rawValue) { message in
             Task {
-                // TODO: Revisit errors thrown as part of https://github.com/ably-labs/ably-chat-swift/issues/32
-                guard let ablyCocoaData = message.data,
-                      let data = JSONValue(ablyCocoaData: ablyCocoaData).objectValue,
-                      let text = data["text"]?.stringValue
-                else {
-                    throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without data or text")
+                do {
+                    // TODO: Revisit errors thrown as part of https://github.com/ably-labs/ably-chat-swift/issues/32
+                    guard let ablyCocoaData = message.data,
+                          let data = JSONValue(ablyCocoaData: ablyCocoaData).objectValue,
+                          let text = data["text"]?.stringValue
+                    else {
+                        throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without data or text")
+                    }
+
+                    guard let ablyCocoaExtras = message.extras else {
+                        throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without extras")
+                    }
+
+                    let extras = JSONValue.objectFromAblyCocoaExtras(ablyCocoaExtras)
+
+                    guard let serial = message.serial else {
+                        throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without serial")
+                    }
+
+                    guard let clientID = message.clientId else {
+                        throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without clientId")
+                    }
+
+                    guard let version = message.version else {
+                        throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without version")
+                    }
+
+                    let metadata = try data.optionalObjectValueForKey("metadata")
+
+                    let headers: Headers? = if let headersJSONObject = try extras.optionalObjectValueForKey("headers") {
+                        try headersJSONObject.mapValues { try HeadersValue(jsonValue: $0) }
+                    } else {
+                        nil
+                    }
+
+                    guard let action = MessageAction.fromRealtimeAction(message.action) else {
+                        return
+                    }
+
+                    // `message.operation?.toChatOperation()` is throwing but the linter prefers putting the `try` on Message initialization instead of having it nested.
+                    let message = try Message(
+                        serial: serial,
+                        action: action,
+                        clientID: clientID,
+                        roomID: self.roomID,
+                        text: text,
+                        createdAt: message.timestamp,
+                        metadata: metadata ?? .init(),
+                        headers: headers ?? .init(),
+                        version: version,
+                        timestamp: message.timestamp,
+                        operation: message.operation?.toChatOperation()
+                    )
+
+                    messageSubscription.emit(message)
+                } catch {
+                    self.logger.log(message: "Malformed message received: \(error)", level: .debug)
+                    #if DEBUG
+                        for subscription in self.malformedMessageSubscriptions {
+                            subscription.emit(message)
+                        }
+                    #endif
+                    throw error
                 }
-
-                guard let ablyCocoaExtras = message.extras else {
-                    throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without extras")
-                }
-
-                let extras = JSONValue.objectFromAblyCocoaExtras(ablyCocoaExtras)
-
-                guard let serial = message.serial else {
-                    throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without serial")
-                }
-
-                guard let clientID = message.clientId else {
-                    throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without clientId")
-                }
-
-                guard let version = message.version else {
-                    throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without version")
-                }
-
-                let metadata = try data.optionalObjectValueForKey("metadata")
-
-                let headers: Headers? = if let headersJSONObject = try extras.optionalObjectValueForKey("headers") {
-                    try headersJSONObject.mapValues { try HeadersValue(jsonValue: $0) }
-                } else {
-                    nil
-                }
-
-                guard let action = MessageAction.fromRealtimeAction(message.action) else {
-                    return
-                }
-
-                // `message.operation?.toChatOperation()` is throwing but the linter prefers putting the `try` on Message initialization instead of having it nested.
-                let message = try Message(
-                    serial: serial,
-                    action: action,
-                    clientID: clientID,
-                    roomID: self.roomID,
-                    text: text,
-                    createdAt: message.timestamp,
-                    metadata: metadata ?? .init(),
-                    headers: headers ?? .init(),
-                    version: version,
-                    timestamp: message.timestamp,
-                    operation: message.operation?.toChatOperation()
-                )
-
-                messageSubscription.emit(message)
             }
         }
 
@@ -125,6 +139,18 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
 
         return messageSubscription
     }
+
+    #if DEBUG
+        /// Subscription of malformed message events for testing purposes.
+        private var malformedMessageSubscriptions: [Subscription<ARTMessage>] = []
+
+        /// Returns a subscription which emits malformed message events for testing purposes.
+        internal func testsOnly_subscribeToMalformedMessageEvents() -> Subscription<ARTMessage> {
+            let subscription = Subscription<ARTMessage>(bufferingPolicy: .unbounded)
+            malformedMessageSubscriptions.append(subscription)
+            return subscription
+        }
+    #endif
 
     // (CHA-M6a) A method must be exposed that accepts the standard Ably REST API query parameters. It shall call the “REST API”#rest-fetching-messages and return a PaginatedResult containing messages, which can then be paginated through.
     internal func get(options: QueryOptions) async throws -> any PaginatedResult<Message> {
@@ -179,7 +205,7 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
             }
         }
 
-        // (CHA-M4d) If a channel UPDATE event is received and resumed=false, then it must be assumed that messages have been missed. The subscription point of any subscribers must be reset to the attachSerial.
+        // (CHA-M5d) If a channel UPDATE event is received and resumed=false, then it must be assumed that messages have been missed. The subscription point of any subscribers must be reset to the attachSerial.
         channel.on(.update) { [weak self] stateChange in
             Task {
                 do {
