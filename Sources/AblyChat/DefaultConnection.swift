@@ -59,6 +59,11 @@ internal final class DefaultConnection: Connection {
                 // (CHA-CS5a3) If a transient disconnect timer is active and the realtime connections status changes to `CONNECTED`, `SUSPENDED` or `FAILED`, the library shall cancel the transient disconnect timer. The superseding status change shall be emitted.
                 if isTimerRunning, currentState == .connected || currentState == .suspended || currentState == .failed {
                     await timerManager.cancelTimer()
+                    #if DEBUG
+                        for subscription in await transientDisconnectTimerSubscriptions {
+                            subscription.emit(.init(active: false))
+                        }
+                    #endif
                     subscription.emit(statusChange)
                     // update local state and error
                     await connectionStatusManager.updateError(to: stateChange.reason)
@@ -67,10 +72,20 @@ internal final class DefaultConnection: Connection {
 
                 // (CHA-CS5a1) If the realtime connection status transitions from `CONNECTED` to `DISCONNECTED`, the chat client connection status must not change. A 5 second transient disconnect timer shall be started.
                 if previousState == .connected, currentState == .disconnected, !isTimerRunning {
+                    #if DEBUG
+                        for subscription in await self.transientDisconnectTimerSubscriptions {
+                            subscription.emit(.init(active: true))
+                        }
+                    #endif
                     await timerManager.setTimer(interval: 5.0) { [timerManager, connectionStatusManager] in
                         Task {
                             // (CHA-CS5a4) If a transient disconnect timer expires the library shall emit a connection status change event. This event must contain the current status of of timer expiry, along with the original error that initiated the transient disconnect timer.
                             await timerManager.cancelTimer()
+                            #if DEBUG
+                                for subscription in await self.transientDisconnectTimerSubscriptions {
+                                    subscription.emit(.init(active: false))
+                                }
+                            #endif
                             subscription.emit(statusChange)
 
                             // update local state and error
@@ -83,11 +98,16 @@ internal final class DefaultConnection: Connection {
 
                 if isTimerRunning {
                     await timerManager.cancelTimer()
+                    #if DEBUG
+                        for subscription in await transientDisconnectTimerSubscriptions {
+                            subscription.emit(.init(active: false))
+                        }
+                    #endif
                 }
             }
 
             // (CHA-CS5b) Not withstanding CHA-CS5a. If a connection state event is observed from the underlying realtime library, the client must emit a status change event. The current status of that event shall reflect the status change in the underlying realtime library, along with the accompanying error.
-            subscription.emit(statusChange)
+//            subscription.emit(statusChange) // this call shouldn't be here - "Not withstanding CHA-CS5a" means just that I guess.
             Task {
                 // update local state and error
                 await connectionStatusManager.updateError(to: stateChange.reason)
@@ -101,6 +121,23 @@ internal final class DefaultConnection: Connection {
 
         return subscription
     }
+
+    #if DEBUG
+        internal struct TransientDisconnectTimerEvent: Equatable {
+            internal let active: Bool
+        }
+
+        /// Subscription of transient disconnect timer events for testing purposes.
+        @MainActor private var transientDisconnectTimerSubscriptions: [Subscription<TransientDisconnectTimerEvent>] = []
+
+        /// Returns a subscription which emits transient disconnect timer events for testing purposes.
+        @MainActor
+        internal func testsOnly_subscribeToTransientDisconnectTimerEvents() -> Subscription<TransientDisconnectTimerEvent> {
+            let subscription = Subscription<TransientDisconnectTimerEvent>(bufferingPolicy: .unbounded)
+            transientDisconnectTimerSubscriptions.append(subscription)
+            return subscription
+        }
+    #endif
 }
 
 private final actor ConnectionStatusManager {
