@@ -45,7 +45,7 @@ final actor MockRoomLifecycleContributorChannel: RoomLifecycleContributorChannel
         /// Receives an argument indicating how many times (including the current call) the method for which this is providing a mock implementation has been called.
         case fromFunction(@Sendable (Int) async -> AttachOrDetachBehavior)
         case complete(AttachOrDetachResult)
-        case completeAndChangeState(AttachOrDetachResult, newState: ARTRealtimeChannelState)
+        case completeAndChangeState(AttachOrDetachResult, newState: ARTRealtimeChannelState, delayInMilliseconds: UInt64 = 0) // emulating network delay before going to the new state
 
         static var success: Self {
             .complete(.success)
@@ -90,7 +90,10 @@ final actor MockRoomLifecycleContributorChannel: RoomLifecycleContributorChannel
             return
         case let .complete(completeResult):
             result = completeResult
-        case let .completeAndChangeState(completeResult, newState):
+        case let .completeAndChangeState(completeResult, newState, milliseconds):
+            if milliseconds > 0 {
+                try? await Task.sleep(nanoseconds: milliseconds * 1_000_000)
+            }
             state = newState
             if case let .failure(error) = completeResult {
                 errorReason = error
