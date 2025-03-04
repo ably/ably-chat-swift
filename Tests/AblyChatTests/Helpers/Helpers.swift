@@ -64,6 +64,7 @@ enum RoomLifecycleHelper {
         initialState: ARTRealtimeChannelState = .initialized,
         initialErrorReason: ARTErrorInfo? = nil,
         feature: RoomFeature = .messages, // Arbitrarily chosen, its value only matters in test cases where we check which error is thrown
+        underlyingChannel: MockRealtimeChannel? = nil,
         attachBehavior: MockRoomLifecycleContributorChannel.AttachOrDetachBehavior? = nil,
         detachBehavior: MockRoomLifecycleContributorChannel.AttachOrDetachBehavior? = nil,
         subscribeToStateBehavior: MockRoomLifecycleContributorChannel.SubscribeToStateBehavior? = nil
@@ -71,6 +72,7 @@ enum RoomLifecycleHelper {
         .init(
             feature: feature,
             channel: .init(
+                underlyingChannel: underlyingChannel,
                 initialState: initialState,
                 initialErrorReason: initialErrorReason,
                 attachBehavior: attachBehavior,
@@ -78,6 +80,15 @@ enum RoomLifecycleHelper {
                 subscribeToStateBehavior: subscribeToStateBehavior
             )
         )
+    }
+
+    // TODO: replace duplicates of this func elsewhere
+    /// Given a room lifecycle manager and a channel state change, this method will return once the manager has performed all of the side effects that it will perform as a result of receiving this state change. You can provide a function which will be called after ``waitForManager`` has started listening for the manager’s “state change handled” notifications.
+    static func waitForManager(_ manager: DefaultRoomLifecycleManager<some RoomLifecycleContributor>, toHandleContributorStateChange stateChange: ARTChannelStateChange, during action: () async -> Void) async {
+        let subscription = await manager.testsOnly_subscribeToHandledContributorStateChanges()
+        async let handledSignal = subscription.first { $0 === stateChange }
+        await action()
+        _ = await handledSignal
     }
 }
 
