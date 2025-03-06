@@ -49,3 +49,56 @@ internal extension ARTRealtimeChannelProtocol {
         }.get()
     }
 }
+
+/// A `Sendable` version of `ARTPresenceMessage`. Only contains the properties that the Chat SDK is currently using; add as needed.
+internal struct PresenceMessage {
+    internal var clientId: String?
+    internal var timestamp: Date?
+    internal var action: ARTPresenceAction
+    internal var data: JSONValue?
+    internal var extras: [String: JSONValue]?
+}
+
+internal extension PresenceMessage {
+    init(ablyCocoaPresenceMessage: ARTPresenceMessage) {
+        clientId = ablyCocoaPresenceMessage.clientId
+        timestamp = ablyCocoaPresenceMessage.timestamp
+        action = ablyCocoaPresenceMessage.action
+        if let ablyCocoaData = ablyCocoaPresenceMessage.data {
+            data = .init(ablyCocoaData: ablyCocoaData)
+        }
+        if let ablyCocoaExtras = ablyCocoaPresenceMessage.extras {
+            extras = JSONValue.objectFromAblyCocoaExtras(ablyCocoaExtras)
+        }
+    }
+}
+
+internal extension ARTRealtimePresenceProtocol {
+    func getAsync() async throws(ARTErrorInfo) -> [PresenceMessage] {
+        try await withCheckedContinuation { (continuation: CheckedContinuation<Result<[PresenceMessage], ARTErrorInfo>, _>) in
+            get { members, error in
+                if let error {
+                    continuation.resume(returning: .failure(error))
+                } else if let members {
+                    continuation.resume(returning: .success(members.map { .init(ablyCocoaPresenceMessage: $0) }))
+                } else {
+                    preconditionFailure("There is no error, so expected members")
+                }
+            }
+        }.get()
+    }
+
+    func getAsync(_ query: ARTRealtimePresenceQuery) async throws(ARTErrorInfo) -> [PresenceMessage] {
+        try await withCheckedContinuation { (continuation: CheckedContinuation<Result<[PresenceMessage], ARTErrorInfo>, _>) in
+            get(query) { members, error in
+                if let error {
+                    continuation.resume(returning: .failure(error))
+                } else if let members {
+                    continuation.resume(returning: .success(members.map { .init(ablyCocoaPresenceMessage: $0) }))
+                } else {
+                    preconditionFailure("There is no error, so expected members")
+                }
+            }
+        }.get()
+    }
+}

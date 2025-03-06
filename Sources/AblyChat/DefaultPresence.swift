@@ -30,17 +30,14 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
             throw error
         }
 
-        return try await withCheckedThrowingContinuation { continuation in
-            channel.presence.get { [processPresenceGet] members, error in
-                do {
-                    let presenceMembers = try processPresenceGet(members, error)
-                    continuation.resume(returning: presenceMembers)
-                } catch {
-                    continuation.resume(throwing: error)
-                    // processPresenceGet will log any errors
-                }
-            }
+        let members: [PresenceMessage]
+        do {
+            members = try await channel.presence.getAsync()
+        } catch {
+            logger.log(message: error.message, level: .error)
+            throw error
         }
+        return try processPresenceGet(members: members)
     }
 
     internal func get(params: PresenceQuery) async throws -> [PresenceMember] {
@@ -54,17 +51,14 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
             throw error
         }
 
-        return try await withCheckedThrowingContinuation { continuation in
-            channel.presence.get(params.asARTRealtimePresenceQuery()) { [processPresenceGet] members, error in
-                do {
-                    let presenceMembers = try processPresenceGet(members, error)
-                    continuation.resume(returning: presenceMembers)
-                } catch {
-                    continuation.resume(throwing: error)
-                    // processPresenceGet will log any errors
-                }
-            }
+        let members: [PresenceMessage]
+        do {
+            members = try await channel.presence.getAsync(params.asARTRealtimePresenceQuery())
+        } catch {
+            logger.log(message: error.message, level: .error)
+            throw error
         }
+        return try processPresenceGet(members: members)
     }
 
     // (CHA-PR5) It must be possible to query if a given clientId is in the presence set.
@@ -79,17 +73,15 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
             throw error
         }
 
-        return try await withCheckedThrowingContinuation { continuation in
-            channel.presence.get(ARTRealtimePresenceQuery(clientId: clientID, connectionId: nil)) { [logger] members, error in
-                guard let members else {
-                    let error = error ?? ARTErrorInfo.createUnknownError()
-                    logger.log(message: error.message, level: .error)
-                    continuation.resume(throwing: error)
-                    return
-                }
-                continuation.resume(returning: !members.isEmpty)
-            }
+        let members: [PresenceMessage]
+        do {
+            members = try await channel.presence.getAsync(ARTRealtimePresenceQuery(clientId: clientID, connectionId: nil))
+        } catch {
+            logger.log(message: error.message, level: .error)
+            throw error
         }
+
+        return !members.isEmpty
     }
 
     internal func enter(data: PresenceData) async throws {
@@ -203,7 +195,7 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
             logger.log(message: "Received presence message: \(message)", level: .debug)
             Task {
                 // processPresenceSubscribe is logging so we don't need to log here
-                let presenceEvent = try processPresenceSubscribe(message, event)
+                let presenceEvent = try processPresenceSubscribe(PresenceMessage(ablyCocoaPresenceMessage: message), event)
                 subscription.emit(presenceEvent)
             }
         }
@@ -223,7 +215,7 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
             channel.presence.subscribe(event.toARTPresenceAction()) { [processPresenceSubscribe, logger] message in
                 logger.log(message: "Received presence message: \(message)", level: .debug)
                 Task {
-                    let presenceEvent = try processPresenceSubscribe(message, event)
+                    let presenceEvent = try processPresenceSubscribe(PresenceMessage(ablyCocoaPresenceMessage: message), event)
                     subscription.emit(presenceEvent)
                 }
             }
@@ -245,29 +237,22 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
         await featureChannel.onDiscontinuity(bufferingPolicy: bufferingPolicy)
     }
 
-    private func decodePresenceDataDTO(from ablyCocoaPresenceData: Any?) throws -> PresenceDataDTO {
-        guard let ablyCocoaPresenceData else {
+    private func decodePresenceDataDTO(from presenceData: JSONValue?) throws -> PresenceDataDTO {
+        guard let presenceData else {
             let error = ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without data")
             logger.log(message: error.message, level: .error)
             throw error
         }
 
-        let jsonValue = JSONValue(ablyCocoaData: ablyCocoaPresenceData)
-
         do {
-            return try PresenceDataDTO(jsonValue: jsonValue)
+            return try PresenceDataDTO(jsonValue: presenceData)
         } catch {
-            logger.log(message: "Failed to decode presence data DTO from \(jsonValue), error \(error)", level: .error)
+            logger.log(message: "Failed to decode presence data DTO from \(presenceData), error \(error)", level: .error)
             throw error
         }
     }
 
-    private func processPresenceGet(members: [ARTPresenceMessage]?, error: ARTErrorInfo?) throws -> [PresenceMember] {
-        guard let members else {
-            let error = error ?? ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without data or text")
-            logger.log(message: error.message, level: .error)
-            throw error
-        }
+    private func processPresenceGet(members: [PresenceMessage]) throws -> [PresenceMember] {
         let presenceMembers = try members.map { member in
             let presenceDataDTO = try decodePresenceDataDTO(from: member.data)
 
@@ -283,17 +268,11 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
                 throw error
             }
 
-            let extras: [String: JSONValue]? = if let ablyCocoaExtras = member.extras {
-                JSONValue.objectFromAblyCocoaExtras(ablyCocoaExtras)
-            } else {
-                nil
-            }
-
             let presenceMember = PresenceMember(
                 clientID: clientID,
                 data: presenceDataDTO.userCustomData,
                 action: PresenceMember.Action(from: member.action),
-                extras: extras,
+                extras: member.extras,
                 updatedAt: timestamp
             )
 
@@ -303,7 +282,7 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
         return presenceMembers
     }
 
-    private func processPresenceSubscribe(_ message: ARTPresenceMessage, for event: PresenceEventType) throws -> PresenceEvent {
+    private func processPresenceSubscribe(_ message: PresenceMessage, for event: PresenceEventType) throws -> PresenceEvent {
         guard let clientID = message.clientId else {
             let error = ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without clientId")
             logger.log(message: error.message, level: .error)
