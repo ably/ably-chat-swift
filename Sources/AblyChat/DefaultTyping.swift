@@ -184,22 +184,19 @@ internal final class DefaultTyping: Typing {
 
     private func startTyping() throws {
         // (CHA-T4a1) When a typing session is started, the client is entered into presence on the typing channel.
-        channel.presence.enterClient(clientID, data: nil) { [weak self] error in
-            guard let self else {
-                return
+        Task {
+            do {
+                try await channel.presence.enterClientAsync(clientID, data: nil)
+            } catch {
+                logger.log(message: "Error entering presence: \(error)", level: .error)
+                throw error
             }
-            Task {
-                if let error {
-                    logger.log(message: "Error entering presence: \(error)", level: .error)
-                    throw error
-                } else {
-                    logger.log(message: "Entered presence - starting timer", level: .debug)
-                    // (CHA-T4a2)  When a typing session is started, a timeout is set according to the CHA-T3 timeout interval. When this timeout expires, the typing session is automatically ended by leaving presence.
-                    await timerManager.setTimer(interval: timeout) { [stop] in
-                        Task {
-                            try await stop()
-                        }
-                    }
+
+            logger.log(message: "Entered presence - starting timer", level: .debug)
+            // (CHA-T4a2)  When a typing session is started, a timeout is set according to the CHA-T3 timeout interval. When this timeout expires, the typing session is automatically ended by leaving presence.
+            await timerManager.setTimer(interval: timeout) { [stop] in
+                Task {
+                    try await stop()
                 }
             }
         }

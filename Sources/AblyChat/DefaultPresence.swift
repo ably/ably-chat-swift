@@ -106,15 +106,11 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
 
         let dto = PresenceDataDTO(userCustomData: data)
 
-        return try await withCheckedThrowingContinuation { continuation in
-            channel.presence.enterClient(clientID, data: dto.toJSONValue.toAblyCocoaData) { [logger] error in
-                if let error {
-                    logger.log(message: "Error entering presence: \(error)", level: .error)
-                    continuation.resume(throwing: error)
-                } else {
-                    continuation.resume()
-                }
-            }
+        do {
+            try await channel.presence.enterClientAsync(clientID, data: dto.toJSONValue)
+        } catch {
+            logger.log(message: "Error entering presence: \(error)", level: .error)
+            throw error
         }
     }
 
