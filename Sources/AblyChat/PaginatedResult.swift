@@ -95,7 +95,7 @@ internal final class PaginatedResultWrapper<T: JSONDecodable & Sendable & Equata
     }
 }
 
-private extension ARTHTTPPaginatedResponse {
+internal extension ARTHTTPPaginatedResponse {
     /// Converts an `ARTHTTPPaginatedResponse` to a `PaginatedResultWrapper` allowing for access to operations as per conformance to `PaginatedResult`.
     func toPaginatedResult<T: JSONDecodable & Sendable>(items: [T]) -> PaginatedResultWrapper<T> {
         PaginatedResultWrapper(paginatedResponse: self, items: items)
