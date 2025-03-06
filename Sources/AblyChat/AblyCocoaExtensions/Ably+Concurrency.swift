@@ -101,4 +101,16 @@ internal extension ARTRealtimePresenceProtocol {
             }
         }.get()
     }
+
+    func leaveAsync(_ data: JSONValue?) async throws(ARTErrorInfo) {
+        try await withCheckedContinuation { (continuation: CheckedContinuation<Result<Void, ARTErrorInfo>, _>) in
+            leave(data?.toAblyCocoaData) { error in
+                if let error {
+                    continuation.resume(returning: .failure(error))
+                } else {
+                    continuation.resume(returning: .success(()))
+                }
+            }
+        }.get()
+    }
 }
