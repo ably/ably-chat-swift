@@ -212,6 +212,7 @@ internal enum ErrorCodeAndStatusCode {
  This type exists in addition to ``ErrorCode`` to allow us to attach metadata which can be incorporated into the error’s `localizedDescription` and `cause`.
  */
 internal enum ChatError {
+    case nonErrorInfoInternalError(InternalError.Other)
     case inconsistentRoomOptions(requested: RoomOptions, existing: RoomOptions)
     case attachmentFailed(feature: RoomFeature, underlyingError: ARTErrorInfo)
     case detachmentFailed(feature: RoomFeature, underlyingError: ARTErrorInfo)
@@ -224,6 +225,9 @@ internal enum ChatError {
 
     internal var codeAndStatusCode: ErrorCodeAndStatusCode {
         switch self {
+        case .nonErrorInfoInternalError:
+            // For now we just treat all errors that are not backed by an ARTErrorInfo as non-recoverable user errors
+            .fixedStatusCode(.badRequest)
         case .inconsistentRoomOptions:
             .fixedStatusCode(.badRequest)
         case let .attachmentFailed(feature, _):
@@ -307,6 +311,9 @@ internal enum ChatError {
     /// The ``ARTErrorInfo/localizedDescription`` that should be returned for this error.
     internal var localizedDescription: String {
         switch self {
+        case let .nonErrorInfoInternalError(otherInternalError):
+            // This will contain the name of the underlying enum case (we have a test to verify this); this will do for now
+            "\(otherInternalError)"
         case let .inconsistentRoomOptions(requested, existing):
             "Rooms.get(roomID:options:) was called with a different set of room options than was used on a previous call. You must first release the existing room instance using Rooms.release(roomID:). Requested options: \(requested), existing options: \(existing)"
         case let .attachmentFailed(feature, _):
@@ -337,7 +344,8 @@ internal enum ChatError {
             underlyingError
         case let .roomTransitionedToInvalidStateForPresenceOperation(cause):
             cause
-        case .inconsistentRoomOptions,
+        case .nonErrorInfoInternalError,
+             .inconsistentRoomOptions,
              .roomInFailedState,
              .roomIsReleasing,
              .roomIsReleased,

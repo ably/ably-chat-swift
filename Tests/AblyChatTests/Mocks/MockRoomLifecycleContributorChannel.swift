@@ -61,24 +61,32 @@ final actor MockRoomLifecycleContributorChannel: RoomLifecycleContributorChannel
         case addSubscriptionAndEmitStateChange(ARTChannelStateChange)
     }
 
-    func attach() async throws(ARTErrorInfo) {
+    func attach() async throws(InternalError) {
         attachCallCount += 1
 
         guard let attachBehavior else {
             fatalError("attachBehavior must be set before attach is called")
         }
 
-        try await performBehavior(attachBehavior, callCount: attachCallCount)
+        do {
+            try await performBehavior(attachBehavior, callCount: attachCallCount)
+        } catch {
+            throw error.toInternalError()
+        }
     }
 
-    func detach() async throws(ARTErrorInfo) {
+    func detach() async throws(InternalError) {
         detachCallCount += 1
 
         guard let detachBehavior else {
             fatalError("detachBehavior must be set before detach is called")
         }
 
-        try await performBehavior(detachBehavior, callCount: detachCallCount)
+        do {
+            try await performBehavior(detachBehavior, callCount: detachCallCount)
+        } catch {
+            throw error.toInternalError()
+        }
     }
 
     private func performBehavior(_ behavior: AttachOrDetachBehavior, callCount: Int) async throws(ARTErrorInfo) {

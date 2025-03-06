@@ -1,3 +1,4 @@
+import Ably
 @testable import AblyChat
 
 actor MockRoom: InternalRoom {
@@ -43,11 +44,11 @@ actor MockRoom: InternalRoom {
         fatalError("Not implemented")
     }
 
-    func attach() async throws {
+    func attach() async throws(ARTErrorInfo) {
         fatalError("Not implemented")
     }
 
-    func detach() async throws {
+    func detach() async throws(ARTErrorInfo) {
         fatalError("Not implemented")
     }
 

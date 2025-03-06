@@ -19,158 +19,182 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
     }
 
     // (CHA-PR6) It must be possible to retrieve all the @Members of the presence set. The behaviour depends on the current room status, as presence operations in a Realtime Client cause implicit attaches.
-    internal func get() async throws -> [PresenceMember] {
-        logger.log(message: "Getting presence", level: .debug)
+    internal func get() async throws(ARTErrorInfo) -> [PresenceMember] {
+        do throws(InternalError) {
+            logger.log(message: "Getting presence", level: .debug)
 
-        // CHA-PR6b to CHA-PR6f
-        do {
-            try await featureChannel.waitToBeAbleToPerformPresenceOperations(requestedByFeature: RoomFeature.presence)
-        } catch {
-            logger.log(message: "Error waiting to be able to perform presence get operation: \(error)", level: .error)
-            throw error
-        }
+            // CHA-PR6b to CHA-PR6f
+            do {
+                try await featureChannel.waitToBeAbleToPerformPresenceOperations(requestedByFeature: RoomFeature.presence)
+            } catch {
+                logger.log(message: "Error waiting to be able to perform presence get operation: \(error)", level: .error)
+                throw error
+            }
 
-        let members: [PresenceMessage]
-        do {
-            members = try await channel.presence.getAsync()
+            let members: [PresenceMessage]
+            do {
+                members = try await channel.presence.getAsync()
+            } catch {
+                logger.log(message: error.message, level: .error)
+                throw error
+            }
+            return try processPresenceGet(members: members)
         } catch {
-            logger.log(message: error.message, level: .error)
-            throw error
+            throw error.toARTErrorInfo()
         }
-        return try processPresenceGet(members: members)
     }
 
-    internal func get(params: PresenceQuery) async throws -> [PresenceMember] {
-        logger.log(message: "Getting presence with params: \(params)", level: .debug)
+    internal func get(params: PresenceQuery) async throws(ARTErrorInfo) -> [PresenceMember] {
+        do throws(InternalError) {
+            logger.log(message: "Getting presence with params: \(params)", level: .debug)
 
-        // CHA-PR6b to CHA-PR6f
-        do {
-            try await featureChannel.waitToBeAbleToPerformPresenceOperations(requestedByFeature: RoomFeature.presence)
-        } catch {
-            logger.log(message: "Error waiting to be able to perform presence get operation: \(error)", level: .error)
-            throw error
-        }
+            // CHA-PR6b to CHA-PR6f
+            do {
+                try await featureChannel.waitToBeAbleToPerformPresenceOperations(requestedByFeature: RoomFeature.presence)
+            } catch {
+                logger.log(message: "Error waiting to be able to perform presence get operation: \(error)", level: .error)
+                throw error
+            }
 
-        let members: [PresenceMessage]
-        do {
-            members = try await channel.presence.getAsync(params.asARTRealtimePresenceQuery())
+            let members: [PresenceMessage]
+            do {
+                members = try await channel.presence.getAsync(params.asARTRealtimePresenceQuery())
+            } catch {
+                logger.log(message: error.message, level: .error)
+                throw error
+            }
+            return try processPresenceGet(members: members)
         } catch {
-            logger.log(message: error.message, level: .error)
-            throw error
+            throw error.toARTErrorInfo()
         }
-        return try processPresenceGet(members: members)
     }
 
     // (CHA-PR5) It must be possible to query if a given clientId is in the presence set.
-    internal func isUserPresent(clientID: String) async throws -> Bool {
-        logger.log(message: "Checking if user is present with clientID: \(clientID)", level: .debug)
+    internal func isUserPresent(clientID: String) async throws(ARTErrorInfo) -> Bool {
+        do throws(InternalError) {
+            logger.log(message: "Checking if user is present with clientID: \(clientID)", level: .debug)
 
-        // CHA-PR6b to CHA-PR6f
-        do {
-            try await featureChannel.waitToBeAbleToPerformPresenceOperations(requestedByFeature: RoomFeature.presence)
+            // CHA-PR6b to CHA-PR6f
+            do {
+                try await featureChannel.waitToBeAbleToPerformPresenceOperations(requestedByFeature: RoomFeature.presence)
+            } catch {
+                logger.log(message: "Error waiting to be able to perform presence get operation: \(error)", level: .error)
+                throw error
+            }
+
+            let members: [PresenceMessage]
+            do {
+                members = try await channel.presence.getAsync(ARTRealtimePresenceQuery(clientId: clientID, connectionId: nil))
+            } catch {
+                logger.log(message: error.message, level: .error)
+                throw error
+            }
+
+            return !members.isEmpty
         } catch {
-            logger.log(message: "Error waiting to be able to perform presence get operation: \(error)", level: .error)
-            throw error
+            throw error.toARTErrorInfo()
         }
-
-        let members: [PresenceMessage]
-        do {
-            members = try await channel.presence.getAsync(ARTRealtimePresenceQuery(clientId: clientID, connectionId: nil))
-        } catch {
-            logger.log(message: error.message, level: .error)
-            throw error
-        }
-
-        return !members.isEmpty
     }
 
-    internal func enter(data: PresenceData) async throws {
+    internal func enter(data: PresenceData) async throws(ARTErrorInfo) {
         try await enter(optionalData: data)
     }
 
-    internal func enter() async throws {
+    internal func enter() async throws(ARTErrorInfo) {
         try await enter(optionalData: nil)
     }
 
     // (CHA-PR3a) Users may choose to enter presence, optionally providing custom data to enter with. The overall presence data must retain the format specified in CHA-PR2.
-    private func enter(optionalData data: PresenceData?) async throws {
-        logger.log(message: "Entering presence", level: .debug)
+    private func enter(optionalData data: PresenceData?) async throws(ARTErrorInfo) {
+        do throws(InternalError) {
+            logger.log(message: "Entering presence", level: .debug)
 
-        // CHA-PR3c to CHA-PR3g
-        do {
-            try await featureChannel.waitToBeAbleToPerformPresenceOperations(requestedByFeature: RoomFeature.presence)
+            // CHA-PR3c to CHA-PR3g
+            do {
+                try await featureChannel.waitToBeAbleToPerformPresenceOperations(requestedByFeature: RoomFeature.presence)
+            } catch {
+                logger.log(message: "Error waiting to be able to perform presence enter operation: \(error)", level: .error)
+                throw error
+            }
+
+            let dto = PresenceDataDTO(userCustomData: data)
+
+            do {
+                try await channel.presence.enterClientAsync(clientID, data: dto.toJSONValue)
+            } catch {
+                logger.log(message: "Error entering presence: \(error)", level: .error)
+                throw error
+            }
         } catch {
-            logger.log(message: "Error waiting to be able to perform presence enter operation: \(error)", level: .error)
-            throw error
-        }
-
-        let dto = PresenceDataDTO(userCustomData: data)
-
-        do {
-            try await channel.presence.enterClientAsync(clientID, data: dto.toJSONValue)
-        } catch {
-            logger.log(message: "Error entering presence: \(error)", level: .error)
-            throw error
+            throw error.toARTErrorInfo()
         }
     }
 
-    internal func update(data: PresenceData) async throws {
+    internal func update(data: PresenceData) async throws(ARTErrorInfo) {
         try await update(optionalData: data)
     }
 
-    internal func update() async throws {
+    internal func update() async throws(ARTErrorInfo) {
         try await update(optionalData: nil)
     }
 
     // (CHA-PR10a) Users may choose to update their presence data, optionally providing custom data to update with. The overall presence data must retain the format specified in CHA-PR2.
-    private func update(optionalData data: PresenceData?) async throws {
-        logger.log(message: "Updating presence", level: .debug)
+    private func update(optionalData data: PresenceData?) async throws(ARTErrorInfo) {
+        do throws(InternalError) {
+            logger.log(message: "Updating presence", level: .debug)
 
-        // CHA-PR10c to CHA-PR10g
-        do {
-            try await featureChannel.waitToBeAbleToPerformPresenceOperations(requestedByFeature: RoomFeature.presence)
+            // CHA-PR10c to CHA-PR10g
+            do {
+                try await featureChannel.waitToBeAbleToPerformPresenceOperations(requestedByFeature: RoomFeature.presence)
+            } catch {
+                logger.log(message: "Error waiting to be able to perform presence update operation: \(error)", level: .error)
+                throw error
+            }
+
+            let dto = PresenceDataDTO(userCustomData: data)
+
+            do {
+                try await channel.presence.updateAsync(dto.toJSONValue)
+            } catch {
+                logger.log(message: "Error updating presence: \(error)", level: .error)
+                throw error
+            }
         } catch {
-            logger.log(message: "Error waiting to be able to perform presence update operation: \(error)", level: .error)
-            throw error
-        }
-
-        let dto = PresenceDataDTO(userCustomData: data)
-
-        do {
-            try await channel.presence.updateAsync(dto.toJSONValue)
-        } catch {
-            logger.log(message: "Error updating presence: \(error)", level: .error)
-            throw error
+            throw error.toARTErrorInfo()
         }
     }
 
-    internal func leave(data: PresenceData) async throws {
+    internal func leave(data: PresenceData) async throws(ARTErrorInfo) {
         try await leave(optionalData: data)
     }
 
-    internal func leave() async throws {
+    internal func leave() async throws(ARTErrorInfo) {
         try await leave(optionalData: nil)
     }
 
     // (CHA-PR4a) Users may choose to leave presence, which results in them being removed from the Realtime presence set.
-    internal func leave(optionalData data: PresenceData?) async throws {
-        logger.log(message: "Leaving presence", level: .debug)
+    internal func leave(optionalData data: PresenceData?) async throws(ARTErrorInfo) {
+        do throws(InternalError) {
+            logger.log(message: "Leaving presence", level: .debug)
 
-        // CHA-PR6b to CHA-PR6f
-        do {
-            try await featureChannel.waitToBeAbleToPerformPresenceOperations(requestedByFeature: RoomFeature.presence)
+            // CHA-PR6b to CHA-PR6f
+            do {
+                try await featureChannel.waitToBeAbleToPerformPresenceOperations(requestedByFeature: RoomFeature.presence)
+            } catch {
+                logger.log(message: "Error waiting to be able to perform presence leave operation: \(error)", level: .error)
+                throw error
+            }
+
+            let dto = PresenceDataDTO(userCustomData: data)
+
+            do {
+                try await channel.presence.leaveAsync(dto.toJSONValue)
+            } catch {
+                logger.log(message: "Error leaving presence: \(error)", level: .error)
+                throw error
+            }
         } catch {
-            logger.log(message: "Error waiting to be able to perform presence leave operation: \(error)", level: .error)
-            throw error
-        }
-
-        let dto = PresenceDataDTO(userCustomData: data)
-
-        do {
-            try await channel.presence.leaveAsync(dto.toJSONValue)
-        } catch {
-            logger.log(message: "Error leaving presence: \(error)", level: .error)
-            throw error
+            throw error.toARTErrorInfo()
         }
     }
 
@@ -225,11 +249,11 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
         await featureChannel.onDiscontinuity(bufferingPolicy: bufferingPolicy)
     }
 
-    private func decodePresenceDataDTO(from presenceData: JSONValue?) throws -> PresenceDataDTO {
+    private func decodePresenceDataDTO(from presenceData: JSONValue?) throws(InternalError) -> PresenceDataDTO {
         guard let presenceData else {
             let error = ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without data")
             logger.log(message: error.message, level: .error)
-            throw error
+            throw error.toInternalError()
         }
 
         do {
@@ -240,20 +264,20 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
         }
     }
 
-    private func processPresenceGet(members: [PresenceMessage]) throws -> [PresenceMember] {
-        let presenceMembers = try members.map { member in
+    private func processPresenceGet(members: [PresenceMessage]) throws(InternalError) -> [PresenceMember] {
+        let presenceMembers = try members.map { member throws(InternalError) in
             let presenceDataDTO = try decodePresenceDataDTO(from: member.data)
 
             guard let clientID = member.clientId else {
                 let error = ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without clientId")
                 logger.log(message: error.message, level: .error)
-                throw error
+                throw error.toInternalError()
             }
 
             guard let timestamp = member.timestamp else {
                 let error = ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without timestamp")
                 logger.log(message: error.message, level: .error)
-                throw error
+                throw error.toInternalError()
             }
 
             let presenceMember = PresenceMember(
