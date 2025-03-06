@@ -27,7 +27,7 @@ public protocol Occupancy: AnyObject, Sendable, EmitsDiscontinuities {
      *
      * - Returns: A current occupancy of the chat room.
      */
-    func get() async throws -> OccupancyEvent
+    func get() async throws(ARTErrorInfo) -> OccupancyEvent
 
     /**
      * Get underlying Ably channel for occupancy events.

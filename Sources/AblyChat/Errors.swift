@@ -367,3 +367,8 @@ internal extension ARTErrorInfo {
         )
     }
 }
+
+// TODO put in right place
+internal protocol ConvertibleToARTErrorInfo {
+    func toARTErrorInfo() -> ARTErrorInfo
+}

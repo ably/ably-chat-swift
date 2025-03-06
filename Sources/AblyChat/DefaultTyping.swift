@@ -83,7 +83,7 @@ internal final class DefaultTyping: Typing {
     }
 
     // (CHA-T2) Users may retrieve a list of the currently typing client IDs. The behaviour depends on the current room status, as presence operations in a Realtime Client cause implicit attaches.
-    internal func get() async throws -> Set<String> {
+    internal func get() async throws(ARTErrorInfo) -> Set<String> {
         logger.log(message: "Getting presence", level: .debug)
 
         // CHA-T2c to CHA-T2f
@@ -105,7 +105,7 @@ internal final class DefaultTyping: Typing {
     }
 
     // (CHA-T4) Users may indicate that they have started typing.
-    internal func start() async throws {
+    internal func start() async throws(ARTErrorInfo) {
         logger.log(message: "Starting typing indicator for client: \(clientID)", level: .debug)
 
         do {
@@ -115,7 +115,7 @@ internal final class DefaultTyping: Typing {
             throw error
         }
 
-        return try await withCheckedThrowingContinuation { continuation in
+        return try await withCheckedContinuation { (continuation: CheckedContinuation<Result<Void, ARTErrorInfo>, Never>) in
             Task {
                 let isUserTyping = await timerManager.hasRunningTask()
 
@@ -127,23 +127,23 @@ internal final class DefaultTyping: Typing {
                             try await stop()
                         }
                     }
-                    continuation.resume()
+                    continuation.resume(returning: .success(()))
                 } else {
                     // (CHA-T4a) If typing is not already in progress, per explicit cancellation or the timeout interval in (CHA-T3), then a new typing session is started.
                     logger.log(message: "User is not typing. Starting typing.", level: .debug)
                     do {
                         try startTyping()
-                        continuation.resume()
+                        continuation.resume(returning: .success(()))
                     } catch {
-                        continuation.resume(throwing: error)
+                        continuation.resume(returning: .failure(error))
                     }
                 }
             }
-        }
+        }.get()
     }
 
     // (CHA-T5) Users may indicate that they have stopped typing.
-    internal func stop() async throws {
+    internal func stop() async throws(ARTErrorInfo) {
         do {
             try await featureChannel.waitToBeAbleToPerformPresenceOperations(requestedByFeature: RoomFeature.presence)
         } catch {
@@ -168,8 +168,8 @@ internal final class DefaultTyping: Typing {
         await featureChannel.onDiscontinuity(bufferingPolicy: bufferingPolicy)
     }
 
-    private func processPresenceGet(members: [PresenceMessage]) throws -> Set<String> {
-        let clientIDs = try Set<String>(members.map { member in
+    private func processPresenceGet(members: [PresenceMessage]) throws (ARTErrorInfo) -> Set<String> {
+        let clientIDs = try Set<String>(members.map { member throws (ARTErrorInfo) in
             guard let clientID = member.clientId else {
                 let error = ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without clientId")
                 logger.log(message: error.message, level: .error)
@@ -182,7 +182,7 @@ internal final class DefaultTyping: Typing {
         return clientIDs
     }
 
-    private func startTyping() throws {
+    private func startTyping() throws (ARTErrorInfo) {
         // (CHA-T4a1) When a typing session is started, the client is entered into presence on the typing channel.
         Task {
             do {

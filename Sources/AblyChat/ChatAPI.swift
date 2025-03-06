@@ -10,7 +10,7 @@ internal final class ChatAPI: Sendable {
     }
 
     // (CHA-M6) Messages should be queryable from a paginated REST API.
-    internal func getMessages(roomId: String, params: QueryOptions) async throws -> any PaginatedResult<Message> {
+    internal func getMessages(roomId: String, params: QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message> {
         let endpoint = "\(apiVersionV2)/rooms/\(roomId)/messages"
         return try await makePaginatedRequest(endpoint, params: params.asQueryItems())
     }
@@ -40,7 +40,7 @@ internal final class ChatAPI: Sendable {
 
     // (CHA-M3) Messages are sent to Ably via the Chat REST API, using the send method.
     // (CHA-M3a) When a message is sent successfully, the caller shall receive a struct representing the Message in response (as if it were received via Realtime event).
-    internal func sendMessage(roomId: String, params: SendMessageParams) async throws -> Message {
+    internal func sendMessage(roomId: String, params: SendMessageParams) async throws(ARTErrorInfo) -> Message {
         guard let clientId = realtime.clientId else {
             throw ARTErrorInfo.create(withCode: 40000, message: "Ensure your Realtime instance is initialized with a clientId.")
         }
@@ -79,7 +79,7 @@ internal final class ChatAPI: Sendable {
 
     // (CHA-M8) A client must be able to update a message in a room.
     // (CHA-M8a) A client may update a message via the Chat REST API by calling the update method.
-    internal func updateMessage(with modifiedMessage: Message, description: String?, metadata: OperationMetadata?) async throws -> Message {
+    internal func updateMessage(with modifiedMessage: Message, description: String?, metadata: OperationMetadata?) async throws(ARTErrorInfo) -> Message {
         guard let clientID = realtime.clientId else {
             throw ARTErrorInfo.create(withCode: 40000, message: "Ensure your Realtime instance is initialized with a clientId.")
         }
@@ -131,7 +131,7 @@ internal final class ChatAPI: Sendable {
 
     // (CHA-M9) A client must be able to delete a message in a room.
     // (CHA-M9a) A client may delete a message via the Chat REST API by calling the delete method.
-    internal func deleteMessage(message: Message, params: DeleteMessageParams) async throws -> Message {
+    internal func deleteMessage(message: Message, params: DeleteMessageParams) async throws(ARTErrorInfo) -> Message {
         let endpoint = "\(apiVersionV2)/rooms/\(message.roomID)/messages/\(message.serial)/delete"
         var body: [String: JSONValue] = [:]
 
@@ -169,12 +169,12 @@ internal final class ChatAPI: Sendable {
         return message
     }
 
-    internal func getOccupancy(roomId: String) async throws -> OccupancyEvent {
+    internal func getOccupancy(roomId: String) async throws(ARTErrorInfo) -> OccupancyEvent {
         let endpoint = "\(apiVersion)/rooms/\(roomId)/occupancy"
         return try await makeRequest(endpoint, method: "GET")
     }
 
-    private func makeRequest<Response: JSONDecodable>(_ url: String, method: String, body: [String: JSONValue]? = nil) async throws -> Response {
+    private func makeRequest<Response: JSONDecodable>(_ url: String, method: String, body: [String: JSONValue]? = nil) async throws(ARTErrorInfo) -> Response {
         let ablyCocoaBody: Any? = if let body {
             JSONValue.object(body).toAblyCocoaData
         } else {
@@ -185,7 +185,8 @@ internal final class ChatAPI: Sendable {
         let paginatedResponse = try await realtime.requestAsync(method, path: url, params: [:], body: ablyCocoaBody, headers: [:])
 
         guard let firstItem = paginatedResponse.items.first else {
-            throw ChatError.noItemInResponse
+            // TODO This is wrong
+            throw ChatError.noItemInResponse as! ARTErrorInfo
         }
 
         let jsonValue = JSONValue(ablyCocoaData: firstItem)
