@@ -94,17 +94,14 @@ internal final class DefaultTyping: Typing {
             throw error
         }
 
-        return try await withCheckedThrowingContinuation { continuation in
-            channel.presence.get { [processPresenceGet] members, error in
-                do {
-                    let presenceMembers = try processPresenceGet(members, error)
-                    continuation.resume(returning: presenceMembers)
-                } catch {
-                    continuation.resume(throwing: error)
-                    // processPresenceGet will log any errors
-                }
-            }
+        let members: [PresenceMessage]
+        do {
+            members = try await channel.presence.getAsync()
+        } catch {
+            logger.log(message: error.message, level: .error)
+            throw error
         }
+        return try processPresenceGet(members: members)
     }
 
     // (CHA-T4) Users may indicate that they have started typing.
@@ -171,13 +168,7 @@ internal final class DefaultTyping: Typing {
         await featureChannel.onDiscontinuity(bufferingPolicy: bufferingPolicy)
     }
 
-    private func processPresenceGet(members: [ARTPresenceMessage]?, error: ARTErrorInfo?) throws -> Set<String> {
-        guard let members else {
-            let error = error ?? ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without data")
-            logger.log(message: error.message, level: .error)
-            throw error
-        }
-
+    private func processPresenceGet(members: [PresenceMessage]) throws -> Set<String> {
         let clientIDs = try Set<String>(members.map { member in
             guard let clientID = member.clientId else {
                 let error = ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without clientId")
