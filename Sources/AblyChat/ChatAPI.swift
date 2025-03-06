@@ -181,47 +181,25 @@ internal final class ChatAPI: Sendable {
             nil
         }
 
-        return try await withCheckedThrowingContinuation { continuation in
-            do {
-                try realtime.request(method, path: url, params: [:], body: ablyCocoaBody, headers: [:]) { paginatedResponse, error in
-                    if let error {
-                        // (CHA-M3e & CHA-M8d & CHA-M9c) If an error is returned from the REST API, its ErrorInfo representation shall be thrown as the result of the send call.
-                        continuation.resume(throwing: ARTErrorInfo.create(from: error))
-                        return
-                    }
+        // (CHA-M3e & CHA-M8d & CHA-M9c) If an error is returned from the REST API, its ErrorInfo representation shall be thrown as the result of the send call.
+        let paginatedResponse = try await realtime.requestAsync(method, path: url, params: [:], body: ablyCocoaBody, headers: [:])
 
-                    guard let firstItem = paginatedResponse?.items.first else {
-                        continuation.resume(throwing: ChatError.noItemInResponse)
-                        return
-                    }
-
-                    do {
-                        let jsonValue = JSONValue(ablyCocoaData: firstItem)
-                        let decodedResponse = try Response(jsonValue: jsonValue)
-                        continuation.resume(returning: decodedResponse)
-                    } catch {
-                        continuation.resume(throwing: error)
-                    }
-                }
-            } catch {
-                continuation.resume(throwing: error)
-            }
+        guard let firstItem = paginatedResponse.items.first else {
+            throw ChatError.noItemInResponse
         }
+
+        let jsonValue = JSONValue(ablyCocoaData: firstItem)
+        return try Response(jsonValue: jsonValue)
     }
 
     private func makePaginatedRequest<Response: JSONDecodable & Sendable & Equatable>(
         _ url: String,
         params: [String: String]? = nil
     ) async throws -> any PaginatedResult<Response> {
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<PaginatedResultWrapper<Response>, _>) in
-            do {
-                try realtime.request("GET", path: url, params: params, body: nil, headers: [:]) { paginatedResponse, error in
-                    ARTHTTPPaginatedCallbackWrapper<Response>(callbackResult: (paginatedResponse, error)).handleResponse(continuation: continuation)
-                }
-            } catch {
-                continuation.resume(throwing: error)
-            }
-        }
+        let paginatedResponse = try await realtime.requestAsync("GET", path: url, params: params, body: nil, headers: [:])
+        let jsonValues = paginatedResponse.items.map { JSONValue(ablyCocoaData: $0) }
+        let items = try jsonValues.map { try Response(jsonValue: $0) }
+        return paginatedResponse.toPaginatedResult(items: items)
     }
 
     internal enum ChatError: Error {
