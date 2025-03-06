@@ -196,6 +196,8 @@ internal final class ChatAPI: Sendable {
         _ url: String,
         params: [String: String]? = nil
     ) async throws -> any PaginatedResult<Response> {
+        let paginatedResult = try await realtime.requestAsync("GET", path: url, params: params, body: nil, headers: [:])
+        return paginatedResult.to
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<PaginatedResultWrapper<Response>, _>) in
             do {
                 try realtime.request("GET", path: url, params: params, body: nil, headers: [:]) { paginatedResponse, error in

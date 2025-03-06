@@ -63,6 +63,7 @@ internal final class PaginatedResultWrapper<T: JSONDecodable & Sendable & Equata
     /// Asynchronously fetch the next page if available
     internal var next: (any PaginatedResult<T>)? {
         get async throws {
+            // TODO next up: make `nextAsync` / `firstAsync` extension methods
             try await withCheckedThrowingContinuation { continuation in
                 paginatedResponse.next { paginatedResponse, error in
                     ARTHTTPPaginatedCallbackWrapper(callbackResult: (paginatedResponse, error)).handleResponse(continuation: continuation)
