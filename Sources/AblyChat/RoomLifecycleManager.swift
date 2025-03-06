@@ -41,8 +41,8 @@ internal protocol RoomLifecycleContributor: Identifiable, Sendable {
 }
 
 internal protocol RoomLifecycleManager: Sendable {
-    func performAttachOperation() async throws
-    func performDetachOperation() async throws
+    func performAttachOperation() async throws (ARTErrorInfo)
+    func performDetachOperation() async throws (ARTErrorInfo)
     func performReleaseOperation() async
     var roomStatus: RoomStatus { get async }
     func onRoomStatusChange(bufferingPolicy: BufferingPolicy) async -> Subscription<RoomStatusChange>
@@ -743,11 +743,11 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
 
     // MARK: - ATTACH operation
 
-    internal func performAttachOperation() async throws {
+    internal func performAttachOperation() async throws (ARTErrorInfo) {
         try await _performAttachOperation(forcingOperationID: nil)
     }
 
-    internal func performAttachOperation(testsOnly_forcingOperationID forcedOperationID: UUID? = nil) async throws {
+    internal func performAttachOperation(testsOnly_forcingOperationID forcedOperationID: UUID? = nil) async throws (ARTErrorInfo) {
         try await _performAttachOperation(forcingOperationID: forcedOperationID)
     }
 
@@ -755,7 +755,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
     ///
     /// - Parameters:
     ///   - forcedOperationID: Allows tests to force the operation to have a given ID. In combination with the ``testsOnly_subscribeToOperationWaitEvents`` API, this allows tests to verify that one test-initiated operation is waiting for another test-initiated operation.
-    private func _performAttachOperation(forcingOperationID forcedOperationID: UUID?) async throws {
+    private func _performAttachOperation(forcingOperationID forcedOperationID: UUID?) async throws (ARTErrorInfo) {
         try await performAnOperation(forcingOperationID: forcedOperationID) { operationID throws(ARTErrorInfo) in
             try await bodyOfAttachOperation(operationID: operationID)
         }
@@ -862,11 +862,11 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
 
     // MARK: - DETACH operation
 
-    internal func performDetachOperation() async throws {
+    internal func performDetachOperation() async throws (ARTErrorInfo) {
         try await _performDetachOperation(forcingOperationID: nil)
     }
 
-    internal func performDetachOperation(testsOnly_forcingOperationID forcedOperationID: UUID? = nil) async throws {
+    internal func performDetachOperation(testsOnly_forcingOperationID forcedOperationID: UUID? = nil) async throws (ARTErrorInfo) {
         try await _performDetachOperation(forcingOperationID: forcedOperationID)
     }
 
@@ -874,7 +874,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
     ///
     /// - Parameters:
     ///   - forcedOperationID: Allows tests to force the operation to have a given ID. In combination with the ``testsOnly_subscribeToOperationWaitEvents`` API, this allows tests to verify that one test-initiated operation is waiting for another test-initiated operation.
-    private func _performDetachOperation(forcingOperationID forcedOperationID: UUID?) async throws {
+    private func _performDetachOperation(forcingOperationID forcedOperationID: UUID?) async throws (ARTErrorInfo) {
         try await performAnOperation(forcingOperationID: forcedOperationID) { operationID throws(ARTErrorInfo) in
             try await bodyOfDetachOperation(operationID: operationID)
         }

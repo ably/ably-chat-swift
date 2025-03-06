@@ -25,7 +25,7 @@ public protocol Rooms: AnyObject, Sendable {
      *
      * - Throws: `ARTErrorInfo` if a room with the same ID but different options already exists.
      */
-    func get(roomID: String, options: RoomOptions) async throws -> any Room
+    func get(roomID: String, options: RoomOptions) async throws(ARTErrorInfo) -> any Room
 
     /**
      * Release the ``Room`` object if it exists. This method only releases the reference
@@ -83,9 +83,9 @@ internal actor DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
             // The options with which the room was requested.
             requestedOptions: RoomOptions,
             // A task that will return the result of this room fetch request.
-            creationTask: Task<RoomFactory.Room, Error>,
+            creationTask: Task<RoomFactory.Room, ARTErrorInfo>,
             // Calling this function will cause `creationTask` to fail with the given error.
-            failCreation: @Sendable (Error) -> Void
+            failCreation: @Sendable (ARTErrorInfo) -> Void
         )
 
         /// The room has been created.
@@ -102,10 +102,10 @@ internal actor DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
         }
 
         /// Returns the room which this room map entry corresponds to. If the room map entry represents a pending request, it will return or throw with the result of this request.
-        func waitForRoom() async throws -> RoomFactory.Room {
+        func waitForRoom() async throws (ARTErrorInfo) -> RoomFactory.Room {
             switch self {
             case let .requestAwaitingRelease(_, _, creationTask: creationTask, _):
-                try await creationTask.value
+                try await creationTask.result.get()
             case let .created(room):
                 room
             }
@@ -151,7 +151,7 @@ internal actor DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
         }
     #endif
 
-    internal func get(roomID: String, options: RoomOptions) async throws -> any Room {
+    internal func get(roomID: String, options: RoomOptions) async throws(ARTErrorInfo) -> any Room {
         if let existingRoomState = roomStates[roomID] {
             switch existingRoomState {
             case let .roomMapEntry(existingRoomMapEntry):
@@ -276,7 +276,7 @@ internal actor DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
         logger.log(message: "\(waitingOperationType) operation completed waiting for in-progress \(waitedOperationType) operation to complete", level: .debug)
     }
 
-    private func createRoom(roomID: String, options: RoomOptions) async throws -> RoomFactory.Room {
+    private func createRoom(roomID: String, options: RoomOptions) async throws (ARTErrorInfo) -> RoomFactory.Room {
         logger.log(message: "Creating room with ID \(roomID), options \(options)", level: .debug)
         let room = try await roomFactory.createRoom(realtime: realtime, chatAPI: chatAPI, roomID: roomID, options: options, logger: logger)
         roomStates[roomID] = .roomMapEntry(.created(room: room))
