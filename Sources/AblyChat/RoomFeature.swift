@@ -63,7 +63,7 @@ internal protocol FeatureChannel: Sendable, EmitsDiscontinuities {
 
 internal struct DefaultFeatureChannel: FeatureChannel {
     internal var channel: any RealtimeChannelProtocol
-    internal var contributor: DefaultRoomLifecycleContributor
+    internal var contributor: any RoomLifecycleContributor & EmitsDiscontinuities
     internal var roomLifecycleManager: RoomLifecycleManager
 
     internal func onDiscontinuity(bufferingPolicy: BufferingPolicy) async -> Subscription<DiscontinuityEvent> {
