@@ -372,3 +372,14 @@ internal extension ARTErrorInfo {
 internal protocol ConvertibleToARTErrorInfo {
     func toARTErrorInfo() -> ARTErrorInfo
 }
+
+// TODO explain
+extension ConvertibleToARTErrorInfo where Self: Sendable {
+    func typeErased() -> AnyConvertibleToARTErrorInfo {
+        .init(underlyingError: self)
+    }
+}
+
+struct AnyConvertibleToARTErrorInfo: Error {
+    var underlyingError: any ConvertibleToARTErrorInfo & Sendable
+}

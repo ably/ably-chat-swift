@@ -174,7 +174,7 @@ internal final class ChatAPI: Sendable {
         return try await makeRequest(endpoint, method: "GET")
     }
 
-    private func makeRequest<Response: JSONDecodable>(_ url: String, method: String, body: [String: JSONValue]? = nil) async throws(ARTErrorInfo) -> Response {
+    private func makeRequest<Response: JSONDecodable>(_ url: String, method: String, body: [String: JSONValue]? = nil) async throws(AnyConvertibleToARTErrorInfo) -> Response {
         let ablyCocoaBody: Any? = if let body {
             JSONValue.object(body).toAblyCocoaData
         } else {
