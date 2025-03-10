@@ -4,8 +4,9 @@ import Ably
 // TODO: remove once we improve this experience in ably-cocoa (https://github.com/ably/ably-cocoa/issues/1967)
 
 internal extension ARTRealtimeInstanceMethodsProtocol {
-    func requestAsync(_ method: String, path: String, params: [String: String]?, body: Any?, headers: [String: String]?) async throws(ARTErrorInfo) -> ARTHTTPPaginatedResponse {
-        try await withCheckedContinuation { (continuation: CheckedContinuation<Result<ARTHTTPPaginatedResponse, ARTErrorInfo>, _>) in
+    func requestAsync(_ method: String, path: String, params: [String: String]?, body: Any?, headers: [String: String]?) async throws(AnyConvertibleToARTErrorInfo) -> ARTHTTPPaginatedResponse {
+        do {
+        return try await withCheckedContinuation { (continuation: CheckedContinuation<Result<ARTHTTPPaginatedResponse, ARTErrorInfo>, _>) in
             do {
                 try request(method, path: path, params: params, body: body, headers: headers) { response, error in
                     if let error {
@@ -22,32 +23,43 @@ internal extension ARTRealtimeInstanceMethodsProtocol {
                 continuation.resume(returning: .failure(ablyError))
             }
         }.get()
+        } catch {
+            throw error.typeErased()
+        }
     }
 }
 
 internal extension ARTRealtimeChannelProtocol {
-    func attachAsync() async throws(ARTErrorInfo) {
-        try await withCheckedContinuation { (continuation: CheckedContinuation<Result<Void, ARTErrorInfo>, _>) in
-            attach { error in
-                if let error {
-                    continuation.resume(returning: .failure(error))
-                } else {
-                    continuation.resume(returning: .success(()))
+    func attachAsync() async throws(AnyConvertibleToARTErrorInfo) {
+        do {
+            try await withCheckedContinuation { (continuation: CheckedContinuation<Result<Void, ARTErrorInfo>, _>) in
+                attach { error in
+                    if let error {
+                        continuation.resume(returning: .failure(error))
+                    } else {
+                        continuation.resume(returning: .success(()))
+                    }
                 }
-            }
-        }.get()
+            }.get()
+        } catch {
+            throw error.typeErased()
+        }
     }
 
-    func detachAsync() async throws(ARTErrorInfo) {
-        try await withCheckedContinuation { (continuation: CheckedContinuation<Result<Void, ARTErrorInfo>, _>) in
-            detach { error in
-                if let error {
-                    continuation.resume(returning: .failure(error))
-                } else {
-                    continuation.resume(returning: .success(()))
+    func detachAsync() async throws(AnyConvertibleToARTErrorInfo) {
+        do {
+            try await withCheckedContinuation { (continuation: CheckedContinuation<Result<Void, ARTErrorInfo>, _>) in
+                detach { error in
+                    if let error {
+                        continuation.resume(returning: .failure(error))
+                    } else {
+                        continuation.resume(returning: .success(()))
+                    }
                 }
-            }
-        }.get()
+            }.get()
+        } catch {
+            throw error.typeErased()
+        }
     }
 }
 
@@ -75,67 +87,87 @@ internal extension PresenceMessage {
 }
 
 internal extension ARTRealtimePresenceProtocol {
-    func getAsync() async throws(ARTErrorInfo) -> [PresenceMessage] {
-        try await withCheckedContinuation { (continuation: CheckedContinuation<Result<[PresenceMessage], ARTErrorInfo>, _>) in
-            get { members, error in
-                if let error {
-                    continuation.resume(returning: .failure(error))
-                } else if let members {
-                    continuation.resume(returning: .success(members.map { .init(ablyCocoaPresenceMessage: $0) }))
-                } else {
-                    preconditionFailure("There is no error, so expected members")
+    func getAsync() async throws(AnyConvertibleToARTErrorInfo) -> [PresenceMessage] {
+        do {
+            return try await withCheckedContinuation { (continuation: CheckedContinuation<Result<[PresenceMessage], ARTErrorInfo>, _>) in
+                get { members, error in
+                    if let error {
+                        continuation.resume(returning: .failure(error))
+                    } else if let members {
+                        continuation.resume(returning: .success(members.map { .init(ablyCocoaPresenceMessage: $0) }))
+                    } else {
+                        preconditionFailure("There is no error, so expected members")
+                    }
                 }
-            }
-        }.get()
+            }.get()
+        } catch {
+            throw error.typeErased()
+        }
     }
 
-    func getAsync(_ query: ARTRealtimePresenceQuery) async throws(ARTErrorInfo) -> [PresenceMessage] {
-        try await withCheckedContinuation { (continuation: CheckedContinuation<Result<[PresenceMessage], ARTErrorInfo>, _>) in
-            get(query) { members, error in
-                if let error {
-                    continuation.resume(returning: .failure(error))
-                } else if let members {
-                    continuation.resume(returning: .success(members.map { .init(ablyCocoaPresenceMessage: $0) }))
-                } else {
-                    preconditionFailure("There is no error, so expected members")
+    func getAsync(_ query: ARTRealtimePresenceQuery) async throws(AnyConvertibleToARTErrorInfo) -> [PresenceMessage] {
+        do {
+            return try await withCheckedContinuation { (continuation: CheckedContinuation<Result<[PresenceMessage], ARTErrorInfo>, _>) in
+                get(query) { members, error in
+                    if let error {
+                        continuation.resume(returning: .failure(error))
+                    } else if let members {
+                        continuation.resume(returning: .success(members.map { .init(ablyCocoaPresenceMessage: $0) }))
+                    } else {
+                        preconditionFailure("There is no error, so expected members")
+                    }
                 }
-            }
-        }.get()
+            }.get()
+        } catch {
+            throw error.typeErased()
+        }
     }
 
-    func leaveAsync(_ data: JSONValue?) async throws(ARTErrorInfo) {
-        try await withCheckedContinuation { (continuation: CheckedContinuation<Result<Void, ARTErrorInfo>, _>) in
-            leave(data?.toAblyCocoaData) { error in
-                if let error {
-                    continuation.resume(returning: .failure(error))
-                } else {
-                    continuation.resume(returning: .success(()))
+    func leaveAsync(_ data: JSONValue?) async throws(AnyConvertibleToARTErrorInfo) {
+        do {
+            try await withCheckedContinuation { (continuation: CheckedContinuation<Result<Void, ARTErrorInfo>, _>) in
+                leave(data?.toAblyCocoaData) { error in
+                    if let error {
+                        continuation.resume(returning: .failure(error))
+                    } else {
+                        continuation.resume(returning: .success(()))
+                    }
                 }
-            }
-        }.get()
+            }.get()
+        } catch {
+            throw error.typeErased()
+        }
     }
 
-    func enterClientAsync(_ clientID: String, data: JSONValue?) async throws(ARTErrorInfo) {
-        try await withCheckedContinuation { (continuation: CheckedContinuation<Result<Void, ARTErrorInfo>, _>) in
-            enterClient(clientID, data: data?.toAblyCocoaData) { error in
-                if let error {
-                    continuation.resume(returning: .failure(error))
-                } else {
-                    continuation.resume(returning: .success(()))
+    func enterClientAsync(_ clientID: String, data: JSONValue?) async throws(AnyConvertibleToARTErrorInfo) {
+        do {
+            try await withCheckedContinuation { (continuation: CheckedContinuation<Result<Void, ARTErrorInfo>, _>) in
+                enterClient(clientID, data: data?.toAblyCocoaData) { error in
+                    if let error {
+                        continuation.resume(returning: .failure(error))
+                    } else {
+                        continuation.resume(returning: .success(()))
+                    }
                 }
-            }
-        }.get()
+            }.get()
+        } catch {
+            throw error.typeErased()
+        }
     }
 
-    func updateAsync(_ data: JSONValue?) async throws(ARTErrorInfo) {
-        try await withCheckedContinuation { (continuation: CheckedContinuation<Result<Void, ARTErrorInfo>, _>) in
-            leave(data?.toAblyCocoaData) { error in
-                if let error {
-                    continuation.resume(returning: .failure(error))
-                } else {
-                    continuation.resume(returning: .success(()))
+    func updateAsync(_ data: JSONValue?) async throws(AnyConvertibleToARTErrorInfo) {
+        do {
+            try await withCheckedContinuation { (continuation: CheckedContinuation<Result<Void, ARTErrorInfo>, _>) in
+                leave(data?.toAblyCocoaData) { error in
+                    if let error {
+                        continuation.resume(returning: .failure(error))
+                    } else {
+                        continuation.resume(returning: .success(()))
+                    }
                 }
-            }
-        }.get()
+            }.get()
+        } catch {
+            throw error.typeErased()
+        }
     }
 }

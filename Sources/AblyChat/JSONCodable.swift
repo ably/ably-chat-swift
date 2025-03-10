@@ -5,7 +5,7 @@ internal protocol JSONEncodable {
 }
 
 internal protocol JSONDecodable {
-    init(jsonValue: JSONValue) throws
+    init(jsonValue: JSONValue) throws(AnyConvertibleToARTErrorInfo)
 }
 
 internal typealias JSONCodable = JSONDecodable & JSONEncodable
@@ -22,21 +22,26 @@ internal extension JSONObjectEncodable {
 }
 
 internal protocol JSONObjectDecodable: JSONDecodable {
-    init(jsonObject: [String: JSONValue]) throws
+    init(jsonObject: [String: JSONValue]) throws(ConvertibleToARTErrorInfo)
 }
 
-internal enum JSONValueDecodingError: Error {
+internal enum JSONValueDecodingError: Error, ConvertibleToARTErrorInfo {
     case valueIsNotObject
     case noValueForKey(String)
     case wrongTypeForKey(String, actualValue: JSONValue)
     case failedToDecodeFromRawValue(String)
+
+    func toARTErrorInfo() -> ARTErrorInfo {
+        // TODO
+        fatalError()
+    }
 }
 
 // Default implementation of `JSONDecodable` conformance for `JSONObjectDecodable`
 internal extension JSONObjectDecodable {
-    init(jsonValue: JSONValue) throws {
+    init(jsonValue: JSONValue) throws(ConvertibleToARTErrorInfo) {
         guard case let .object(jsonObject) = jsonValue else {
-            throw JSONValueDecodingError.valueIsNotObject
+            throw JSONValueDecodingError.valueIsNotObject.typeErased()
         }
 
         self = try .init(jsonObject: jsonObject)
@@ -54,13 +59,13 @@ internal extension [String: JSONValue] {
     /// - Throws:
     ///   - `JSONValueDecodingError.noValueForKey` if the key is absent
     ///   - `JSONValueDecodingError.wrongTypeForKey` if the value does not have case `object`
-    func objectValueForKey(_ key: String) throws -> [String: JSONValue] {
+    func objectValueForKey(_ key: String) throws(ConvertibleToARTErrorInfo) -> [String: JSONValue] {
         guard let value = self[key] else {
-            throw JSONValueDecodingError.noValueForKey(key)
+            throw JSONValueDecodingError.noValueForKey(key).typeErased()
         }
 
         guard case let .object(objectValue) = value else {
-            throw JSONValueDecodingError.wrongTypeForKey(key, actualValue: value)
+            throw JSONValueDecodingError.wrongTypeForKey(key, actualValue: value).typeErased()
         }
 
         return objectValue
@@ -69,7 +74,7 @@ internal extension [String: JSONValue] {
     /// If this dictionary contains a value for `key`, and this value has case `object`, this returns the associated value. If this dictionary does not contain a value for `key`, or if the value for `key` has case `null`, it returns `nil`.
     ///
     /// - Throws: `JSONValueDecodingError.wrongTypeForKey` if the value does not have case `object` or `null`
-    func optionalObjectValueForKey(_ key: String) throws -> [String: JSONValue]? {
+    func optionalObjectValueForKey(_ key: String) throws(ConvertibleToARTErrorInfo) -> [String: JSONValue]? {
         guard let value = self[key] else {
             return nil
         }
@@ -79,7 +84,7 @@ internal extension [String: JSONValue] {
         }
 
         guard case let .object(objectValue) = value else {
-            throw JSONValueDecodingError.wrongTypeForKey(key, actualValue: value)
+            throw JSONValueDecodingError.wrongTypeForKey(key, actualValue: value).typeErased()
         }
 
         return objectValue
@@ -90,13 +95,13 @@ internal extension [String: JSONValue] {
     /// - Throws:
     ///   - `JSONValueDecodingError.noValueForKey` if the key is absent
     ///   - `JSONValueDecodingError.wrongTypeForKey` if the value does not have case `array`
-    func arrayValueForKey(_ key: String) throws -> [JSONValue] {
+    func arrayValueForKey(_ key: String) throws(ConvertibleToARTErrorInfo) -> [JSONValue] {
         guard let value = self[key] else {
-            throw JSONValueDecodingError.noValueForKey(key)
+            throw JSONValueDecodingError.noValueForKey(key).typeErased()
         }
 
         guard case let .array(arrayValue) = value else {
-            throw JSONValueDecodingError.wrongTypeForKey(key, actualValue: value)
+            throw JSONValueDecodingError.wrongTypeForKey(key, actualValue: value).typeErased()
         }
 
         return arrayValue
@@ -105,7 +110,7 @@ internal extension [String: JSONValue] {
     /// If this dictionary contains a value for `key`, and this value has case `array`, this returns the associated value. If this dictionary does not contain a value for `key`, or if the value for `key` has case `null`, it returns `nil`.
     ///
     /// - Throws: `JSONValueDecodingError.wrongTypeForKey` if the value does not have case `array` or `null`
-    func optionalArrayValueForKey(_ key: String) throws -> [JSONValue]? {
+    func optionalArrayValueForKey(_ key: String) throws(ConvertibleToARTErrorInfo) -> [JSONValue]? {
         guard let value = self[key] else {
             return nil
         }
@@ -115,7 +120,7 @@ internal extension [String: JSONValue] {
         }
 
         guard case let .array(arrayValue) = value else {
-            throw JSONValueDecodingError.wrongTypeForKey(key, actualValue: value)
+            throw JSONValueDecodingError.wrongTypeForKey(key, actualValue: value).typeErased()
         }
 
         return arrayValue
@@ -126,13 +131,13 @@ internal extension [String: JSONValue] {
     /// - Throws:
     ///   - `JSONValueDecodingError.noValueForKey` if the key is absent
     ///   - `JSONValueDecodingError.wrongTypeForKey` if the value does not have case `string`
-    func stringValueForKey(_ key: String) throws -> String {
+    func stringValueForKey(_ key: String) throws(ConvertibleToARTErrorInfo) -> String {
         guard let value = self[key] else {
-            throw JSONValueDecodingError.noValueForKey(key)
+            throw JSONValueDecodingError.noValueForKey(key).typeErased()
         }
 
         guard case let .string(stringValue) = value else {
-            throw JSONValueDecodingError.wrongTypeForKey(key, actualValue: value)
+            throw JSONValueDecodingError.wrongTypeForKey(key, actualValue: value).typeErased()
         }
 
         return stringValue
@@ -141,7 +146,7 @@ internal extension [String: JSONValue] {
     /// If this dictionary contains a value for `key`, and this value has case `string`, this returns the associated value. If this dictionary does not contain a value for `key`, or if the value for `key` has case `null`, it returns `nil`.
     ///
     /// - Throws: `JSONValueDecodingError.wrongTypeForKey` if the value does not have case `string` or `null`
-    func optionalStringValueForKey(_ key: String) throws -> String? {
+    func optionalStringValueForKey(_ key: String) throws(ConvertibleToARTErrorInfo) -> String? {
         guard let value = self[key] else {
             return nil
         }
@@ -151,7 +156,7 @@ internal extension [String: JSONValue] {
         }
 
         guard case let .string(stringValue) = value else {
-            throw JSONValueDecodingError.wrongTypeForKey(key, actualValue: value)
+            throw JSONValueDecodingError.wrongTypeForKey(key, actualValue: value).typeErased()
         }
 
         return stringValue
@@ -162,13 +167,13 @@ internal extension [String: JSONValue] {
     /// - Throws:
     ///   - `JSONValueDecodingError.noValueForKey` if the key is absent
     ///   - `JSONValueDecodingError.wrongTypeForKey` if the value does not have case `number`
-    func numberValueForKey(_ key: String) throws -> Double {
+    func numberValueForKey(_ key: String) throws(ConvertibleToARTErrorInfo) -> Double {
         guard let value = self[key] else {
-            throw JSONValueDecodingError.noValueForKey(key)
+            throw JSONValueDecodingError.noValueForKey(key).typeErased()
         }
 
         guard case let .number(numberValue) = value else {
-            throw JSONValueDecodingError.wrongTypeForKey(key, actualValue: value)
+            throw JSONValueDecodingError.wrongTypeForKey(key, actualValue: value).typeErased()
         }
 
         return numberValue
@@ -177,7 +182,7 @@ internal extension [String: JSONValue] {
     /// If this dictionary contains a value for `key`, and this value has case `number`, this returns the associated value. If this dictionary does not contain a value for `key`, or if the value for `key` has case `null`, it returns `nil`.
     ///
     /// - Throws: `JSONValueDecodingError.wrongTypeForKey` if the value does not have case `number` or `null`
-    func optionalNumberValueForKey(_ key: String) throws -> Double? {
+    func optionalNumberValueForKey(_ key: String) throws(ConvertibleToARTErrorInfo) -> Double? {
         guard let value = self[key] else {
             return nil
         }
@@ -187,7 +192,7 @@ internal extension [String: JSONValue] {
         }
 
         guard case let .number(numberValue) = value else {
-            throw JSONValueDecodingError.wrongTypeForKey(key, actualValue: value)
+            throw JSONValueDecodingError.wrongTypeForKey(key, actualValue: value).typeErased()
         }
 
         return numberValue
@@ -198,13 +203,13 @@ internal extension [String: JSONValue] {
     /// - Throws:
     ///   - `JSONValueDecodingError.noValueForKey` if the key is absent
     ///   - `JSONValueDecodingError.wrongTypeForKey` if the value does not have case `bool`
-    func boolValueForKey(_ key: String) throws -> Bool {
+    func boolValueForKey(_ key: String) throws(ConvertibleToARTErrorInfo) -> Bool {
         guard let value = self[key] else {
-            throw JSONValueDecodingError.noValueForKey(key)
+            throw JSONValueDecodingError.noValueForKey(key).typeErased()
         }
 
         guard case let .bool(boolValue) = value else {
-            throw JSONValueDecodingError.wrongTypeForKey(key, actualValue: value)
+            throw JSONValueDecodingError.wrongTypeForKey(key, actualValue: value).typeErased()
         }
 
         return boolValue
@@ -215,7 +220,7 @@ internal extension [String: JSONValue] {
     /// - Throws:
     ///   - `JSONValueDecodingError.noValueForKey` if the key is absent
     ///   - `JSONValueDecodingError.wrongTypeForKey` if the value does not have case `bool`
-    func optionalBoolValueForKey(_ key: String) throws -> Bool? {
+    func optionalBoolValueForKey(_ key: String) throws(ConvertibleToARTErrorInfo) -> Bool? {
         guard let value = self[key] else {
             return nil
         }
@@ -225,7 +230,7 @@ internal extension [String: JSONValue] {
         }
 
         guard case let .bool(boolValue) = value else {
-            throw JSONValueDecodingError.wrongTypeForKey(key, actualValue: value)
+            throw JSONValueDecodingError.wrongTypeForKey(key, actualValue: value).typeErased()
         }
 
         return boolValue
@@ -240,7 +245,7 @@ internal extension [String: JSONValue] {
     /// - Throws:
     ///   - `JSONValueDecodingError.noValueForKey` if the key is absent
     ///   - `JSONValueDecodingError.wrongTypeForKey` if the value does not have case `number`
-    func ablyProtocolDateValueForKey(_ key: String) throws -> Date {
+    func ablyProtocolDateValueForKey(_ key: String) throws(ConvertibleToARTErrorInfo) -> Date {
         let millisecondsSinceEpoch = try numberValueForKey(key)
 
         return dateFromMillisecondsSinceEpoch(millisecondsSinceEpoch)
@@ -249,7 +254,7 @@ internal extension [String: JSONValue] {
     /// If this dictionary contains a value for `key`, and this value has case `number`, this returns a date created by interpreting this value as the number of milliseconds since the Unix epoch (which is the format used by Ably). If this dictionary does not contain a value for `key`, or if the value for `key` has case `null`, it returns `nil`.
     ///
     /// - Throws: `JSONValueDecodingError.wrongTypeForKey` if the value does not have case `number` or `null`
-    func optionalAblyProtocolDateValueForKey(_ key: String) throws -> Date? {
+    func optionalAblyProtocolDateValueForKey(_ key: String) throws(ConvertibleToARTErrorInfo) -> Date? {
         guard let millisecondsSinceEpoch = try optionalNumberValueForKey(key) else {
             return nil
         }
@@ -271,7 +276,7 @@ internal extension [String: JSONValue] {
     ///   - `JSONValueDecodingError.noValueForKey` if the key is absent
     ///   - `JSONValueDecodingError.wrongTypeForKey` if the value does not have case `string`
     ///   - `JSONValueDecodingError.failedToDecodeFromRawValue` if `init(rawValue:)` returns `nil`
-    func rawRepresentableValueForKey<T: RawRepresentable>(_ key: String, type: T.Type = T.self) throws -> T where T.RawValue == String {
+    func rawRepresentableValueForKey<T: RawRepresentable>(_ key: String, type: T.Type = T.self) throws(ConvertibleToARTErrorInfo) -> T where T.RawValue == String {
         let rawValue = try stringValueForKey(key)
 
         return try rawRepresentableValueFromRawValue(rawValue, type: T.self)
@@ -282,7 +287,7 @@ internal extension [String: JSONValue] {
     /// - Throws:
     ///   - `JSONValueDecodingError.wrongTypeForKey` if the value does not have case `string` or `null`
     ///   - `JSONValueDecodingError.failedToDecodeFromRawValue` if `init(rawValue:)` returns `nil`
-    func optionalRawRepresentableValueForKey<T: RawRepresentable>(_ key: String, type: T.Type = T.self) throws -> T? where T.RawValue == String {
+    func optionalRawRepresentableValueForKey<T: RawRepresentable>(_ key: String, type: T.Type = T.self) throws(ConvertibleToARTErrorInfo) -> T? where T.RawValue == String {
         guard let rawValue = try optionalStringValueForKey(key) else {
             return nil
         }
@@ -290,9 +295,9 @@ internal extension [String: JSONValue] {
         return try rawRepresentableValueFromRawValue(rawValue, type: T.self)
     }
 
-    private func rawRepresentableValueFromRawValue<T: RawRepresentable>(_ rawValue: String, type _: T.Type = T.self) throws -> T where T.RawValue == String {
+    private func rawRepresentableValueFromRawValue<T: RawRepresentable>(_ rawValue: String, type _: T.Type = T.self) throws(ConvertibleToARTErrorInfo) -> T where T.RawValue == String {
         guard let value = T(rawValue: rawValue) else {
-            throw JSONValueDecodingError.failedToDecodeFromRawValue(rawValue)
+            throw JSONValueDecodingError.failedToDecodeFromRawValue(rawValue).typeErased()
         }
 
         return value

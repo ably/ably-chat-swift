@@ -19,7 +19,7 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
     }
 
     // (CHA-PR6) It must be possible to retrieve all the @Members of the presence set. The behaviour depends on the current room status, as presence operations in a Realtime Client cause implicit attaches.
-    internal func get() async throws(ARTErrorInfo) -> [PresenceMember] {
+    internal func get() async throws(ConvertibleToARTErrorInfo) -> [PresenceMember] {
         logger.log(message: "Getting presence", level: .debug)
 
         // CHA-PR6b to CHA-PR6f
@@ -40,7 +40,7 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
         return try processPresenceGet(members: members)
     }
 
-    internal func get(params: PresenceQuery) async throws(ARTErrorInfo) -> [PresenceMember] {
+    internal func get(params: PresenceQuery) async throws(ConvertibleToARTErrorInfo) -> [PresenceMember] {
         logger.log(message: "Getting presence with params: \(params)", level: .debug)
 
         // CHA-PR6b to CHA-PR6f
@@ -62,7 +62,7 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
     }
 
     // (CHA-PR5) It must be possible to query if a given clientId is in the presence set.
-    internal func isUserPresent(clientID: String) async throws(ARTErrorInfo) -> Bool {
+    internal func isUserPresent(clientID: String) async throws(ConvertibleToARTErrorInfo) -> Bool {
         logger.log(message: "Checking if user is present with clientID: \(clientID)", level: .debug)
 
         // CHA-PR6b to CHA-PR6f
@@ -84,16 +84,16 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
         return !members.isEmpty
     }
 
-    internal func enter(data: PresenceData) async throws(ARTErrorInfo) {
+    internal func enter(data: PresenceData) async throws(ConvertibleToARTErrorInfo) {
         try await enter(optionalData: data)
     }
 
-    internal func enter() async throws(ARTErrorInfo) {
+    internal func enter() async throws(ConvertibleToARTErrorInfo) {
         try await enter(optionalData: nil)
     }
 
     // (CHA-PR3a) Users may choose to enter presence, optionally providing custom data to enter with. The overall presence data must retain the format specified in CHA-PR2.
-    private func enter(optionalData data: PresenceData?) async throws(ARTErrorInfo) {
+    private func enter(optionalData data: PresenceData?) async throws(ConvertibleToARTErrorInfo) {
         logger.log(message: "Entering presence", level: .debug)
 
         // CHA-PR3c to CHA-PR3g
@@ -114,16 +114,16 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
         }
     }
 
-    internal func update(data: PresenceData) async throws(ARTErrorInfo) {
+    internal func update(data: PresenceData) async throws(ConvertibleToARTErrorInfo) {
         try await update(optionalData: data)
     }
 
-    internal func update() async throws(ARTErrorInfo) {
+    internal func update() async throws(ConvertibleToARTErrorInfo) {
         try await update(optionalData: nil)
     }
 
     // (CHA-PR10a) Users may choose to update their presence data, optionally providing custom data to update with. The overall presence data must retain the format specified in CHA-PR2.
-    private func update(optionalData data: PresenceData?) async throws(ARTErrorInfo) {
+    private func update(optionalData data: PresenceData?) async throws(ConvertibleToARTErrorInfo) {
         logger.log(message: "Updating presence", level: .debug)
 
         // CHA-PR10c to CHA-PR10g
@@ -144,16 +144,16 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
         }
     }
 
-    internal func leave(data: PresenceData) async throws(ARTErrorInfo) {
+    internal func leave(data: PresenceData) async throws(ConvertibleToARTErrorInfo) {
         try await leave(optionalData: data)
     }
 
-    internal func leave() async throws(ARTErrorInfo) {
+    internal func leave() async throws(ConvertibleToARTErrorInfo) {
         try await leave(optionalData: nil)
     }
 
     // (CHA-PR4a) Users may choose to leave presence, which results in them being removed from the Realtime presence set.
-    internal func leave(optionalData data: PresenceData?) async throws(ARTErrorInfo) {
+    internal func leave(optionalData data: PresenceData?) async throws(ConvertibleToARTErrorInfo) {
         logger.log(message: "Leaving presence", level: .debug)
 
         // CHA-PR6b to CHA-PR6f

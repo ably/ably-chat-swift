@@ -27,7 +27,7 @@ public protocol Typing: AnyObject, Sendable, EmitsDiscontinuities {
      *
      * - Returns: A set of clientIds that are currently typing.
      */
-    func get() async throws(ARTErrorInfo) -> Set<String>
+    func get() async throws(ConvertibleToARTErrorInfo) -> Set<String>
 
     /**
      * Start indicates that the current user is typing. This will emit a ``TypingEvent`` event to inform listening clients and begin a timer,
@@ -39,7 +39,7 @@ public protocol Typing: AnyObject, Sendable, EmitsDiscontinuities {
      *
      * - Throws: An `ARTErrorInfo`.
      */
-    func start() async throws(ARTErrorInfo)
+    func start() async throws(ConvertibleToARTErrorInfo)
 
     /**
      * Stop indicates that the current user has stopped typing. This will emit a ``TypingEvent`` event to inform listening clients,
@@ -47,7 +47,7 @@ public protocol Typing: AnyObject, Sendable, EmitsDiscontinuities {
      *
      * - Throws: An `ARTErrorInfo`.
      */
-    func stop() async throws(ARTErrorInfo)
+    func stop() async throws(ConvertibleToARTErrorInfo)
 
     /**
      * Get the Ably realtime channel underpinning typing events.

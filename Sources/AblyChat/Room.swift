@@ -88,14 +88,14 @@ public protocol Room: AnyObject, Sendable {
      *
      * - Throws: An `ARTErrorInfo`.
      */
-    func attach() async throws(ARTErrorInfo)
+    func attach() async throws(ConvertibleToARTErrorInfo)
 
     /**
      * Detaches from the room to stop receiving events in realtime.
      *
      * - Throws: An `ARTErrorInfo`.
      */
-    func detach() async throws(ARTErrorInfo)
+    func detach() async throws(ConvertibleToARTErrorInfo)
 
     /**
      * Returns the room options.
@@ -394,11 +394,11 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
         return _occupancy
     }
 
-    public func attach() async throws(ARTErrorInfo) {
+    public func attach() async throws(ConvertibleToARTErrorInfo) {
         try await lifecycleManager.performAttachOperation()
     }
 
-    public func detach() async throws(ARTErrorInfo) {
+    public func detach() async throws(ConvertibleToARTErrorInfo) {
         try await lifecycleManager.performDetachOperation()
     }
 

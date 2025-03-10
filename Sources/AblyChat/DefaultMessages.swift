@@ -35,7 +35,7 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
     }
 
     // (CHA-M4) Messages can be received via a subscription in realtime.
-    internal func subscribe(bufferingPolicy: BufferingPolicy) async throws(ARTErrorInfo) -> MessageSubscription {
+    internal func subscribe(bufferingPolicy: BufferingPolicy) async throws(ConvertibleToARTErrorInfo) -> MessageSubscription {
         logger.log(message: "Subscribing to messages", level: .debug)
         let uuid = UUID()
         let serial = try await resolveSubscriptionStart()
@@ -127,19 +127,19 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
     }
 
     // (CHA-M6a) A method must be exposed that accepts the standard Ably REST API query parameters. It shall call the “REST API”#rest-fetching-messages and return a PaginatedResult containing messages, which can then be paginated through.
-    internal func get(options: QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message> {
+    internal func get(options: QueryOptions) async throws(ConvertibleToARTErrorInfo) -> any PaginatedResult<Message> {
         try await chatAPI.getMessages(roomId: roomID, params: options)
     }
 
-    internal func send(params: SendMessageParams) async throws(ARTErrorInfo) -> Message {
+    internal func send(params: SendMessageParams) async throws(ConvertibleToARTErrorInfo) -> Message {
         try await chatAPI.sendMessage(roomId: roomID, params: params)
     }
 
-    internal func update(newMessage: Message, description: String?, metadata: OperationMetadata?) async throws(ARTErrorInfo) -> Message {
+    internal func update(newMessage: Message, description: String?, metadata: OperationMetadata?) async throws(ConvertibleToARTErrorInfo) -> Message {
         try await chatAPI.updateMessage(with: newMessage, description: description, metadata: metadata)
     }
 
-    internal func delete(message: Message, params: DeleteMessageParams) async throws(ARTErrorInfo) -> Message {
+    internal func delete(message: Message, params: DeleteMessageParams) async throws(ConvertibleToARTErrorInfo) -> Message {
         try await chatAPI.deleteMessage(message: message, params: params)
     }
 
@@ -212,7 +212,7 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
         }
     }
 
-    private func resolveSubscriptionStart() async throws(ARTErrorInfo) -> String {
+    private func resolveSubscriptionStart() async throws(ConvertibleToARTErrorInfo) -> String {
         logger.log(message: "Resolving subscription start", level: .debug)
         // (CHA-M5a) If a subscription is added when the underlying realtime channel is ATTACHED, then the subscription point is the current channelSerial of the realtime channel.
         if channel.state == .attached {
@@ -231,7 +231,7 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
     }
 
     // Always returns the attachSerial and not the channelSerial to also serve (CHA-M5c) - If a channel leaves the ATTACHED state and then re-enters ATTACHED with resumed=false, then it must be assumed that messages have been missed. The subscription point of any subscribers must be reset to the attachSerial.
-    private func serialOnChannelAttach() async throws(ARTErrorInfo) -> String {
+    private func serialOnChannelAttach() async throws(ConvertibleToARTErrorInfo) -> String {
         logger.log(message: "Resolving serial on channel attach", level: .debug)
         // If the state is already 'attached', return the attachSerial immediately
         if channel.state == .attached {

@@ -25,7 +25,7 @@ public protocol Rooms: AnyObject, Sendable {
      *
      * - Throws: `ARTErrorInfo` if a room with the same ID but different options already exists.
      */
-    func get(roomID: String, options: RoomOptions) async throws(ARTErrorInfo) -> any Room
+    func get(roomID: String, options: RoomOptions) async throws(ConvertibleToARTErrorInfo) -> any Room
 
     /**
      * Release the ``Room`` object if it exists. This method only releases the reference
@@ -151,7 +151,7 @@ internal actor DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
         }
     #endif
 
-    internal func get(roomID: String, options: RoomOptions) async throws(ARTErrorInfo) -> any Room {
+    internal func get(roomID: String, options: RoomOptions) async throws(ConvertibleToARTErrorInfo) -> any Room {
         if let existingRoomState = roomStates[roomID] {
             switch existingRoomState {
             case let .roomMapEntry(existingRoomMapEntry):

@@ -61,7 +61,7 @@ final actor MockRoomLifecycleContributorChannel: RoomLifecycleContributorChannel
         case addSubscriptionAndEmitStateChange(ARTChannelStateChange)
     }
 
-    func attach() async throws(ARTErrorInfo) {
+    func attach() async throws(ConvertibleToARTErrorInfo) {
         attachCallCount += 1
 
         guard let attachBehavior else {
@@ -71,7 +71,7 @@ final actor MockRoomLifecycleContributorChannel: RoomLifecycleContributorChannel
         try await performBehavior(attachBehavior, callCount: attachCallCount)
     }
 
-    func detach() async throws(ARTErrorInfo) {
+    func detach() async throws(ConvertibleToARTErrorInfo) {
         detachCallCount += 1
 
         guard let detachBehavior else {
@@ -81,7 +81,7 @@ final actor MockRoomLifecycleContributorChannel: RoomLifecycleContributorChannel
         try await performBehavior(detachBehavior, callCount: detachCallCount)
     }
 
-    private func performBehavior(_ behavior: AttachOrDetachBehavior, callCount: Int) async throws(ARTErrorInfo) {
+    private func performBehavior(_ behavior: AttachOrDetachBehavior, callCount: Int) async throws(ConvertibleToARTErrorInfo) {
         let result: AttachOrDetachResult
         switch behavior {
         case let .fromFunction(function):

@@ -380,6 +380,16 @@ extension ConvertibleToARTErrorInfo where Self: Sendable {
     }
 }
 
-struct AnyConvertibleToARTErrorInfo: Error {
+extension ARTErrorInfo: ConvertibleToARTErrorInfo {
+    func toARTErrorInfo() -> ARTErrorInfo {
+        return self
+    }
+}
+
+struct AnyConvertibleToARTErrorInfo: Error, ConvertibleToARTErrorInfo {
     var underlyingError: any ConvertibleToARTErrorInfo & Sendable
+
+    func toARTErrorInfo() -> ARTErrorInfo {
+        return underlyingError.toARTErrorInfo()
+    }
 }

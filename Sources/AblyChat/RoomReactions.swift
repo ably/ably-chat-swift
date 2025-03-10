@@ -14,7 +14,7 @@ public protocol RoomReactions: AnyObject, Sendable, EmitsDiscontinuities {
      *
      * - Note: It is possible to receive your own reaction via the reactions subscription before this method returns.
      */
-    func send(params: SendReactionParams) async throws(ARTErrorInfo)
+    func send(params: SendReactionParams) async throws(ConvertibleToARTErrorInfo)
 
     /**
      * Returns an instance of the Ably realtime channel used for room-level reactions.

@@ -22,7 +22,7 @@ final actor MockFeatureChannel: FeatureChannel {
         discontinuitySubscriptions.emit(discontinuity)
     }
 
-    func waitToBeAbleToPerformPresenceOperations(requestedByFeature _: RoomFeature) async throws(ARTErrorInfo) {
+    func waitToBeAbleToPerformPresenceOperations(requestedByFeature _: RoomFeature) async throws(ConvertibleToARTErrorInfo) {
         guard let resultOfWaitToBeAbleToPerformPresenceOperations else {
             fatalError("resultOfWaitToBeAblePerformPresenceOperations must be set before waitToBeAbleToPerformPresenceOperations is called")
         }
