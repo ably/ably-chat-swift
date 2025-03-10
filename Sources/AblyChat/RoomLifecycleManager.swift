@@ -887,13 +887,13 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
             return
         case .releasing:
             // CHA-RL2b
-            throw ARTErrorInfo(chatError: .roomIsReleasing)
+            throw ARTErrorInfo(chatError: .roomIsReleasing).typeErased()
         case .released:
             // CHA-RL2c
-            throw ARTErrorInfo(chatError: .roomIsReleased)
+            throw ARTErrorInfo(chatError: .roomIsReleased).typeErased()
         case .failed, .failedAwaitingStartOfRundownOperation, .failedAndPerformingRundownOperation:
             // CHA-RL2d
-            throw ARTErrorInfo(chatError: .roomInFailedState)
+            throw ARTErrorInfo(chatError: .roomInFailedState).typeErased()
         case .initialized, .suspendedAwaitingStartOfRetryOperation, .suspended, .attachingDueToAttachOperation, .attachingDueToRetryOperation, .attachingDueToContributorStateChange, .attached, .detaching:
             break
         }

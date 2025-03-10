@@ -229,7 +229,7 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
         guard let presenceData else {
             let error = ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without data")
             logger.log(message: error.message, level: .error)
-            throw error
+            throw error.typeErased()
         }
 
         do {
@@ -237,7 +237,7 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
         } catch {
             logger.log(message: "Failed to decode presence data DTO from \(presenceData), error \(error)", level: .error)
             // TODO: this is wrong
-            throw error as! ARTErrorInfo
+            throw error
         }
     }
 
@@ -248,13 +248,13 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
             guard let clientID = member.clientId else {
                 let error = ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without clientId")
                 logger.log(message: error.message, level: .error)
-                throw error
+                throw error.typeErased()
             }
 
             guard let timestamp = member.timestamp else {
                 let error = ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without timestamp")
                 logger.log(message: error.message, level: .error)
-                throw error
+                throw error.typeErased()
             }
 
             let presenceMember = PresenceMember(

@@ -1,3 +1,5 @@
+import Ably
+
 /// A value that can be used in ``Headers``. It is the same as ``JSONValue`` except it does not have the `object` or `array` cases.
 public enum HeadersValue: Sendable, Equatable {
     case string(String)
@@ -69,11 +71,16 @@ extension HeadersValue: ExpressibleByBooleanLiteral {
 }
 
 extension HeadersValue: JSONDecodable {
-    internal enum JSONDecodingError: Error {
+    internal enum JSONDecodingError: Error, ConvertibleToARTErrorInfo {
         case unsupportedJSONValue(JSONValue)
+
+        func toARTErrorInfo() -> ARTErrorInfo {
+            // TODO
+            fatalError()
+        }
     }
 
-    internal init(jsonValue: JSONValue) throws {
+    internal init(jsonValue: JSONValue) throws(AnyConvertibleToARTErrorInfo) {
         self = switch jsonValue {
         case let .string(value):
             .string(value)
@@ -84,7 +91,7 @@ extension HeadersValue: JSONDecodable {
         case .null:
             .null
         default:
-            throw JSONDecodingError.unsupportedJSONValue(jsonValue)
+            throw JSONDecodingError.unsupportedJSONValue(jsonValue).typeErased()
         }
     }
 }

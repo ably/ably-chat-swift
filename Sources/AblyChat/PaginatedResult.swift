@@ -14,9 +14,9 @@ public protocol PaginatedResult<T>: AnyObject, Sendable, Equatable {
 
 /// Used internally to reduce the amount of duplicate code when interacting with `ARTHTTPPaginatedCallback`'s. The wrapper takes in the callback result from the caller e.g. `realtime.request` and either throws the appropriate error, or decodes and returns the response.
 internal struct ARTHTTPPaginatedCallbackWrapper<Response: JSONDecodable & Sendable & Equatable> {
-    internal let callbackResult: (ARTHTTPPaginatedResponse?, ARTErrorInfo?)
+    internal let callbackResult: (ARTHTTPPaginatedResponse?, AnyConvertibleToARTErrorInfo?)
 
-    internal func handleResponse(continuation: CheckedContinuation<Result<PaginatedResultWrapper<Response>, ARTErrorInfo>, Never>) {
+    internal func handleResponse(continuation: CheckedContinuation<Result<PaginatedResultWrapper<Response>, AnyConvertibleToARTErrorInfo>, Never>) {
         let (paginatedResponse, error) = callbackResult
 
         // (CHA-M5i) If the REST API returns an error, then the method must throw its ErrorInfo representation.
@@ -27,24 +27,27 @@ internal struct ARTHTTPPaginatedCallbackWrapper<Response: JSONDecodable & Sendab
         }
 
         guard let paginatedResponse, paginatedResponse.statusCode == 200 else {
-            // TODO: this is wrong
-            continuation.resume(returning: .failure(PaginatedResultError.noErrorWithInvalidResponse as! ARTErrorInfo))
+            continuation.resume(returning: .failure(PaginatedResultError.noErrorWithInvalidResponse.typeErased()))
             return
         }
 
         do {
             let jsonValues = paginatedResponse.items.map { JSONValue(ablyCocoaData: $0) }
-            let decodedResponse = try jsonValues.map { try Response(jsonValue: $0) }
+            let decodedResponse = try jsonValues.map { jsonValue throws(AnyConvertibleToARTErrorInfo) in try Response(jsonValue: jsonValue) }
             let result = paginatedResponse.toPaginatedResult(items: decodedResponse)
             continuation.resume(returning: .success(result))
         } catch {
-            // TODO: this is wrong
-            continuation.resume(returning: .failure(error as! ARTErrorInfo))
+            continuation.resume(returning: .failure(error))
         }
     }
 
-    internal enum PaginatedResultError: Error {
+    internal enum PaginatedResultError: Error, ConvertibleToARTErrorInfo {
         case noErrorWithInvalidResponse
+
+        func toARTErrorInfo() -> ARTErrorInfo {
+            // TODO
+            fatalError()
+        }
     }
 }
 

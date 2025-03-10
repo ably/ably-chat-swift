@@ -152,7 +152,7 @@ public struct MessageOperation: Sendable, Equatable {
 }
 
 extension Message: JSONObjectDecodable {
-    internal init(jsonObject: [String: JSONValue]) throws {
+    internal init(jsonObject: [String: JSONValue]) throws(AnyConvertibleToARTErrorInfo) {
         let operation = try? jsonObject.objectValueForKey("operation")
         try self.init(
             serial: jsonObject.stringValueForKey("serial"),
@@ -162,10 +162,10 @@ extension Message: JSONObjectDecodable {
             text: jsonObject.stringValueForKey("text"),
             createdAt: jsonObject.optionalAblyProtocolDateValueForKey("createdAt"),
             metadata: jsonObject.objectValueForKey("metadata"),
-            headers: jsonObject.objectValueForKey("headers").mapValues { try .init(jsonValue: $0) },
+            headers: jsonObject.objectValueForKey("headers").mapValues { jsonValue throws(AnyConvertibleToARTErrorInfo) in try .init(jsonValue: jsonValue) },
             version: jsonObject.stringValueForKey("version"),
             timestamp: jsonObject.optionalAblyProtocolDateValueForKey("timestamp"),
-            operation: operation.map { op in
+            operation: operation.map { op throws(AnyConvertibleToARTErrorInfo) in
                 try .init(
                     clientID: op.stringValueForKey("clientId"),
                     description: try? op.stringValueForKey("description"),
