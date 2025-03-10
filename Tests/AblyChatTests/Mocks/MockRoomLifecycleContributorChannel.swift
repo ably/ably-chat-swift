@@ -5,6 +5,7 @@ final actor MockRoomLifecycleContributorChannel: RoomLifecycleContributorChannel
     private let attachBehavior: AttachOrDetachBehavior?
     private let detachBehavior: AttachOrDetachBehavior?
     private let subscribeToStateBehavior: SubscribeToStateBehavior
+    private let underlyingChannel: MockRealtimeChannel?
 
     var state: ARTRealtimeChannelState
     var errorReason: ARTErrorInfo?
@@ -14,12 +15,14 @@ final actor MockRoomLifecycleContributorChannel: RoomLifecycleContributorChannel
     private(set) var detachCallCount = 0
 
     init(
+        underlyingChannel: MockRealtimeChannel? = nil,
         initialState: ARTRealtimeChannelState,
         initialErrorReason: ARTErrorInfo?,
         attachBehavior: AttachOrDetachBehavior?,
         detachBehavior: AttachOrDetachBehavior?,
         subscribeToStateBehavior: SubscribeToStateBehavior?
     ) {
+        self.underlyingChannel = underlyingChannel
         state = initialState
         errorReason = initialErrorReason
         self.attachBehavior = attachBehavior
@@ -69,6 +72,7 @@ final actor MockRoomLifecycleContributorChannel: RoomLifecycleContributorChannel
         }
 
         try await performBehavior(attachBehavior, callCount: attachCallCount)
+        underlyingChannel?.attach()
     }
 
     func detach() async throws(ARTErrorInfo) {
@@ -79,6 +83,7 @@ final actor MockRoomLifecycleContributorChannel: RoomLifecycleContributorChannel
         }
 
         try await performBehavior(detachBehavior, callCount: detachCallCount)
+        underlyingChannel?.detach()
     }
 
     private func performBehavior(_ behavior: AttachOrDetachBehavior, callCount: Int) async throws(ARTErrorInfo) {
@@ -123,6 +128,9 @@ final actor MockRoomLifecycleContributorChannel: RoomLifecycleContributorChannel
     }
 
     func emitStateChange(_ stateChange: ARTChannelStateChange) {
+        Task {
+            await underlyingChannel?.performStateChangeCallbacks(with: stateChange)
+        }
         subscriptions.emit(stateChange)
     }
 }

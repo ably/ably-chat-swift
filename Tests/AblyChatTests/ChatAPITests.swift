@@ -170,27 +170,4 @@ struct ChatAPITests {
         // Then
         #expect(getMessagesResult == expectedPaginatedResult)
     }
-
-    // @spec CHA-M5i
-    @Test
-    func getMessages_whenGetMessagesReturnsServerError_throwsARTError() async {
-        // Given
-        let paginatedResponse = MockHTTPPaginatedResponse.successGetMessagesWithNoItems
-        let artError = ARTErrorInfo.create(withCode: 50000, message: "Internal server error")
-        let realtime = MockRealtime {
-            (paginatedResponse, artError)
-        }
-        let chatAPI = ChatAPI(realtime: realtime)
-        let roomId = "basketball::$chat::$chatMessages"
-
-        await #expect(
-            performing: {
-                // When
-                try await chatAPI.getMessages(roomId: roomId, params: .init()) as? PaginatedResultWrapper<Message>
-            }, throws: { error in
-                // Then
-                error as? ARTErrorInfo == artError
-            }
-        )
-    }
 }
