@@ -139,13 +139,13 @@ public struct RoomStatusChange: Sendable, Equatable {
 internal protocol RoomFactory: Sendable {
     associatedtype Room: AblyChat.InternalRoom
 
-    func createRoom(realtime: RealtimeClient, chatAPI: ChatAPI, roomID: String, options: RoomOptions, logger: InternalLogger) async throws (ARTErrorInfo) -> Room
+    func createRoom(realtime: RealtimeClient, chatAPI: ChatAPI, roomID: String, options: RoomOptions, logger: InternalLogger) async throws(AnyConvertibleToARTErrorInfo) -> Room
 }
 
 internal final class DefaultRoomFactory: Sendable, RoomFactory {
     private let lifecycleManagerFactory = DefaultRoomLifecycleManagerFactory()
 
-    internal func createRoom(realtime: RealtimeClient, chatAPI: ChatAPI, roomID: String, options: RoomOptions, logger: InternalLogger) async throws (ARTErrorInfo) -> DefaultRoom<DefaultRoomLifecycleManagerFactory> {
+    internal func createRoom(realtime: RealtimeClient, chatAPI: ChatAPI, roomID: String, options: RoomOptions, logger: InternalLogger) async throws(AnyConvertibleToARTErrorInfo) -> DefaultRoom<DefaultRoomLifecycleManagerFactory> {
         try await DefaultRoom(
             realtime: realtime,
             chatAPI: chatAPI,
@@ -221,7 +221,7 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
         }
     }
 
-    internal init(realtime: RealtimeClient, chatAPI: ChatAPI, roomID: String, options: RoomOptions, logger: InternalLogger, lifecycleManagerFactory: LifecycleManagerFactory) async throws (ARTErrorInfo) {
+    internal init(realtime: RealtimeClient, chatAPI: ChatAPI, roomID: String, options: RoomOptions, logger: InternalLogger, lifecycleManagerFactory: LifecycleManagerFactory) async throws(AnyConvertibleToARTErrorInfo) {
         self.realtime = realtime
         self.roomID = roomID
         self.options = options

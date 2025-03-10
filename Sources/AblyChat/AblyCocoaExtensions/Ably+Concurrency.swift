@@ -6,23 +6,23 @@ import Ably
 internal extension ARTRealtimeInstanceMethodsProtocol {
     func requestAsync(_ method: String, path: String, params: [String: String]?, body: Any?, headers: [String: String]?) async throws(AnyConvertibleToARTErrorInfo) -> ARTHTTPPaginatedResponse {
         do {
-        return try await withCheckedContinuation { (continuation: CheckedContinuation<Result<ARTHTTPPaginatedResponse, ARTErrorInfo>, _>) in
-            do {
-                try request(method, path: path, params: params, body: body, headers: headers) { response, error in
-                    if let error {
-                        continuation.resume(returning: .failure(error))
-                    } else if let response {
-                        continuation.resume(returning: .success(response))
-                    } else {
-                        preconditionFailure("There is no error, so expected a response")
+            return try await withCheckedContinuation { (continuation: CheckedContinuation<Result<ARTHTTPPaginatedResponse, ARTErrorInfo>, _>) in
+                do {
+                    try request(method, path: path, params: params, body: body, headers: headers) { response, error in
+                        if let error {
+                            continuation.resume(returning: .failure(error))
+                        } else if let response {
+                            continuation.resume(returning: .success(response))
+                        } else {
+                            preconditionFailure("There is no error, so expected a response")
+                        }
                     }
+                } catch {
+                    // TODO: this needs sorting out in ably-cocoa
+                    let ablyError = error as! ARTErrorInfo
+                    continuation.resume(returning: .failure(ablyError))
                 }
-            } catch {
-                // TODO: this needs sorting out in ably-cocoa
-                let ablyError = error as! ARTErrorInfo
-                continuation.resume(returning: .failure(ablyError))
-            }
-        }.get()
+            }.get()
         } catch {
             throw error.typeErased()
         }

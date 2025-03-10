@@ -190,7 +190,7 @@ internal final class ChatAPI: Sendable {
         }
 
         guard let firstItem = paginatedResponse.items.first else {
-            // TODO This is wrong
+            // TODO: This is wrong
             throw ChatError.noItemInResponse.typeErased()
         }
 
@@ -212,7 +212,7 @@ internal final class ChatAPI: Sendable {
         case noItemInResponse
 
         func toARTErrorInfo() -> ARTErrorInfo {
-            // TODO
+            // TODO:
             fatalError()
         }
     }

@@ -27,7 +27,7 @@ internal struct ARTHTTPPaginatedCallbackWrapper<Response: JSONDecodable & Sendab
         }
 
         guard let paginatedResponse, paginatedResponse.statusCode == 200 else {
-            // TODO this is wrong
+            // TODO: this is wrong
             continuation.resume(returning: .failure(PaginatedResultError.noErrorWithInvalidResponse as! ARTErrorInfo))
             return
         }
@@ -38,7 +38,7 @@ internal struct ARTHTTPPaginatedCallbackWrapper<Response: JSONDecodable & Sendab
             let result = paginatedResponse.toPaginatedResult(items: decodedResponse)
             continuation.resume(returning: .success(result))
         } catch {
-            // TODO this is wrong
+            // TODO: this is wrong
             continuation.resume(returning: .failure(error as! ARTErrorInfo))
         }
     }

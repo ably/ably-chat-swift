@@ -225,7 +225,7 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
         await featureChannel.onDiscontinuity(bufferingPolicy: bufferingPolicy)
     }
 
-    private func decodePresenceDataDTO(from presenceData: JSONValue?) throws (ARTErrorInfo) -> PresenceDataDTO {
+    private func decodePresenceDataDTO(from presenceData: JSONValue?) throws(AnyConvertibleToARTErrorInfo) -> PresenceDataDTO {
         guard let presenceData else {
             let error = ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without data")
             logger.log(message: error.message, level: .error)
@@ -236,13 +236,13 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
             return try PresenceDataDTO(jsonValue: presenceData)
         } catch {
             logger.log(message: "Failed to decode presence data DTO from \(presenceData), error \(error)", level: .error)
-            // TODO this is wrong
+            // TODO: this is wrong
             throw error as! ARTErrorInfo
         }
     }
 
-    private func processPresenceGet(members: [PresenceMessage]) throws (ARTErrorInfo) -> [PresenceMember] {
-        let presenceMembers = try members.map { member throws (ARTErrorInfo) in
+    private func processPresenceGet(members: [PresenceMessage]) throws(AnyConvertibleToARTErrorInfo) -> [PresenceMember] {
+        let presenceMembers = try members.map { member throws(AnyConvertibleToARTErrorInfo) in
             let presenceDataDTO = try decodePresenceDataDTO(from: member.data)
 
             guard let clientID = member.clientId else {

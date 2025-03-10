@@ -102,7 +102,7 @@ internal actor DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
         }
 
         /// Returns the room which this room map entry corresponds to. If the room map entry represents a pending request, it will return or throw with the result of this request.
-        func waitForRoom() async throws (ARTErrorInfo) -> RoomFactory.Room {
+        func waitForRoom() async throws(AnyConvertibleToARTErrorInfo) -> RoomFactory.Room {
             switch self {
             case let .requestAwaitingRelease(_, _, creationTask: creationTask, _):
                 try await creationTask.result.get()
@@ -276,7 +276,7 @@ internal actor DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
         logger.log(message: "\(waitingOperationType) operation completed waiting for in-progress \(waitedOperationType) operation to complete", level: .debug)
     }
 
-    private func createRoom(roomID: String, options: RoomOptions) async throws (ARTErrorInfo) -> RoomFactory.Room {
+    private func createRoom(roomID: String, options: RoomOptions) async throws(AnyConvertibleToARTErrorInfo) -> RoomFactory.Room {
         logger.log(message: "Creating room with ID \(roomID), options \(options)", level: .debug)
         let room = try await roomFactory.createRoom(realtime: realtime, chatAPI: chatAPI, roomID: roomID, options: options, logger: logger)
         roomStates[roomID] = .roomMapEntry(.created(room: room))

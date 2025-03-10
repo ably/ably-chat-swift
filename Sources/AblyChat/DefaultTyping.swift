@@ -168,8 +168,8 @@ internal final class DefaultTyping: Typing {
         await featureChannel.onDiscontinuity(bufferingPolicy: bufferingPolicy)
     }
 
-    private func processPresenceGet(members: [PresenceMessage]) throws (ARTErrorInfo) -> Set<String> {
-        let clientIDs = try Set<String>(members.map { member throws (ARTErrorInfo) in
+    private func processPresenceGet(members: [PresenceMessage]) throws(AnyConvertibleToARTErrorInfo) -> Set<String> {
+        let clientIDs = try Set<String>(members.map { member throws(AnyConvertibleToARTErrorInfo) in
             guard let clientID = member.clientId else {
                 let error = ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without clientId")
                 logger.log(message: error.message, level: .error)
@@ -182,7 +182,7 @@ internal final class DefaultTyping: Typing {
         return clientIDs
     }
 
-    private func startTyping() throws (ARTErrorInfo) {
+    private func startTyping() throws(AnyConvertibleToARTErrorInfo) {
         // (CHA-T4a1) When a typing session is started, the client is entered into presence on the typing channel.
         Task {
             do {

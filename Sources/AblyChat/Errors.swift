@@ -368,12 +368,12 @@ internal extension ARTErrorInfo {
     }
 }
 
-// TODO put in right place
+// TODO: put in right place
 internal protocol ConvertibleToARTErrorInfo {
     func toARTErrorInfo() -> ARTErrorInfo
 }
 
-// TODO explain
+// TODO: explain
 extension ConvertibleToARTErrorInfo where Self: Sendable {
     func typeErased() -> AnyConvertibleToARTErrorInfo {
         .init(underlyingError: self)
@@ -382,7 +382,7 @@ extension ConvertibleToARTErrorInfo where Self: Sendable {
 
 extension ARTErrorInfo: ConvertibleToARTErrorInfo {
     func toARTErrorInfo() -> ARTErrorInfo {
-        return self
+        self
     }
 }
 
@@ -390,6 +390,6 @@ struct AnyConvertibleToARTErrorInfo: Error, ConvertibleToARTErrorInfo {
     var underlyingError: any ConvertibleToARTErrorInfo & Sendable
 
     func toARTErrorInfo() -> ARTErrorInfo {
-        return underlyingError.toARTErrorInfo()
+        underlyingError.toARTErrorInfo()
     }
 }

@@ -32,7 +32,7 @@ internal enum JSONValueDecodingError: Error, ConvertibleToARTErrorInfo {
     case failedToDecodeFromRawValue(String)
 
     func toARTErrorInfo() -> ARTErrorInfo {
-        // TODO
+        // TODO:
         fatalError()
     }
 }
