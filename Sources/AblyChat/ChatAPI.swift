@@ -19,7 +19,7 @@ internal final class ChatAPI: Sendable {
         internal let serial: String
         internal let createdAt: Int64
 
-        internal init(jsonObject: [String: JSONValue]) throws(ConvertibleToARTErrorInfo) {
+        internal init(jsonObject: [String: JSONValue]) throws(AnyConvertibleToARTErrorInfo) {
             serial = try jsonObject.stringValueForKey("serial")
             createdAt = try Int64(jsonObject.numberValueForKey("createdAt"))
         }
@@ -29,7 +29,7 @@ internal final class ChatAPI: Sendable {
         internal let version: String
         internal let timestamp: Int64
 
-        internal init(jsonObject: [String: JSONValue]) throws(ConvertibleToARTErrorInfo) {
+        internal init(jsonObject: [String: JSONValue]) throws(AnyConvertibleToARTErrorInfo) {
             version = try jsonObject.stringValueForKey("version")
             timestamp = try Int64(jsonObject.numberValueForKey("timestamp"))
         }
@@ -40,7 +40,7 @@ internal final class ChatAPI: Sendable {
 
     // (CHA-M3) Messages are sent to Ably via the Chat REST API, using the send method.
     // (CHA-M3a) When a message is sent successfully, the caller shall receive a struct representing the Message in response (as if it were received via Realtime event).
-    internal func sendMessage(roomId: String, params: SendMessageParams) async throws(ConvertibleToARTErrorInfo) -> Message {
+    internal func sendMessage(roomId: String, params: SendMessageParams) async throws(AnyConvertibleToARTErrorInfo) -> Message {
         guard let clientId = realtime.clientId else {
             throw ARTErrorInfo.create(withCode: 40000, message: "Ensure your Realtime instance is initialized with a clientId.")
         }
@@ -79,7 +79,7 @@ internal final class ChatAPI: Sendable {
 
     // (CHA-M8) A client must be able to update a message in a room.
     // (CHA-M8a) A client may update a message via the Chat REST API by calling the update method.
-    internal func updateMessage(with modifiedMessage: Message, description: String?, metadata: OperationMetadata?) async throws(ConvertibleToARTErrorInfo) -> Message {
+    internal func updateMessage(with modifiedMessage: Message, description: String?, metadata: OperationMetadata?) async throws(AnyConvertibleToARTErrorInfo) -> Message {
         guard let clientID = realtime.clientId else {
             throw ARTErrorInfo.create(withCode: 40000, message: "Ensure your Realtime instance is initialized with a clientId.")
         }
@@ -131,7 +131,7 @@ internal final class ChatAPI: Sendable {
 
     // (CHA-M9) A client must be able to delete a message in a room.
     // (CHA-M9a) A client may delete a message via the Chat REST API by calling the delete method.
-    internal func deleteMessage(message: Message, params: DeleteMessageParams) async throws(ConvertibleToARTErrorInfo) -> Message {
+    internal func deleteMessage(message: Message, params: DeleteMessageParams) async throws(AnyConvertibleToARTErrorInfo) -> Message {
         let endpoint = "\(apiVersionV2)/rooms/\(message.roomID)/messages/\(message.serial)/delete"
         var body: [String: JSONValue] = [:]
 

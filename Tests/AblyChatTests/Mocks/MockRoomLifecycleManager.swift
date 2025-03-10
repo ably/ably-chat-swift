@@ -51,7 +51,7 @@ actor MockRoomLifecycleManager: RoomLifecycleManager {
         subscriptions.emit(statusChange)
     }
 
-    func waitToBeAbleToPerformPresenceOperations(requestedByFeature _: RoomFeature) async throws(ConvertibleToARTErrorInfo) {
+    func waitToBeAbleToPerformPresenceOperations(requestedByFeature _: RoomFeature) async throws(AnyConvertibleToARTErrorInfo) {
         fatalError("Not implemented")
     }
 }

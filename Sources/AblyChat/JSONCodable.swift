@@ -22,7 +22,7 @@ internal extension JSONObjectEncodable {
 }
 
 internal protocol JSONObjectDecodable: JSONDecodable {
-    init(jsonObject: [String: JSONValue]) throws(ConvertibleToARTErrorInfo)
+    init(jsonObject: [String: JSONValue]) throws(AnyConvertibleToARTErrorInfo)
 }
 
 internal enum JSONValueDecodingError: Error, ConvertibleToARTErrorInfo {
@@ -39,7 +39,7 @@ internal enum JSONValueDecodingError: Error, ConvertibleToARTErrorInfo {
 
 // Default implementation of `JSONDecodable` conformance for `JSONObjectDecodable`
 internal extension JSONObjectDecodable {
-    init(jsonValue: JSONValue) throws(ConvertibleToARTErrorInfo) {
+    init(jsonValue: JSONValue) throws(AnyConvertibleToARTErrorInfo) {
         guard case let .object(jsonObject) = jsonValue else {
             throw JSONValueDecodingError.valueIsNotObject.typeErased()
         }
@@ -59,7 +59,7 @@ internal extension [String: JSONValue] {
     /// - Throws:
     ///   - `JSONValueDecodingError.noValueForKey` if the key is absent
     ///   - `JSONValueDecodingError.wrongTypeForKey` if the value does not have case `object`
-    func objectValueForKey(_ key: String) throws(ConvertibleToARTErrorInfo) -> [String: JSONValue] {
+    func objectValueForKey(_ key: String) throws(AnyConvertibleToARTErrorInfo) -> [String: JSONValue] {
         guard let value = self[key] else {
             throw JSONValueDecodingError.noValueForKey(key).typeErased()
         }
@@ -74,7 +74,7 @@ internal extension [String: JSONValue] {
     /// If this dictionary contains a value for `key`, and this value has case `object`, this returns the associated value. If this dictionary does not contain a value for `key`, or if the value for `key` has case `null`, it returns `nil`.
     ///
     /// - Throws: `JSONValueDecodingError.wrongTypeForKey` if the value does not have case `object` or `null`
-    func optionalObjectValueForKey(_ key: String) throws(ConvertibleToARTErrorInfo) -> [String: JSONValue]? {
+    func optionalObjectValueForKey(_ key: String) throws(AnyConvertibleToARTErrorInfo) -> [String: JSONValue]? {
         guard let value = self[key] else {
             return nil
         }
@@ -95,7 +95,7 @@ internal extension [String: JSONValue] {
     /// - Throws:
     ///   - `JSONValueDecodingError.noValueForKey` if the key is absent
     ///   - `JSONValueDecodingError.wrongTypeForKey` if the value does not have case `array`
-    func arrayValueForKey(_ key: String) throws(ConvertibleToARTErrorInfo) -> [JSONValue] {
+    func arrayValueForKey(_ key: String) throws(AnyConvertibleToARTErrorInfo) -> [JSONValue] {
         guard let value = self[key] else {
             throw JSONValueDecodingError.noValueForKey(key).typeErased()
         }
@@ -110,7 +110,7 @@ internal extension [String: JSONValue] {
     /// If this dictionary contains a value for `key`, and this value has case `array`, this returns the associated value. If this dictionary does not contain a value for `key`, or if the value for `key` has case `null`, it returns `nil`.
     ///
     /// - Throws: `JSONValueDecodingError.wrongTypeForKey` if the value does not have case `array` or `null`
-    func optionalArrayValueForKey(_ key: String) throws(ConvertibleToARTErrorInfo) -> [JSONValue]? {
+    func optionalArrayValueForKey(_ key: String) throws(AnyConvertibleToARTErrorInfo) -> [JSONValue]? {
         guard let value = self[key] else {
             return nil
         }
@@ -131,7 +131,7 @@ internal extension [String: JSONValue] {
     /// - Throws:
     ///   - `JSONValueDecodingError.noValueForKey` if the key is absent
     ///   - `JSONValueDecodingError.wrongTypeForKey` if the value does not have case `string`
-    func stringValueForKey(_ key: String) throws(ConvertibleToARTErrorInfo) -> String {
+    func stringValueForKey(_ key: String) throws(AnyConvertibleToARTErrorInfo) -> String {
         guard let value = self[key] else {
             throw JSONValueDecodingError.noValueForKey(key).typeErased()
         }
@@ -146,7 +146,7 @@ internal extension [String: JSONValue] {
     /// If this dictionary contains a value for `key`, and this value has case `string`, this returns the associated value. If this dictionary does not contain a value for `key`, or if the value for `key` has case `null`, it returns `nil`.
     ///
     /// - Throws: `JSONValueDecodingError.wrongTypeForKey` if the value does not have case `string` or `null`
-    func optionalStringValueForKey(_ key: String) throws(ConvertibleToARTErrorInfo) -> String? {
+    func optionalStringValueForKey(_ key: String) throws(AnyConvertibleToARTErrorInfo) -> String? {
         guard let value = self[key] else {
             return nil
         }
@@ -167,7 +167,7 @@ internal extension [String: JSONValue] {
     /// - Throws:
     ///   - `JSONValueDecodingError.noValueForKey` if the key is absent
     ///   - `JSONValueDecodingError.wrongTypeForKey` if the value does not have case `number`
-    func numberValueForKey(_ key: String) throws(ConvertibleToARTErrorInfo) -> Double {
+    func numberValueForKey(_ key: String) throws(AnyConvertibleToARTErrorInfo) -> Double {
         guard let value = self[key] else {
             throw JSONValueDecodingError.noValueForKey(key).typeErased()
         }
@@ -182,7 +182,7 @@ internal extension [String: JSONValue] {
     /// If this dictionary contains a value for `key`, and this value has case `number`, this returns the associated value. If this dictionary does not contain a value for `key`, or if the value for `key` has case `null`, it returns `nil`.
     ///
     /// - Throws: `JSONValueDecodingError.wrongTypeForKey` if the value does not have case `number` or `null`
-    func optionalNumberValueForKey(_ key: String) throws(ConvertibleToARTErrorInfo) -> Double? {
+    func optionalNumberValueForKey(_ key: String) throws(AnyConvertibleToARTErrorInfo) -> Double? {
         guard let value = self[key] else {
             return nil
         }
@@ -203,7 +203,7 @@ internal extension [String: JSONValue] {
     /// - Throws:
     ///   - `JSONValueDecodingError.noValueForKey` if the key is absent
     ///   - `JSONValueDecodingError.wrongTypeForKey` if the value does not have case `bool`
-    func boolValueForKey(_ key: String) throws(ConvertibleToARTErrorInfo) -> Bool {
+    func boolValueForKey(_ key: String) throws(AnyConvertibleToARTErrorInfo) -> Bool {
         guard let value = self[key] else {
             throw JSONValueDecodingError.noValueForKey(key).typeErased()
         }
@@ -220,7 +220,7 @@ internal extension [String: JSONValue] {
     /// - Throws:
     ///   - `JSONValueDecodingError.noValueForKey` if the key is absent
     ///   - `JSONValueDecodingError.wrongTypeForKey` if the value does not have case `bool`
-    func optionalBoolValueForKey(_ key: String) throws(ConvertibleToARTErrorInfo) -> Bool? {
+    func optionalBoolValueForKey(_ key: String) throws(AnyConvertibleToARTErrorInfo) -> Bool? {
         guard let value = self[key] else {
             return nil
         }
@@ -245,7 +245,7 @@ internal extension [String: JSONValue] {
     /// - Throws:
     ///   - `JSONValueDecodingError.noValueForKey` if the key is absent
     ///   - `JSONValueDecodingError.wrongTypeForKey` if the value does not have case `number`
-    func ablyProtocolDateValueForKey(_ key: String) throws(ConvertibleToARTErrorInfo) -> Date {
+    func ablyProtocolDateValueForKey(_ key: String) throws(AnyConvertibleToARTErrorInfo) -> Date {
         let millisecondsSinceEpoch = try numberValueForKey(key)
 
         return dateFromMillisecondsSinceEpoch(millisecondsSinceEpoch)
@@ -254,7 +254,7 @@ internal extension [String: JSONValue] {
     /// If this dictionary contains a value for `key`, and this value has case `number`, this returns a date created by interpreting this value as the number of milliseconds since the Unix epoch (which is the format used by Ably). If this dictionary does not contain a value for `key`, or if the value for `key` has case `null`, it returns `nil`.
     ///
     /// - Throws: `JSONValueDecodingError.wrongTypeForKey` if the value does not have case `number` or `null`
-    func optionalAblyProtocolDateValueForKey(_ key: String) throws(ConvertibleToARTErrorInfo) -> Date? {
+    func optionalAblyProtocolDateValueForKey(_ key: String) throws(AnyConvertibleToARTErrorInfo) -> Date? {
         guard let millisecondsSinceEpoch = try optionalNumberValueForKey(key) else {
             return nil
         }
@@ -276,7 +276,7 @@ internal extension [String: JSONValue] {
     ///   - `JSONValueDecodingError.noValueForKey` if the key is absent
     ///   - `JSONValueDecodingError.wrongTypeForKey` if the value does not have case `string`
     ///   - `JSONValueDecodingError.failedToDecodeFromRawValue` if `init(rawValue:)` returns `nil`
-    func rawRepresentableValueForKey<T: RawRepresentable>(_ key: String, type: T.Type = T.self) throws(ConvertibleToARTErrorInfo) -> T where T.RawValue == String {
+    func rawRepresentableValueForKey<T: RawRepresentable>(_ key: String, type: T.Type = T.self) throws(AnyConvertibleToARTErrorInfo) -> T where T.RawValue == String {
         let rawValue = try stringValueForKey(key)
 
         return try rawRepresentableValueFromRawValue(rawValue, type: T.self)
@@ -287,7 +287,7 @@ internal extension [String: JSONValue] {
     /// - Throws:
     ///   - `JSONValueDecodingError.wrongTypeForKey` if the value does not have case `string` or `null`
     ///   - `JSONValueDecodingError.failedToDecodeFromRawValue` if `init(rawValue:)` returns `nil`
-    func optionalRawRepresentableValueForKey<T: RawRepresentable>(_ key: String, type: T.Type = T.self) throws(ConvertibleToARTErrorInfo) -> T? where T.RawValue == String {
+    func optionalRawRepresentableValueForKey<T: RawRepresentable>(_ key: String, type: T.Type = T.self) throws(AnyConvertibleToARTErrorInfo) -> T? where T.RawValue == String {
         guard let rawValue = try optionalStringValueForKey(key) else {
             return nil
         }
@@ -295,7 +295,7 @@ internal extension [String: JSONValue] {
         return try rawRepresentableValueFromRawValue(rawValue, type: T.self)
     }
 
-    private func rawRepresentableValueFromRawValue<T: RawRepresentable>(_ rawValue: String, type _: T.Type = T.self) throws(ConvertibleToARTErrorInfo) -> T where T.RawValue == String {
+    private func rawRepresentableValueFromRawValue<T: RawRepresentable>(_ rawValue: String, type _: T.Type = T.self) throws(AnyConvertibleToARTErrorInfo) -> T where T.RawValue == String {
         guard let value = T(rawValue: rawValue) else {
             throw JSONValueDecodingError.failedToDecodeFromRawValue(rawValue).typeErased()
         }

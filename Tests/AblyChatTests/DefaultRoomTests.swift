@@ -193,7 +193,7 @@ struct DefaultRoomTests {
         let room = try await DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), roomID: "basketball", options: .init(), logger: TestLogger(), lifecycleManagerFactory: lifecycleManagerFactory)
 
         // When: `attach()` is called on the room
-        let result = await Result { () async throws(ConvertibleToARTErrorInfo) in
+        let result = await Result { () async throws(AnyConvertibleToARTErrorInfo) in
             do {
                 try await room.attach()
             } catch {
@@ -229,7 +229,7 @@ struct DefaultRoomTests {
         let room = try await DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), roomID: "basketball", options: .init(), logger: TestLogger(), lifecycleManagerFactory: lifecycleManagerFactory)
 
         // When: `detach()` is called on the room
-        let result = await Result { () async throws(ConvertibleToARTErrorInfo) in
+        let result = await Result { () async throws(AnyConvertibleToARTErrorInfo) in
             do {
                 try await room.detach()
             } catch {

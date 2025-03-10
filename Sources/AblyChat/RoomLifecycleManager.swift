@@ -12,8 +12,8 @@ import AsyncAlgorithms
 ///
 /// We choose to also mark the channel’s mutable state as `async`. This is a way of highlighting at the call site of accessing this state that, since `ARTRealtimeChannel` mutates this state on a separate thread, it’s possible for this state to have changed since the last time you checked it, or since the last time you performed an operation that might have mutated it, or since the last time you recieved an event informing you that it changed. To be clear, marking these as `async` doesn’t _solve_ these issues; it just makes them a bit more visible. We’ll decide how to address them in https://github.com/ably-labs/ably-chat-swift/issues/49.
 internal protocol RoomLifecycleContributorChannel: Sendable {
-    func attach() async throws(ConvertibleToARTErrorInfo)
-    func detach() async throws(ConvertibleToARTErrorInfo)
+    func attach() async throws(AnyConvertibleToARTErrorInfo)
+    func detach() async throws(AnyConvertibleToARTErrorInfo)
 
     var state: ARTRealtimeChannelState { get async }
     var errorReason: ARTErrorInfo? { get async }
@@ -46,7 +46,7 @@ internal protocol RoomLifecycleManager: Sendable {
     func performReleaseOperation() async
     var roomStatus: RoomStatus { get async }
     func onRoomStatusChange(bufferingPolicy: BufferingPolicy) async -> Subscription<RoomStatusChange>
-    func waitToBeAbleToPerformPresenceOperations(requestedByFeature requester: RoomFeature) async throws(ConvertibleToARTErrorInfo)
+    func waitToBeAbleToPerformPresenceOperations(requestedByFeature requester: RoomFeature) async throws(AnyConvertibleToARTErrorInfo)
 }
 
 internal protocol RoomLifecycleManagerFactory: Sendable {
@@ -652,7 +652,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
     private func waitForCompletionOfOperationWithID(
         _ waitedOperationID: UUID,
         requester: OperationWaitRequester
-    ) async throws(ConvertibleToARTErrorInfo) {
+    ) async throws(AnyConvertibleToARTErrorInfo) {
         logger.log(message: "\(requester.loggingDescription) started waiting for result of operation \(waitedOperationID)", level: .debug)
 
         do {
@@ -696,8 +696,8 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
     ///   - body: The implementation of the operation to be performed. Once this function returns or throws an error, the operation is considered to have completed, and any waits for this operation’s completion initiated via ``waitForCompletionOfOperationWithID(_:waitingOperationID:)`` will complete.
     private func performAnOperation(
         forcingOperationID forcedOperationID: UUID?,
-        _ body: (UUID) async throws(ConvertibleToARTErrorInfo) -> Void
-    ) async throws(ConvertibleToARTErrorInfo) {
+        _ body: (UUID) async throws(AnyConvertibleToARTErrorInfo) -> Void
+    ) async throws(AnyConvertibleToARTErrorInfo) {
         let operationID = forcedOperationID ?? UUID()
         logger.log(message: "Performing operation \(operationID)", level: .debug)
         let result: Result<Void, ARTErrorInfo>
@@ -756,12 +756,12 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
     /// - Parameters:
     ///   - forcedOperationID: Allows tests to force the operation to have a given ID. In combination with the ``testsOnly_subscribeToOperationWaitEvents`` API, this allows tests to verify that one test-initiated operation is waiting for another test-initiated operation.
     private func _performAttachOperation(forcingOperationID forcedOperationID: UUID?) async throws (ARTErrorInfo) {
-        try await performAnOperation(forcingOperationID: forcedOperationID) { operationID throws(ConvertibleToARTErrorInfo) in
+        try await performAnOperation(forcingOperationID: forcedOperationID) { operationID throws(AnyConvertibleToARTErrorInfo) in
             try await bodyOfAttachOperation(operationID: operationID)
         }
     }
 
-    private func bodyOfAttachOperation(operationID: UUID) async throws(ConvertibleToARTErrorInfo) {
+    private func bodyOfAttachOperation(operationID: UUID) async throws(AnyConvertibleToARTErrorInfo) {
         switch status {
         case .attached:
             // CHA-RL1a
@@ -788,7 +788,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
     }
 
     /// Performs the “CHA-RL1e attachment cycle”, to use the terminology of CHA-RL5f.
-    private func performAttachmentCycle() async throws(ConvertibleToARTErrorInfo) {
+    private func performAttachmentCycle() async throws(AnyConvertibleToARTErrorInfo) {
         // CHA-RL1f
         for contributor in contributors {
             do {
@@ -875,12 +875,12 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
     /// - Parameters:
     ///   - forcedOperationID: Allows tests to force the operation to have a given ID. In combination with the ``testsOnly_subscribeToOperationWaitEvents`` API, this allows tests to verify that one test-initiated operation is waiting for another test-initiated operation.
     private func _performDetachOperation(forcingOperationID forcedOperationID: UUID?) async throws (ARTErrorInfo) {
-        try await performAnOperation(forcingOperationID: forcedOperationID) { operationID throws(ConvertibleToARTErrorInfo) in
+        try await performAnOperation(forcingOperationID: forcedOperationID) { operationID throws(AnyConvertibleToARTErrorInfo) in
             try await bodyOfDetachOperation(operationID: operationID)
         }
     }
 
-    private func bodyOfDetachOperation(operationID: UUID) async throws(ConvertibleToARTErrorInfo) {
+    private func bodyOfDetachOperation(operationID: UUID) async throws(AnyConvertibleToARTErrorInfo) {
         switch status {
         case .detached, .detachedDueToRetryOperation:
             // CHA-RL2a
@@ -922,7 +922,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
     }
 
     /// Performs the “CHA-RL2f detachment cycle”, to use the terminology of CHA-RL5a.
-    private func performDetachmentCycle(trigger: DetachmentCycleTrigger) async throws(ConvertibleToARTErrorInfo) {
+    private func performDetachmentCycle(trigger: DetachmentCycleTrigger) async throws(AnyConvertibleToARTErrorInfo) {
         // CHA-RL2f
         var firstDetachError: ARTErrorInfo?
         for contributor in contributorsForDetachmentCycle(trigger: trigger) {
@@ -1217,7 +1217,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
 
     // MARK: - Waiting to be able to perform presence operations
 
-    internal func waitToBeAbleToPerformPresenceOperations(requestedByFeature requester: RoomFeature) async throws(ConvertibleToARTErrorInfo) {
+    internal func waitToBeAbleToPerformPresenceOperations(requestedByFeature requester: RoomFeature) async throws(AnyConvertibleToARTErrorInfo) {
         // Although this method’s implementation only uses the manager’s public
         // API, it’s implemented as a method on the manager itself, so that the
         // implementation is isolated to the manager and hence doesn’t “miss”

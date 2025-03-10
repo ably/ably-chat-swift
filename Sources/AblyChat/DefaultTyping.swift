@@ -83,7 +83,7 @@ internal final class DefaultTyping: Typing {
     }
 
     // (CHA-T2) Users may retrieve a list of the currently typing client IDs. The behaviour depends on the current room status, as presence operations in a Realtime Client cause implicit attaches.
-    internal func get() async throws(ConvertibleToARTErrorInfo) -> Set<String> {
+    internal func get() async throws(AnyConvertibleToARTErrorInfo) -> Set<String> {
         logger.log(message: "Getting presence", level: .debug)
 
         // CHA-T2c to CHA-T2f
@@ -105,7 +105,7 @@ internal final class DefaultTyping: Typing {
     }
 
     // (CHA-T4) Users may indicate that they have started typing.
-    internal func start() async throws(ConvertibleToARTErrorInfo) {
+    internal func start() async throws(AnyConvertibleToARTErrorInfo) {
         logger.log(message: "Starting typing indicator for client: \(clientID)", level: .debug)
 
         do {
@@ -143,7 +143,7 @@ internal final class DefaultTyping: Typing {
     }
 
     // (CHA-T5) Users may indicate that they have stopped typing.
-    internal func stop() async throws(ConvertibleToARTErrorInfo) {
+    internal func stop() async throws(AnyConvertibleToARTErrorInfo) {
         do {
             try await featureChannel.waitToBeAbleToPerformPresenceOperations(requestedByFeature: RoomFeature.presence)
         } catch {
