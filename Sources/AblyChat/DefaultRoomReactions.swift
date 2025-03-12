@@ -78,11 +78,6 @@ internal final class DefaultRoomReactions: RoomReactions, EmitsDiscontinuities {
                     subscription.emit(reaction)
                 } catch {
                     logger.log(message: "Error processing incoming reaction message: \(error)", level: .error)
-                    #if DEBUG
-                        for subscription in self.malformedMessageSubscriptions {
-                            subscription.emit(message)
-                        }
-                    #endif
                 }
             }
         }
@@ -102,16 +97,4 @@ internal final class DefaultRoomReactions: RoomReactions, EmitsDiscontinuities {
     private enum RoomReactionsError: Error {
         case noReferenceToSelf
     }
-
-    #if DEBUG
-        /// Subscription of malformed message events for testing purposes.
-        private var malformedMessageSubscriptions: [Subscription<ARTMessage>] = []
-
-        /// Returns a subscription which emits malformed message events for testing purposes.
-        internal func testsOnly_subscribeToMalformedMessageEvents() -> Subscription<ARTMessage> {
-            let subscription = Subscription<ARTMessage>(bufferingPolicy: .unbounded)
-            malformedMessageSubscriptions.append(subscription)
-            return subscription
-        }
-    #endif
 }

@@ -5,7 +5,6 @@ final actor MockRoomLifecycleContributorChannel: RoomLifecycleContributorChannel
     private let attachBehavior: AttachOrDetachBehavior?
     private let detachBehavior: AttachOrDetachBehavior?
     private let subscribeToStateBehavior: SubscribeToStateBehavior
-    private let underlyingChannel: MockRealtimeChannel?
 
     var state: ARTRealtimeChannelState
     var errorReason: ARTErrorInfo?
@@ -15,14 +14,12 @@ final actor MockRoomLifecycleContributorChannel: RoomLifecycleContributorChannel
     private(set) var detachCallCount = 0
 
     init(
-        underlyingChannel: MockRealtimeChannel? = nil,
         initialState: ARTRealtimeChannelState,
         initialErrorReason: ARTErrorInfo?,
         attachBehavior: AttachOrDetachBehavior?,
         detachBehavior: AttachOrDetachBehavior?,
         subscribeToStateBehavior: SubscribeToStateBehavior?
     ) {
-        self.underlyingChannel = underlyingChannel
         state = initialState
         errorReason = initialErrorReason
         self.attachBehavior = attachBehavior
@@ -48,7 +45,7 @@ final actor MockRoomLifecycleContributorChannel: RoomLifecycleContributorChannel
         /// Receives an argument indicating how many times (including the current call) the method for which this is providing a mock implementation has been called.
         case fromFunction(@Sendable (Int) async -> AttachOrDetachBehavior)
         case complete(AttachOrDetachResult)
-        case completeAndChangeState(AttachOrDetachResult, newState: ARTRealtimeChannelState, delayInMilliseconds: UInt64 = 0) // emulating network delay before going to the new state
+        case completeAndChangeState(AttachOrDetachResult, newState: ARTRealtimeChannelState)
 
         static var success: Self {
             .complete(.success)
@@ -72,7 +69,6 @@ final actor MockRoomLifecycleContributorChannel: RoomLifecycleContributorChannel
         }
 
         try await performBehavior(attachBehavior, callCount: attachCallCount)
-        underlyingChannel?.attach()
     }
 
     func detach() async throws(ARTErrorInfo) {
@@ -83,7 +79,6 @@ final actor MockRoomLifecycleContributorChannel: RoomLifecycleContributorChannel
         }
 
         try await performBehavior(detachBehavior, callCount: detachCallCount)
-        underlyingChannel?.detach()
     }
 
     private func performBehavior(_ behavior: AttachOrDetachBehavior, callCount: Int) async throws(ARTErrorInfo) {
@@ -95,10 +90,7 @@ final actor MockRoomLifecycleContributorChannel: RoomLifecycleContributorChannel
             return
         case let .complete(completeResult):
             result = completeResult
-        case let .completeAndChangeState(completeResult, newState, milliseconds):
-            if milliseconds > 0 {
-                try? await Task.sleep(nanoseconds: milliseconds * 1_000_000)
-            }
+        case let .completeAndChangeState(completeResult, newState):
             state = newState
             if case let .failure(error) = completeResult {
                 errorReason = error
@@ -128,9 +120,6 @@ final actor MockRoomLifecycleContributorChannel: RoomLifecycleContributorChannel
     }
 
     func emitStateChange(_ stateChange: ARTChannelStateChange) {
-        Task {
-            await underlyingChannel?.performStateChangeCallbacks(with: stateChange)
-        }
         subscriptions.emit(stateChange)
     }
 }

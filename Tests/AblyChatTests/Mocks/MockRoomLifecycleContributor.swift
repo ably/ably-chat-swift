@@ -1,7 +1,7 @@
 import Ably
 @testable import AblyChat
 
-actor MockRoomLifecycleContributor: RoomLifecycleContributor, EmitsDiscontinuities {
+actor MockRoomLifecycleContributor: RoomLifecycleContributor {
     nonisolated let feature: RoomFeature
     nonisolated let channel: MockRoomLifecycleContributorChannel
 
@@ -14,9 +14,5 @@ actor MockRoomLifecycleContributor: RoomLifecycleContributor, EmitsDiscontinuiti
 
     func emitDiscontinuity(_ discontinuity: DiscontinuityEvent) async {
         emitDiscontinuityArguments.append(discontinuity)
-    }
-
-    func onDiscontinuity(bufferingPolicy _: AblyChat.BufferingPolicy) async -> AblyChat.Subscription<AblyChat.DiscontinuityEvent> {
-        fatalError("Not implemented")
     }
 }
