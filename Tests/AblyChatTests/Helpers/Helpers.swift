@@ -80,9 +80,3 @@ enum RoomLifecycleHelper {
         )
     }
 }
-
-extension Double {
-    func isEqual(to other: Double, tolerance: Double) -> Bool {
-        self >= other && self < other + tolerance
-    }
-}
