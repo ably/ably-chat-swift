@@ -7,21 +7,14 @@ final class MockRealtimeChannel: NSObject, RealtimeChannelProtocol {
     private let _name: String?
     private let mockPresence: MockRealtimePresence!
 
-    private let _state: ARTRealtimeChannelState?
-
     var properties: ARTChannelProperties { .init(attachSerial: attachSerial, channelSerial: channelSerial) }
 
-    var presence: some RealtimePresenceProtocol { mockPresence }
+    var presence: MockRealtimePresence { mockPresence }
 
     // I don't see why the nonisolated(unsafe) keyword would cause a problem when used for tests in this context.
     nonisolated(unsafe) var lastMessagePublishedName: String?
     nonisolated(unsafe) var lastMessagePublishedData: Any?
     nonisolated(unsafe) var lastMessagePublishedExtras: (any ARTJsonCompatible)?
-
-    typealias ARTChannelStateChangeCallback = (ARTChannelStateChange) -> Void
-
-    private nonisolated(unsafe) var stateCallback: ARTChannelStateChangeCallback?
-    private nonisolated(unsafe) var stateCallbacks = [ARTChannelEvent: ARTChannelStateChangeCallback]()
 
     // TODO: If we tighten up the types we then we should be able to get rid of the `@unchecked Sendable` here, but I’m in a rush. Revisit in https://github.com/ably/ably-chat-swift/issues/195
     struct MessageToEmit: @unchecked Sendable {
@@ -37,19 +30,16 @@ final class MockRealtimeChannel: NSObject, RealtimeChannelProtocol {
     init(
         name: String? = nil,
         properties: ARTChannelProperties = .init(),
-        state: ARTRealtimeChannelState? = nil,
+        state _: ARTRealtimeChannelState = .suspended,
         attachResult: AttachOrDetachResult? = nil,
         detachResult: AttachOrDetachResult? = nil,
         messageToEmitOnSubscribe: MessageToEmit? = nil,
-        messageJSONToEmitOnSubscribe: [String: Sendable]? = nil,
         mockPresence: MockRealtimePresence! = nil
     ) {
         _name = name
-        _state = state
         self.attachResult = attachResult
         self.detachResult = detachResult
         self.messageToEmitOnSubscribe = messageToEmitOnSubscribe
-        self.messageJSONToEmitOnSubscribe = messageJSONToEmitOnSubscribe
         attachSerial = properties.attachSerial
         channelSerial = properties.channelSerial
         self.mockPresence = mockPresence
@@ -84,10 +74,7 @@ final class MockRealtimeChannel: NSObject, RealtimeChannelProtocol {
     }
 
     var state: ARTRealtimeChannelState {
-        if let _state {
-            return _state
-        }
-        return attachResult == .success ? .attached : .failed
+        attachResult == .success ? .attached : .failed
     }
 
     var errorReason: ARTErrorInfo? {
@@ -99,7 +86,7 @@ final class MockRealtimeChannel: NSObject, RealtimeChannelProtocol {
     }
 
     func attach() {
-        attach(nil)
+        fatalError("Not implemented")
     }
 
     enum AttachOrDetachResult: Equatable {
@@ -116,43 +103,11 @@ final class MockRealtimeChannel: NSObject, RealtimeChannelProtocol {
         }
     }
 
-    @MainActor
-    func performStateChangeCallbacks(with stateChange: ARTChannelStateChange) {
-        stateCallback?(stateChange)
-        stateCallbacks[stateChange.event]?(stateChange)
-    }
-
-    @MainActor
-    func performStateAttachCallbacks() {
-        guard let attachResult else {
-            fatalError("attachResult must be set before attach is called")
-        }
-        switch attachResult {
-        case .success:
-            performStateChangeCallbacks(with: ARTChannelStateChange(current: .attached, previous: .attaching, event: .attached, reason: nil))
-        case let .failure(error):
-            performStateChangeCallbacks(with: ARTChannelStateChange(current: .failed, previous: .attaching, event: .attached, reason: error))
-        }
-    }
-
-    @MainActor
-    func performStateDetachCallbacks() {
-        guard let detachResult else {
-            fatalError("attachResult must be set before attach is called")
-        }
-        switch detachResult {
-        case .success:
-            performStateChangeCallbacks(with: ARTChannelStateChange(current: .detached, previous: .detaching, event: .detached, reason: nil))
-        case let .failure(error):
-            performStateChangeCallbacks(with: ARTChannelStateChange(current: .failed, previous: .detaching, event: .detached, reason: error))
-        }
-    }
-
     private let attachResult: AttachOrDetachResult?
 
     let attachCallCounter = Counter()
 
-    func attach(_ callback: ARTCallback?) {
+    func attach(_ callback: ARTCallback? = nil) {
         attachCallCounter.increment()
 
         guard let attachResult else {
@@ -160,10 +115,6 @@ final class MockRealtimeChannel: NSObject, RealtimeChannelProtocol {
         }
 
         attachResult.performCallback(callback)
-
-        Task {
-            await performStateAttachCallbacks()
-        }
     }
 
     private let detachResult: AttachOrDetachResult?
@@ -171,7 +122,7 @@ final class MockRealtimeChannel: NSObject, RealtimeChannelProtocol {
     let detachCallCounter = Counter()
 
     func detach() {
-        detach(nil)
+        fatalError("Not implemented")
     }
 
     func detach(_ callback: ARTCallback? = nil) {
@@ -182,14 +133,9 @@ final class MockRealtimeChannel: NSObject, RealtimeChannelProtocol {
         }
 
         detachResult.performCallback(callback)
-
-        Task {
-            await performStateDetachCallbacks()
-        }
     }
 
     let messageToEmitOnSubscribe: MessageToEmit?
-    let messageJSONToEmitOnSubscribe: [String: Sendable]?
 
     func subscribe(_: @escaping ARTMessageCallback) -> ARTEventListener? {
         fatalError("Not implemented")
@@ -200,25 +146,7 @@ final class MockRealtimeChannel: NSObject, RealtimeChannelProtocol {
     }
 
     func subscribe(_: String, callback: @escaping ARTMessageCallback) -> ARTEventListener? {
-        if let json = messageJSONToEmitOnSubscribe {
-            let message = ARTMessage(name: nil, data: json["data"] ?? "")
-            if let action = json["action"] as? UInt {
-                message.action = ARTMessageAction(rawValue: action) ?? .create
-            }
-            if let serial = json["serial"] as? String {
-                message.serial = serial
-            }
-            if let clientId = json["clientId"] as? String {
-                message.clientId = clientId
-            }
-            if let extras = json["extras"] as? ARTJsonCompatible {
-                message.extras = extras
-            }
-            if let ts = json["timestamp"] as? String {
-                message.timestamp = Date(timeIntervalSince1970: TimeInterval(ts)!)
-            }
-            callback(message)
-        } else if let messageToEmitOnSubscribe {
+        if let messageToEmitOnSubscribe {
             let message = ARTMessage(name: nil, data: messageToEmitOnSubscribe.data)
             message.action = messageToEmitOnSubscribe.action
             message.serial = messageToEmitOnSubscribe.serial
@@ -255,14 +183,12 @@ final class MockRealtimeChannel: NSObject, RealtimeChannelProtocol {
         fatalError("Not implemented")
     }
 
-    func on(_ event: ARTChannelEvent, callback: @escaping (ARTChannelStateChange) -> Void) -> ARTEventListener {
-        stateCallbacks[event] = callback
-        return ARTEventListener()
+    func on(_: ARTChannelEvent, callback _: @escaping (ARTChannelStateChange) -> Void) -> ARTEventListener {
+        ARTEventListener()
     }
 
-    func on(_ callback: @escaping (ARTChannelStateChange) -> Void) -> ARTEventListener {
-        stateCallback = callback
-        return ARTEventListener()
+    func on(_: @escaping (ARTChannelStateChange) -> Void) -> ARTEventListener {
+        ARTEventListener()
     }
 
     func once(_: ARTChannelEvent, callback _: @escaping (ARTChannelStateChange) -> Void) -> ARTEventListener {
