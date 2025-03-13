@@ -138,6 +138,32 @@ jobs:
       - name: Run tests
         run: swift run BuildTool test-library --platform ${{ matrix.platform }}
 
+  code-coverage:
+    name: Gather code coverage (Xcode ${{ matrix.tooling.xcodeVersion }})
+    runs-on: macos-15
+    needs: generate-matrices
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.generate-matrices.outputs.matrix).withoutPlatform }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: ${{ matrix.tooling.xcodeVersion }}
+
+      - run: swift run BuildTool generate-code-coverage
+
+      - uses: slidoapp/xcresulttool@v3.1.0
+        with:
+          path: MyResultBundle.xcresult
+          title: Code coverage results
+          # I really only care about the code coverage, the rest is noise
+          show-passed-tests: false
+        if: success() || failure()
+
   build-release-configuration-xcode:
     name: Xcode, `release` configuration, ${{matrix.platform}} (Xcode ${{ matrix.tooling.xcodeVersion }})
     runs-on: macos-15
@@ -247,6 +273,7 @@ jobs:
       - build-release-configuration-xcode
       - check-example-app
       - check-documentation
+      - code-coverage
 
     steps:
       - name: No-op
