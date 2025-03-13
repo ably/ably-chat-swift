@@ -23,7 +23,7 @@ actor MockRooms: Rooms {
     let clientOptions: ChatClientOptions
     private var rooms = [String: MockRoom]()
 
-    func get(roomID: String, options: RoomOptions) async throws -> any Room {
+    func get(roomID: String, options: RoomOptions) async throws(ARTErrorInfo) -> any Room {
         if let room = rooms[roomID] {
             return room
         }
@@ -66,11 +66,11 @@ actor MockRoom: Room {
 
     private let mockSubscriptions = MockSubscriptionStorage<RoomStatusChange>()
 
-    func attach() async throws {
+    func attach() async throws(ARTErrorInfo) {
         print("Mock client attached to room with roomID: \(roomID)")
     }
 
-    func detach() async throws {
+    func detach() async throws(ARTErrorInfo) {
         fatalError("Not yet implemented")
     }
 
@@ -122,11 +122,11 @@ actor MockMessages: Messages {
         }
     }
 
-    func get(options _: QueryOptions) async throws -> any PaginatedResult<Message> {
+    func get(options _: QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message> {
         MockMessagesPaginatedResult(clientID: clientID, roomID: roomID)
     }
 
-    func send(params: SendMessageParams) async throws -> Message {
+    func send(params: SendMessageParams) async throws(ARTErrorInfo) -> Message {
         let message = Message(
             serial: "\(Date().timeIntervalSince1970)",
             action: .create,
@@ -144,7 +144,7 @@ actor MockMessages: Messages {
         return message
     }
 
-    func update(newMessage: Message, description _: String?, metadata _: OperationMetadata?) async throws -> Message {
+    func update(newMessage: Message, description _: String?, metadata _: OperationMetadata?) async throws(ARTErrorInfo) -> Message {
         let message = Message(
             serial: newMessage.serial,
             action: .update,
@@ -162,7 +162,7 @@ actor MockMessages: Messages {
         return message
     }
 
-    func delete(message: Message, params _: DeleteMessageParams) async throws -> Message {
+    func delete(message: Message, params _: DeleteMessageParams) async throws(ARTErrorInfo) -> Message {
         let message = Message(
             serial: message.serial,
             action: .delete,
@@ -211,7 +211,7 @@ actor MockRoomReactions: RoomReactions {
         }, interval: Double.random(in: 0.3 ... 0.6))
     }
 
-    func send(params: SendReactionParams) async throws {
+    func send(params: SendReactionParams) async throws(ARTErrorInfo) {
         let reaction = Reaction(
             type: params.type,
             metadata: [:],
@@ -258,15 +258,15 @@ actor MockTyping: Typing {
         .init(mockAsyncSequence: createSubscription())
     }
 
-    func get() async throws -> Set<String> {
+    func get() async throws(ARTErrorInfo) -> Set<String> {
         Set(MockStrings.names.shuffled().prefix(2))
     }
 
-    func start() async throws {
+    func start() async throws(ARTErrorInfo) {
         mockSubscriptions.emit(TypingEvent(currentlyTyping: [clientID]))
     }
 
-    func stop() async throws {
+    func stop() async throws(ARTErrorInfo) {
         mockSubscriptions.emit(TypingEvent(currentlyTyping: []))
     }
 
@@ -297,7 +297,7 @@ actor MockPresence: Presence {
         }, interval: 5)
     }
 
-    func get() async throws -> [PresenceMember] {
+    func get() async throws(ARTErrorInfo) -> [PresenceMember] {
         MockStrings.names.shuffled().map { name in
             PresenceMember(
                 clientID: name,
@@ -309,7 +309,7 @@ actor MockPresence: Presence {
         }
     }
 
-    func get(params _: PresenceQuery) async throws -> [PresenceMember] {
+    func get(params _: PresenceQuery) async throws(ARTErrorInfo) -> [PresenceMember] {
         MockStrings.names.shuffled().map { name in
             PresenceMember(
                 clientID: name,
@@ -321,19 +321,19 @@ actor MockPresence: Presence {
         }
     }
 
-    func isUserPresent(clientID _: String) async throws -> Bool {
+    func isUserPresent(clientID _: String) async throws(ARTErrorInfo) -> Bool {
         fatalError("Not yet implemented")
     }
 
-    func enter() async throws {
+    func enter() async throws(ARTErrorInfo) {
         try await enter(dataForEvent: nil)
     }
 
-    func enter(data: PresenceData) async throws {
+    func enter(data: PresenceData) async throws(ARTErrorInfo) {
         try await enter(dataForEvent: data)
     }
 
-    private func enter(dataForEvent: PresenceData?) async throws {
+    private func enter(dataForEvent: PresenceData?) async throws(ARTErrorInfo) {
         mockSubscriptions.emit(
             PresenceEvent(
                 action: .enter,
@@ -344,15 +344,15 @@ actor MockPresence: Presence {
         )
     }
 
-    func update() async throws {
+    func update() async throws(ARTErrorInfo) {
         try await update(dataForEvent: nil)
     }
 
-    func update(data: PresenceData) async throws {
+    func update(data: PresenceData) async throws(ARTErrorInfo) {
         try await update(dataForEvent: data)
     }
 
-    private func update(dataForEvent: PresenceData? = nil) async throws {
+    private func update(dataForEvent: PresenceData? = nil) async throws(ARTErrorInfo) {
         mockSubscriptions.emit(
             PresenceEvent(
                 action: .update,
@@ -363,15 +363,15 @@ actor MockPresence: Presence {
         )
     }
 
-    func leave() async throws {
+    func leave() async throws(ARTErrorInfo) {
         try await leave(dataForEvent: nil)
     }
 
-    func leave(data: PresenceData) async throws {
+    func leave(data: PresenceData) async throws(ARTErrorInfo) {
         try await leave(dataForEvent: data)
     }
 
-    func leave(dataForEvent: PresenceData? = nil) async throws {
+    func leave(dataForEvent: PresenceData? = nil) async throws(ARTErrorInfo) {
         mockSubscriptions.emit(
             PresenceEvent(
                 action: .leave,
@@ -419,7 +419,7 @@ actor MockOccupancy: Occupancy {
         .init(mockAsyncSequence: createSubscription())
     }
 
-    func get() async throws -> OccupancyEvent {
+    func get() async throws(ARTErrorInfo) -> OccupancyEvent {
         OccupancyEvent(connections: 10, presenceMembers: 5)
     }
 

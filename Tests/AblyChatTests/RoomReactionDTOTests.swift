@@ -7,15 +7,19 @@ enum RoomReactionDTOTests {
 
         @Test
         func initWithJSONValue_failsIfNotObject() {
-            #expect(throws: JSONValueDecodingError.self) {
+            #expect {
                 try RoomReactionDTO.Data(jsonValue: "hello")
+            } throws: { error in
+                isInternalErrorWithCase(error, .jsonValueDecodingError)
             }
         }
 
         @Test
         func initWithJSONValue_withNoTypeKey() {
-            #expect(throws: JSONValueDecodingError.self) {
+            #expect {
                 try RoomReactionDTO.Data(jsonValue: [:])
+            } throws: { error in
+                isInternalErrorWithCase(error, .jsonValueDecodingError)
             }
         }
 
@@ -66,8 +70,10 @@ enum RoomReactionDTOTests {
 
         @Test
         func initWithJSONValue_failsIfNotObject() {
-            #expect(throws: JSONValueDecodingError.self) {
+            #expect {
                 try RoomReactionDTO.Extras(jsonValue: "hello")
+            } throws: { error in
+                isInternalErrorWithCase(error, .jsonValueDecodingError)
             }
         }
 

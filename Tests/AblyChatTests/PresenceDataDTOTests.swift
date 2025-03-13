@@ -18,8 +18,10 @@ struct PresenceDataDTOTests {
 
     @Test
     func initWithJSONValue_failsIfNotObject() {
-        #expect(throws: JSONValueDecodingError.self) {
+        #expect {
             try PresenceDataDTO(jsonValue: "hello")
+        } throws: { error in
+            isInternalErrorWithCase(error, .jsonValueDecodingError)
         }
     }
 

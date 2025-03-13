@@ -10,7 +10,7 @@ extension PresenceDataDTO: JSONObjectCodable {
         case userCustomData
     }
 
-    internal init(jsonObject: [String: JSONValue]) throws {
+    internal init(jsonObject: [String: JSONValue]) {
         userCustomData = jsonObject[JSONKey.userCustomData.rawValue]
     }
 

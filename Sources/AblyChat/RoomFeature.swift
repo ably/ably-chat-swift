@@ -58,7 +58,7 @@ internal protocol FeatureChannel: Sendable, EmitsDiscontinuities {
     ///
     /// - Parameters:
     ///   - requester: The room feature that wishes to perform a presence operation. This is only used for customising the message of the thrown error.
-    func waitToBeAbleToPerformPresenceOperations(requestedByFeature requester: RoomFeature) async throws(ARTErrorInfo)
+    func waitToBeAbleToPerformPresenceOperations(requestedByFeature requester: RoomFeature) async throws(InternalError)
 }
 
 internal struct DefaultFeatureChannel: FeatureChannel {
@@ -70,7 +70,7 @@ internal struct DefaultFeatureChannel: FeatureChannel {
         await contributor.onDiscontinuity(bufferingPolicy: bufferingPolicy)
     }
 
-    internal func waitToBeAbleToPerformPresenceOperations(requestedByFeature requester: RoomFeature) async throws(ARTErrorInfo) {
+    internal func waitToBeAbleToPerformPresenceOperations(requestedByFeature requester: RoomFeature) async throws(InternalError) {
         try await roomLifecycleManager.waitToBeAbleToPerformPresenceOperations(requestedByFeature: requester)
     }
 }

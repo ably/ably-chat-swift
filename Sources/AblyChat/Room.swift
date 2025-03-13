@@ -88,14 +88,14 @@ public protocol Room: AnyObject, Sendable {
      *
      * - Throws: An `ARTErrorInfo`.
      */
-    func attach() async throws
+    func attach() async throws(ARTErrorInfo)
 
     /**
      * Detaches from the room to stop receiving events in realtime.
      *
      * - Throws: An `ARTErrorInfo`.
      */
-    func detach() async throws
+    func detach() async throws(ARTErrorInfo)
 
     /**
      * Returns the room options.
@@ -139,13 +139,13 @@ public struct RoomStatusChange: Sendable, Equatable {
 internal protocol RoomFactory: Sendable {
     associatedtype Room: AblyChat.InternalRoom
 
-    func createRoom(realtime: RealtimeClient, chatAPI: ChatAPI, roomID: String, options: RoomOptions, logger: InternalLogger) async throws -> Room
+    func createRoom(realtime: RealtimeClient, chatAPI: ChatAPI, roomID: String, options: RoomOptions, logger: InternalLogger) async throws(InternalError) -> Room
 }
 
 internal final class DefaultRoomFactory: Sendable, RoomFactory {
     private let lifecycleManagerFactory = DefaultRoomLifecycleManagerFactory()
 
-    internal func createRoom(realtime: RealtimeClient, chatAPI: ChatAPI, roomID: String, options: RoomOptions, logger: InternalLogger) async throws -> DefaultRoom<DefaultRoomLifecycleManagerFactory> {
+    internal func createRoom(realtime: RealtimeClient, chatAPI: ChatAPI, roomID: String, options: RoomOptions, logger: InternalLogger) async throws(InternalError) -> DefaultRoom<DefaultRoomLifecycleManagerFactory> {
         try await DefaultRoom(
             realtime: realtime,
             chatAPI: chatAPI,
@@ -221,7 +221,7 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
         }
     }
 
-    internal init(realtime: RealtimeClient, chatAPI: ChatAPI, roomID: String, options: RoomOptions, logger: InternalLogger, lifecycleManagerFactory: LifecycleManagerFactory) async throws {
+    internal init(realtime: RealtimeClient, chatAPI: ChatAPI, roomID: String, options: RoomOptions, logger: InternalLogger, lifecycleManagerFactory: LifecycleManagerFactory) async throws(InternalError) {
         self.realtime = realtime
         self.roomID = roomID
         self.options = options
@@ -229,7 +229,7 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
         self.chatAPI = chatAPI
 
         guard let clientId = realtime.clientId else {
-            throw ARTErrorInfo.create(withCode: 40000, message: "Ensure your Realtime instance is initialized with a clientId.")
+            throw ARTErrorInfo.create(withCode: 40000, message: "Ensure your Realtime instance is initialized with a clientId.").toInternalError()
         }
 
         let featuresWithOptions = RoomFeatureWithOptions.fromRoomOptions(options)
@@ -394,12 +394,20 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
         return _occupancy
     }
 
-    public func attach() async throws {
-        try await lifecycleManager.performAttachOperation()
+    public func attach() async throws(ARTErrorInfo) {
+        do {
+            try await lifecycleManager.performAttachOperation()
+        } catch {
+            throw error.toARTErrorInfo()
+        }
     }
 
-    public func detach() async throws {
-        try await lifecycleManager.performDetachOperation()
+    public func detach() async throws(ARTErrorInfo) {
+        do {
+            try await lifecycleManager.performDetachOperation()
+        } catch {
+            throw error.toARTErrorInfo()
+        }
     }
 
     internal func release() async {

@@ -27,7 +27,7 @@ public protocol Occupancy: AnyObject, Sendable, EmitsDiscontinuities {
      *
      * - Returns: A current occupancy of the chat room.
      */
-    func get() async throws -> OccupancyEvent
+    func get() async throws(ARTErrorInfo) -> OccupancyEvent
 
     /**
      * Get underlying Ably channel for occupancy events.
@@ -66,7 +66,7 @@ public struct OccupancyEvent: Sendable {
 }
 
 extension OccupancyEvent: JSONObjectDecodable {
-    internal init(jsonObject: [String: JSONValue]) throws {
+    internal init(jsonObject: [String: JSONValue]) throws(InternalError) {
         try self.init(
             connections: Int(jsonObject.numberValueForKey("connections")),
             presenceMembers: Int(jsonObject.numberValueForKey("presenceMembers"))

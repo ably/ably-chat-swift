@@ -16,20 +16,28 @@ actor MockRoomLifecycleManager: RoomLifecycleManager {
         _roomStatus = roomStatus
     }
 
-    func performAttachOperation() async throws {
+    func performAttachOperation() async throws(InternalError) {
         attachCallCount += 1
         guard let attachResult else {
             fatalError("In order to call performAttachOperation, attachResult must be passed to the initializer")
         }
-        try attachResult.get()
+        do {
+            try attachResult.get()
+        } catch {
+            throw error.toInternalError()
+        }
     }
 
-    func performDetachOperation() async throws {
+    func performDetachOperation() async throws(InternalError) {
         detachCallCount += 1
         guard let detachResult else {
             fatalError("In order to call performDetachOperation, detachResult must be passed to the initializer")
         }
-        try detachResult.get()
+        do {
+            try detachResult.get()
+        } catch {
+            throw error.toInternalError()
+        }
     }
 
     func performReleaseOperation() async {
@@ -51,7 +59,7 @@ actor MockRoomLifecycleManager: RoomLifecycleManager {
         subscriptions.emit(statusChange)
     }
 
-    func waitToBeAbleToPerformPresenceOperations(requestedByFeature _: RoomFeature) async throws(ARTErrorInfo) {
+    func waitToBeAbleToPerformPresenceOperations(requestedByFeature _: RoomFeature) async throws(InternalError) {
         fatalError("Not implemented")
     }
 }
