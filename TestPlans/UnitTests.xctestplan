@@ -1,0 +1,29 @@
+{
+  "configurations" : [
+    {
+      "id" : "5E4FC24B-44CD-4F7C-93C7-E07A7B219D5A",
+      "name" : "Configuration 1",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "testTimeoutsEnabled" : true
+  },
+  "testTargets" : [
+    {
+      "skippedTags" : {
+        "tags" : [
+          ".integration"
+        ]
+      },
+      "target" : {
+        "containerPath" : "container:",
+        "identifier" : "AblyChatTests",
+        "name" : "AblyChatTests"
+      }
+    }
+  ],
+  "version" : 1
+}

@@ -1,0 +1,24 @@
+{
+  "configurations" : [
+    {
+      "id" : "A023F5E6-323A-41DE-8909-2E6D5ECA28B1",
+      "name" : "Configuration 1",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+
+  },
+  "testTargets" : [
+    {
+      "target" : {
+        "containerPath" : "container:",
+        "identifier" : "AblyChatTests",
+        "name" : "AblyChatTests"
+      }
+    }
+  ],
+  "version" : 1
+}

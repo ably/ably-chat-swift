@@ -19,6 +19,14 @@ Either:
 - `swift test`, or
 - open `AblyChat.xcworkspace` in Xcode and test the `AblyChat` scheme
 
+### Running only the unit tests
+
+There is a test plan called `UnitTests` which will run only the unit tests. These tests are very quick to execute, so it's a useful option to have for quick feedback when developing.
+
+Here's how to set this test plan as the _active test plan_ (the test plan which ⌘U will run):
+
+![Screenshot showing how to activate the UnitTests test plan](/images/unit-tests-test-plan-screenshot.png)
+
 ## Linting
 
 To check formatting and code quality, run `swift run BuildTool lint`. Run with `--fix` to first automatically fix things where possible.
