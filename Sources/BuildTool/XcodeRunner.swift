@@ -2,7 +2,7 @@ import Foundation
 
 @available(macOS 14, *)
 enum XcodeRunner {
-    static func runXcodebuild(action: String?, configuration: Configuration? = nil, scheme: String, destination: DestinationSpecifier) async throws {
+    static func runXcodebuild(action: String?, configuration: Configuration? = nil, scheme: String, destination: DestinationSpecifier, forCodeCoverage: Bool = false) async throws {
         var arguments: [String] = []
 
         if let action {
@@ -15,6 +15,12 @@ enum XcodeRunner {
 
         arguments.append(contentsOf: ["-scheme", scheme])
         arguments.append(contentsOf: ["-destination", destination.xcodebuildArgument])
+
+        if forCodeCoverage {
+            // TODO: sort out
+            arguments.append(contentsOf: ["-testPlan", "UnitTests"])
+            arguments.append(contentsOf: ["-resultBundlePath", "./MyResultBundle.xcresult"])
+        }
 
         /*
          Note: I was previously passing SWIFT_TREAT_WARNINGS_AS_ERRORS=YES here, but am no longer able to do so, for the following reasons:
