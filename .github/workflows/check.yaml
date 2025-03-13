@@ -138,6 +138,41 @@ jobs:
       - name: Run tests
         run: swift run BuildTool test-library --platform ${{ matrix.platform }}
 
+  code-coverage:
+    name: Generate code coverage (Xcode ${{ matrix.tooling.xcodeVersion }})
+    runs-on: macos-15
+    needs: generate-matrices
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.generate-matrices.outputs.matrix).withoutPlatform }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: ${{ matrix.tooling.xcodeVersion }}
+
+      - run: swift run BuildTool generate-code-coverage --result-bundle-path CodeCoverage.xcresult
+
+      # Generate a Markdown report of the code coverage information and add it to the workflow run.
+      #
+      # This tool is the best option that I could find after a brief look at the options. There are a few things that I wish it could do:
+      #
+      # - post a message on the pull request, like they do on Kotlin
+      # - offer more fine-grained configuration about which data to include in the report (I only care about code coverage, not test results, and I don't care about code coverage of the AblyChatTests target)
+      #
+      # but it'll do for now (we can always fork or have another look for tooling later).
+      - uses: slidoapp/xcresulttool@v3.1.0
+        with:
+          path: CodeCoverage.xcresult
+          # This title will be used for the sidebar item that this job adds to GitHub results page for this workflow
+          title: Code coverage results
+          # Turning off as much non-code-coverage information as it lets me
+          show-passed-tests: false
+        if: success() || failure()
+
   build-release-configuration-xcode:
     name: Xcode, `release` configuration, ${{matrix.platform}} (Xcode ${{ matrix.tooling.xcodeVersion }})
     runs-on: macos-15
@@ -247,6 +282,7 @@ jobs:
       - build-release-configuration-xcode
       - check-example-app
       - check-documentation
+      - code-coverage
 
     steps:
       - name: No-op
