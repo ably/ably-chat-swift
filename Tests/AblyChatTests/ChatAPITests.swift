@@ -20,7 +20,11 @@ struct ChatAPITests {
                 try await chatAPI.sendMessage(roomId: roomId, params: .init(text: "hello", headers: [:]))
             }, throws: { error in
                 // Then
-                error as? ChatAPI.ChatError == ChatAPI.ChatError.noItemInResponse
+                if let internalError = error as? InternalError, case .other(.chatAPIChatError(.noItemInResponse)) = internalError {
+                    true
+                } else {
+                    false
+                }
             }
         )
     }
@@ -189,7 +193,7 @@ struct ChatAPITests {
                 try await chatAPI.getMessages(roomId: roomId, params: .init()) as? PaginatedResultWrapper<Message>
             }, throws: { error in
                 // Then
-                error as? ARTErrorInfo == artError
+                isInternalErrorWrappingErrorInfo(error, artError)
             }
         )
     }

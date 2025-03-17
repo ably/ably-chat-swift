@@ -40,7 +40,7 @@ extension RoomReactionDTO.Data: JSONObjectCodable {
         case metadata
     }
 
-    internal init(jsonObject: [String: JSONValue]) throws {
+    internal init(jsonObject: [String: JSONValue]) throws(InternalError) {
         type = try jsonObject.stringValueForKey(JSONKey.type.rawValue)
         metadata = try jsonObject.optionalObjectValueForKey(JSONKey.metadata.rawValue)
     }
@@ -58,8 +58,10 @@ extension RoomReactionDTO.Extras: JSONObjectCodable {
         case headers
     }
 
-    internal init(jsonObject: [String: JSONValue]) throws {
-        headers = try jsonObject.optionalObjectValueForKey(JSONKey.headers.rawValue)?.mapValues { try .init(jsonValue: $0) }
+    internal init(jsonObject: [String: JSONValue]) throws(InternalError) {
+        headers = try jsonObject.optionalObjectValueForKey(JSONKey.headers.rawValue)?.ablyChat_mapValuesWithTypedThrow { jsonValue throws(InternalError) in
+            try .init(jsonValue: jsonValue)
+        }
     }
 
     internal var toJSONObject: [String: JSONValue] {

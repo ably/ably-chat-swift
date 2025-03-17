@@ -13,7 +13,7 @@ actor MockRoomFactory: RoomFactory {
         self.room = room
     }
 
-    func createRoom(realtime: RealtimeClient, chatAPI: ChatAPI, roomID: String, options: RoomOptions, logger: any InternalLogger) async throws -> MockRoom {
+    func createRoom(realtime: RealtimeClient, chatAPI: ChatAPI, roomID: String, options: RoomOptions, logger: any InternalLogger) async throws(InternalError) -> MockRoom {
         createRoomCallCount += 1
         createRoomArguments = (realtime: realtime, chatAPI: chatAPI, roomID: roomID, options: options, logger: logger)
 

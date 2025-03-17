@@ -2,10 +2,20 @@ import Ably
 @testable import AblyChat
 
 /**
- Tests whether a given optional `Error` is an `ARTErrorInfo` in the chat error domain with a given code and cause. Can optionally pass a message and it will check that it matches.
+ Tests whether a given optional `Error` is an `ARTErrorInfo` in the chat error domain with a given code and cause, or an `InternalError` that wraps such an `ARTErrorInfo`. Can optionally pass a message and it will check that it matches.
  */
 func isChatError(_ maybeError: (any Error)?, withCodeAndStatusCode codeAndStatusCode: AblyChat.ErrorCodeAndStatusCode, cause: ARTErrorInfo? = nil, message: String? = nil) -> Bool {
-    guard let ablyError = maybeError as? ARTErrorInfo else {
+    // Is it an ARTErrorInfo?
+    var ablyError = maybeError as? ARTErrorInfo
+
+    // Is it an InternalError wrapping an ARTErrorInfo?
+    if ablyError == nil {
+        if let internalError = maybeError as? InternalError, case let .errorInfo(errorInfo) = internalError {
+            ablyError = errorInfo
+        }
+    }
+
+    guard let ablyError else {
         return false
     }
 
@@ -20,4 +30,45 @@ func isChatError(_ maybeError: (any Error)?, withCodeAndStatusCode codeAndStatus
 
             return ablyError.message == message
         }()
+}
+
+func isInternalErrorWrappingErrorInfo(_ error: any Error, _ expectedErrorInfo: ARTErrorInfo) -> Bool {
+    if let internalError = error as? InternalError, case let .errorInfo(actualErrorInfo) = internalError, expectedErrorInfo == actualErrorInfo {
+        true
+    } else {
+        false
+    }
+}
+
+extension InternalError {
+    enum Case {
+        case errorInfo
+        case chatAPIChatError
+        case headersValueJSONDecodingError
+        case jsonValueDecodingError
+        case paginatedResultError
+    }
+
+    var enumCase: Case {
+        switch self {
+        case .errorInfo:
+            .errorInfo
+        case .other(.chatAPIChatError):
+            .chatAPIChatError
+        case .other(.headersValueJSONDecodingError):
+            .headersValueJSONDecodingError
+        case .other(.jsonValueDecodingError):
+            .jsonValueDecodingError
+        case .other(.paginatedResultError):
+            .paginatedResultError
+        }
+    }
+}
+
+func isInternalErrorWithCase(_ error: any Error, _ expectedCase: InternalError.Case) -> Bool {
+    if let internalError = error as? InternalError, internalError.enumCase == expectedCase {
+        true
+    } else {
+        false
+    }
 }

@@ -12,7 +12,7 @@ public protocol Presence: AnyObject, Sendable, EmitsDiscontinuities {
     /**
      * Same as ``get(params:)``, but with defaults params.
      */
-    func get() async throws -> [PresenceMember]
+    func get() async throws(ARTErrorInfo) -> [PresenceMember]
 
     /**
      * Method to get list of the current online users and returns the latest presence messages associated to it.
@@ -24,7 +24,7 @@ public protocol Presence: AnyObject, Sendable, EmitsDiscontinuities {
      *
      * - Throws: An `ARTErrorInfo`.
      */
-    func get(params: PresenceQuery) async throws -> [PresenceMember]
+    func get(params: PresenceQuery) async throws(ARTErrorInfo) -> [PresenceMember]
 
     /**
      * Method to check if user with supplied clientId is online.
@@ -36,7 +36,7 @@ public protocol Presence: AnyObject, Sendable, EmitsDiscontinuities {
      *
      * - Throws: An `ARTErrorInfo`.
      */
-    func isUserPresent(clientID: String) async throws -> Bool
+    func isUserPresent(clientID: String) async throws(ARTErrorInfo) -> Bool
 
     /**
      * Method to join room presence, will emit an enter event to all subscribers. Repeat calls will trigger more enter events.
@@ -46,7 +46,7 @@ public protocol Presence: AnyObject, Sendable, EmitsDiscontinuities {
      *
      * - Throws: An `ARTErrorInfo`.
      */
-    func enter(data: PresenceData) async throws
+    func enter(data: PresenceData) async throws(ARTErrorInfo)
 
     /**
      * Method to update room presence, will emit an update event to all subscribers. If the user is not present, it will be treated as a join event.
@@ -56,7 +56,7 @@ public protocol Presence: AnyObject, Sendable, EmitsDiscontinuities {
      *
      * - Throws: An `ARTErrorInfo`.
      */
-    func update(data: PresenceData) async throws
+    func update(data: PresenceData) async throws(ARTErrorInfo)
 
     /**
      * Method to leave room presence, will emit a leave event to all subscribers. If the user is not present, it will be treated as a no-op.
@@ -66,7 +66,7 @@ public protocol Presence: AnyObject, Sendable, EmitsDiscontinuities {
      *
      * - Throws: An `ARTErrorInfo`.
      */
-    func leave(data: PresenceData) async throws
+    func leave(data: PresenceData) async throws(ARTErrorInfo)
 
     /**
      * Subscribes a given listener to a particular presence event in the chat room.
@@ -96,7 +96,7 @@ public protocol Presence: AnyObject, Sendable, EmitsDiscontinuities {
      *
      * - Throws: An `ARTErrorInfo`.
      */
-    func enter() async throws
+    func enter() async throws(ARTErrorInfo)
 
     /**
      * Method to update room presence, will emit an update event to all subscribers. If the user is not present, it will be treated as a join event.
@@ -104,7 +104,7 @@ public protocol Presence: AnyObject, Sendable, EmitsDiscontinuities {
      *
      * - Throws: An `ARTErrorInfo`.
      */
-    func update() async throws
+    func update() async throws(ARTErrorInfo)
 
     /**
      * Method to leave room presence, will emit a leave event to all subscribers. If the user is not present, it will be treated as a no-op.
@@ -112,7 +112,7 @@ public protocol Presence: AnyObject, Sendable, EmitsDiscontinuities {
      *
      * - Throws: An `ARTErrorInfo`.
      */
-    func leave() async throws
+    func leave() async throws(ARTErrorInfo)
 
     /// Same as calling ``subscribe(event:bufferingPolicy:)`` with ``BufferingPolicy/unbounded``.
     ///

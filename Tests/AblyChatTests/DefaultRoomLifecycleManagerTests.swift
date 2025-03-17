@@ -2191,7 +2191,7 @@ struct DefaultRoomLifecycleManagerTests {
         // (Note: I wanted to use #expect(…, throws:) below, but for some reason it made the compiler _crash_! No idea why. So, gave up on that.)
 
         // When: `waitToBeAbleToPerformPresenceOperations(requestedByFeature:)` is called on the lifecycle manager
-        var caughtError: ARTErrorInfo?
+        var caughtError: Error?
         do {
             try await manager.waitToBeAbleToPerformPresenceOperations(requestedByFeature: .messages /* arbitrary */ )
         } catch {

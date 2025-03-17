@@ -35,112 +35,132 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
     }
 
     // (CHA-M4) Messages can be received via a subscription in realtime.
-    internal func subscribe(bufferingPolicy: BufferingPolicy) async throws -> MessageSubscription {
-        logger.log(message: "Subscribing to messages", level: .debug)
-        let uuid = UUID()
-        let serial = try await resolveSubscriptionStart()
-        let messageSubscription = MessageSubscription(
-            bufferingPolicy: bufferingPolicy
-        ) { [weak self] queryOptions in
-            guard let self else { throw MessagesError.noReferenceToSelf }
-            return try await getBeforeSubscriptionStart(uuid, params: queryOptions)
-        }
-
-        // (CHA-M4a) A subscription can be registered to receive incoming messages. Adding a subscription has no side effects on the status of the room or the underlying realtime channel.
-        subscriptionPoints[uuid] = .init(subscription: messageSubscription, serial: serial)
-
-        // (CHA-M4c) When a realtime message with name set to message.created is received, it is translated into a message event, which contains a type field with the event type as well as a message field containing the Message Struct. This event is then broadcast to all subscribers.
-        // (CHA-M4d) If a realtime message with an unknown name is received, the SDK shall silently discard the message, though it may log at DEBUG or TRACE level.
-        // (CHA-M5k) Incoming realtime events that are malformed (unknown field should be ignored) shall not be emitted to subscribers.
-        let eventListener = channel.subscribe(RealtimeMessageName.chatMessage.rawValue) { message in
-            Task {
-                // TODO: Revisit errors thrown as part of https://github.com/ably-labs/ably-chat-swift/issues/32
-                guard let ablyCocoaData = message.data,
-                      let data = JSONValue(ablyCocoaData: ablyCocoaData).objectValue,
-                      let text = data["text"]?.stringValue
-                else {
-                    throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without data or text")
-                }
-
-                guard let ablyCocoaExtras = message.extras else {
-                    throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without extras")
-                }
-
-                let extras = JSONValue.objectFromAblyCocoaExtras(ablyCocoaExtras)
-
-                guard let serial = message.serial else {
-                    throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without serial")
-                }
-
-                guard let clientID = message.clientId else {
-                    throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without clientId")
-                }
-
-                guard let version = message.version else {
-                    throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without version")
-                }
-
-                let metadata = try data.optionalObjectValueForKey("metadata")
-
-                let headers: Headers? = if let headersJSONObject = try extras.optionalObjectValueForKey("headers") {
-                    try headersJSONObject.mapValues { try HeadersValue(jsonValue: $0) }
-                } else {
-                    nil
-                }
-
-                guard let action = MessageAction.fromRealtimeAction(message.action) else {
-                    return
-                }
-
-                // `message.operation?.toChatOperation()` is throwing but the linter prefers putting the `try` on Message initialization instead of having it nested.
-                let message = try Message(
-                    serial: serial,
-                    action: action,
-                    clientID: clientID,
-                    roomID: self.roomID,
-                    text: text,
-                    createdAt: message.timestamp,
-                    metadata: metadata ?? .init(),
-                    headers: headers ?? .init(),
-                    version: version,
-                    timestamp: message.timestamp,
-                    operation: message.operation?.toChatOperation()
-                )
-
-                messageSubscription.emit(message)
+    internal func subscribe(bufferingPolicy: BufferingPolicy) async throws(ARTErrorInfo) -> MessageSubscription {
+        do {
+            logger.log(message: "Subscribing to messages", level: .debug)
+            let uuid = UUID()
+            let serial = try await resolveSubscriptionStart()
+            let messageSubscription = MessageSubscription(
+                bufferingPolicy: bufferingPolicy
+            ) { [weak self] queryOptions in
+                guard let self else { throw MessagesError.noReferenceToSelf }
+                return try await getBeforeSubscriptionStart(uuid, params: queryOptions)
             }
-        }
 
-        messageSubscription.addTerminationHandler {
-            Task {
-                await MainActor.run { [weak self] () in
-                    guard let self else {
+            // (CHA-M4a) A subscription can be registered to receive incoming messages. Adding a subscription has no side effects on the status of the room or the underlying realtime channel.
+            subscriptionPoints[uuid] = .init(subscription: messageSubscription, serial: serial)
+
+            // (CHA-M4c) When a realtime message with name set to message.created is received, it is translated into a message event, which contains a type field with the event type as well as a message field containing the Message Struct. This event is then broadcast to all subscribers.
+            // (CHA-M4d) If a realtime message with an unknown name is received, the SDK shall silently discard the message, though it may log at DEBUG or TRACE level.
+            // (CHA-M5k) Incoming realtime events that are malformed (unknown field should be ignored) shall not be emitted to subscribers.
+            let eventListener = channel.subscribe(RealtimeMessageName.chatMessage.rawValue) { message in
+                Task {
+                    // TODO: Revisit errors thrown as part of https://github.com/ably-labs/ably-chat-swift/issues/32
+                    guard let ablyCocoaData = message.data,
+                          let data = JSONValue(ablyCocoaData: ablyCocoaData).objectValue,
+                          let text = data["text"]?.stringValue
+                    else {
+                        throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without data or text")
+                    }
+
+                    guard let ablyCocoaExtras = message.extras else {
+                        throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without extras")
+                    }
+
+                    let extras = JSONValue.objectFromAblyCocoaExtras(ablyCocoaExtras)
+
+                    guard let serial = message.serial else {
+                        throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without serial")
+                    }
+
+                    guard let clientID = message.clientId else {
+                        throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without clientId")
+                    }
+
+                    guard let version = message.version else {
+                        throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without version")
+                    }
+
+                    let metadata = try data.optionalObjectValueForKey("metadata")
+
+                    let headers: Headers? = if let headersJSONObject = try extras.optionalObjectValueForKey("headers") {
+                        try headersJSONObject.mapValues { try HeadersValue(jsonValue: $0) }
+                    } else {
+                        nil
+                    }
+
+                    guard let action = MessageAction.fromRealtimeAction(message.action) else {
                         return
                     }
-                    channel.unsubscribe(eventListener)
-                    subscriptionPoints.removeValue(forKey: uuid)
+
+                    // `message.operation?.toChatOperation()` is throwing but the linter prefers putting the `try` on Message initialization instead of having it nested.
+                    let message = try Message(
+                        serial: serial,
+                        action: action,
+                        clientID: clientID,
+                        roomID: self.roomID,
+                        text: text,
+                        createdAt: message.timestamp,
+                        metadata: metadata ?? .init(),
+                        headers: headers ?? .init(),
+                        version: version,
+                        timestamp: message.timestamp,
+                        operation: message.operation?.toChatOperation()
+                    )
+
+                    messageSubscription.emit(message)
                 }
             }
-        }
 
-        return messageSubscription
+            messageSubscription.addTerminationHandler {
+                Task {
+                    await MainActor.run { [weak self] () in
+                        guard let self else {
+                            return
+                        }
+                        channel.unsubscribe(eventListener)
+                        subscriptionPoints.removeValue(forKey: uuid)
+                    }
+                }
+            }
+
+            return messageSubscription
+        } catch {
+            throw error.toARTErrorInfo()
+        }
     }
 
     // (CHA-M6a) A method must be exposed that accepts the standard Ably REST API query parameters. It shall call the “REST API”#rest-fetching-messages and return a PaginatedResult containing messages, which can then be paginated through.
-    internal func get(options: QueryOptions) async throws -> any PaginatedResult<Message> {
-        try await chatAPI.getMessages(roomId: roomID, params: options)
+    internal func get(options: QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message> {
+        do {
+            return try await chatAPI.getMessages(roomId: roomID, params: options)
+        } catch {
+            throw error.toARTErrorInfo()
+        }
     }
 
-    internal func send(params: SendMessageParams) async throws -> Message {
-        try await chatAPI.sendMessage(roomId: roomID, params: params)
+    internal func send(params: SendMessageParams) async throws(ARTErrorInfo) -> Message {
+        do {
+            return try await chatAPI.sendMessage(roomId: roomID, params: params)
+        } catch {
+            throw error.toARTErrorInfo()
+        }
     }
 
-    internal func update(newMessage: Message, description: String?, metadata: OperationMetadata?) async throws -> Message {
-        try await chatAPI.updateMessage(with: newMessage, description: description, metadata: metadata)
+    internal func update(newMessage: Message, description: String?, metadata: OperationMetadata?) async throws(ARTErrorInfo) -> Message {
+        do {
+            return try await chatAPI.updateMessage(with: newMessage, description: description, metadata: metadata)
+        } catch {
+            throw error.toARTErrorInfo()
+        }
     }
 
-    internal func delete(message: Message, params: DeleteMessageParams) async throws -> Message {
-        try await chatAPI.deleteMessage(message: message, params: params)
+    internal func delete(message: Message, params: DeleteMessageParams) async throws(ARTErrorInfo) -> Message {
+        do {
+            return try await chatAPI.deleteMessage(message: message, params: params)
+        } catch {
+            throw error.toARTErrorInfo()
+        }
     }
 
     // (CHA-M7) Users may subscribe to discontinuity events to know when there’s been a break in messages that they need to resolve. Their listener will be called when a discontinuity event is triggered from the room lifecycle.
@@ -212,7 +232,7 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
         }
     }
 
-    private func resolveSubscriptionStart() async throws -> String {
+    private func resolveSubscriptionStart() async throws(InternalError) -> String {
         logger.log(message: "Resolving subscription start", level: .debug)
         // (CHA-M5a) If a subscription is added when the underlying realtime channel is ATTACHED, then the subscription point is the current channelSerial of the realtime channel.
         if channel.state == .attached {
@@ -222,7 +242,7 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
             } else {
                 let error = ARTErrorInfo.create(withCode: 40000, status: 400, message: "channel is attached, but channelSerial is not defined")
                 logger.log(message: "Error resolving subscription start: \(error)", level: .error)
-                throw error
+                throw error.toInternalError()
             }
         }
 
@@ -231,7 +251,7 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
     }
 
     // Always returns the attachSerial and not the channelSerial to also serve (CHA-M5c) - If a channel leaves the ATTACHED state and then re-enters ATTACHED with resumed=false, then it must be assumed that messages have been missed. The subscription point of any subscribers must be reset to the attachSerial.
-    private func serialOnChannelAttach() async throws -> String {
+    private func serialOnChannelAttach() async throws(InternalError) -> String {
         logger.log(message: "Resolving serial on channel attach", level: .debug)
         // If the state is already 'attached', return the attachSerial immediately
         if channel.state == .attached {
@@ -241,14 +261,14 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
             } else {
                 let error = ARTErrorInfo.create(withCode: 40000, status: 400, message: "Channel is attached, but attachSerial is not defined")
                 logger.log(message: "Error resolving serial on channel attach: \(error)", level: .error)
-                throw error
+                throw error.toInternalError()
             }
         }
 
         // (CHA-M5b) If a subscription is added when the underlying realtime channel is in any other state, then its subscription point becomes the attachSerial at the the point of channel attachment.
-        return try await withCheckedThrowingContinuation { continuation in
+        return try await withCheckedContinuation { (continuation: CheckedContinuation<Result<String, InternalError>, Never>) in
             // avoids multiple invocations of the continuation
-            var nillableContinuation: CheckedContinuation<String, any Error>? = continuation
+            var nillableContinuation: CheckedContinuation<Result<String, InternalError>, Never>? = continuation
 
             channel.on { [weak self] stateChange in
                 guard let self else {
@@ -260,10 +280,10 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
                     // Handle successful attachment
                     if let attachSerial = channel.properties.attachSerial {
                         logger.log(message: "Channel is attached, returning attachSerial: \(attachSerial)", level: .debug)
-                        nillableContinuation?.resume(returning: attachSerial)
+                        nillableContinuation?.resume(returning: .success(attachSerial))
                     } else {
                         logger.log(message: "Channel is attached, but attachSerial is not defined", level: .error)
-                        nillableContinuation?.resume(throwing: ARTErrorInfo.create(withCode: 40000, status: 400, message: "Channel is attached, but attachSerial is not defined"))
+                        nillableContinuation?.resume(returning: .failure(ARTErrorInfo.create(withCode: 40000, status: 400, message: "Channel is attached, but attachSerial is not defined").toInternalError()))
                     }
                     nillableContinuation = nil
                 case .failed, .suspended:
@@ -271,10 +291,13 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
                     logger.log(message: "Channel failed to attach", level: .error)
                     let errorCodeCase = ErrorCode.CaseThatImpliesFixedStatusCode.messagesAttachmentFailed
                     nillableContinuation?.resume(
-                        throwing: ARTErrorInfo.create(
-                            withCode: errorCodeCase.toNumericErrorCode.rawValue,
-                            status: errorCodeCase.statusCode,
-                            message: "Channel failed to attach"
+                        returning: .failure(
+                            ARTErrorInfo.create(
+                                withCode: errorCodeCase.toNumericErrorCode.rawValue,
+                                status: errorCodeCase.statusCode,
+                                message: "Channel failed to attach"
+                            )
+                            .toInternalError()
                         )
                     )
                     nillableContinuation = nil
@@ -282,7 +305,7 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
                     break
                 }
             }
-        }
+        }.get()
     }
 
     internal enum MessagesError: Error {

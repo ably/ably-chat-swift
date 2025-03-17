@@ -10,7 +10,7 @@ internal final class ChatAPI: Sendable {
     }
 
     // (CHA-M6) Messages should be queryable from a paginated REST API.
-    internal func getMessages(roomId: String, params: QueryOptions) async throws -> any PaginatedResult<Message> {
+    internal func getMessages(roomId: String, params: QueryOptions) async throws(InternalError) -> any PaginatedResult<Message> {
         let endpoint = "\(apiVersionV2)/rooms/\(roomId)/messages"
         return try await makePaginatedRequest(endpoint, params: params.asQueryItems())
     }
@@ -19,7 +19,7 @@ internal final class ChatAPI: Sendable {
         internal let serial: String
         internal let createdAt: Int64
 
-        internal init(jsonObject: [String: JSONValue]) throws {
+        internal init(jsonObject: [String: JSONValue]) throws(InternalError) {
             serial = try jsonObject.stringValueForKey("serial")
             createdAt = try Int64(jsonObject.numberValueForKey("createdAt"))
         }
@@ -29,7 +29,7 @@ internal final class ChatAPI: Sendable {
         internal let version: String
         internal let timestamp: Int64
 
-        internal init(jsonObject: [String: JSONValue]) throws {
+        internal init(jsonObject: [String: JSONValue]) throws(InternalError) {
             version = try jsonObject.stringValueForKey("version")
             timestamp = try Int64(jsonObject.numberValueForKey("timestamp"))
         }
@@ -40,9 +40,9 @@ internal final class ChatAPI: Sendable {
 
     // (CHA-M3) Messages are sent to Ably via the Chat REST API, using the send method.
     // (CHA-M3a) When a message is sent successfully, the caller shall receive a struct representing the Message in response (as if it were received via Realtime event).
-    internal func sendMessage(roomId: String, params: SendMessageParams) async throws -> Message {
+    internal func sendMessage(roomId: String, params: SendMessageParams) async throws(InternalError) -> Message {
         guard let clientId = realtime.clientId else {
-            throw ARTErrorInfo.create(withCode: 40000, message: "Ensure your Realtime instance is initialized with a clientId.")
+            throw ARTErrorInfo.create(withCode: 40000, message: "Ensure your Realtime instance is initialized with a clientId.").toInternalError()
         }
 
         let endpoint = "\(apiVersionV2)/rooms/\(roomId)/messages"
@@ -79,9 +79,9 @@ internal final class ChatAPI: Sendable {
 
     // (CHA-M8) A client must be able to update a message in a room.
     // (CHA-M8a) A client may update a message via the Chat REST API by calling the update method.
-    internal func updateMessage(with modifiedMessage: Message, description: String?, metadata: OperationMetadata?) async throws -> Message {
+    internal func updateMessage(with modifiedMessage: Message, description: String?, metadata: OperationMetadata?) async throws(InternalError) -> Message {
         guard let clientID = realtime.clientId else {
-            throw ARTErrorInfo.create(withCode: 40000, message: "Ensure your Realtime instance is initialized with a clientId.")
+            throw ARTErrorInfo.create(withCode: 40000, message: "Ensure your Realtime instance is initialized with a clientId.").toInternalError()
         }
 
         let endpoint = "\(apiVersionV2)/rooms/\(modifiedMessage.roomID)/messages/\(modifiedMessage.serial)"
@@ -131,7 +131,7 @@ internal final class ChatAPI: Sendable {
 
     // (CHA-M9) A client must be able to delete a message in a room.
     // (CHA-M9a) A client may delete a message via the Chat REST API by calling the delete method.
-    internal func deleteMessage(message: Message, params: DeleteMessageParams) async throws -> Message {
+    internal func deleteMessage(message: Message, params: DeleteMessageParams) async throws(InternalError) -> Message {
         let endpoint = "\(apiVersionV2)/rooms/\(message.roomID)/messages/\(message.serial)/delete"
         var body: [String: JSONValue] = [:]
 
@@ -169,59 +169,39 @@ internal final class ChatAPI: Sendable {
         return message
     }
 
-    internal func getOccupancy(roomId: String) async throws -> OccupancyEvent {
+    internal func getOccupancy(roomId: String) async throws(InternalError) -> OccupancyEvent {
         let endpoint = "\(apiVersion)/rooms/\(roomId)/occupancy"
         return try await makeRequest(endpoint, method: "GET")
     }
 
-    private func makeRequest<Response: JSONDecodable>(_ url: String, method: String, body: [String: JSONValue]? = nil) async throws -> Response {
+    private func makeRequest<Response: JSONDecodable>(_ url: String, method: String, body: [String: JSONValue]? = nil) async throws(InternalError) -> Response {
         let ablyCocoaBody: Any? = if let body {
             JSONValue.object(body).toAblyCocoaData
         } else {
             nil
         }
 
-        return try await withCheckedThrowingContinuation { continuation in
-            do {
-                try realtime.request(method, path: url, params: [:], body: ablyCocoaBody, headers: [:]) { paginatedResponse, error in
-                    if let error {
-                        // (CHA-M3e & CHA-M8d & CHA-M9c) If an error is returned from the REST API, its ErrorInfo representation shall be thrown as the result of the send call.
-                        continuation.resume(throwing: ARTErrorInfo.create(from: error))
-                        return
-                    }
+        // (CHA-M3e & CHA-M8d & CHA-M9c) If an error is returned from the REST API, its ErrorInfo representation shall be thrown as the result of the send call.
+        let paginatedResponse = try await realtime.requestAsync(method, path: url, params: [:], body: ablyCocoaBody, headers: [:])
 
-                    guard let firstItem = paginatedResponse?.items.first else {
-                        continuation.resume(throwing: ChatError.noItemInResponse)
-                        return
-                    }
-
-                    do {
-                        let jsonValue = JSONValue(ablyCocoaData: firstItem)
-                        let decodedResponse = try Response(jsonValue: jsonValue)
-                        continuation.resume(returning: decodedResponse)
-                    } catch {
-                        continuation.resume(throwing: error)
-                    }
-                }
-            } catch {
-                continuation.resume(throwing: error)
-            }
+        guard let firstItem = paginatedResponse.items.first else {
+            throw ChatError.noItemInResponse.toInternalError()
         }
+
+        let jsonValue = JSONValue(ablyCocoaData: firstItem)
+        return try Response(jsonValue: jsonValue)
     }
 
     private func makePaginatedRequest<Response: JSONDecodable & Sendable & Equatable>(
         _ url: String,
         params: [String: String]? = nil
-    ) async throws -> any PaginatedResult<Response> {
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<PaginatedResultWrapper<Response>, _>) in
-            do {
-                try realtime.request("GET", path: url, params: params, body: nil, headers: [:]) { paginatedResponse, error in
-                    ARTHTTPPaginatedCallbackWrapper<Response>(callbackResult: (paginatedResponse, error)).handleResponse(continuation: continuation)
-                }
-            } catch {
-                continuation.resume(throwing: error)
-            }
+    ) async throws(InternalError) -> any PaginatedResult<Response> {
+        let paginatedResponse = try await realtime.requestAsync("GET", path: url, params: params, body: nil, headers: [:])
+        let jsonValues = paginatedResponse.items.map { JSONValue(ablyCocoaData: $0) }
+        let items = try jsonValues.map { jsonValue throws(InternalError) in
+            try Response(jsonValue: jsonValue)
         }
+        return paginatedResponse.toPaginatedResult(items: items)
     }
 
     internal enum ChatError: Error {

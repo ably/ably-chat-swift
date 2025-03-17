@@ -15,12 +15,12 @@ public protocol Messages: AnyObject, Sendable, EmitsDiscontinuities {
      *
      * - Returns: A subscription ``MessageSubscription`` that can be used to iterate through new messages.
      */
-    func subscribe(bufferingPolicy: BufferingPolicy) async throws -> MessageSubscription
+    func subscribe(bufferingPolicy: BufferingPolicy) async throws(ARTErrorInfo) -> MessageSubscription
 
     /// Same as calling ``subscribe(bufferingPolicy:)`` with ``BufferingPolicy/unbounded``.
     ///
     /// The `Messages` protocol provides a default implementation of this method.
-    func subscribe() async throws -> MessageSubscription
+    func subscribe() async throws(ARTErrorInfo) -> MessageSubscription
 
     /**
      * Get messages that have been previously sent to the chat room, based on the provided options.
@@ -30,7 +30,7 @@ public protocol Messages: AnyObject, Sendable, EmitsDiscontinuities {
      *
      * - Returns: A paginated result object that can be used to fetch more messages if available.
      */
-    func get(options: QueryOptions) async throws -> any PaginatedResult<Message>
+    func get(options: QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message>
 
     /**
      * Send a message in the chat room.
@@ -44,7 +44,7 @@ public protocol Messages: AnyObject, Sendable, EmitsDiscontinuities {
      *
      * - Note: It is possible to receive your own message via the messages subscription before this method returns.
      */
-    func send(params: SendMessageParams) async throws -> Message
+    func send(params: SendMessageParams) async throws(ARTErrorInfo) -> Message
 
     /**
      * Updates a message in the chat room.
@@ -60,7 +60,7 @@ public protocol Messages: AnyObject, Sendable, EmitsDiscontinuities {
      *
      * - Note: It is possible to receive your own message via the messages subscription before this method returns.
      */
-    func update(newMessage: Message, description: String?, metadata: OperationMetadata?) async throws -> Message
+    func update(newMessage: Message, description: String?, metadata: OperationMetadata?) async throws(ARTErrorInfo) -> Message
 
     /**
      * Deletes a message in the chat room.
@@ -75,7 +75,7 @@ public protocol Messages: AnyObject, Sendable, EmitsDiscontinuities {
      *
      * - Note: It is possible to receive your own message via the messages subscription before this method returns.
      */
-    func delete(message: Message, params: DeleteMessageParams) async throws -> Message
+    func delete(message: Message, params: DeleteMessageParams) async throws(ARTErrorInfo) -> Message
 
     /**
      * Get the underlying Ably realtime channel used for the messages in this chat room.
@@ -86,7 +86,7 @@ public protocol Messages: AnyObject, Sendable, EmitsDiscontinuities {
 }
 
 public extension Messages {
-    func subscribe() async throws -> MessageSubscription {
+    func subscribe() async throws(ARTErrorInfo) -> MessageSubscription {
         try await subscribe(bufferingPolicy: .unbounded)
     }
 }

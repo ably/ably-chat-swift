@@ -34,11 +34,11 @@ internal final class DefaultRoomLifecycleContributorChannel: RoomLifecycleContri
         self.underlyingChannel = underlyingChannel
     }
 
-    internal func attach() async throws(ARTErrorInfo) {
+    internal func attach() async throws(InternalError) {
         try await underlyingChannel.attachAsync()
     }
 
-    internal func detach() async throws(ARTErrorInfo) {
+    internal func detach() async throws(InternalError) {
         try await underlyingChannel.detachAsync()
     }
 
