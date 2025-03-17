@@ -16,6 +16,7 @@ struct BuildTool: AsyncParsableCommand {
             Lint.self,
             SpecCoverage.self,
             BuildDocumentation.self,
+            GenerateCodeCoverage.self,
         ]
     )
 }
@@ -68,6 +69,31 @@ struct TestLibrary: AsyncParsableCommand {
         let scheme = "AblyChat"
 
         try await XcodeRunner.runXcodebuild(action: "test-without-building", scheme: scheme, destination: destinationSpecifier)
+    }
+}
+
+@available(macOS 14, *)
+struct GenerateCodeCoverage: AsyncParsableCommand {
+    static let configuration = CommandConfiguration(
+        abstract: "Generate code coverage for the AblyChat library",
+        discussion: "Runs the unit tests and outputs a .xcresult bundle containing code coverage information"
+    )
+
+    @Option(help: "Pathname of where to output the .xcresult bundle.")
+    var resultBundlePath: String
+
+    mutating func run() async throws {
+        let platform = Platform.macOS
+        let destinationSpecifier = try await platform.resolve()
+        let scheme = "AblyChat"
+
+        try await XcodeRunner.runXcodebuild(
+            action: "test",
+            scheme: scheme,
+            destination: destinationSpecifier,
+            testPlan: "UnitTests",
+            resultBundlePath: resultBundlePath
+        )
     }
 }
 
