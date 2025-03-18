@@ -78,6 +78,22 @@ public final class Subscription<Element: Sendable>: @unchecked Sendable, AsyncSe
         }
     }
 
+    #if DEBUG
+        /**
+         Signal that there are no more elements for the iteration to receive.
+
+         It is a programmer error to call this when the receiver was created using ``init(mockAsyncSequence:)``.
+         */
+        internal func testsOnly_finish() {
+            switch mode {
+            case let .default(_, continuation):
+                continuation.finish()
+            case .mockAsyncSequence:
+                fatalError("`finish` cannot be called on a Subscription that was created using init(mockAsyncSequence:)")
+            }
+        }
+    #endif
+
     @MainActor
     internal func addTerminationHandler(_ terminationHandler: @escaping (@Sendable () -> Void)) {
         terminationHandlers.append(terminationHandler)

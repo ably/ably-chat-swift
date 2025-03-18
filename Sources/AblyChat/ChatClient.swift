@@ -69,7 +69,7 @@ public class DefaultChatClient: ChatClient {
      * Constructor for Chat
      *
      * - Parameters:
-     *   - realtime: The Ably Realtime client.
+     *   - realtime: The Ably Realtime client. If this is an instance of `ARTRealtime` from the ably-cocoa SDK, then its `dispatchQueue` option must be the main queue (this is its default behaviour).
      *   - clientOptions: The client options.
      */
     public convenience init(realtime suppliedRealtime: any SuppliedRealtimeClientProtocol, clientOptions: ChatClientOptions?) {

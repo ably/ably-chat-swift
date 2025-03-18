@@ -12,8 +12,7 @@ struct DefaultMessagesTests {
         let realtime = MockRealtime()
         let chatAPI = ChatAPI(realtime: realtime)
         let channel = MockRealtimeChannel(initialState: .attached)
-        let featureChannel = MockFeatureChannel(channel: channel)
-        let defaultMessages = DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
+        let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
 
         // Then
         // TODO: avoids compiler crash (https://github.com/ably/ably-chat-swift/issues/233), revert once Xcode 16.3 released
@@ -34,8 +33,7 @@ struct DefaultMessagesTests {
         let realtime = MockRealtime { MockHTTPPaginatedResponse.successGetMessagesWithNoItems }
         let chatAPI = ChatAPI(realtime: realtime)
         let channel = MockRealtimeChannel()
-        let featureChannel = MockFeatureChannel(channel: channel)
-        let defaultMessages = DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
+        let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
 
         // Then
         // TODO: avoids compiler crash (https://github.com/ably/ably-chat-swift/issues/233), revert once Xcode 16.3 released
@@ -64,8 +62,7 @@ struct DefaultMessagesTests {
             ),
             initialState: .attached
         )
-        let featureChannel = MockFeatureChannel(channel: channel)
-        let defaultMessages = DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
+        let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
         let subscription = try await defaultMessages.subscribe()
         let expectedPaginatedResult = PaginatedResultWrapper<Message>(
             paginatedResponse: MockHTTPPaginatedResponse.successGetMessagesWithNoItems,
@@ -105,8 +102,7 @@ struct DefaultMessagesTests {
                 version: ""
             )
         )
-        let featureChannel = MockFeatureChannel(channel: channel)
-        let defaultMessages = DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
+        let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
 
         // When
         let messagesSubscription = try await defaultMessages.subscribe()
@@ -141,8 +137,7 @@ struct DefaultMessagesTests {
                 version: ""
             )
         )
-        let featureChannel = MockFeatureChannel(channel: channel)
-        let defaultMessages = DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
+        let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
 
         // When
         let messagesSubscription = try await defaultMessages.subscribe()
@@ -150,25 +145,5 @@ struct DefaultMessagesTests {
         // Then
         let receivedMessage = try #require(await messagesSubscription.first { @Sendable _ in true })
         #expect(receivedMessage.metadata == ["numberKey": .number(10), "stringKey": .string("hello")])
-    }
-
-    // @spec CHA-M7
-    @Test
-    func onDiscontinuity() async throws {
-        // Given: A DefaultMessages instance
-        let realtime = MockRealtime()
-        let chatAPI = ChatAPI(realtime: realtime)
-        let channel = MockRealtimeChannel()
-        let featureChannel = MockFeatureChannel(channel: channel)
-        let messages = DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
-
-        // When: The feature channel emits a discontinuity through `onDiscontinuity`
-        let featureChannelDiscontinuity = DiscontinuityEvent(error: ARTErrorInfo.createUnknownError() /* arbitrary */ )
-        let messagesDiscontinuitySubscription = messages.onDiscontinuity()
-        featureChannel.emitDiscontinuity(featureChannelDiscontinuity)
-
-        // Then: The DefaultMessages instance emits this discontinuity through `onDiscontinuity`
-        let messagesDiscontinuity = try #require(await messagesDiscontinuitySubscription.first { @Sendable _ in true })
-        #expect(messagesDiscontinuity == featureChannelDiscontinuity)
     }
 }
