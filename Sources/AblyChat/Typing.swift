@@ -6,7 +6,7 @@ import Ably
  *
  * Get an instance via ``Room/typing``.
  */
-public protocol Typing: AnyObject, Sendable, EmitsDiscontinuities {
+public protocol Typing: AnyObject, Sendable {
     /**
      * Subscribes a given listener to all typing events from users in the chat room.
      *
@@ -49,13 +49,6 @@ public protocol Typing: AnyObject, Sendable, EmitsDiscontinuities {
      * - Throws: An `ARTErrorInfo`.
      */
     func stop() async throws(ARTErrorInfo)
-
-    /**
-     * Get the Ably realtime channel underpinning typing events.
-     *
-     * - Returns: The Ably realtime channel.
-     */
-    var channel: any RealtimeChannelProtocol { get }
 }
 
 public extension Typing {
