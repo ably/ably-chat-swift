@@ -157,12 +157,35 @@ final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
         // no-op; revisit if we need to test something that depends on this method actually stopping `subscribe` from emitting more events
     }
 
+    enum SubscribeToStateBehavior {
+        case justAddSubscription
+        case addSubscriptionAndEmitStateChange(ARTChannelStateChange)
+    }
+
+    private let subscribeToStateBehavior: SubscribeToStateBehavior
+    private var stateSubscriptionCallbacks: [@MainActor (ARTChannelStateChange) -> Void] = []
+
     func on(_: ARTChannelEvent, callback _: @escaping @MainActor (ARTChannelStateChange) -> Void) -> ARTEventListener {
         ARTEventListener()
     }
 
-    func on(_: @escaping @MainActor (ARTChannelStateChange) -> Void) -> ARTEventListener {
-        fatalError("Not implemented")
+    func on(_ callback: @escaping @MainActor (ARTChannelStateChange) -> Void) -> ARTEventListener {
+        stateSubscriptionCallbacks.append(callback)
+
+        switch subscribeToStateBehavior {
+        case .justAddSubscription:
+            break
+        case let .addSubscriptionAndEmitStateChange(stateChange):
+            emitStateChange(stateChange)
+        }
+
+        return ARTEventListener()
+    }
+
+    func emitStateChange(_ stateChange: ARTChannelStateChange) {
+        for callback in stateSubscriptionCallbacks {
+            callback(stateChange)
+        }
     }
 
     func off(_: ARTEventListener) {
@@ -180,30 +203,5 @@ final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
         lastMessagePublishedName = name
         lastMessagePublishedExtras = extras
         lastMessagePublishedData = data
-    }
-
-    enum SubscribeToStateBehavior {
-        case justAddSubscription
-        case addSubscriptionAndEmitStateChange(ARTChannelStateChange)
-    }
-
-    private let subscribeToStateBehavior: SubscribeToStateBehavior
-    private let subscriptions = SubscriptionStorage<ARTChannelStateChange>()
-
-    func subscribeToState() -> Subscription<ARTChannelStateChange> {
-        let subscription = subscriptions.create(bufferingPolicy: .unbounded)
-
-        switch subscribeToStateBehavior {
-        case .justAddSubscription:
-            break
-        case let .addSubscriptionAndEmitStateChange(stateChange):
-            emitStateChange(stateChange)
-        }
-
-        return subscription
-    }
-
-    func emitStateChange(_ stateChange: ARTChannelStateChange) {
-        subscriptions.emit(stateChange)
     }
 }

@@ -6,12 +6,27 @@ import Testing
 struct DefaultRoomTests {
     // MARK: - Fetching channels
 
+    // @spec CHA-RC3c
+    @Test
+    func channelName() async throws {
+        // Given: a DefaultRoom instance
+        let channelsList = [
+            MockRealtimeChannel(name: "basketball::$chat"),
+        ]
+        let channels = MockChannels(channels: channelsList)
+        let realtime = MockRealtime(channels: channels)
+        let room = try DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), roomID: "basketball", options: .init(), logger: TestLogger(), lifecycleManagerFactory: MockRoomLifecycleManagerFactory())
+
+        // Then
+        #expect(room.testsOnly_internalChannel.name == "basketball::$chat")
+    }
+
     // @spec CHA-GP2a
     @Test
     func disablesImplicitAttach() async throws {
         // Given: A DefaultRoom instance
         let channelsList = [
-            MockRealtimeChannel(name: "basketball::$chat::$chatMessages"),
+            MockRealtimeChannel(name: "basketball::$chat"),
         ]
         let channels = MockChannels(channels: channelsList)
         let realtime = MockRealtime(channels: channels)
@@ -25,169 +40,97 @@ struct DefaultRoomTests {
 
     // @spec CHA-RC3a
     @Test
-    func fetchesEachChannelOnce() async throws {
-        // Given: A DefaultRoom instance, configured to use presence and occupancy
+    func fetchesChannelOnce() async throws {
+        // Given: A DefaultRoom instance
         let channelsList = [
-            MockRealtimeChannel(name: "basketball::$chat::$chatMessages"),
+            MockRealtimeChannel(name: "basketball::$chat"),
         ]
         let channels = MockChannels(channels: channelsList)
+        let roomOptions = RoomOptions(presence: .init(receivePresenceEvents: false), occupancy: .init(enableInboundOccupancy: true))
         let realtime = MockRealtime(channels: channels)
-        let roomOptions = RoomOptions(presence: PresenceOptions(), occupancy: OccupancyOptions())
         _ = try DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), roomID: "basketball", options: roomOptions, logger: TestLogger(), lifecycleManagerFactory: MockRoomLifecycleManagerFactory())
 
-        // Then: It fetches the …$chatMessages channel (which is used by messages, presence, and occupancy) only once, and the options with which it does so are the result of merging the options used by the presence feature and those used by the occupancy feature
+        // Then: It fetches the …$chat channel only once, and the options with which it does so are the result of merging the options used by the presence feature and those used by the occupancy feature
         let channelsGetArguments = channels.getArguments
-        #expect(channelsGetArguments.map(\.name).sorted() == ["basketball::$chat::$chatMessages"])
+        #expect(channelsGetArguments.map(\.name).sorted() == ["basketball::$chat"])
 
-        let chatMessagesChannelGetOptions = try #require(channelsGetArguments.first { $0.name == "basketball::$chat::$chatMessages" }?.options)
+        let chatMessagesChannelGetOptions = try #require(channelsGetArguments.first { $0.name == "basketball::$chat" }?.options)
         #expect(chatMessagesChannelGetOptions.params?["occupancy"] == "metrics")
-        // TODO: Restore this code once we understand weird Realtime behaviour and spec points (https://github.com/ably-labs/ably-chat-swift/issues/133)
-//        #expect(chatMessagesChannelGetOptions.modes == [.presence, .presenceSubscribe])
+        #expect(chatMessagesChannelGetOptions.modes == [.publish, .subscribe, .presence])
+    }
+
+    // @spec CHA-O6a
+    // @spec CHA-O6b
+    @Test(arguments:
+        [
+            (
+                enableInboundOccupancy: true,
+                expectedOccupancyChannelParam: "metrics"
+            ),
+            (
+                enableInboundOccupancy: false,
+                expectedOccupancyChannelParam: nil
+            ),
+        ]
+    )
+    func enableInboundOccupancy(enableInboundOccupancy: Bool, expectedOccupancyChannelParam: String?) async throws {
+        // Given: A DefaultRoom instance, with the occupancy.enableInboundOccupancy room option set per the test argument
+        let channelsList = [
+            MockRealtimeChannel(name: "basketball::$chat"),
+        ]
+        let channels = MockChannels(channels: channelsList)
+        let roomOptions = RoomOptions(occupancy: .init(enableInboundOccupancy: enableInboundOccupancy))
+        let realtime = MockRealtime(channels: channels)
+        _ = try DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), roomID: "basketball", options: roomOptions, logger: TestLogger(), lifecycleManagerFactory: MockRoomLifecycleManagerFactory())
+
+        // Then: When fetching the realtime channel, it sets the "occupancy" channel param accordingly
+        let chatMessagesChannelGetOptions = try #require(channels.getArguments.first?.options)
+        #expect(chatMessagesChannelGetOptions.params?["occupancy"] == expectedOccupancyChannelParam)
+    }
+
+    // @spec CHA-PR9c2
+    @Test(arguments:
+        [
+            (
+                receivePresenceEvents: true,
+                // i.e. it doesn't explicitly set any modes (so that Realtime will use the default modes)
+                expectedChannelModes: [] as ARTChannelMode
+            ),
+            (
+                receivePresenceEvents: false,
+                expectedChannelModes: [.publish, .subscribe, .presence] as ARTChannelMode
+            ),
+        ]
+    )
+    func receivePresenceEvents(receivePresenceEvents: Bool, expectedChannelModes: ARTChannelMode) async throws {
+        // Given: A DefaultRoom instance, with the presence.receivePresenceEvents room option set per the test argument
+        let channelsList = [
+            MockRealtimeChannel(name: "basketball::$chat"),
+        ]
+        let channels = MockChannels(channels: channelsList)
+        let roomOptions = RoomOptions(presence: .init(receivePresenceEvents: receivePresenceEvents))
+        let realtime = MockRealtime(channels: channels)
+        _ = try DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), roomID: "basketball", options: roomOptions, logger: TestLogger(), lifecycleManagerFactory: MockRoomLifecycleManagerFactory())
+
+        // Then: When fetching the realtime channel, it sets the channel modes accordingly
+        let chatMessagesChannelGetOptions = try #require(channels.getArguments.first?.options)
+        #expect(chatMessagesChannelGetOptions.modes == expectedChannelModes)
     }
 
     // MARK: - Features
 
-    // @spec CHA-M1
     @Test
-    func messagesChannelName() async throws {
+    func passesChannelToLifecycleManager() async throws {
         // Given: a DefaultRoom instance
-        let channelsList = [
-            MockRealtimeChannel(name: "basketball::$chat::$chatMessages"),
-        ]
-        let channels = MockChannels(channels: channelsList)
-        let realtime = MockRealtime(channels: channels)
-        let room = try DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), roomID: "basketball", options: .init(), logger: TestLogger(), lifecycleManagerFactory: MockRoomLifecycleManagerFactory())
-
-        // Then
-        let defaultMessages = try #require(room.messages as? DefaultMessages)
-        #expect(defaultMessages.testsOnly_internalChannel.name == "basketball::$chat::$chatMessages")
-    }
-
-    // @spec CHA-ER1
-    @Test
-    func reactionsChannelName() async throws {
-        // Given: a DefaultRoom instance
-        let channelsList = [
-            MockRealtimeChannel(name: "basketball::$chat::$chatMessages"),
-            MockRealtimeChannel(name: "basketball::$chat::$reactions"),
-        ]
-        let channels = MockChannels(channels: channelsList)
-        let realtime = MockRealtime(channels: channels)
-        let room = try DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), roomID: "basketball", options: .init(reactions: .init()), logger: TestLogger(), lifecycleManagerFactory: MockRoomLifecycleManagerFactory())
-
-        // Then
-        let defaultReactions = try #require(room.reactions as? DefaultRoomReactions)
-        #expect(defaultReactions.testsOnly_internalChannel.name == "basketball::$chat::$reactions")
-    }
-
-    // @spec CHA-RC2c
-    // @spec CHA-RC2d
-    // @spec CHA-RC2f
-    // @spec CHA-RL5a1 - We implement this spec point by _not allowing multiple contributors to share a channel_; this is an approach that I’ve suggested in https://github.com/ably/specification/issues/240.
-    @Test
-    func fetchesChannelAndCreatesLifecycleContributorForEnabledFeatures() async throws {
-        // Given: a DefaultRoom instance, initialized with options that request that the room use a strict subset of the possible features
-        let channelsList = [
-            MockRealtimeChannel(name: "basketball::$chat::$chatMessages"),
-            MockRealtimeChannel(name: "basketball::$chat::$reactions"),
-        ]
-        let channels = MockChannels(channels: channelsList)
-        let realtime = MockRealtime(channels: channels)
-        let roomOptions = RoomOptions(
-            presence: .init(),
-            // Note that typing indicators are not enabled, to give us the aforementioned strict subset of features
-            reactions: .init()
-        )
-        let lifecycleManagerFactory = MockRoomLifecycleManagerFactory()
-        _ = try DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), roomID: "basketball", options: roomOptions, logger: TestLogger(), lifecycleManagerFactory: lifecycleManagerFactory)
-
-        // Then: It:
-        // - fetches the channel that corresponds to each feature requested by the room options, plus the messages feature
-        // - initializes the RoomLifecycleManager with a contributor for each fetched channel, and the feature assigned to each contributor is the feature, of the enabled features that correspond to that channel, which appears first in the CHA-RC2e list
-        // - initializes the RoomLifecycleManager with a contributor for each feature requested by the room options, plus the messages feature
-        let lifecycleManagerCreationArguments = try #require(lifecycleManagerFactory.createManagerArguments.first)
-        let expectedFeatures: [RoomFeature] = [.messages, .reactions] // i.e. since messages and presence share a channel, we create a single contributor for this channel and its assigned feature is messages
-        #expect(lifecycleManagerCreationArguments.contributors.count == expectedFeatures.count)
-        #expect(Set(lifecycleManagerCreationArguments.contributors.map(\.feature)) == Set(expectedFeatures))
-
-        let channelsGetArguments = channels.getArguments
-        let expectedFetchedChannelNames = [
-            "basketball::$chat::$chatMessages", // This is the channel used by the messages and presence features
-            "basketball::$chat::$reactions",
-        ]
-        #expect(channelsGetArguments.count == expectedFetchedChannelNames.count)
-        #expect(Set(channelsGetArguments.map(\.name)) == Set(expectedFetchedChannelNames))
-    }
-
-    // @spec CHA-RC2e
-    // @spec CHA-RL10
-    @Test
-    func lifecycleContributorOrder() async throws {
-        // Given: a DefaultRoom, instance, with all room features enabled
-        let channelsList = [
-            MockRealtimeChannel(name: "basketball::$chat::$chatMessages"),
-            MockRealtimeChannel(name: "basketball::$chat::$reactions"),
-            MockRealtimeChannel(name: "basketball::$chat"),
-        ]
-        let channels = MockChannels(channels: channelsList)
+        let channel = MockRealtimeChannel(name: "basketball::$chat")
+        let channels = MockChannels(channels: [channel])
         let realtime = MockRealtime(channels: channels)
         let lifecycleManagerFactory = MockRoomLifecycleManagerFactory()
-        _ = try DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), roomID: "basketball", options: .allFeaturesEnabled, logger: TestLogger(), lifecycleManagerFactory: lifecycleManagerFactory)
+        _ = try DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), roomID: "basketball", options: .init(), logger: TestLogger(), lifecycleManagerFactory: lifecycleManagerFactory)
 
-        // Then: The array of contributors with which it initializes the RoomLifecycleManager are in the same order as the following list:
-        //
-        // messages, presence, typing, reactions, occupancy
-        //
-        // (note that we do not say that it is the _same_ list, because we combine multiple features into a single contributor)
+        // Then: It creates a lifecycle manager using the fetched channel
         let lifecycleManagerCreationArguments = try #require(lifecycleManagerFactory.createManagerArguments.first)
-        #expect(lifecycleManagerCreationArguments.contributors.map(\.feature) == [.messages, .typing, .reactions])
-    }
-
-    // @specUntested CHA-RC2b - We chose to implement this failure with an idiomatic fatalError instead of throwing, but we can’t test this.
-
-    // This is just a basic sense check to make sure the room getters are working as expected, since we don’t have unit tests for some of the features at the moment.
-    @Test(arguments: [.messages, .presence, .reactions, .occupancy, .typing] as[RoomFeature])
-    func whenFeatureEnabled_propertyGetterReturns(feature: RoomFeature) async throws {
-        // Given: A RoomOptions with the (test argument `feature`) feature enabled in the room options
-        let roomOptions: RoomOptions
-        var namesOfChannelsToMock = ["basketball::$chat::$chatMessages"]
-        switch feature {
-        case .messages:
-            // Messages should always be enabled without needing any special options
-            roomOptions = .init()
-        case .presence:
-            roomOptions = .init(presence: .init())
-        case .reactions:
-            roomOptions = .init(reactions: .init())
-            namesOfChannelsToMock.append("basketball::$chat::$reactions")
-        case .occupancy:
-            roomOptions = .init(occupancy: .init())
-        case .typing:
-            roomOptions = .init(typing: .init())
-            namesOfChannelsToMock.append("basketball::$chat")
-        }
-
-        let channelsList = namesOfChannelsToMock.map { name in
-            MockRealtimeChannel(name: name)
-        }
-        let channels = MockChannels(channels: channelsList)
-        let realtime = MockRealtime(channels: channels)
-        let room = try DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), roomID: "basketball", options: roomOptions, logger: TestLogger(), lifecycleManagerFactory: MockRoomLifecycleManagerFactory())
-
-        // When: We call the room’s getter for that feature
-        // Then: It returns an object (i.e. does not `fatalError()`)
-        switch feature {
-        case .messages:
-            #expect(room.messages is DefaultMessages)
-        case .presence:
-            #expect(room.presence is DefaultPresence)
-        case .reactions:
-            #expect(room.reactions is DefaultRoomReactions)
-        case .occupancy:
-            #expect(room.occupancy is DefaultOccupancy)
-        case .typing:
-            #expect(room.typing is DefaultTyping)
-        }
+        #expect(lifecycleManagerCreationArguments.channel === channel)
     }
 
     // MARK: - Attach
@@ -201,7 +144,7 @@ struct DefaultRoomTests {
     func attach(managerAttachResult: Result<Void, ARTErrorInfo>) async throws {
         // Given: a DefaultRoom instance
         let channelsList = [
-            MockRealtimeChannel(name: "basketball::$chat::$chatMessages"),
+            MockRealtimeChannel(name: "basketball::$chat"),
         ]
         let channels = MockChannels(channels: channelsList)
         let realtime = MockRealtime(channels: channels)
@@ -237,7 +180,7 @@ struct DefaultRoomTests {
     func detach(managerDetachResult: Result<Void, ARTErrorInfo>) async throws {
         // Given: a DefaultRoom instance
         let channelsList = [
-            MockRealtimeChannel(name: "basketball::$chat::$chatMessages"),
+            MockRealtimeChannel(name: "basketball::$chat"),
         ]
         let channels = MockChannels(channels: channelsList)
         let realtime = MockRealtime(channels: channels)
@@ -269,7 +212,7 @@ struct DefaultRoomTests {
     func release() async throws {
         // Given: a DefaultRoom instance
         let channelsList = [
-            MockRealtimeChannel(name: "basketball::$chat::$chatMessages"),
+            MockRealtimeChannel(name: "basketball::$chat"),
         ]
         let channels = MockChannels(channels: channelsList)
         let realtime = MockRealtime(channels: channels)
@@ -295,12 +238,12 @@ struct DefaultRoomTests {
     func status() async throws {
         // Given: a DefaultRoom instance
         let channelsList = [
-            MockRealtimeChannel(name: "basketball::$chat::$chatMessages"),
+            MockRealtimeChannel(name: "basketball::$chat"),
         ]
         let channels = MockChannels(channels: channelsList)
         let realtime = MockRealtime(channels: channels)
 
-        let lifecycleManagerRoomStatus = RoomStatus.attached // arbitrary
+        let lifecycleManagerRoomStatus = RoomStatus.attached(error: nil) // arbitrary
 
         let lifecycleManager = MockRoomLifecycleManager(roomStatus: lifecycleManagerRoomStatus)
         let lifecycleManagerFactory = MockRoomLifecycleManagerFactory(manager: lifecycleManager)
@@ -315,7 +258,7 @@ struct DefaultRoomTests {
     func onStatusChange() async throws {
         // Given: a DefaultRoom instance
         let channelsList = [
-            MockRealtimeChannel(name: "basketball::$chat::$chatMessages"),
+            MockRealtimeChannel(name: "basketball::$chat"),
         ]
         let channels = MockChannels(channels: channelsList)
         let realtime = MockRealtime(channels: channels)
@@ -326,7 +269,7 @@ struct DefaultRoomTests {
         let room = try DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), roomID: "basketball", options: .init(), logger: TestLogger(), lifecycleManagerFactory: lifecycleManagerFactory)
 
         // When: The room lifecycle manager emits a status change through `subscribeToState`
-        let managerStatusChange = RoomStatusChange(current: .detached, previous: .detaching) // arbitrary
+        let managerStatusChange = RoomStatusChange(current: .detached(error: nil), previous: .detaching(error: nil)) // arbitrary
         let roomStatusSubscription = room.onStatusChange()
         lifecycleManager.emitStatusChange(managerStatusChange)
 
@@ -334,6 +277,36 @@ struct DefaultRoomTests {
         let roomStatusChange = try #require(await roomStatusSubscription.first { @Sendable _ in true })
         #expect(roomStatusChange == managerStatusChange)
     }
+
+    // MARK: - Discontinuties
+
+    // @spec CHA-RL15a
+    @Test
+    func onDiscontinuity() async throws {
+        // Given: a DefaultRoom instance
+        let channelsList = [
+            MockRealtimeChannel(name: "basketball::$chat"),
+        ]
+        let channels = MockChannels(channels: channelsList)
+        let realtime = MockRealtime(channels: channels)
+
+        let lifecycleManager = MockRoomLifecycleManager()
+        let lifecycleManagerFactory = MockRoomLifecycleManagerFactory(manager: lifecycleManager)
+
+        let room = try DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), roomID: "basketball", options: .init(), logger: TestLogger(), lifecycleManagerFactory: lifecycleManagerFactory)
+
+        // When: The room lifecycle manager emits a status change through `subscribeToState`
+        let managerDiscontinuity = DiscontinuityEvent(error: ARTErrorInfo.createUnknownError() /* arbitrary */ )
+        let roomDiscontinuitiesSubscription = room.onDiscontinuity()
+        lifecycleManager.emitDiscontinuity(managerDiscontinuity)
+
+        // Then: The room emits this discontinuity through `onDiscontinuity`
+        let roomDiscontinuity = try #require(await roomDiscontinuitiesSubscription.first { @Sendable _ in true })
+        #expect(roomDiscontinuity == managerDiscontinuity)
+    }
+
+    // @specNotApplicable CHA-RL15b - We do not have an explicit unsubscribe API, since we use AsyncSequence instead of listeners.
+    // @specNotApplicable CHA-RL15c - We do not have an explicit unsubscribe API, since we use AsyncSequence instead of listeners.
 }
 
 private extension Result {

@@ -8,7 +8,8 @@ class MockRoomLifecycleManager: RoomLifecycleManager {
     private(set) var detachCallCount = 0
     private(set) var releaseCallCount = 0
     private let _roomStatus: RoomStatus?
-    private let subscriptions = SubscriptionStorage<RoomStatusChange>()
+    private let roomStatusSubscriptions = SubscriptionStorage<RoomStatusChange>()
+    private let discontinuitySubscriptions = SubscriptionStorage<DiscontinuityEvent>()
 
     init(attachResult: Result<Void, ARTErrorInfo>? = nil, detachResult: Result<Void, ARTErrorInfo>? = nil, roomStatus: RoomStatus? = nil) {
         self.attachResult = attachResult
@@ -52,14 +53,22 @@ class MockRoomLifecycleManager: RoomLifecycleManager {
     }
 
     func onRoomStatusChange(bufferingPolicy: BufferingPolicy) -> Subscription<RoomStatusChange> {
-        subscriptions.create(bufferingPolicy: bufferingPolicy)
+        roomStatusSubscriptions.create(bufferingPolicy: bufferingPolicy)
     }
 
     func emitStatusChange(_ statusChange: RoomStatusChange) {
-        subscriptions.emit(statusChange)
+        roomStatusSubscriptions.emit(statusChange)
     }
 
     func waitToBeAbleToPerformPresenceOperations(requestedByFeature _: RoomFeature) async throws(InternalError) {
         fatalError("Not implemented")
+    }
+
+    func onDiscontinuity(bufferingPolicy: BufferingPolicy) -> Subscription<DiscontinuityEvent> {
+        discontinuitySubscriptions.create(bufferingPolicy: bufferingPolicy)
+    }
+
+    func emitDiscontinuity(_ discontinuity: DiscontinuityEvent) {
+        discontinuitySubscriptions.emit(discontinuity)
     }
 }

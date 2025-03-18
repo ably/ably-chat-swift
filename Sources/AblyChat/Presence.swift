@@ -9,7 +9,7 @@ public typealias PresenceData = JSONValue
  * Get an instance via ``Room/presence``.
  */
 @MainActor
-public protocol Presence: AnyObject, Sendable, EmitsDiscontinuities {
+public protocol Presence: AnyObject, Sendable {
     /**
      * Same as ``get(params:)``, but with defaults params.
      */

@@ -1,4 +1,4 @@
-// CHA-ER3a
+// CHA-ER3d
 internal struct RoomReactionDTO {
     internal var data: Data
     internal var extras: Extras
@@ -56,6 +56,7 @@ extension RoomReactionDTO.Data: JSONObjectCodable {
 extension RoomReactionDTO.Extras: JSONObjectCodable {
     internal enum JSONKey: String {
         case headers
+        case ephemeral
     }
 
     internal init(jsonObject: [String: JSONValue]) throws(InternalError) {
@@ -67,6 +68,8 @@ extension RoomReactionDTO.Extras: JSONObjectCodable {
     internal var toJSONObject: [String: JSONValue] {
         [
             JSONKey.headers.rawValue: .object(headers?.mapValues(\.toJSONValue) ?? [:]),
+            // CHA-ER3d
+            JSONKey.ephemeral.rawValue: true,
         ]
     }
 }

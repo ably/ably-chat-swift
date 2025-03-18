@@ -85,7 +85,7 @@ struct IntegrationTests {
                 presence: .init(),
                 typing: .init(heartbeatThrottle: 2),
                 reactions: .init(),
-                occupancy: .init()
+                occupancy: .init(enableInboundOccupancy: true)
             )
         )
 
@@ -97,9 +97,9 @@ struct IntegrationTests {
 
         // (5) Check that we received an ATTACHED status change as a result of attaching the room
         _ = try #require(await rxRoomStatusSubscription.first { @Sendable statusChange in
-            statusChange.current == .attached
+            statusChange.current == .attached(error: nil)
         })
-        #expect(rxRoom.status == .attached)
+        #expect(rxRoom.status == .attached(error: nil))
 
         // MARK: - Send and receive messages
 
@@ -401,9 +401,9 @@ struct IntegrationTests {
 
         // (2) Check that we received a DETACHED status change as a result of detaching the room
         _ = try #require(await rxRoomStatusSubscription.first { @Sendable statusChange in
-            statusChange.current == .detached
+            statusChange.current == .detached(error: nil)
         })
-        #expect(rxRoom.status == .detached)
+        #expect(rxRoom.status == .detached(error: nil))
 
         // MARK: - Release
 
