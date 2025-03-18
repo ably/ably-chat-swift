@@ -802,7 +802,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
                 switch contributorState {
                 case .suspended:
                     // CHA-RL1h2
-                    let error = ARTErrorInfo(chatError: .attachmentFailed(feature: contributor.feature, underlyingError: contributorAttachError.toARTErrorInfo()))
+                    let error = ARTErrorInfo(chatError: .roomAttachmentFailed(underlyingError: contributorAttachError.toARTErrorInfo()))
 
                     // CHA-RL1h3
                     // My understanding is that, since this task is being created inside an actor’s synchronous code, the two .suspended* statuses will always come in the right order; i.e. first .suspendedAwaitingStartOfRetryOperation and then .suspended.
@@ -815,7 +815,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
                     changeStatus(to: .suspendedAwaitingStartOfRetryOperation(retryOperationTask: retryOperationTask, error: error))
                     throw error.toInternalError()
                 case .failed:
-                    let error = ARTErrorInfo(chatError: .attachmentFailed(feature: contributor.feature, underlyingError: contributorAttachError.toARTErrorInfo()))
+                    let error = ARTErrorInfo(chatError: .roomAttachmentFailed(underlyingError: contributorAttachError.toARTErrorInfo()))
 
                     // CHA-RL1h5
                     // My understanding is that, since this task is being created inside an actor’s synchronous code, the two .failed* statuses will always come in the right order; i.e. first .failedAwaitingStartOfRundownOperation and then .failedAndPerformingRundownOperation.
@@ -936,7 +936,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
                 switch contributorState {
                 case .failed:
                     // CHA-RL2h1
-                    let error = ARTErrorInfo(chatError: .detachmentFailed(feature: contributor.feature, underlyingError: error.toARTErrorInfo()))
+                    let error = ARTErrorInfo(chatError: .roomDetachmentFailed(underlyingError: error.toARTErrorInfo()))
 
                     if firstDetachError == nil {
                         // We’ll throw this after we’ve tried detaching all the channels

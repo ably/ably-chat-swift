@@ -373,7 +373,7 @@ struct DefaultRoomLifecycleManagerTests {
         }
 
         for error in await [suspendedRoomStatusChange.error, manager.roomStatus.error, roomAttachError] {
-            #expect(isChatError(error, withCodeAndStatusCode: .fixedStatusCode(.messagesAttachmentFailed), cause: contributorAttachError))
+            #expect(isChatError(error, withCodeAndStatusCode: .fixedStatusCode(.roomAttachmentFailed), cause: contributorAttachError))
         }
 
         // and:
@@ -454,7 +454,7 @@ struct DefaultRoomLifecycleManagerTests {
         }
 
         for error in await [failedStatusChange.error, manager.roomStatus.error, roomAttachError] {
-            #expect(isChatError(error, withCodeAndStatusCode: .fixedStatusCode(.messagesAttachmentFailed), cause: contributorAttachError))
+            #expect(isChatError(error, withCodeAndStatusCode: .fixedStatusCode(.roomAttachmentFailed), cause: contributorAttachError))
         }
     }
 
@@ -673,7 +673,7 @@ struct DefaultRoomLifecycleManagerTests {
         let failedStatusChange = try #require(await maybeFailedStatusChange)
 
         for maybeError in [maybeRoomDetachError, failedStatusChange.error] {
-            #expect(isChatError(maybeError, withCodeAndStatusCode: .fixedStatusCode(.presenceDetachmentFailed), cause: contributor1DetachError))
+            #expect(isChatError(maybeError, withCodeAndStatusCode: .fixedStatusCode(.roomDetachmentFailed), cause: contributor1DetachError))
         }
     }
 
@@ -1074,7 +1074,7 @@ struct DefaultRoomLifecycleManagerTests {
 
         #expect(roomStatus.isFailed)
         for error in [roomStatus.error, failedStatusChange.error] {
-            #expect(isChatError(error, withCodeAndStatusCode: .fixedStatusCode(.presenceDetachmentFailed), cause: contributor1DetachError))
+            #expect(isChatError(error, withCodeAndStatusCode: .fixedStatusCode(.roomDetachmentFailed), cause: contributor1DetachError))
         }
 
         for contributor in contributors {
@@ -2157,7 +2157,7 @@ struct DefaultRoomLifecycleManagerTests {
             caughtError = error
         }
 
-        let expectedCause = ARTErrorInfo(chatError: .attachmentFailed(feature: .messages, underlyingError: contributorAttachError)) // using our knowledge of CHA-RL1h4
+        let expectedCause = ARTErrorInfo(chatError: .roomAttachmentFailed(underlyingError: contributorAttachError)) // using our knowledge of CHA-RL1h4
         #expect(isChatError(caughtError, withCodeAndStatusCode: .variableStatusCode(.roomInInvalidState, statusCode: 500), cause: expectedCause))
     }
 
