@@ -9,6 +9,7 @@ internal struct RoomReactionDTO {
     }
 
     internal struct Extras: Equatable {
+        internal let ephemeral = true
         internal var headers: ReactionHeaders?
     }
 }
