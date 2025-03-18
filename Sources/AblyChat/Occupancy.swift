@@ -6,7 +6,7 @@ import Ably
  *
  * Get an instance via ``Room/occupancy``.
  */
-public protocol Occupancy: AnyObject, Sendable, EmitsDiscontinuities {
+public protocol Occupancy: AnyObject, Sendable {
     /**
      * Subscribes a given listener to occupancy updates of the chat room.
      *
@@ -28,13 +28,6 @@ public protocol Occupancy: AnyObject, Sendable, EmitsDiscontinuities {
      * - Returns: A current occupancy of the chat room.
      */
     func get() async throws(ARTErrorInfo) -> OccupancyEvent
-
-    /**
-     * Get underlying Ably channel for occupancy events.
-     *
-     * - Returns: The underlying Ably channel for occupancy events.
-     */
-    var channel: any RealtimeChannelProtocol { get }
 }
 
 public extension Occupancy {
