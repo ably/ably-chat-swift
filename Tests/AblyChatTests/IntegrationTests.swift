@@ -85,7 +85,7 @@ struct IntegrationTests {
                 presence: .init(),
                 typing: .init(heartbeatThrottle: 2),
                 reactions: .init(),
-                occupancy: .init()
+                occupancy: .init(enableInboundOccupancy: true)
             )
         )
 
