@@ -25,9 +25,7 @@ internal protocol RoomLifecycleContributorChannel: Sendable {
 }
 
 /// A realtime channel that contributes to the room lifecycle.
-///
-/// The identity implied by the `Identifiable` conformance must distinguish each of the contributors passed to a given ``RoomLifecycleManager`` instance.
-internal protocol RoomLifecycleContributor: Identifiable, Sendable {
+internal protocol RoomLifecycleContributor: Sendable {
     associatedtype Channel: RoomLifecycleContributorChannel
 
     var channel: Channel { get }
@@ -52,7 +50,7 @@ internal protocol RoomLifecycleManagerFactory: Sendable {
     associatedtype Manager: RoomLifecycleManager
 
     func createManager(
-        contributors: [Contributor],
+        contributor: Contributor,
         logger: InternalLogger
     ) async -> Manager
 }
@@ -61,11 +59,11 @@ internal final class DefaultRoomLifecycleManagerFactory: RoomLifecycleManagerFac
     private let clock = DefaultSimpleClock()
 
     internal func createManager(
-        contributors: [DefaultRoomLifecycleContributor],
+        contributor: DefaultRoomLifecycleContributor,
         logger: InternalLogger
     ) async -> DefaultRoomLifecycleManager<DefaultRoomLifecycleContributor> {
         await .init(
-            contributors: contributors,
+            contributor: contributor,
             logger: logger,
             clock: clock
         )
@@ -77,13 +75,13 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
 
     private let logger: InternalLogger
     private let clock: SimpleClock
-    private let contributors: [Contributor]
+    private let contributor: Contributor
 
     // MARK: - Variable properties
 
     private var status: Status
-    /// Manager state that relates to individual contributors, keyed by contributors’ ``Contributor/id``. Stored separately from ``contributors`` so that the latter can be a `let`, to make it clear that the contributors remain fixed for the lifetime of the manager.
-    private var contributorAnnotations: ContributorAnnotations
+    /// Manager state that relates to a contributor
+    private var contributorAnnotation: ContributorAnnotation
     private var listenForStateChangesTask: Task<Void, Never>!
     private var roomStatusChangeSubscriptions = SubscriptionStorage<RoomStatusChange>()
     private var operationResultContinuations = OperationResultContinuations()
@@ -91,15 +89,15 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
     // MARK: - Initializers and `deinit`
 
     internal init(
-        contributors: [Contributor],
+        contributor: Contributor,
         logger: InternalLogger,
         clock: SimpleClock
     ) async {
         await self.init(
             status: nil,
-            pendingDiscontinuityEvents: nil,
-            idsOfContributorsWithTransientDisconnectTimeout: nil,
-            contributors: contributors,
+            pendingDiscontinuityEvent: nil,
+            hasTransientDisconnectTimeout: nil,
+            contributor: contributor,
             logger: logger,
             clock: clock
         )
@@ -108,17 +106,17 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
     #if DEBUG
         internal init(
             testsOnly_status status: Status? = nil,
-            testsOnly_pendingDiscontinuityEvents pendingDiscontinuityEvents: [Contributor.ID: DiscontinuityEvent]? = nil,
-            testsOnly_idsOfContributorsWithTransientDisconnectTimeout idsOfContributorsWithTransientDisconnectTimeout: Set<Contributor.ID>? = nil,
-            contributors: [Contributor],
+            testsOnly_pendingDiscontinuityEvent pendingDiscontinuityEvent: DiscontinuityEvent? = nil,
+            testsOnly_hasTransientDisconnectTimeout hasTransientDisconnectTimeout: Bool? = nil,
+            contributor: Contributor,
             logger: InternalLogger,
             clock: SimpleClock
         ) async {
             await self.init(
                 status: status,
-                pendingDiscontinuityEvents: pendingDiscontinuityEvents,
-                idsOfContributorsWithTransientDisconnectTimeout: idsOfContributorsWithTransientDisconnectTimeout,
-                contributors: contributors,
+                pendingDiscontinuityEvent: pendingDiscontinuityEvent,
+                hasTransientDisconnectTimeout: hasTransientDisconnectTimeout,
+                contributor: contributor,
                 logger: logger,
                 clock: clock
             )
@@ -127,46 +125,30 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
 
     private init(
         status: Status?,
-        pendingDiscontinuityEvents: [Contributor.ID: DiscontinuityEvent]?,
-        idsOfContributorsWithTransientDisconnectTimeout: Set<Contributor.ID>?,
-        contributors: [Contributor],
+        pendingDiscontinuityEvent: DiscontinuityEvent?,
+        hasTransientDisconnectTimeout: Bool?,
+        contributor: Contributor,
         logger: InternalLogger,
         clock: SimpleClock
     ) async {
         self.status = status ?? .initialized
-        self.contributors = contributors
-        contributorAnnotations = .init(
-            contributors: contributors,
-            pendingDiscontinuityEvents: pendingDiscontinuityEvents ?? [:],
-            idsOfContributorsWithTransientDisconnectTimeout: idsOfContributorsWithTransientDisconnectTimeout ?? []
+        self.contributor = contributor
+        contributorAnnotation = .init(
+            pendingDiscontinuityEvent: pendingDiscontinuityEvent,
+            transientDisconnectTimeout: (hasTransientDisconnectTimeout ?? false) ? .init() : nil,
+            hasBeenAttached: false
         )
         self.logger = logger
         self.clock = clock
 
         // The idea here is to make sure that, before the initializer completes, we are already listening for state changes, so that e.g. tests don’t miss a state change.
-        let subscriptions = await withTaskGroup(of: (contributor: Contributor, subscription: Subscription<ARTChannelStateChange>).self) { group in
-            for contributor in contributors {
-                group.addTask {
-                    await (contributor: contributor, subscription: contributor.channel.subscribeToState())
-                }
-            }
+        let subscription = await contributor.channel.subscribeToState()
 
-            return await Array(group)
-        }
-
-        // CHA-RL4: listen for state changes from our contributors
-        // TODO: Understand what happens when this task gets cancelled by `deinit`; I’m not convinced that the for-await loops will exit (https://github.com/ably-labs/ably-chat-swift/issues/29)
-        listenForStateChangesTask = Task {
-            await withTaskGroup(of: Void.self) { group in
-                for (contributor, subscription) in subscriptions {
-                    // This `@Sendable` is to make the compiler error "'self'-isolated value of type '() async -> Void' passed as a strongly transferred parameter; later accesses could race" go away. I don’t hugely understand what it means, but given the "'self'-isolated value" I guessed it was something vaguely to do with the fact that `async` actor initializers are actor-isolated and thought that marking it as `@Sendable` would sever this isolation and make the error go away, which it did 🤷. But there are almost certainly consequences that I am incapable of reasoning about with my current level of Swift concurrency knowledge.
-                    group.addTask { @Sendable [weak self] in
-                        // We intentionally wait to finish processing one state change before moving on to the next; this means that when we process an ATTACHED state change, we can be sure that the current `hasBeenAttached` annotation correctly reflects the contributor’s previous state changes.
-                        for await stateChange in subscription {
-                            await self?.didReceiveStateChange(stateChange, forContributor: contributor)
-                        }
-                    }
-                }
+        // CHA-RL4: listen for state changes from our contributor
+        // TODO: Understand what happens when this task gets cancelled by `deinit`; I’m not convinced that the for-await loop will exit (https://github.com/ably-labs/ably-chat-swift/issues/29)
+        listenForStateChangesTask = Task { [weak self] in
+            for await stateChange in subscription {
+                await self?.didReceiveStateChange(stateChange)
             }
         }
     }
@@ -279,47 +261,6 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
         }
     }
 
-    /// Provides a `Dictionary`-like interface for storing manager state about individual contributors.
-    private struct ContributorAnnotations {
-        private var storage: [Contributor.ID: ContributorAnnotation]
-
-        init(
-            contributors: [Contributor],
-            pendingDiscontinuityEvents: [Contributor.ID: DiscontinuityEvent],
-            idsOfContributorsWithTransientDisconnectTimeout: Set<Contributor.ID>
-        ) {
-            storage = contributors.reduce(into: [:]) { result, contributor in
-                result[contributor.id] = .init(
-                    pendingDiscontinuityEvent: pendingDiscontinuityEvents[contributor.id],
-                    transientDisconnectTimeout: idsOfContributorsWithTransientDisconnectTimeout.contains(contributor.id) ? .init() : nil,
-                    hasBeenAttached: false
-                )
-            }
-        }
-
-        /// It is a programmer error to call this subscript getter with a contributor that was not one of those passed to ``init(contributors:pendingDiscontinuityEvents)``.
-        subscript(_ contributor: Contributor) -> ContributorAnnotation {
-            get {
-                guard let annotation = storage[contributor.id] else {
-                    preconditionFailure("Expected annotation for \(contributor)")
-                }
-                return annotation
-            }
-
-            set {
-                storage[contributor.id] = newValue
-            }
-        }
-
-        mutating func clearPendingDiscontinuityEvents() {
-            storage = storage.mapValues { annotation in
-                var newAnnotation = annotation
-                newAnnotation.pendingDiscontinuityEvent = nil
-                return newAnnotation
-            }
-        }
-    }
-
     // MARK: - Room status and its changes
 
     internal var roomStatus: RoomStatus {
@@ -383,20 +324,16 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
             stateChangeHandledSubscriptions.create(bufferingPolicy: .unbounded)
         }
 
-        internal func testsOnly_pendingDiscontinuityEvent(for contributor: Contributor) -> DiscontinuityEvent? {
-            contributorAnnotations[contributor].pendingDiscontinuityEvent
+        internal var testsOnly_pendingDiscontinuityEvent: DiscontinuityEvent? {
+            contributorAnnotation.pendingDiscontinuityEvent
         }
 
-        internal func testsOnly_hasTransientDisconnectTimeout(for contributor: Contributor) -> Bool {
-            contributorAnnotations[contributor].hasTransientDisconnectTimeout
+        internal var testsOnly_hasTransientDisconnectTimeout: Bool {
+            contributorAnnotation.hasTransientDisconnectTimeout
         }
 
-        internal var testsOnly_hasTransientDisconnectTimeoutForAnyContributor: Bool {
-            contributors.contains { testsOnly_hasTransientDisconnectTimeout(for: $0) }
-        }
-
-        internal func testsOnly_idOfTransientDisconnectTimeout(for contributor: Contributor) -> UUID? {
-            contributorAnnotations[contributor].transientDisconnectTimeout?.id
+        internal var testsOnly_idOfTransientDisconnectTimeout: UUID? {
+            contributorAnnotation.transientDisconnectTimeout?.id
         }
 
         /// Supports the ``testsOnly_subscribeToHandledTransientDisconnectTimeouts()`` method.
@@ -413,8 +350,8 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
     #endif
 
     /// Implements CHA-RL4b’s contributor state change handling.
-    private func didReceiveStateChange(_ stateChange: ARTChannelStateChange, forContributor contributor: Contributor) async {
-        logger.log(message: "Got state change \(stateChange) for contributor \(contributor)", level: .info)
+    private func didReceiveStateChange(_ stateChange: ARTChannelStateChange) async {
+        logger.log(message: "Got state change \(stateChange)", level: .info)
 
         // TODO: The spec, which is written for a single-threaded environment, is presumably operating on the assumption that the channel is currently in the state given by `stateChange.current` (https://github.com/ably-labs/ably-chat-swift/issues/49)
         switch stateChange.event {
@@ -425,7 +362,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
             }
 
             // CHA-RL4a2 — if contributor has not yet been attached then no-op
-            guard contributorAnnotations[contributor].hasBeenAttached else {
+            guard contributorAnnotation.hasBeenAttached else {
                 break
             }
 
@@ -433,31 +370,32 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
 
             if hasOperationInProgress {
                 // CHA-RL4a3
-                recordPendingDiscontinuityEvent(for: contributor, error: reason)
+                recordPendingDiscontinuityEvent(error: reason)
             } else {
                 // CHA-RL4a4
                 let discontinuity = DiscontinuityEvent(error: reason)
-                logger.log(message: "Emitting discontinuity event \(discontinuity) for contributor \(contributor)", level: .info)
+                logger.log(message: "Emitting discontinuity event \(discontinuity)", level: .info)
 
                 await contributor.emitDiscontinuity(discontinuity)
             }
         case .attached:
-            let hadAlreadyAttached = contributorAnnotations[contributor].hasBeenAttached
-            contributorAnnotations[contributor].hasBeenAttached = true
+            let hadAlreadyAttached = contributorAnnotation.hasBeenAttached
+            contributorAnnotation.hasBeenAttached = true
 
             if hasOperationInProgress {
                 if !stateChange.resumed, hadAlreadyAttached {
                     // CHA-RL4b1
-                    recordPendingDiscontinuityEvent(for: contributor, error: stateChange.reason)
+                    recordPendingDiscontinuityEvent(error: stateChange.reason)
                 }
             } else {
                 // CHA-RL4b10
-                clearTransientDisconnectTimeouts(for: contributor)
+                clearTransientDisconnectTimeouts()
 
                 if status != .attached {
-                    if await (contributors.async.map { await $0.channel.state }.allSatisfy { $0 == .attached }) {
+                    // TODO: This is probably unnecessary
+                    if await contributor.channel.state == .attached {
                         // CHA-RL4b8
-                        logger.log(message: "Now that all contributors are ATTACHED, transitioning room to ATTACHED", level: .info)
+                        logger.log(message: "Now that contributor is ATTACHED, transitioning room to ATTACHED", level: .info)
                         changeStatus(to: .attached)
                     }
                 }
@@ -474,12 +412,11 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
                 changeStatus(to: .failed(error: reason))
 
                 // TODO: CHA-RL4b5 is a bit unclear about how to handle failure, and whether they can be detached concurrently (asked in https://github.com/ably/specification/pull/200/files#r1777471810)
-                for contributor in contributors {
-                    do {
-                        try await contributor.channel.detach()
-                    } catch {
-                        logger.log(message: "Failed to detach contributor \(contributor), error \(error)", level: .info)
-                    }
+                do {
+                    // TODO: this is probably redundant
+                    try await contributor.channel.detach()
+                } catch {
+                    logger.log(message: "Failed to detach contributor, error \(error)", level: .info)
                 }
             }
         case .suspended:
@@ -502,16 +439,16 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
                 changeStatus(to: .suspendedAwaitingStartOfRetryOperation(retryOperationTask: retryOperationTask, error: reason))
             }
         case .attaching:
-            if !hasOperationInProgress, !contributorAnnotations[contributor].hasTransientDisconnectTimeout {
+            if !hasOperationInProgress, contributorAnnotation.hasTransientDisconnectTimeout {
                 // CHA-RL4b7
                 let transientDisconnectTimeout = ContributorAnnotation.TransientDisconnectTimeout()
-                contributorAnnotations[contributor].transientDisconnectTimeout = transientDisconnectTimeout
-                logger.log(message: "Starting transient disconnect timeout \(transientDisconnectTimeout.id) for \(contributor)", level: .debug)
+                contributorAnnotation.transientDisconnectTimeout = transientDisconnectTimeout
+                logger.log(message: "Starting transient disconnect timeout \(transientDisconnectTimeout.id)", level: .debug)
                 transientDisconnectTimeout.task = Task {
                     do {
                         try await clock.sleep(timeInterval: 5)
                     } catch {
-                        logger.log(message: "Transient disconnect timeout \(transientDisconnectTimeout.id) for \(contributor) was interrupted, error \(error)", level: .debug)
+                        logger.log(message: "Transient disconnect timeout \(transientDisconnectTimeout.id) was interrupted, error \(error)", level: .debug)
 
                         #if DEBUG
                             emitTransientDisconnectTimeoutHandledEventForTimeoutWithID(transientDisconnectTimeout.id)
@@ -519,8 +456,8 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
 
                         return
                     }
-                    logger.log(message: "Transient disconnect timeout \(transientDisconnectTimeout.id) for \(contributor) completed", level: .debug)
-                    contributorAnnotations[contributor].transientDisconnectTimeout = nil
+                    logger.log(message: "Transient disconnect timeout \(transientDisconnectTimeout.id)", level: .debug)
+                    contributorAnnotation.transientDisconnectTimeout = nil
                     changeStatus(to: .attachingDueToContributorStateChange(error: stateChange.reason))
 
                     #if DEBUG
@@ -545,32 +482,26 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
         }
     #endif
 
-    private func clearTransientDisconnectTimeouts(for contributor: Contributor) {
-        guard let transientDisconnectTimeout = contributorAnnotations[contributor].transientDisconnectTimeout else {
+    private func clearTransientDisconnectTimeouts() {
+        guard let transientDisconnectTimeout = contributorAnnotation.transientDisconnectTimeout else {
             return
         }
 
-        logger.log(message: "Clearing transient disconnect timeout \(transientDisconnectTimeout.id) for \(contributor)", level: .debug)
+        logger.log(message: "Clearing transient disconnect timeout \(transientDisconnectTimeout.id)", level: .debug)
         transientDisconnectTimeout.task?.cancel()
-        contributorAnnotations[contributor].transientDisconnectTimeout = nil
+        contributorAnnotation.transientDisconnectTimeout = nil
     }
 
-    private func clearTransientDisconnectTimeouts() {
-        for contributor in contributors {
-            clearTransientDisconnectTimeouts(for: contributor)
-        }
-    }
-
-    private func recordPendingDiscontinuityEvent(for contributor: Contributor, error: ARTErrorInfo?) {
+    private func recordPendingDiscontinuityEvent(error: ARTErrorInfo?) {
         // CHA-RL4a3, and I have assumed that the same behaviour is expected in CHA-RL4b1 too (https://github.com/ably/specification/pull/246 proposes this change).
-        guard contributorAnnotations[contributor].pendingDiscontinuityEvent == nil else {
-            logger.log(message: "Error \(String(describing: error)) will not replace existing pending discontinuity event for contributor \(contributor)", level: .info)
+        guard contributorAnnotation.pendingDiscontinuityEvent == nil else {
+            logger.log(message: "Error \(String(describing: error)) will not replace existing pending discontinuity event", level: .info)
             return
         }
 
         let discontinuity = DiscontinuityEvent(error: error)
-        logger.log(message: "Recording pending discontinuity event \(discontinuity) for contributor \(contributor)", level: .info)
-        contributorAnnotations[contributor].pendingDiscontinuityEvent = discontinuity
+        logger.log(message: "Recording pending discontinuity event \(discontinuity)", level: .info)
+        contributorAnnotation.pendingDiscontinuityEvent = discontinuity
     }
 
     // MARK: - Operation handling
@@ -788,48 +719,46 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
     /// Performs the “CHA-RL1e attachment cycle”, to use the terminology of CHA-RL5f.
     private func performAttachmentCycle() async throws(InternalError) {
         // CHA-RL1f
-        for contributor in contributors {
-            do {
-                logger.log(message: "Attaching contributor \(contributor)", level: .info)
-                try await contributor.channel.attach()
-                logger.log(message: "Successfully attached contributor \(contributor)", level: .info)
-            } catch let contributorAttachError {
-                let contributorState = await contributor.channel.state
-                logger.log(message: "Failed to attach contributor \(contributor), which is now in state \(contributorState), error \(contributorAttachError)", level: .info)
+        do {
+            logger.log(message: "Attaching contributor", level: .info)
+            try await contributor.channel.attach()
+            logger.log(message: "Successfully attached contributor", level: .info)
+        } catch let contributorAttachError {
+            let contributorState = await contributor.channel.state
+            logger.log(message: "Failed to attach contributor, which is now in state \(contributorState), error \(contributorAttachError)", level: .info)
 
-                switch contributorState {
-                case .suspended:
-                    // CHA-RL1h2
-                    let error = ARTErrorInfo(chatError: .roomAttachmentFailed(underlyingError: contributorAttachError.toARTErrorInfo()))
+            switch contributorState {
+            case .suspended:
+                // CHA-RL1h2
+                let error = ARTErrorInfo(chatError: .roomAttachmentFailed(underlyingError: contributorAttachError.toARTErrorInfo()))
 
-                    // CHA-RL1h3
-                    // My understanding is that, since this task is being created inside an actor’s synchronous code, the two .suspended* statuses will always come in the right order; i.e. first .suspendedAwaitingStartOfRetryOperation and then .suspended.
-                    let retryOperationTask = scheduleAnOperation(
-                        kind: .retry(
-                            triggeringContributor: contributor,
-                            errorForSuspendedStatus: error
-                        )
+                // CHA-RL1h3
+                // My understanding is that, since this task is being created inside an actor’s synchronous code, the two .suspended* statuses will always come in the right order; i.e. first .suspendedAwaitingStartOfRetryOperation and then .suspended.
+                let retryOperationTask = scheduleAnOperation(
+                    kind: .retry(
+                        triggeringContributor: contributor,
+                        errorForSuspendedStatus: error
                     )
-                    changeStatus(to: .suspendedAwaitingStartOfRetryOperation(retryOperationTask: retryOperationTask, error: error))
-                    throw error.toInternalError()
-                case .failed:
-                    let error = ARTErrorInfo(chatError: .roomAttachmentFailed(underlyingError: contributorAttachError.toARTErrorInfo()))
+                )
+                changeStatus(to: .suspendedAwaitingStartOfRetryOperation(retryOperationTask: retryOperationTask, error: error))
+                throw error.toInternalError()
+            case .failed:
+                let error = ARTErrorInfo(chatError: .roomAttachmentFailed(underlyingError: contributorAttachError.toARTErrorInfo()))
 
-                    // CHA-RL1h5
-                    // My understanding is that, since this task is being created inside an actor’s synchronous code, the two .failed* statuses will always come in the right order; i.e. first .failedAwaitingStartOfRundownOperation and then .failedAndPerformingRundownOperation.
-                    let rundownOperationTask = scheduleAnOperation(
-                        kind: .rundown(
-                            errorForFailedStatus: error
-                        )
+                // CHA-RL1h5
+                // My understanding is that, since this task is being created inside an actor’s synchronous code, the two .failed* statuses will always come in the right order; i.e. first .failedAwaitingStartOfRundownOperation and then .failedAndPerformingRundownOperation.
+                let rundownOperationTask = scheduleAnOperation(
+                    kind: .rundown(
+                        errorForFailedStatus: error
                     )
+                )
 
-                    // CHA-RL1h4
-                    changeStatus(to: .failedAwaitingStartOfRundownOperation(rundownOperationTask: rundownOperationTask, error: error))
-                    throw error.toInternalError()
-                default:
-                    // TODO: The spec assumes the channel will be in one of the above states, but working in a multi-threaded environment means it might not be (https://github.com/ably-labs/ably-chat-swift/issues/49)
-                    preconditionFailure("Attach failure left contributor in unexpected state \(contributorState)")
-                }
+                // CHA-RL1h4
+                changeStatus(to: .failedAwaitingStartOfRundownOperation(rundownOperationTask: rundownOperationTask, error: error))
+                throw error.toInternalError()
+            default:
+                // TODO: The spec assumes the channel will be in one of the above states, but working in a multi-threaded environment means it might not be (https://github.com/ably-labs/ably-chat-swift/issues/49)
+                preconditionFailure("Attach failure left contributor in unexpected state \(contributorState)")
             }
         }
 
@@ -841,21 +770,19 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
 
         // CHA-RL1g2
         // TODO: It’s not clear to me whether this is considered to be part of the ATTACH operation or not; see the note on the ``hasOperationInProgress`` property
-        await emitPendingDiscontinuityEvents()
+        await emitPendingDiscontinuityEvent()
     }
 
     /// Implements CHA-RL1g2’s emitting of pending discontinuity events.
-    private func emitPendingDiscontinuityEvents() async {
+    private func emitPendingDiscontinuityEvent() async {
         // Emit all pending discontinuity events
         logger.log(message: "Emitting pending discontinuity events", level: .info)
-        for contributor in contributors {
-            if let pendingDiscontinuityEvent = contributorAnnotations[contributor].pendingDiscontinuityEvent {
-                logger.log(message: "Emitting pending discontinuity event \(String(describing: pendingDiscontinuityEvent)) to contributor \(contributor)", level: .info)
-                await contributor.emitDiscontinuity(pendingDiscontinuityEvent)
-            }
+        if let pendingDiscontinuityEvent = contributorAnnotation.pendingDiscontinuityEvent {
+            logger.log(message: "Emitting pending discontinuity event \(String(describing: pendingDiscontinuityEvent))", level: .info)
+            await contributor.emitDiscontinuity(pendingDiscontinuityEvent)
         }
 
-        contributorAnnotations.clearPendingDiscontinuityEvents()
+        contributorAnnotation.pendingDiscontinuityEvent = nil
     }
 
     // MARK: - DETACH operation
@@ -906,14 +833,14 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
     /// Describes the reason a CHA-RL2f detachment cycle is being performed.
     private enum DetachmentCycleTrigger {
         case detachOperation
-        case retryOperation(retryOperationID: UUID, triggeringContributor: Contributor)
+        case retryOperation(retryOperationID: UUID)
 
         /// Given a CHA-RL2f detachment cycle triggered by this trigger, returns the DETACHED status to which the room should transition per CHA-RL2g.
         var detachedStatus: Status {
             switch self {
             case .detachOperation:
                 .detached
-            case let .retryOperation(retryOperationID, _):
+            case let .retryOperation(retryOperationID):
                 .detachedDueToRetryOperation(retryOperationID: retryOperationID)
             }
         }
@@ -923,13 +850,13 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
     private func performDetachmentCycle(trigger: DetachmentCycleTrigger) async throws(InternalError) {
         // CHA-RL2f
         var firstDetachError: ARTErrorInfo?
-        for contributor in contributorsForDetachmentCycle(trigger: trigger) {
-            logger.log(message: "Detaching contributor \(contributor)", level: .info)
+        if shouldPerformDetachmentCycle(trigger: trigger) {
+            logger.log(message: "Detaching contributor", level: .info)
             do {
                 try await contributor.channel.detach()
             } catch {
                 let contributorState = await contributor.channel.state
-                logger.log(message: "Failed to detach contributor \(contributor), which is now in state \(contributorState), error \(error)", level: .info)
+                logger.log(message: "Failed to detach contributor, which is now in state \(contributorState), error \(error)", level: .info)
 
                 switch contributorState {
                 case .failed:
@@ -950,14 +877,14 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
                     while true {
                         do {
                             let waitDuration = 0.25
-                            logger.log(message: "Will attempt to detach non-failed contributor \(contributor) in \(waitDuration)s.", level: .info)
+                            logger.log(message: "Will attempt to detach non-failed contributor in \(waitDuration)s.", level: .info)
                             try await clock.sleep(timeInterval: waitDuration)
-                            logger.log(message: "Detaching non-failed contributor \(contributor)", level: .info)
+                            logger.log(message: "Detaching non-failed contributor", level: .info)
                             try await contributor.channel.detach()
                             break
                         } catch {
                             // Loop repeats
-                            logger.log(message: "Failed to detach non-failed contributor \(contributor), error \(error). Will retry.", level: .info)
+                            logger.log(message: "Failed to detach non-failed contributor, error \(error). Will retry.", level: .info)
                         }
                     }
                 }
@@ -974,14 +901,14 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
     }
 
     /// Returns the contributors that should be detached in a CHA-RL2f detachment cycle.
-    private func contributorsForDetachmentCycle(trigger: DetachmentCycleTrigger) -> [Contributor] {
+    private func shouldPerformDetachmentCycle(trigger: DetachmentCycleTrigger) -> Bool {
         switch trigger {
         case .detachOperation:
             // CHA-RL2f
-            contributors
-        case let .retryOperation(_, triggeringContributor):
+            true
+        case .retryOperation:
             // CHA-RL5a
-            contributors.filter { $0.id != triggeringContributor.id }
+            false
         }
     }
 
@@ -1033,29 +960,27 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
         changeStatus(to: .releasing(releaseOperationID: operationID))
 
         // CHA-RL3d
-        for contributor in contributors {
-            while true {
-                let contributorState = await contributor.channel.state
+        while true {
+            let contributorState = await contributor.channel.state
 
-                // CHA-RL3e
-                guard contributorState != .failed else {
-                    logger.log(message: "Contributor \(contributor) is FAILED; skipping detach", level: .info)
-                    break
-                }
+            // CHA-RL3e
+            guard contributorState != .failed else {
+                logger.log(message: "Contributor is FAILED; skipping detach", level: .info)
+                break
+            }
 
-                logger.log(message: "Detaching contributor \(contributor)", level: .info)
-                do {
-                    try await contributor.channel.detach()
-                    break
-                } catch {
-                    // CHA-RL3f: Retry until detach succeeds, with a pause before each attempt
-                    let waitDuration = 0.25
-                    logger.log(message: "Failed to detach contributor \(contributor), error \(error). Will retry in \(waitDuration)s.", level: .info)
-                    // TODO: Make this not trap in the case where the Task is cancelled (as part of the broader https://github.com/ably-labs/ably-chat-swift/issues/29 for handling task cancellation)
-                    // swiftlint:disable:next force_try
-                    try! await clock.sleep(timeInterval: waitDuration)
-                    // Loop repeats
-                }
+            logger.log(message: "Detaching contributor", level: .info)
+            do {
+                try await contributor.channel.detach()
+                break
+            } catch {
+                // CHA-RL3f: Retry until detach succeeds, with a pause before each attempt
+                let waitDuration = 0.25
+                logger.log(message: "Failed to detach contributor, error \(error). Will retry in \(waitDuration)s.", level: .info)
+                // TODO: Make this not trap in the case where the Task is cancelled (as part of the broader https://github.com/ably-labs/ably-chat-swift/issues/29 for handling task cancellation)
+                // swiftlint:disable:next force_try
+                try! await clock.sleep(timeInterval: waitDuration)
+                // Loop repeats
             }
         }
 
@@ -1084,7 +1009,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
 
     private func bodyOfRetryOperation(
         operationID: UUID,
-        triggeredByContributor triggeringContributor: Contributor,
+        triggeredByContributor _: Contributor,
         errorForSuspendedStatus: ARTErrorInfo
     ) async {
         changeStatus(to: .suspended(retryOperationID: operationID, error: errorForSuspendedStatus))
@@ -1093,8 +1018,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
         do {
             try await performDetachmentCycle(
                 trigger: .retryOperation(
-                    retryOperationID: operationID,
-                    triggeringContributor: triggeringContributor
+                    retryOperationID: operationID
                 )
             )
         } catch {
@@ -1104,7 +1028,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
 
         // CHA-RL5d
         do {
-            try await waitForContributorThatTriggeredRetryToBecomeAttached(triggeringContributor)
+            try await waitForContributorThatTriggeredRetryToBecomeAttached()
         } catch {
             // CHA-RL5e
             logger.log(message: "RETRY’s waiting for triggering contributor to attach failed with error \(error). Ending RETRY.", level: .debug)
@@ -1124,21 +1048,21 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
     /// Performs CHA-RL5d’s “the room waits until the original channel that caused the retry loop naturally enters the ATTACHED state”.
     ///
     /// Throws an error if the room enters the FAILED status, which is considered terminal by the RETRY operation.
-    private func waitForContributorThatTriggeredRetryToBecomeAttached(_ triggeringContributor: Contributor) async throws {
-        logger.log(message: "RETRY waiting for \(triggeringContributor) to enter ATTACHED", level: .debug)
+    private func waitForContributorThatTriggeredRetryToBecomeAttached() async throws {
+        logger.log(message: "RETRY waiting for contributor to enter ATTACHED", level: .debug)
 
         let handleState = { [self] (state: ARTRealtimeChannelState, associatedError: ARTErrorInfo?) in
             switch state {
             // CHA-RL5d
             case .attached:
-                logger.log(message: "RETRY completed waiting for \(triggeringContributor) to enter ATTACHED", level: .debug)
+                logger.log(message: "RETRY completed waiting for contributor to enter ATTACHED", level: .debug)
                 return true
             // CHA-RL5e
             case .failed:
                 guard let associatedError else {
                     preconditionFailure("Contributor entered FAILED but there’s no associated error")
                 }
-                logger.log(message: "RETRY failed waiting for \(triggeringContributor) to enter ATTACHED, since it entered FAILED with error \(associatedError)", level: .debug)
+                logger.log(message: "RETRY failed waiting for contributor to enter ATTACHED, since it entered FAILED with error \(associatedError)", level: .debug)
 
                 changeStatus(to: .failed(error: associatedError))
                 throw associatedError
@@ -1151,12 +1075,12 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
 
         // Check whether the contributor is already in one of the states that we’re going to wait for. CHA-RL5d doesn’t make this check explicit but it seems like the right thing to do (asked in https://github.com/ably/specification/issues/221).
         // TODO: this assumes that if you fetch a channel’s `state` and then its `errorReason`, they will both refer to the same channel state; this may not be true due to threading, address in https://github.com/ably-labs/ably-chat-swift/issues/49
-        if try await handleState(triggeringContributor.channel.state, triggeringContributor.channel.errorReason) {
+        if try await handleState(contributor.channel.state, contributor.channel.errorReason) {
             return
         }
 
         // TODO: this assumes that if you check a channel’s state, and it’s x, and you then immediately add a state listener, you’ll definitely find out if the channel changes to a state other than x; this may not be true due to threading, address in https://github.com/ably-labs/ably-chat-swift/issues/49
-        for await stateChange in await triggeringContributor.channel.subscribeToState() {
+        for await stateChange in await contributor.channel.subscribeToState() {
             // (I prefer this way of writing it, in this case)
             // swiftlint:disable:next for_where
             if try handleState(stateChange.current, stateChange.reason) {
@@ -1198,15 +1122,15 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
 
     /// Implements CHA-RL1h5’s "detach all channels that are not in the FAILED state".
     private func detachNonFailedContributors() async {
-        for contributor in contributors where await (contributor.channel.state) != .failed {
+        if await (contributor.channel.state) != .failed {
             // CHA-RL1h6: Retry until detach succeeds
             while true {
                 do {
-                    logger.log(message: "Detaching non-failed contributor \(contributor)", level: .info)
+                    logger.log(message: "Detaching non-failed contributor", level: .info)
                     try await contributor.channel.detach()
                     break
                 } catch {
-                    logger.log(message: "Failed to detach non-failed contributor \(contributor), error \(error). Retrying.", level: .info)
+                    logger.log(message: "Failed to detach non-failed contributor, error \(error). Retrying.", level: .info)
                     // Loop repeats
                 }
             }

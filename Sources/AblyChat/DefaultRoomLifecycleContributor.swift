@@ -21,7 +21,7 @@ internal actor DefaultRoomLifecycleContributor: RoomLifecycleContributor, EmitsD
     // MARK: - CustomDebugStringConvertible
 
     internal nonisolated var debugDescription: String {
-        "(\(id): \(channel))"
+        "(\(channel))"
     }
 }
 

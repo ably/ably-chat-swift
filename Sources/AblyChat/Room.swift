@@ -191,7 +191,7 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
         channel = featureChannelPartialDependencies.channel
 
         lifecycleManager = await lifecycleManagerFactory.createManager(
-            contributors: [featureChannelPartialDependencies.contributor],
+            contributor: featureChannelPartialDependencies.contributor,
             logger: logger
         )
 
