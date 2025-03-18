@@ -52,6 +52,8 @@ class MockRoom: Room {
     nonisolated let typing: any Typing
     nonisolated let occupancy: any Occupancy
 
+    let channel: any RealtimeChannelProtocol = MockRealtime.Channel()
+
     init(roomID: String, options: RoomOptions) {
         self.roomID = roomID
         self.options = options
@@ -76,26 +78,28 @@ class MockRoom: Room {
 
     private func createSubscription() -> MockSubscription<RoomStatusChange> {
         mockSubscriptions.create(randomElement: {
-            RoomStatusChange(current: [.attached, .attached, .attached, .attached, .attaching(error: nil), .attaching(error: nil), .suspended(error: .createUnknownError())].randomElement()!, previous: .attaching(error: nil))
+            RoomStatusChange(current: [.attached(error: nil), .attached(error: nil), .attached(error: nil), .attached(error: nil), .attaching(error: nil), .attaching(error: nil), .suspended(error: .createUnknownError())].randomElement()!, previous: .attaching(error: nil))
         }, interval: 8)
     }
 
     func onStatusChange(bufferingPolicy _: BufferingPolicy) -> Subscription<RoomStatusChange> {
         .init(mockAsyncSequence: createSubscription())
     }
+
+    func onDiscontinuity(bufferingPolicy _: BufferingPolicy) -> Subscription<DiscontinuityEvent> {
+        fatalError("Not yet implemented")
+    }
 }
 
 class MockMessages: Messages {
     let clientID: String
     let roomID: String
-    let channel: any RealtimeChannelProtocol
 
     private let mockSubscriptions = MockSubscriptionStorage<Message>()
 
     init(clientID: String, roomID: String) {
         self.clientID = clientID
         self.roomID = roomID
-        channel = MockRealtime.Channel()
     }
 
     private func createSubscription() -> MockSubscription<Message> {
@@ -179,23 +183,17 @@ class MockMessages: Messages {
         mockSubscriptions.emit(message)
         return message
     }
-
-    func onDiscontinuity(bufferingPolicy _: BufferingPolicy) -> Subscription<DiscontinuityEvent> {
-        fatalError("Not yet implemented")
-    }
 }
 
 class MockRoomReactions: RoomReactions {
     let clientID: String
     let roomID: String
-    let channel: any RealtimeChannelProtocol
 
     private let mockSubscriptions = MockSubscriptionStorage<Reaction>()
 
     init(clientID: String, roomID: String) {
         self.clientID = clientID
         self.roomID = roomID
-        channel = MockRealtime.Channel()
     }
 
     private func createSubscription() -> MockSubscription<Reaction> {
@@ -226,23 +224,17 @@ class MockRoomReactions: RoomReactions {
     func subscribe(bufferingPolicy _: BufferingPolicy) -> Subscription<Reaction> {
         .init(mockAsyncSequence: createSubscription())
     }
-
-    func onDiscontinuity(bufferingPolicy _: BufferingPolicy) -> Subscription<DiscontinuityEvent> {
-        fatalError("Not yet implemented")
-    }
 }
 
 class MockTyping: Typing {
     let clientID: String
     let roomID: String
-    let channel: any RealtimeChannelProtocol
 
     private let mockSubscriptions = MockSubscriptionStorage<TypingEvent>()
 
     init(clientID: String, roomID: String) {
         self.clientID = clientID
         self.roomID = roomID
-        channel = MockRealtime.Channel()
     }
 
     private func createSubscription() -> MockSubscription<TypingEvent> {
@@ -271,10 +263,6 @@ class MockTyping: Typing {
 
     func stop() async throws(ARTErrorInfo) {
         mockSubscriptions.emit(TypingEvent(currentlyTyping: [], change: .init(clientId: clientID, type: .stopped)))
-    }
-
-    func onDiscontinuity(bufferingPolicy _: BufferingPolicy) -> Subscription<DiscontinuityEvent> {
-        fatalError("Not yet implemented")
     }
 }
 
@@ -392,23 +380,17 @@ class MockPresence: Presence {
     func subscribe(events _: [PresenceEventType], bufferingPolicy _: BufferingPolicy) -> Subscription<PresenceEvent> {
         .init(mockAsyncSequence: createSubscription())
     }
-
-    func onDiscontinuity(bufferingPolicy _: BufferingPolicy) -> Subscription<DiscontinuityEvent> {
-        fatalError("Not yet implemented")
-    }
 }
 
 class MockOccupancy: Occupancy {
     let clientID: String
     let roomID: String
-    let channel: any RealtimeChannelProtocol
 
     private let mockSubscriptions = MockSubscriptionStorage<OccupancyEvent>()
 
     init(clientID: String, roomID: String) {
         self.clientID = clientID
         self.roomID = roomID
-        channel = MockRealtime.Channel()
     }
 
     private func createSubscription() -> MockSubscription<OccupancyEvent> {
@@ -424,10 +406,6 @@ class MockOccupancy: Occupancy {
 
     func get() async throws(ARTErrorInfo) -> OccupancyEvent {
         OccupancyEvent(connections: 10, presenceMembers: 5)
-    }
-
-    func onDiscontinuity(bufferingPolicy _: BufferingPolicy) -> Subscription<DiscontinuityEvent> {
-        fatalError("Not yet implemented")
     }
 }
 

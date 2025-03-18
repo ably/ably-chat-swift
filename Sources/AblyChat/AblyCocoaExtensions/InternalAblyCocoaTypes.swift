@@ -7,9 +7,6 @@ import Ably
 /// - `async` methods instead of callbacks
 /// - typed throws
 /// - `JSONValue` instead of `Any`
-/// - `AsyncSequence` where helpful
-///
-/// Note that the API of this protocol is not currently consistent; for example there are some places in the codebase where we subscribe to Realtime channel state using callbacks, and other places where we subscribe using `AsyncSequence`. We should aim to make this consistent; see https://github.com/ably/ably-chat-swift/issues/245.
 ///
 /// Hopefully we will eventually be able to remove this interface once we've improved the experience of using ably-cocoa from Swift (https://github.com/ably/ably-cocoa/issues/1967).
 ///
@@ -66,9 +63,6 @@ internal protocol InternalRealtimeChannelProtocol: AnyObject, Sendable {
     func subscribe(_ name: String, callback: @escaping @MainActor (ARTMessage) -> Void) -> ARTEventListener?
     var properties: ARTChannelProperties { get }
     func off(_ listener: ARTEventListener)
-
-    /// Equivalent to subscribing to a `RealtimeChannelProtocol` object’s state changes via its `on(_:)` method. The subscription should use the ``BufferingPolicy/unbounded`` buffering policy.
-    func subscribeToState() -> Subscription<ARTChannelStateChange>
 }
 
 /// Expresses the requirements of the object returned by ``InternalRealtimeChannelProtocol/presence``.
@@ -93,6 +87,34 @@ internal protocol InternalConnectionProtocol: AnyObject, Sendable {
 
     func on(_ cb: @escaping @MainActor (ARTConnectionStateChange) -> Void) -> ARTEventListener
     func off(_ listener: ARTEventListener)
+}
+
+/// Converts a `@MainActor` callback into one that can be passed as a callback to ably-cocoa.
+///
+/// The returned callback asserts that it is called on the main thread and then synchronously calls the passed callback. It also allows non-`Sendable` values to be passed from ably-cocoa to the passed callback.
+///
+/// The main thread assertion is our way of asserting the requirement, documented in the `DefaultChatClient` initializer, that the ably-cocoa client must be using the main queue as its `dispatchQueue`. (This is the only way we can do it without accessing private ably-cocoa API, since we don't publicly expose the options that a client is using.)
+///
+/// - Warning: You must be sure that after ably-cocoa calls the returned callback, it will not modify any of the mutable state contained inside the argument that it passes to the callback. This is true of the two non-`Sendable` types with which we're currently using it; namely `ARTMessage` and `ARTPresenceMessage`. Ideally, we would instead annotate these callback arguments in ably-cocoa with `NS_SWIFT_SENDING`, to allow us to then mark the corresponding argument in these callbacks as `sending` and not have to circumvent compiler sendability checking, but as of Xcode 16.1 this annotation does yet not seem to have any effect; see [ably-cocoa#1967](https://github.com/ably/ably-cocoa/issues/1967).
+private func toAblyCocoaCallback<Arg>(_ callback: @escaping @MainActor (Arg) -> Void) -> (Arg) -> Void {
+    { arg in
+        let sendingBox = UnsafeSendingBox(value: arg)
+
+        // We use `preconditionIsolated` in addition to `assumeIsolated` because only the former accepts a message.
+        MainActor.preconditionIsolated("The Ably Chat SDK requires that your ARTRealtime instance be using the main queue as its dispatchQueue.")
+        MainActor.assumeIsolated {
+            callback(sendingBox.value)
+        }
+    }
+}
+
+/// A box that makes the compiler ignore that a non-Sendable value is crossing an isolation boundary. Used by `toAblyCocoaCallback`; don't use it elsewhere unless you know what you're doing.
+private final class UnsafeSendingBox<T>: @unchecked Sendable {
+    var value: T
+
+    init(value: T) {
+        self.value = value
+    }
 }
 
 internal final class InternalRealtimeClientAdapter: InternalRealtimeClientProtocol {
@@ -224,11 +246,11 @@ internal final class InternalRealtimeClientAdapter: InternalRealtimeClientProtoc
         }
 
         internal func on(_ cb: @escaping @MainActor (ARTChannelStateChange) -> Void) -> ARTEventListener {
-            underlying.on(cb)
+            underlying.on(toAblyCocoaCallback(cb))
         }
 
         internal func on(_ event: ARTChannelEvent, callback cb: @escaping @MainActor (ARTChannelStateChange) -> Void) -> ARTEventListener {
-            underlying.on(event, callback: cb)
+            underlying.on(event, callback: toAblyCocoaCallback(cb))
         }
 
         internal func unsubscribe(_ listener: ARTEventListener?) {
@@ -241,15 +263,6 @@ internal final class InternalRealtimeClientAdapter: InternalRealtimeClientProtoc
 
         internal func off(_ listener: ARTEventListener) {
             underlying.off(listener)
-        }
-
-        internal func subscribeToState() -> Subscription<ARTChannelStateChange> {
-            let subscription = Subscription<ARTChannelStateChange>(bufferingPolicy: .unbounded)
-            let eventListener = underlying.on { subscription.emit($0) }
-            subscription.addTerminationHandler { [weak underlying] in
-                underlying?.unsubscribe(eventListener)
-            }
-            return subscription
         }
     }
 
@@ -345,11 +358,11 @@ internal final class InternalRealtimeClientAdapter: InternalRealtimeClientProtoc
         }
 
         internal func subscribe(_ callback: @escaping @MainActor (ARTPresenceMessage) -> Void) -> ARTEventListener? {
-            underlying.subscribe(callback)
+            underlying.subscribe(toAblyCocoaCallback(callback))
         }
 
         internal func subscribe(_ action: ARTPresenceAction, callback: @escaping @MainActor (ARTPresenceMessage) -> Void) -> ARTEventListener? {
-            underlying.subscribe(action, callback: callback)
+            underlying.subscribe(action, callback: toAblyCocoaCallback(callback))
         }
 
         internal func unsubscribe(_ listener: ARTEventListener) {
@@ -389,7 +402,7 @@ internal final class InternalRealtimeClientAdapter: InternalRealtimeClientProtoc
         }
 
         internal func on(_ cb: @escaping @MainActor (ARTConnectionStateChange) -> Void) -> ARTEventListener {
-            underlying.on(cb)
+            underlying.on(toAblyCocoaCallback(cb))
         }
 
         internal func off(_ listener: ARTEventListener) {

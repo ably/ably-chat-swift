@@ -69,10 +69,7 @@ struct ContentView: View {
     }
 
     private func room() async throws -> Room {
-        try await chatClient.rooms.get(
-            roomID: roomID,
-            options: .allFeaturesEnabled
-        )
+        try await chatClient.rooms.get(roomID: roomID)
     }
 
     private var sendTitle: String {
@@ -361,7 +358,7 @@ struct ContentView: View {
                         statusInfo = "\(status.current)...".capitalized
                     } else {
                         statusInfo = "\(status.current)".capitalized
-                        if status.current == .attached {
+                        if status.current.isAttached {
                             Task {
                                 try? await Task.sleep(nanoseconds: 1 * 1_000_000_000)
                                 withAnimation {
