@@ -18,7 +18,7 @@ struct DefaultRoomOccupancyTests {
             ), nil)
         }
         let chatAPI = ChatAPI(realtime: realtime)
-        let channel = MockRealtimeChannel(name: "basketball::$chat::$chatMessages")
+        let channel = MockRealtimeChannel(name: "basketball::$chat")
         let featureChannel = MockFeatureChannel(channel: channel)
         let defaultOccupancy = DefaultOccupancy(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", logger: TestLogger())
 
@@ -37,7 +37,7 @@ struct DefaultRoomOccupancyTests {
         // Given
         let realtime = MockRealtime()
         let chatAPI = ChatAPI(realtime: realtime)
-        let channel = MockRealtimeChannel(name: "basketball::$chat::$chatMessages")
+        let channel = MockRealtimeChannel(name: "basketball::$chat")
         let featureChannel = MockFeatureChannel(channel: channel)
         let defaultOccupancy = DefaultOccupancy(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", logger: TestLogger())
 

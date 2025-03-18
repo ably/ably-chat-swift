@@ -12,7 +12,7 @@ struct ChatAPITests {
             (MockHTTPPaginatedResponse.successSendMessageWithNoItems, nil)
         }
         let chatAPI = ChatAPI(realtime: realtime)
-        let roomId = "basketball::$chat::$chatMessages"
+        let roomId = "basketball::$chat"
 
         await #expect(
             performing: {
@@ -37,7 +37,7 @@ struct ChatAPITests {
             (MockHTTPPaginatedResponse.successSendMessage, nil)
         }
         let chatAPI = ChatAPI(realtime: realtime)
-        let roomId = "basketball::$chat::$chatMessages"
+        let roomId = "basketball::$chat"
 
         // When
         let message = try await chatAPI.sendMessage(roomId: roomId, params: .init(text: "hello", headers: [:]))
@@ -115,7 +115,7 @@ struct ChatAPITests {
             (paginatedResponse, nil)
         }
         let chatAPI = ChatAPI(realtime: realtime)
-        let roomId = "basketball::$chat::$chatMessages"
+        let roomId = "basketball::$chat"
         let expectedPaginatedResult = PaginatedResultWrapper<Message>(
             paginatedResponse: paginatedResponse,
             items: []
@@ -137,7 +137,7 @@ struct ChatAPITests {
             (paginatedResponse, nil)
         }
         let chatAPI = ChatAPI(realtime: realtime)
-        let roomId = "basketball::$chat::$chatMessages"
+        let roomId = "basketball::$chat"
         let expectedPaginatedResult = PaginatedResultWrapper<Message>(
             paginatedResponse: paginatedResponse,
             items: [
@@ -185,7 +185,7 @@ struct ChatAPITests {
             (paginatedResponse, artError)
         }
         let chatAPI = ChatAPI(realtime: realtime)
-        let roomId = "basketball::$chat::$chatMessages"
+        let roomId = "basketball::$chat"
 
         await #expect(
             performing: {
