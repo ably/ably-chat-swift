@@ -10,14 +10,12 @@ internal enum RoomFeature {
 
     internal func channelNameForRoomID(_ roomID: String) -> String {
         switch self {
-        case .messages, .presence, .occupancy, .reactions:
+        case .messages, .presence, .occupancy, .reactions, .typing:
             // (CHA-M1) Chat messages for a Room are sent on a corresponding realtime channel <roomId>::$chat::$chatMessages. For example, if your room id is my-room then the messages channel will be my-room::$chat::$chatMessages.
             // (CHA-PR1) Presence for a Room is exposed on the realtime channel used for chat messages, in the format <roomId>::$chat::$chatMessages. For example, if your room id is my-room then the presence channel will be my-room::$chat::$chatMessages.
             // (CHA-O1) Occupancy for a room is exposed on the realtime channel used for chat messages, in the format <roomId>::$chat::$chatMessages. For example, if your room id is my-room then the presence channel will be my-room::$chat::$chatMessages.
-            "\(roomID)::$chat"
-        case .typing:
             // (CHA-T1) Typing Indicators for a Room is exposed on a dedicated Realtime channel. These channels use the format <roomId>::$chat::$typingIndicators. For example, if your room id is my-room then the typing channel will be my-room::$chat::$typingIndicators.
-            "\(roomID)::$chat::$typingIndicators"
+            "\(roomID)::$chat"
         }
     }
 }
