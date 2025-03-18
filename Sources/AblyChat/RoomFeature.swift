@@ -1,8 +1,7 @@
 import Ably
 
 /// The features offered by a chat room.
-internal enum RoomFeature: CaseIterable {
-    // This list MUST be kept in the same order as the list in CHA-RC2e, in order for the implementation of `areInPrecedenceListOrder` to work.
+internal enum RoomFeature {
     case messages
     case presence
     case typing
@@ -20,14 +19,6 @@ internal enum RoomFeature: CaseIterable {
             // (CHA-T1) Typing Indicators for a Room is exposed on a dedicated Realtime channel. These channels use the format <roomId>::$chat::$typingIndicators. For example, if your room id is my-room then the typing channel will be my-room::$chat::$typingIndicators.
             "\(roomID)::$chat::$typingIndicators"
         }
-    }
-
-    /// Returns a `Bool` indicating whether `first` and `second` are in the same order as the list given in CHA-RC2e.
-    internal static func areInPrecedenceListOrder(_ first: Self, _ second: Self) -> Bool {
-        let allCases = Self.allCases
-        let indexOfFirst = allCases.firstIndex(of: first)!
-        let indexOfSecond = allCases.firstIndex(of: second)!
-        return indexOfFirst < indexOfSecond
     }
 }
 

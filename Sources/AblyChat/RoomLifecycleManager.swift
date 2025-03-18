@@ -30,8 +30,6 @@ internal protocol RoomLifecycleContributorChannel: Sendable {
 internal protocol RoomLifecycleContributor: Identifiable, Sendable {
     associatedtype Channel: RoomLifecycleContributorChannel
 
-    /// The room feature that this contributor corresponds to. Used only for choosing which error to throw when a contributor operation fails.
-    var feature: RoomFeature { get }
     var channel: Channel { get }
 
     /// Informs the contributor that there has been a break in channel continuity, which it should inform library users about.

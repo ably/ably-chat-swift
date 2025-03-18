@@ -89,7 +89,6 @@ struct DefaultRoomTests {
         let lifecycleManagerCreationArguments = try #require(await lifecycleManagerFactory.createManagerArguments.first)
         let expectedFeatures: [RoomFeature] = [.messages, .reactions] // i.e. since messages and presence share a channel, we create a single contributor for this channel and its assigned feature is messages
         #expect(lifecycleManagerCreationArguments.contributors.count == expectedFeatures.count)
-        #expect(Set(lifecycleManagerCreationArguments.contributors.map(\.feature)) == Set(expectedFeatures))
 
         let channelsGetArguments = channels.getArguments
         let expectedFetchedChannelNames = [
@@ -98,30 +97,6 @@ struct DefaultRoomTests {
         ]
         #expect(channelsGetArguments.count == expectedFetchedChannelNames.count)
         #expect(Set(channelsGetArguments.map(\.name)) == Set(expectedFetchedChannelNames))
-    }
-
-    // @spec CHA-RC2e
-    // @spec CHA-RL10
-    @Test
-    func lifecycleContributorOrder() async throws {
-        // Given: a DefaultRoom, instance, with all room features enabled
-        let channelsList = [
-            MockRealtimeChannel(name: "basketball::$chat"),
-            MockRealtimeChannel(name: "basketball::$chat::$reactions"),
-            MockRealtimeChannel(name: "basketball::$chat::$typingIndicators"),
-        ]
-        let channels = MockChannels(channels: channelsList)
-        let realtime = MockRealtime(channels: channels)
-        let lifecycleManagerFactory = MockRoomLifecycleManagerFactory()
-        _ = try await DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), roomID: "basketball", options: .allFeaturesEnabled, logger: TestLogger(), lifecycleManagerFactory: lifecycleManagerFactory)
-
-        // Then: The array of contributors with which it initializes the RoomLifecycleManager are in the same order as the following list:
-        //
-        // messages, presence, typing, reactions, occupancy
-        //
-        // (note that we do not say that it is the _same_ list, because we combine multiple features into a single contributor)
-        let lifecycleManagerCreationArguments = try #require(await lifecycleManagerFactory.createManagerArguments.first)
-        #expect(lifecycleManagerCreationArguments.contributors.map(\.feature) == [.messages, .typing, .reactions])
     }
 
     // @specUntested CHA-RC2b - We chose to implement this failure with an idiomatic fatalError instead of throwing, but we can’t test this.

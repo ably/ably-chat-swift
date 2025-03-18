@@ -2,12 +2,10 @@ import Ably
 
 internal actor DefaultRoomLifecycleContributor: RoomLifecycleContributor, EmitsDiscontinuities, CustomDebugStringConvertible {
     internal nonisolated let channel: DefaultRoomLifecycleContributorChannel
-    internal nonisolated let feature: RoomFeature
     private var discontinuitySubscriptions = SubscriptionStorage<DiscontinuityEvent>()
 
-    internal init(channel: DefaultRoomLifecycleContributorChannel, feature: RoomFeature) {
+    internal init(channel: DefaultRoomLifecycleContributorChannel) {
         self.channel = channel
-        self.feature = feature
     }
 
     // MARK: - Discontinuities
@@ -23,7 +21,7 @@ internal actor DefaultRoomLifecycleContributor: RoomLifecycleContributor, EmitsD
     // MARK: - CustomDebugStringConvertible
 
     internal nonisolated var debugDescription: String {
-        "(\(id): \(feature), \(channel))"
+        "(\(id): \(channel))"
     }
 }
 

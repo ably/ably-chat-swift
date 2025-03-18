@@ -72,13 +72,11 @@ struct DefaultRoomLifecycleManagerTests {
     private func createContributor(
         initialState: ARTRealtimeChannelState = .initialized,
         initialErrorReason: ARTErrorInfo? = nil,
-        feature: RoomFeature = .messages, // Arbitrarily chosen, its value only matters in test cases where we check which error is thrown
         attachBehavior: MockRoomLifecycleContributorChannel.AttachOrDetachBehavior? = nil,
         detachBehavior: MockRoomLifecycleContributorChannel.AttachOrDetachBehavior? = nil,
         subscribeToStateBehavior: MockRoomLifecycleContributorChannel.SubscribeToStateBehavior? = nil
     ) -> MockRoomLifecycleContributor {
         .init(
-            feature: feature,
             channel: .init(
                 initialState: initialState,
                 initialErrorReason: initialErrorReason,
@@ -417,12 +415,10 @@ struct DefaultRoomLifecycleManagerTests {
         let contributors = (1 ... 3).map { i in
             if i == 1 {
                 createContributor(
-                    feature: .messages, // arbitrary
                     attachBehavior: .completeAndChangeState(.failure(contributorAttachError), newState: .failed)
                 )
             } else {
                 createContributor(
-                    feature: .occupancy, // arbitrary, just needs to be different to that used for the other contributor
                     attachBehavior: .success,
                     // The room is going to try to detach per CHA-RL1h5 (the RUNDOWN operation), so even though that's not what this test is testing, we need a detachBehavior so the mock doesn’t blow up
                     detachBehavior: .success
@@ -642,11 +638,10 @@ struct DefaultRoomLifecycleManagerTests {
         let contributor2DetachError = ARTErrorInfo(domain: "SomeDomain", code: 456)
 
         let contributors = [
-            // Features arbitrarily chosen, just need to be distinct in order to make assertions about errors later
-            createContributor(feature: .messages, detachBehavior: .success),
-            createContributor(feature: .presence, detachBehavior: .completeAndChangeState(.failure(contributor1DetachError), newState: .failed)),
-            createContributor(feature: .reactions, detachBehavior: .completeAndChangeState(.failure(contributor2DetachError), newState: .failed)),
-            createContributor(feature: .typing, detachBehavior: .success),
+            createContributor(detachBehavior: .success),
+            createContributor(detachBehavior: .completeAndChangeState(.failure(contributor1DetachError), newState: .failed)),
+            createContributor(detachBehavior: .completeAndChangeState(.failure(contributor2DetachError), newState: .failed)),
+            createContributor(detachBehavior: .success),
         ]
 
         let manager = await createManager(contributors: contributors)
@@ -1042,14 +1037,11 @@ struct DefaultRoomLifecycleManagerTests {
         let contributor1DetachError = ARTErrorInfo.createUnknownError() // arbitrary
 
         let contributors = [
-            // Features arbitrarily chosen, just need to be distinct in order to make assertions about errors later
-            createContributor(feature: .messages),
+            createContributor(),
             createContributor(
-                feature: .presence,
                 detachBehavior: .completeAndChangeState(.failure(contributor1DetachError), newState: .failed)
             ),
             createContributor(
-                feature: .typing,
                 detachBehavior: .success
             ),
         ]

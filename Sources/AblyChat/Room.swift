@@ -314,7 +314,7 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
 
         let featuresGroupedByChannelName = Dictionary(grouping: featuresWithOptions) { $0.toRoomFeature.channelNameForRoomID(roomID) }
 
-        let unorderedResult = featuresGroupedByChannelName.map { channelName, features in
+        return featuresGroupedByChannelName.map { channelName, features in
             let channelOptions = ARTRealtimeChannelOptions()
 
             // channel setup for presence and occupancy
@@ -339,17 +339,11 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
 
             let channel = realtime.getChannel(channelName, opts: channelOptions)
 
-            // Give the contributor the first of the enabled features that correspond to this channel, using CHA-RC2e ordering. This will determine which feature is used for atttachment and detachment errors.
-            let contributorFeature = features.map(\.toRoomFeature).sorted { RoomFeature.areInPrecedenceListOrder($0, $1) }[0]
-
-            let contributor = DefaultRoomLifecycleContributor(channel: .init(underlyingChannel: channel), feature: contributorFeature)
+            let contributor = DefaultRoomLifecycleContributor(channel: .init(underlyingChannel: channel))
             let featureChannelPartialDependencies = FeatureChannelPartialDependencies(channel: channel, contributor: contributor)
 
             return (features.map(\.toRoomFeature), featureChannelPartialDependencies)
         }
-
-        // Sort the result in CHA-RC2e order
-        return unorderedResult.sorted { RoomFeature.areInPrecedenceListOrder($0.1.contributor.feature, $1.1.contributor.feature) }
     }
 
     private static func createFeatureChannels(partialDependencies: [(features: [RoomFeature], featureChannelPartialDependencies: FeatureChannelPartialDependencies)], lifecycleManager: RoomLifecycleManager) -> [RoomFeature: DefaultFeatureChannel] {
