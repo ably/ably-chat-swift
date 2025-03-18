@@ -1,7 +1,6 @@
 import Ably
 
 internal final class DefaultTyping: Typing {
-    private let featureChannel: FeatureChannel
     private let implementation: Implementation
 
     // (CHA-T14) Multiple asynchronous calls to keystroke/stop typing must eventually converge to a consistent state.
@@ -13,13 +12,8 @@ internal final class DefaultTyping: Typing {
     // (CHA-T10a) A grace period shall be set by the client (the grace period on the CHA-T10 heartbeat interval when receiving events). The default value shall be set to 2000ms.
     private let gracePeriod: TimeInterval = 2
 
-    internal init(featureChannel: FeatureChannel, roomID: String, clientID: String, logger: InternalLogger, heartbeatThrottle: TimeInterval) {
-        self.featureChannel = featureChannel
-        implementation = .init(featureChannel: featureChannel, roomID: roomID, clientID: clientID, logger: logger, heartbeatThrottle: heartbeatThrottle, gracePeriod: gracePeriod)
-    }
-
-    internal nonisolated var channel: any RealtimeChannelProtocol {
-        featureChannel.channel.underlying
+    internal init(channel: any InternalRealtimeChannelProtocol, roomID: String, clientID: String, logger: InternalLogger, heartbeatThrottle: TimeInterval) {
+        implementation = .init(channel: channel, roomID: roomID, clientID: clientID, logger: logger, heartbeatThrottle: heartbeatThrottle, gracePeriod: gracePeriod)
     }
 
     // (CHA-T6) Users may subscribe to typing events – updates to a set of clientIDs that are typing. This operation, like all subscription operations, has no side-effects in relation to room lifecycle.
@@ -46,14 +40,10 @@ internal final class DefaultTyping: Typing {
         }
     }
 
-    internal func onDiscontinuity(bufferingPolicy: BufferingPolicy) -> Subscription<DiscontinuityEvent> {
-        implementation.onDiscontinuity(bufferingPolicy: bufferingPolicy)
-    }
-
     /// This class exists to make sure that the internals of the SDK only access ably-cocoa via the `InternalRealtimeChannelProtocol` interface. It does this by removing access to the `channel` property that exists as part of the public API of the `Typing` protocol, making it unlikely that we accidentally try to call the `ARTRealtimeChannelProtocol` interface. We can remove this `Implementation` class when we remove the feature-level `channel` property in https://github.com/ably/ably-chat-swift/issues/242.
     @MainActor
     private final class Implementation {
-        private let featureChannel: FeatureChannel
+        private let channel: any InternalRealtimeChannelProtocol
         private let roomID: String
         private let clientID: String
         private let logger: InternalLogger
@@ -62,9 +52,9 @@ internal final class DefaultTyping: Typing {
 
         private let typingTimerManager: TypingTimerManager
 
-        internal init(featureChannel: FeatureChannel, roomID: String, clientID: String, logger: InternalLogger, heartbeatThrottle: TimeInterval, gracePeriod: TimeInterval) {
+        internal init(channel: any InternalRealtimeChannelProtocol, roomID: String, clientID: String, logger: InternalLogger, heartbeatThrottle: TimeInterval, gracePeriod: TimeInterval) {
+            self.channel = channel
             self.roomID = roomID
-            self.featureChannel = featureChannel
             self.clientID = clientID
             self.logger = logger
             self.heartbeatThrottle = heartbeatThrottle
@@ -77,7 +67,7 @@ internal final class DefaultTyping: Typing {
             // (CHA-T6a) Users may provide a listener to subscribe to typing event V2 in a chat room.
             let subscription = Subscription<TypingEvent>(bufferingPolicy: bufferingPolicy)
 
-            let startedEventListener = featureChannel.channel.subscribe(TypingEvents.started.rawValue) { [weak self] message in
+            let startedEventListener = channel.subscribe(TypingEvents.started.rawValue) { [weak self] message in
                 guard let self, let messageClientID = message.clientId else {
                     return
                 }
@@ -110,7 +100,7 @@ internal final class DefaultTyping: Typing {
                 }
             }
 
-            let stoppedEventListener = featureChannel.channel.subscribe(TypingEvents.stopped.rawValue) { [weak self] message in
+            let stoppedEventListener = channel.subscribe(TypingEvents.stopped.rawValue) { [weak self] message in
                 guard let self, let messageClientID = message.clientId else {
                     return
                 }
@@ -136,10 +126,10 @@ internal final class DefaultTyping: Typing {
             subscription.addTerminationHandler { [weak self] in
                 Task { @MainActor in
                     if let startedEventListener {
-                        self?.featureChannel.channel.unsubscribe(startedEventListener)
+                        self?.channel.unsubscribe(startedEventListener)
                     }
                     if let stoppedEventListener {
-                        self?.featureChannel.channel.unsubscribe(stoppedEventListener)
+                        self?.channel.unsubscribe(stoppedEventListener)
                     }
                 }
             }
@@ -167,7 +157,7 @@ internal final class DefaultTyping: Typing {
             logger.log(message: "Starting typing indicator for client: \(clientID)", level: .debug)
             do {
                 // (CHA-T4a3) The client shall publish an ephemeral message to the channel with the name field set to typing.started, the format of which is detailed here.
-                try await featureChannel.channel.publish(
+                try await channel.publish(
                     TypingEvents.started.rawValue,
                     data: nil,
                     extras: ["ephemeral": true]
@@ -183,7 +173,7 @@ internal final class DefaultTyping: Typing {
                 logger.log(message: "Stopping typing indicator for client: \(clientID)", level: .debug)
                 if typingTimerManager.isTypingTimerActive(for: clientID) {
                     // (CHA-T5d) The client shall publish an ephemeral message to the channel with the name field set to typing.stopped, the format of which is detailed here.
-                    try await featureChannel.channel.publish(
+                    try await channel.publish(
                         TypingEvents.stopped.rawValue,
                         data: nil,
                         extras: ["ephemeral": true]
@@ -200,11 +190,6 @@ internal final class DefaultTyping: Typing {
                 // (CHA-T5d1) The client must wait for the publish to succeed or fail before returning the result to the caller. If the publish fails, the client must throw an ErrorInfo.
                 throw error.toARTErrorInfo()
             }
-        }
-
-        // (CHA-T7) Users may subscribe to discontinuity events to know when there’s been a break in typing indicators. Their listener will be called when a discontinuity event is triggered from the room lifecycle. For typing, there shouldn’t need to be user action as the underlying core SDK will heal the presence set.
-        internal func onDiscontinuity(bufferingPolicy: BufferingPolicy) -> Subscription<DiscontinuityEvent> {
-            featureChannel.onDiscontinuity(bufferingPolicy: bufferingPolicy)
         }
     }
 }

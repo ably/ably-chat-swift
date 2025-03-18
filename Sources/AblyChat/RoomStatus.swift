@@ -17,17 +17,17 @@ public enum RoomStatus: Sendable, Equatable {
     /**
      * The room is currently attached and receiving events.
      */
-    case attached
+    case attached(error: ARTErrorInfo?)
 
     /**
      * The room is currently detaching and will not receive events.
      */
-    case detaching
+    case detaching(error: ARTErrorInfo?)
 
     /**
      * The room is currently detached and will not receive events.
      */
-    case detached
+    case detached(error: ARTErrorInfo?)
 
     /**
      * The room is in an extended state of detachment, but will attempt to re-attach when able.
@@ -53,14 +53,17 @@ public enum RoomStatus: Sendable, Equatable {
         switch self {
         case let .attaching(error):
             error
+        case let .attached(error):
+            error
+        case let .detaching(error):
+            error
+        case let .detached(error):
+            error
         case let .suspended(error):
             error
         case let .failed(error):
             error
         case .initialized,
-             .attached,
-             .detaching,
-             .detached,
              .releasing,
              .released:
             nil
@@ -74,6 +77,30 @@ public enum RoomStatus: Sendable, Equatable {
 
     public var isAttaching: Bool {
         if case .attaching = self {
+            true
+        } else {
+            false
+        }
+    }
+
+    public var isAttached: Bool {
+        if case .attached = self {
+            true
+        } else {
+            false
+        }
+    }
+
+    public var isDetaching: Bool {
+        if case .detaching = self {
+            true
+        } else {
+            false
+        }
+    }
+
+    public var isDetached: Bool {
+        if case .detached = self {
             true
         } else {
             false
