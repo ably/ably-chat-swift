@@ -317,6 +317,9 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
         let unorderedResult = featuresGroupedByChannelName.map { channelName, features in
             let channelOptions = ARTRealtimeChannelOptions()
 
+            // CHA-GP2a
+            channelOptions.attachOnSubscribe = false
+
             // channel setup for presence and occupancy
             for feature in features {
                 if case /* let */ .presence /* (presenceOptions) */ = feature {
@@ -337,7 +340,7 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
                 }
             }
 
-            let channel = realtime.getChannel(channelName, opts: channelOptions)
+            let channel = realtime.channels.get(channelName, options: channelOptions)
 
             // Give the contributor the first of the enabled features that correspond to this channel, using CHA-RC2e ordering. This will determine which feature is used for atttachment and detachment errors.
             let contributorFeature = features.map(\.toRoomFeature).sorted { RoomFeature.areInPrecedenceListOrder($0, $1) }[0]

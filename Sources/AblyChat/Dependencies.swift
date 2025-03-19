@@ -37,20 +37,3 @@ public protocol RealtimePresenceProtocol: ARTRealtimePresenceProtocol, Sendable 
 
 /// Expresses the requirements of the object returned by ``RealtimeClientProtocol/connection``.
 public protocol ConnectionProtocol: ARTConnectionProtocol, Sendable {}
-
-internal extension RealtimeClientProtocol {
-    // Function to get the channel with Chat's default options
-    func getChannel(_ name: String, opts: ARTRealtimeChannelOptions? = nil) -> any RealtimeChannelProtocol {
-        let resolvedOptions: ARTRealtimeChannelOptions = if let opts {
-            // swiftlint:disable:next force_cast
-            opts.copy() as! ARTRealtimeChannelOptions
-        } else {
-            .init()
-        }
-
-        // CHA-GP2a
-        resolvedOptions.attachOnSubscribe = false
-
-        return channels.get(name, options: resolvedOptions)
-    }
-}
