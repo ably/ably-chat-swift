@@ -281,6 +281,7 @@ struct SpecCoverage: AsyncParsableCommand {
         case specUntestedTagMissingComment
         case specOneOfIncorrectTotals(specPointID: String, coverageTagTotals: [Int], actualTotal: Int)
         case specOneOfIncorrectIndices(specPointID: String, coverageTagIndices: [Int], expectedIndices: [Int])
+        case multipleConformanceTagTypes(specPointID: String, types: [String])
     }
 
     /**
@@ -326,6 +327,26 @@ struct SpecCoverage: AsyncParsableCommand {
             case specOneOf(index: Int, total: Int, comment: String?)
             case specPartial(comment: String?)
             case specUntested(comment: String)
+
+            enum Case {
+                case spec
+                case specOneOf
+                case specPartial
+                case specUntested
+            }
+
+            var `case`: Case {
+                switch self {
+                case .spec:
+                    .spec
+                case .specOneOf:
+                    .specOneOf
+                case .specPartial:
+                    .specPartial
+                case .specUntested:
+                    .specUntested
+                }
+            }
         }
 
         var type: `Type`
@@ -464,8 +485,8 @@ struct SpecCoverage: AsyncParsableCommand {
 
             // Bookkeeping data for validation of conformance tags
             var specOneOfDatas: [(index: Int, total: Int)] = []
+            var conformanceTagTypeCases: Set<ConformanceTag.`Type`.Case> = []
 
-            // TODO: https://github.com/ably-labs/ably-chat-swift/issues/96 - check for contradictory tags
             for conformanceTag in conformanceTagsForSpecPoint {
                 // We only make use of the comments that explain why something is untested or partially tested.
                 switch conformanceTag.type {
@@ -483,11 +504,21 @@ struct SpecCoverage: AsyncParsableCommand {
                     coverageLevel = .implementedButDeliberatelyNotTested
                     comments.append(comment)
                 }
+
+                conformanceTagTypeCases.insert(conformanceTag.type.case)
             }
 
             // Before returning, we validate the conformance tags for this spec point:
 
-            // 1. Validate the data attached to the @specOneOf(m/n) conformance tags.
+            // 1. Check we don't have more than one type of conformance tag for this spec point.
+            if conformanceTagTypeCases.count > 1 {
+                throw Error.multipleConformanceTagTypes(
+                    specPointID: specPoint.id,
+                    types: conformanceTagTypeCases.map { "\($0)" }
+                )
+            }
+
+            // 2. Validate the data attached to the @specOneOf(m/n) conformance tags.
             if !specOneOfDatas.isEmpty {
                 // Do the totals stated in the tags match the number of tags?
                 let coverageTagTotals = specOneOfDatas.map(\.total)
