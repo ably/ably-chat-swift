@@ -14,9 +14,9 @@ final class MockChannels: RealtimeChannelsProtocol, @unchecked Sendable {
     }
 
     func get(_ name: String, options: ARTRealtimeChannelOptions) -> MockRealtimeChannel {
-        mutex.lock()
-        _getArguments.append((name: name, options: options))
-        mutex.unlock()
+        mutex.withLock {
+            _getArguments.append((name: name, options: options))
+        }
 
         guard let channel = (channels.first { $0.name == name }) else {
             fatalError("There is no mock channel with name \(name)")
@@ -26,11 +26,9 @@ final class MockChannels: RealtimeChannelsProtocol, @unchecked Sendable {
     }
 
     var getArguments: [(name: String, options: ARTRealtimeChannelOptions)] {
-        let result: [(name: String, options: ARTRealtimeChannelOptions)]
-        mutex.lock()
-        result = _getArguments
-        mutex.unlock()
-        return result
+        mutex.withLock {
+            _getArguments
+        }
     }
 
     func exists(_: String) -> Bool {
@@ -42,16 +40,14 @@ final class MockChannels: RealtimeChannelsProtocol, @unchecked Sendable {
     }
 
     func release(_ name: String) {
-        mutex.lock()
-        defer { mutex.unlock() }
-        _releaseArguments.append(name)
+        mutex.withLock {
+            _releaseArguments.append(name)
+        }
     }
 
     var releaseArguments: [String] {
-        let result: [String]
-        mutex.lock()
-        result = _releaseArguments
-        mutex.unlock()
-        return result
+        mutex.withLock {
+            _releaseArguments
+        }
     }
 }

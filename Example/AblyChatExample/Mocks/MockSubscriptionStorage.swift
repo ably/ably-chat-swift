@@ -16,9 +16,9 @@ class MockSubscriptionStorage<Element: Sendable>: @unchecked Sendable {
         let subscription = MockSubscription<Element>(randomElement: randomElement, interval: interval)
         let id = UUID()
 
-        lock.lock()
-        subscriptions[id] = .init(subscription: subscription)
-        lock.unlock()
+        lock.withLock {
+            subscriptions[id] = .init(subscription: subscription)
+        }
 
         subscription.setOnTermination { [weak self] in
             self?.subscriptionDidTerminate(id: id)
@@ -28,9 +28,9 @@ class MockSubscriptionStorage<Element: Sendable>: @unchecked Sendable {
     }
 
     private func subscriptionDidTerminate(id: UUID) {
-        lock.lock()
-        subscriptions.removeValue(forKey: id)
-        lock.unlock()
+        lock.withLock {
+            _ = subscriptions.removeValue(forKey: id)
+        }
     }
 
     func emit(_ element: Element) {

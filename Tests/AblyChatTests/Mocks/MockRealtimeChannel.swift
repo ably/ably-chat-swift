@@ -48,17 +48,15 @@ final class MockRealtimeChannel: NSObject, RealtimeChannelProtocol {
         private var _value = 0
 
         var value: Int {
-            let value: Int
-            mutex.lock()
-            value = _value
-            mutex.unlock()
-            return value
+            mutex.withLock {
+                _value
+            }
         }
 
         func increment() {
-            mutex.lock()
-            _value += 1
-            mutex.unlock()
+            mutex.withLock {
+                _value += 1
+            }
         }
 
         var isZero: Bool {

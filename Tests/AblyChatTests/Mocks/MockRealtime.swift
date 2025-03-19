@@ -60,9 +60,9 @@ final class MockRealtime: NSObject, SuppliedRealtimeClientProtocol, @unchecked S
     }
 
     func request(_ method: String, path: String, params: [String: String]?, body: Any?, headers: [String: String]?, callback: @escaping ARTHTTPPaginatedCallback) throws {
-        mutex.lock()
-        _requestArguments.append((method: method, path: path, params: params, body: body, headers: headers, callback: callback))
-        mutex.unlock()
+        mutex.withLock {
+            _requestArguments.append((method: method, path: path, params: params, body: body, headers: headers, callback: callback))
+        }
         guard let paginatedCallback else {
             fatalError("Paginated callback not set")
         }
@@ -71,11 +71,9 @@ final class MockRealtime: NSObject, SuppliedRealtimeClientProtocol, @unchecked S
     }
 
     var requestArguments: [(method: String, path: String, params: [String: String]?, body: Any?, headers: [String: String]?, callback: ARTHTTPPaginatedCallback)] {
-        let result: [(method: String, path: String, params: [String: String]?, body: Any?, headers: [String: String]?, callback: ARTHTTPPaginatedCallback)]
-        mutex.lock()
-        result = _requestArguments
-        mutex.unlock()
-        return result
+        mutex.withLock {
+            _requestArguments
+        }
     }
 
     func createWrapperSDKProxy(with options: ARTWrapperSDKProxyOptions) -> some RealtimeClientProtocol {
@@ -83,18 +81,16 @@ final class MockRealtime: NSObject, SuppliedRealtimeClientProtocol, @unchecked S
             fatalError("createWrapperSDKProxyReturnValue must be set in order to call createWrapperSDKProxy(with:)")
         }
 
-        mutex.lock()
-        _createWrapperSDKProxyOptionsArgument = options
-        mutex.unlock()
+        mutex.withLock {
+            _createWrapperSDKProxyOptionsArgument = options
+        }
 
         return createWrapperSDKProxyReturnValue
     }
 
     var createWrapperSDKProxyOptionsArgument: ARTWrapperSDKProxyOptions? {
-        let result: ARTWrapperSDKProxyOptions?
-        mutex.lock()
-        result = _createWrapperSDKProxyOptionsArgument
-        mutex.unlock()
-        return result
+        mutex.withLock {
+            _createWrapperSDKProxyOptionsArgument
+        }
     }
 }

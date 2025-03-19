@@ -81,12 +81,11 @@ public final class Subscription<Element: Sendable>: @unchecked Sendable, AsyncSe
     }
 
     internal func addTerminationHandler(_ terminationHandler: @escaping (@Sendable () -> Void)) {
-        var terminationHandlers: [@Sendable () -> Void]
-        lock.lock()
-        terminationHandlers = self.terminationHandlers
-        terminationHandlers.append(terminationHandler)
-        self.terminationHandlers = terminationHandlers
-        lock.unlock()
+        lock.withLock {
+            var terminationHandlers = self.terminationHandlers
+            terminationHandlers.append(terminationHandler)
+            self.terminationHandlers = terminationHandlers
+        }
 
         switch mode {
         case let .default(_, continuation):

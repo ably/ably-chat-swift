@@ -7,17 +7,15 @@ import Foundation
 struct SynchronizedAccess<T> {
     var wrappedValue: T {
         get {
-            let value: T
-            mutex.lock()
-            value = _wrappedValue
-            mutex.unlock()
-            return value
+            mutex.withLock {
+                _wrappedValue
+            }
         }
 
         set {
-            mutex.lock()
-            _wrappedValue = newValue
-            mutex.unlock()
+            mutex.withLock {
+                _wrappedValue = newValue
+            }
         }
     }
 

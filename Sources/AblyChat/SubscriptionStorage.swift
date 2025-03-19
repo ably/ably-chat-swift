@@ -22,9 +22,9 @@ internal class SubscriptionStorage<Element: Sendable>: @unchecked Sendable {
         let subscription = Subscription<Element>(bufferingPolicy: bufferingPolicy)
         let id = UUID()
 
-        lock.lock()
-        subscriptions[id] = .init(subscription: subscription)
-        lock.unlock()
+        lock.withLock {
+            subscriptions[id] = .init(subscription: subscription)
+        }
 
         subscription.addTerminationHandler { [weak self] in
             self?.subscriptionDidTerminate(id: id)
@@ -35,26 +35,24 @@ internal class SubscriptionStorage<Element: Sendable>: @unchecked Sendable {
 
     #if DEBUG
         internal var testsOnly_subscriptionCount: Int {
-            let count: Int
-            lock.lock()
-            count = subscriptions.count
-            lock.unlock()
-            return count
+            lock.withLock {
+                subscriptions.count
+            }
         }
     #endif
 
     private func subscriptionDidTerminate(id: UUID) {
-        lock.lock()
-        subscriptions.removeValue(forKey: id)
-        lock.unlock()
+        lock.withLock {
+            _ = subscriptions.removeValue(forKey: id)
+        }
     }
 
     /// Emits an element on all of the subscriptions in the reciever’s managed list.
     internal func emit(_ element: Element) {
-        lock.lock()
-        for subscription in subscriptions.values {
-            subscription.subscription?.emit(element)
+        lock.withLock {
+            for subscription in subscriptions.values {
+                subscription.subscription?.emit(element)
+            }
         }
-        lock.unlock()
     }
 }
