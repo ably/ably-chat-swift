@@ -279,6 +279,8 @@ struct SpecCoverage: AsyncParsableCommand {
         case couldNotFindTestTarget
         case malformedSpecOneOfTag
         case specUntestedTagMissingComment
+        case specOneOfIncorrectTotals(specPointID: String, coverageTagTotals: [Int], actualTotal: Int)
+        case specOneOfIncorrectIndices(specPointID: String, coverageTagIndices: [Int], expectedIndices: [Int])
     }
 
     /**
@@ -436,11 +438,11 @@ struct SpecCoverage: AsyncParsableCommand {
                 }
             }
 
-            // 3. Determine the coverage of each testable spec point.
+            // 3. Validate the spec coverage tags, and determine the coverage of each testable spec point.
             let testableSpecPoints = specFile.specPoints.filter(\.isTestable)
-            let specPointCoverages = testableSpecPoints.map { specPoint in
+            let specPointCoverages = try testableSpecPoints.map { specPoint in
                 let conformanceTagsForSpecPoint = conformanceTagsBySpecPointID[specPoint.id, default: []]
-                return generateCoverage(for: specPoint, conformanceTagsForSpecPoint: conformanceTagsForSpecPoint)
+                return try generateCoverage(for: specPoint, conformanceTagsForSpecPoint: conformanceTagsForSpecPoint)
             }
 
             return .init(
@@ -454,18 +456,24 @@ struct SpecCoverage: AsyncParsableCommand {
             )
         }
 
-        private static func generateCoverage(for specPoint: SpecFile.SpecPoint, conformanceTagsForSpecPoint: [ConformanceTag]) -> SpecPointCoverage {
+        /// Validates the spec coverage tags for this spec point, and determines its coverage.
+        private static func generateCoverage(for specPoint: SpecFile.SpecPoint, conformanceTagsForSpecPoint: [ConformanceTag]) throws -> SpecPointCoverage {
+            // Calculated data to be used in output
             var coverageLevel: CoverageLevel?
             var comments: [String] = []
 
-            // TODO: https://github.com/ably-labs/ably-chat-swift/issues/96 - check for contradictory tags, validate the specOneOf(m, n) tags
+            // Bookkeeping data for validation of conformance tags
+            var specOneOfDatas: [(index: Int, total: Int)] = []
+
+            // TODO: https://github.com/ably-labs/ably-chat-swift/issues/96 - check for contradictory tags
             for conformanceTag in conformanceTagsForSpecPoint {
                 // We only make use of the comments that explain why something is untested or partially tested.
                 switch conformanceTag.type {
                 case .spec:
                     coverageLevel = .tested
-                case .specOneOf:
+                case let .specOneOf(index: index, total: total, _):
                     coverageLevel = .tested
+                    specOneOfDatas.append((index: index, total: total))
                 case let .specPartial(comment: comment):
                     coverageLevel = .partiallyTested
                     if let comment {
@@ -474,6 +482,32 @@ struct SpecCoverage: AsyncParsableCommand {
                 case let .specUntested(comment: comment):
                     coverageLevel = .implementedButDeliberatelyNotTested
                     comments.append(comment)
+                }
+            }
+
+            // Before returning, we validate the conformance tags for this spec point:
+
+            // 1. Validate the data attached to the @specOneOf(m/n) conformance tags.
+            if !specOneOfDatas.isEmpty {
+                // Do the totals stated in the tags match the number of tags?
+                let coverageTagTotals = specOneOfDatas.map(\.total)
+                if !(coverageTagTotals.allSatisfy { $0 == specOneOfDatas.count }) {
+                    throw Error.specOneOfIncorrectTotals(
+                        specPointID: specPoint.id,
+                        coverageTagTotals: specOneOfDatas.map(\.total),
+                        actualTotal: specOneOfDatas.count
+                    )
+                }
+
+                // Are the indices as expected?
+                let coverageTagIndices = specOneOfDatas.map(\.index).sorted()
+                let expectedIndices = Array(1 ... specOneOfDatas.count)
+                if coverageTagIndices != expectedIndices {
+                    throw Error.specOneOfIncorrectIndices(
+                        specPointID: specPoint.id,
+                        coverageTagIndices: coverageTagIndices,
+                        expectedIndices: expectedIndices
+                    )
                 }
             }
 
