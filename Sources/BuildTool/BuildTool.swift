@@ -424,7 +424,7 @@ struct SpecCoverage: AsyncParsableCommand {
                 throw Error.conformanceToNonexistentSpecPoints(specPointIDs: invalidSpecPointIDs.sorted())
             }
 
-            // 2. Find any conformance tags for non-testable spec points (see documentation of the `nonTestableSpecPointIDsWithConformanceTags` property) for motivation.
+            // 2. Find any conformance tags for non-testable spec points (see documentation of the `nonTestableSpecPointIDsWithConformanceTags` property for motivation).
             let specPointsByID = Dictionary(grouping: specFile.specPoints, by: \.id)
 
             var nonTestableSpecPointIDsWithConformanceTags: Set<String> = []
