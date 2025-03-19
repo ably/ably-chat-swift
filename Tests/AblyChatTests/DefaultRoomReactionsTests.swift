@@ -25,8 +25,8 @@ struct DefaultRoomReactionsTests {
 
         // Then
         #expect(channel.lastMessagePublishedName == RoomReactionEvents.reaction.rawValue)
-        #expect(channel.lastMessagePublishedData as? NSObject == ["type": "like", "metadata": ["someMetadataKey": "someMetadataValue"]] as NSObject)
-        #expect(channel.lastMessagePublishedExtras as? Dictionary == ["headers": ["someHeadersKey": "someHeadersValue"]])
+        #expect(channel.lastMessagePublishedData == ["type": "like", "metadata": ["someMetadataKey": "someMetadataValue"]])
+        #expect(channel.lastMessagePublishedExtras == ["headers": ["someHeadersKey": "someHeadersValue"]])
     }
 
     // @spec CHA-ER4

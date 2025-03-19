@@ -40,6 +40,16 @@ public protocol ChatClient: AnyObject, Sendable {
 
 public typealias RealtimeClient = any RealtimeClientProtocol
 
+internal protocol InternalRealtimeClientFactory {
+    func createInternalRealtimeClient(_ ablyCocoaRealtime: any RealtimeClientProtocol) -> any InternalRealtimeClientProtocol
+}
+
+internal final class DefaultInternalRealtimeClientFactory: InternalRealtimeClientFactory {
+    internal func createInternalRealtimeClient(_ ablyCocoaRealtime: any RealtimeClientProtocol) -> any InternalRealtimeClientProtocol {
+        InternalRealtimeClientAdapter(underlying: ablyCocoaRealtime)
+    }
+}
+
 /**
  * This is the core client for Ably chat. It provides access to chat rooms.
  */
@@ -61,15 +71,20 @@ public actor DefaultChatClient: ChatClient {
      *   - clientOptions: The client options.
      */
     public init(realtime suppliedRealtime: any SuppliedRealtimeClientProtocol, clientOptions: ChatClientOptions?) {
+        self.init(realtime: suppliedRealtime, clientOptions: clientOptions, internalRealtimeClientFactory: DefaultInternalRealtimeClientFactory())
+    }
+
+    internal init(realtime suppliedRealtime: any SuppliedRealtimeClientProtocol, clientOptions: ChatClientOptions?, internalRealtimeClientFactory: any InternalRealtimeClientFactory) {
         self.realtime = suppliedRealtime
         self.clientOptions = clientOptions ?? .init()
 
         let realtime = suppliedRealtime.createWrapperSDKProxy(with: .init(agents: agents))
+        let internalRealtime = internalRealtimeClientFactory.createInternalRealtimeClient(realtime)
 
         logger = DefaultInternalLogger(logHandler: self.clientOptions.logHandler, logLevel: self.clientOptions.logLevel)
         let roomFactory = DefaultRoomFactory()
-        rooms = DefaultRooms(realtime: realtime, clientOptions: self.clientOptions, logger: logger, roomFactory: roomFactory)
-        connection = DefaultConnection(realtime: realtime)
+        rooms = DefaultRooms(realtime: internalRealtime, clientOptions: self.clientOptions, logger: logger, roomFactory: roomFactory)
+        connection = DefaultConnection(realtime: internalRealtime)
     }
 
     public nonisolated var clientID: String {

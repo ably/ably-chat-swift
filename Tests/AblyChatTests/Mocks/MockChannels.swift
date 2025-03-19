@@ -1,7 +1,7 @@
 import Ably
-import AblyChat
+@testable import AblyChat
 
-final class MockChannels: RealtimeChannelsProtocol, @unchecked Sendable {
+final class MockChannels: InternalRealtimeChannelsProtocol, @unchecked Sendable {
     private let channels: [MockRealtimeChannel]
     private let mutex = NSLock()
     /// Access must be synchronized via ``mutex``.
@@ -29,14 +29,6 @@ final class MockChannels: RealtimeChannelsProtocol, @unchecked Sendable {
         mutex.withLock {
             _getArguments
         }
-    }
-
-    func exists(_: String) -> Bool {
-        fatalError("Not implemented")
-    }
-
-    func release(_: String, callback _: ARTCallback? = nil) {
-        fatalError("Not implemented")
     }
 
     func release(_ name: String) {

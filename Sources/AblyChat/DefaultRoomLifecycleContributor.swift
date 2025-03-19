@@ -28,18 +28,18 @@ internal actor DefaultRoomLifecycleContributor: RoomLifecycleContributor, EmitsD
 }
 
 internal final class DefaultRoomLifecycleContributorChannel: RoomLifecycleContributorChannel, CustomDebugStringConvertible {
-    private let underlyingChannel: any RealtimeChannelProtocol
+    private let underlyingChannel: any InternalRealtimeChannelProtocol
 
-    internal init(underlyingChannel: any RealtimeChannelProtocol) {
+    internal init(underlyingChannel: any InternalRealtimeChannelProtocol) {
         self.underlyingChannel = underlyingChannel
     }
 
     internal func attach() async throws(InternalError) {
-        try await underlyingChannel.attachAsync()
+        try await underlyingChannel.attach()
     }
 
     internal func detach() async throws(InternalError) {
-        try await underlyingChannel.detachAsync()
+        try await underlyingChannel.detach()
     }
 
     internal var state: ARTRealtimeChannelState {

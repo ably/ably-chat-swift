@@ -139,13 +139,13 @@ public struct RoomStatusChange: Sendable, Equatable {
 internal protocol RoomFactory: Sendable {
     associatedtype Room: AblyChat.InternalRoom
 
-    func createRoom(realtime: RealtimeClient, chatAPI: ChatAPI, roomID: String, options: RoomOptions, logger: InternalLogger) async throws(InternalError) -> Room
+    func createRoom(realtime: any InternalRealtimeClientProtocol, chatAPI: ChatAPI, roomID: String, options: RoomOptions, logger: InternalLogger) async throws(InternalError) -> Room
 }
 
 internal final class DefaultRoomFactory: Sendable, RoomFactory {
     private let lifecycleManagerFactory = DefaultRoomLifecycleManagerFactory()
 
-    internal func createRoom(realtime: RealtimeClient, chatAPI: ChatAPI, roomID: String, options: RoomOptions, logger: InternalLogger) async throws(InternalError) -> DefaultRoom<DefaultRoomLifecycleManagerFactory> {
+    internal func createRoom(realtime: any InternalRealtimeClientProtocol, chatAPI: ChatAPI, roomID: String, options: RoomOptions, logger: InternalLogger) async throws(InternalError) -> DefaultRoom<DefaultRoomLifecycleManagerFactory> {
         try await DefaultRoom(
             realtime: realtime,
             chatAPI: chatAPI,
@@ -169,10 +169,10 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
     private let _typing: (any Typing)?
 
     // Exposed for testing.
-    private nonisolated let realtime: RealtimeClient
+    private nonisolated let realtime: any InternalRealtimeClientProtocol
 
     private let lifecycleManager: any RoomLifecycleManager
-    private let channels: [any RealtimeChannelProtocol]
+    private let channels: [any InternalRealtimeChannelProtocol]
 
     private let logger: InternalLogger
 
@@ -221,7 +221,7 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
         }
     }
 
-    internal init(realtime: RealtimeClient, chatAPI: ChatAPI, roomID: String, options: RoomOptions, logger: InternalLogger, lifecycleManagerFactory: LifecycleManagerFactory) async throws(InternalError) {
+    internal init(realtime: any InternalRealtimeClientProtocol, chatAPI: ChatAPI, roomID: String, options: RoomOptions, logger: InternalLogger, lifecycleManagerFactory: LifecycleManagerFactory) async throws(InternalError) {
         self.realtime = realtime
         self.roomID = roomID
         self.options = options
@@ -300,12 +300,12 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
     }
 
     private struct FeatureChannelPartialDependencies {
-        internal var channel: any RealtimeChannelProtocol
+        internal var channel: any InternalRealtimeChannelProtocol
         internal var contributor: DefaultRoomLifecycleContributor
     }
 
     /// Each feature in `featuresWithOptions` is guaranteed to appear in the `features` member of precisely one of the returned array’s values.
-    private static func createFeatureChannelPartialDependencies(roomID: String, featuresWithOptions: [RoomFeatureWithOptions], realtime: RealtimeClient) -> [(features: [RoomFeature], featureChannelPartialDependencies: FeatureChannelPartialDependencies)] {
+    private static func createFeatureChannelPartialDependencies(roomID: String, featuresWithOptions: [RoomFeatureWithOptions], realtime: any InternalRealtimeClientProtocol) -> [(features: [RoomFeature], featureChannelPartialDependencies: FeatureChannelPartialDependencies)] {
         // CHA-RC3a
 
         // Multiple features can share a realtime channel. We fetch each realtime channel exactly once, merging the channel options for the various features that use this channel.

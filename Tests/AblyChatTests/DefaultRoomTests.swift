@@ -58,7 +58,8 @@ struct DefaultRoomTests {
         let room = try await DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), roomID: "basketball", options: .init(), logger: TestLogger(), lifecycleManagerFactory: MockRoomLifecycleManagerFactory())
 
         // Then
-        #expect(room.messages.channel.name == "basketball::$chat::$chatMessages")
+        let defaultMessages = try #require(room.messages as? DefaultMessages)
+        #expect(defaultMessages.testsOnly_internalChannel.name == "basketball::$chat::$chatMessages")
     }
 
     // @spec CHA-ER1
@@ -74,7 +75,8 @@ struct DefaultRoomTests {
         let room = try await DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), roomID: "basketball", options: .init(reactions: .init()), logger: TestLogger(), lifecycleManagerFactory: MockRoomLifecycleManagerFactory())
 
         // Then
-        #expect(room.reactions.channel.name == "basketball::$chat::$reactions")
+        let defaultReactions = try #require(room.reactions as? DefaultRoomReactions)
+        #expect(defaultReactions.testsOnly_internalChannel.name == "basketball::$chat::$reactions")
     }
 
     // @spec CHA-RC2c

@@ -30,7 +30,7 @@ struct DefaultMessagesTests {
         // Message response of succcess with no items, and roomId are arbitrary
 
         // Given
-        let realtime = MockRealtime { (MockHTTPPaginatedResponse.successGetMessagesWithNoItems, nil) }
+        let realtime = MockRealtime { MockHTTPPaginatedResponse.successGetMessagesWithNoItems }
         let chatAPI = ChatAPI(realtime: realtime)
         let channel = MockRealtimeChannel()
         let featureChannel = MockFeatureChannel(channel: channel)
@@ -54,7 +54,7 @@ struct DefaultMessagesTests {
         // all setup values here are arbitrary
 
         // Given
-        let realtime = MockRealtime { (MockHTTPPaginatedResponse.successGetMessagesWithNoItems, nil) }
+        let realtime = MockRealtime { MockHTTPPaginatedResponse.successGetMessagesWithNoItems }
         let chatAPI = ChatAPI(realtime: realtime)
         let channel = MockRealtimeChannel(
             properties: .init(
