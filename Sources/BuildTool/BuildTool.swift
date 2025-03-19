@@ -439,34 +439,8 @@ struct SpecCoverage: AsyncParsableCommand {
             // 3. Determine the coverage of each testable spec point.
             let testableSpecPoints = specFile.specPoints.filter(\.isTestable)
             let specPointCoverages = testableSpecPoints.map { specPoint in
-                var coverageLevel: CoverageLevel?
-                var comments: [String] = []
-
                 let conformanceTagsForSpecPoint = conformanceTagsBySpecPointID[specPoint.id, default: []]
-                // TODO: https://github.com/ably-labs/ably-chat-swift/issues/96 - check for contradictory tags, validate the specOneOf(m, n) tags
-                for conformanceTag in conformanceTagsForSpecPoint {
-                    // We only make use of the comments that explain why something is untested or partially tested.
-                    switch conformanceTag.type {
-                    case .spec:
-                        coverageLevel = .tested
-                    case .specOneOf:
-                        coverageLevel = .tested
-                    case let .specPartial(comment: comment):
-                        coverageLevel = .partiallyTested
-                        if let comment {
-                            comments.append(comment)
-                        }
-                    case let .specUntested(comment: comment):
-                        coverageLevel = .implementedButDeliberatelyNotTested
-                        comments.append(comment)
-                    }
-                }
-
-                return SpecPointCoverage(
-                    specPointID: specPoint.id,
-                    coverageLevel: coverageLevel ?? .notTested,
-                    comments: comments
-                )
+                return generateCoverage(for: specPoint, conformanceTagsForSpecPoint: conformanceTagsForSpecPoint)
             }
 
             return .init(
@@ -477,6 +451,36 @@ struct SpecCoverage: AsyncParsableCommand {
                 ),
                 testableSpecPointCoverages: specPointCoverages,
                 nonTestableSpecPointIDsWithConformanceTags: nonTestableSpecPointIDsWithConformanceTags
+            )
+        }
+
+        private static func generateCoverage(for specPoint: SpecFile.SpecPoint, conformanceTagsForSpecPoint: [ConformanceTag]) -> SpecPointCoverage {
+            var coverageLevel: CoverageLevel?
+            var comments: [String] = []
+
+            // TODO: https://github.com/ably-labs/ably-chat-swift/issues/96 - check for contradictory tags, validate the specOneOf(m, n) tags
+            for conformanceTag in conformanceTagsForSpecPoint {
+                // We only make use of the comments that explain why something is untested or partially tested.
+                switch conformanceTag.type {
+                case .spec:
+                    coverageLevel = .tested
+                case .specOneOf:
+                    coverageLevel = .tested
+                case let .specPartial(comment: comment):
+                    coverageLevel = .partiallyTested
+                    if let comment {
+                        comments.append(comment)
+                    }
+                case let .specUntested(comment: comment):
+                    coverageLevel = .implementedButDeliberatelyNotTested
+                    comments.append(comment)
+                }
+            }
+
+            return SpecPointCoverage(
+                specPointID: specPoint.id,
+                coverageLevel: coverageLevel ?? .notTested,
+                comments: comments
             )
         }
     }
