@@ -12,11 +12,11 @@ internal final class DefaultConnection: Connection {
         get async { await connectionStatusManager.error }
     }
 
-    private let realtime: any RealtimeClientProtocol
+    private let realtime: any InternalRealtimeClientProtocol
     private let timerManager = TimerManager()
     private let connectionStatusManager = ConnectionStatusManager()
 
-    internal init(realtime: any RealtimeClientProtocol) {
+    internal init(realtime: any InternalRealtimeClientProtocol) {
         // (CHA-CS3) The initial status and error of the connection will be whatever status the realtime client returns whilst the connection status object is constructed.
         self.realtime = realtime
         Task {

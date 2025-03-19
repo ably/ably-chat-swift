@@ -1,11 +1,11 @@
 import Ably
 
 internal final class ChatAPI: Sendable {
-    private let realtime: RealtimeClient
+    private let realtime: any InternalRealtimeClientProtocol
     private let apiVersion = "/chat/v1"
     private let apiVersionV2 = "/chat/v2" // TODO: remove v1 after full transition to v2
 
-    public init(realtime: RealtimeClient) {
+    public init(realtime: any InternalRealtimeClientProtocol) {
         self.realtime = realtime
     }
 
@@ -182,7 +182,7 @@ internal final class ChatAPI: Sendable {
         }
 
         // (CHA-M3e & CHA-M8d & CHA-M9c) If an error is returned from the REST API, its ErrorInfo representation shall be thrown as the result of the send call.
-        let paginatedResponse = try await realtime.requestAsync(method, path: url, params: [:], body: ablyCocoaBody, headers: [:])
+        let paginatedResponse = try await realtime.request(method, path: url, params: [:], body: ablyCocoaBody, headers: [:])
 
         guard let firstItem = paginatedResponse.items.first else {
             throw ChatError.noItemInResponse.toInternalError()
@@ -196,7 +196,7 @@ internal final class ChatAPI: Sendable {
         _ url: String,
         params: [String: String]? = nil
     ) async throws(InternalError) -> any PaginatedResult<Response> {
-        let paginatedResponse = try await realtime.requestAsync("GET", path: url, params: params, body: nil, headers: [:])
+        let paginatedResponse = try await realtime.request("GET", path: url, params: params, body: nil, headers: [:])
         let jsonValues = paginatedResponse.items.map { JSONValue(ablyCocoaData: $0) }
         let items = try jsonValues.map { jsonValue throws(InternalError) in
             try Response(jsonValue: jsonValue)

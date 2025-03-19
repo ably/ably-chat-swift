@@ -3,7 +3,7 @@
 actor MockRoomFactory: RoomFactory {
     private var room: MockRoom?
     private(set) var createRoomCallCount = 0
-    private(set) var createRoomArguments: (realtime: RealtimeClient, chatAPI: ChatAPI, roomID: String, options: RoomOptions, logger: any InternalLogger)?
+    private(set) var createRoomArguments: (realtime: any InternalRealtimeClientProtocol, chatAPI: ChatAPI, roomID: String, options: RoomOptions, logger: any InternalLogger)?
 
     init(room: MockRoom? = nil) {
         self.room = room
@@ -13,7 +13,7 @@ actor MockRoomFactory: RoomFactory {
         self.room = room
     }
 
-    func createRoom(realtime: RealtimeClient, chatAPI: ChatAPI, roomID: String, options: RoomOptions, logger: any InternalLogger) async throws(InternalError) -> MockRoom {
+    func createRoom(realtime: any InternalRealtimeClientProtocol, chatAPI: ChatAPI, roomID: String, options: RoomOptions, logger: any InternalLogger) async throws(InternalError) -> MockRoom {
         createRoomCallCount += 1
         createRoomArguments = (realtime: realtime, chatAPI: chatAPI, roomID: roomID, options: options, logger: logger)
 

@@ -51,11 +51,11 @@ public protocol Rooms: AnyObject, Sendable {
 }
 
 internal actor DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
-    private nonisolated let realtime: RealtimeClient
+    private nonisolated let realtime: any InternalRealtimeClientProtocol
     private let chatAPI: ChatAPI
 
     #if DEBUG
-        internal nonisolated var testsOnly_realtime: RealtimeClient {
+        internal nonisolated var testsOnly_realtime: any InternalRealtimeClientProtocol {
             realtime
         }
     #endif
@@ -115,7 +115,7 @@ internal actor DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
     /// The value for a given room ID is the state that corresponds to that room ID.
     private var roomStates: [String: RoomState] = [:]
 
-    internal init(realtime: RealtimeClient, clientOptions: ChatClientOptions, logger: InternalLogger, roomFactory: RoomFactory) {
+    internal init(realtime: any InternalRealtimeClientProtocol, clientOptions: ChatClientOptions, logger: InternalLogger, roomFactory: RoomFactory) {
         self.realtime = realtime
         self.clientOptions = clientOptions
         self.logger = logger

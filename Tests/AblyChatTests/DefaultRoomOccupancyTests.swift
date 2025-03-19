@@ -7,15 +7,15 @@ struct DefaultRoomOccupancyTests {
     @Test
     func requestOccupancyCheck() async throws {
         // Given
-        let realtime = MockRealtime {
-            (MockHTTPPaginatedResponse(
+        let realtime = MockInternalRealtime {
+            MockHTTPPaginatedResponse(
                 items: [
                     [
                         "connections": 5,
                         "presenceMembers": 2,
                     ],
                 ]
-            ), nil)
+            )
         }
         let chatAPI = ChatAPI(realtime: realtime)
         let channel = MockRealtimeChannel(name: "basketball::$chat::$chatMessages")
@@ -35,7 +35,7 @@ struct DefaultRoomOccupancyTests {
     @Test
     func usersCanSubscribeToRealtimeOccupancyUpdates() async throws {
         // Given
-        let realtime = MockRealtime()
+        let realtime = MockInternalRealtime()
         let chatAPI = ChatAPI(realtime: realtime)
         let channel = MockRealtimeChannel(name: "basketball::$chat::$chatMessages")
         let featureChannel = MockFeatureChannel(channel: channel)
@@ -57,7 +57,7 @@ struct DefaultRoomOccupancyTests {
     @Test
     func onDiscontinuity() async throws {
         // Given
-        let realtime = MockRealtime()
+        let realtime = MockInternalRealtime()
         let chatAPI = ChatAPI(realtime: realtime)
         let channel = MockRealtimeChannel()
         let featureChannel = MockFeatureChannel(channel: channel)

@@ -8,8 +8,8 @@ struct ChatAPITests {
     @Test
     func sendMessage_whenSendMessageReturnsNoItems_throwsNoItemInResponse() async {
         // Given
-        let realtime = MockRealtime {
-            (MockHTTPPaginatedResponse.successSendMessageWithNoItems, nil)
+        let realtime = MockInternalRealtime {
+            MockHTTPPaginatedResponse.successSendMessageWithNoItems
         }
         let chatAPI = ChatAPI(realtime: realtime)
         let roomId = "basketball::$chat::$chatMessages"
@@ -33,8 +33,8 @@ struct ChatAPITests {
     @Test
     func sendMessage_returnsMessage() async throws {
         // Given
-        let realtime = MockRealtime {
-            (MockHTTPPaginatedResponse.successSendMessage, nil)
+        let realtime = MockInternalRealtime {
+            MockHTTPPaginatedResponse.successSendMessage
         }
         let chatAPI = ChatAPI(realtime: realtime)
         let roomId = "basketball::$chat::$chatMessages"
@@ -61,8 +61,8 @@ struct ChatAPITests {
     @Test
     func sendMessage_includesHeadersInBody() async throws {
         // Given
-        let realtime = MockRealtime {
-            (MockHTTPPaginatedResponse.successSendMessage, nil)
+        let realtime = MockInternalRealtime {
+            MockHTTPPaginatedResponse.successSendMessage
         }
         let chatAPI = ChatAPI(realtime: realtime)
 
@@ -84,8 +84,8 @@ struct ChatAPITests {
     @Test
     func sendMessage_includesMetadataInBody() async throws {
         // Given
-        let realtime = MockRealtime {
-            (MockHTTPPaginatedResponse.successSendMessage, nil)
+        let realtime = MockInternalRealtime {
+            MockHTTPPaginatedResponse.successSendMessage
         }
         let chatAPI = ChatAPI(realtime: realtime)
 
@@ -111,8 +111,8 @@ struct ChatAPITests {
     func getMessages_whenGetMessagesReturnsNoItems_returnsEmptyPaginatedResult() async {
         // Given
         let paginatedResponse = MockHTTPPaginatedResponse.successGetMessagesWithNoItems
-        let realtime = MockRealtime {
-            (paginatedResponse, nil)
+        let realtime = MockInternalRealtime {
+            paginatedResponse
         }
         let chatAPI = ChatAPI(realtime: realtime)
         let roomId = "basketball::$chat::$chatMessages"
@@ -133,8 +133,8 @@ struct ChatAPITests {
     func getMessages_whenGetMessagesReturnsItems_returnsItemsInPaginatedResult() async {
         // Given
         let paginatedResponse = MockHTTPPaginatedResponse.successGetMessagesWithItems
-        let realtime = MockRealtime {
-            (paginatedResponse, nil)
+        let realtime = MockInternalRealtime {
+            paginatedResponse
         }
         let chatAPI = ChatAPI(realtime: realtime)
         let roomId = "basketball::$chat::$chatMessages"
@@ -180,8 +180,8 @@ struct ChatAPITests {
     func getMessages_whenGetMessagesReturnsServerError_throwsARTError() async {
         // Given
         let artError = ARTErrorInfo.create(withCode: 50000, message: "Internal server error")
-        let realtime = MockRealtime {
-            (nil, artError)
+        let realtime = MockInternalRealtime { () throws(ARTErrorInfo) in
+            throw artError
         }
         let chatAPI = ChatAPI(realtime: realtime)
         let roomId = "basketball::$chat::$chatMessages"

@@ -8,7 +8,7 @@ struct DefaultMessagesTests {
         // roomId and clientId values are arbitrary
 
         // Given
-        let realtime = MockRealtime()
+        let realtime = MockInternalRealtime()
         let chatAPI = ChatAPI(realtime: realtime)
         let channel = MockRealtimeChannel(state: .attached)
         let featureChannel = MockFeatureChannel(channel: channel)
@@ -30,7 +30,7 @@ struct DefaultMessagesTests {
         // Message response of succcess with no items, and roomId are arbitrary
 
         // Given
-        let realtime = MockRealtime { (MockHTTPPaginatedResponse.successGetMessagesWithNoItems, nil) }
+        let realtime = MockInternalRealtime { MockHTTPPaginatedResponse.successGetMessagesWithNoItems }
         let chatAPI = ChatAPI(realtime: realtime)
         let channel = MockRealtimeChannel()
         let featureChannel = MockFeatureChannel(channel: channel)
@@ -54,7 +54,7 @@ struct DefaultMessagesTests {
         // all setup values here are arbitrary
 
         // Given
-        let realtime = MockRealtime { (MockHTTPPaginatedResponse.successGetMessagesWithNoItems, nil) }
+        let realtime = MockInternalRealtime { MockHTTPPaginatedResponse.successGetMessagesWithNoItems }
         let chatAPI = ChatAPI(realtime: realtime)
         let channel = MockRealtimeChannel(
             properties: .init(
@@ -81,7 +81,7 @@ struct DefaultMessagesTests {
     @Test
     func subscribe_extractsHeadersFromChannelMessage() async throws {
         // Given
-        let realtime = MockRealtime()
+        let realtime = MockInternalRealtime()
         let chatAPI = ChatAPI(realtime: realtime)
 
         let channel = MockRealtimeChannel(
@@ -118,7 +118,7 @@ struct DefaultMessagesTests {
     @Test
     func subscribe_extractsMetadataFromChannelMessage() async throws {
         // Given
-        let realtime = MockRealtime()
+        let realtime = MockInternalRealtime()
         let chatAPI = ChatAPI(realtime: realtime)
 
         let channel = MockRealtimeChannel(
@@ -155,7 +155,7 @@ struct DefaultMessagesTests {
     @Test
     func onDiscontinuity() async throws {
         // Given: A DefaultMessages instance
-        let realtime = MockRealtime()
+        let realtime = MockInternalRealtime()
         let chatAPI = ChatAPI(realtime: realtime)
         let channel = MockRealtimeChannel()
         let featureChannel = MockFeatureChannel(channel: channel)

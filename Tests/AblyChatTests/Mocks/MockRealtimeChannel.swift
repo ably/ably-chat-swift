@@ -1,7 +1,7 @@
 import Ably
-import AblyChat
+@testable import AblyChat
 
-final class MockRealtimeChannel: NSObject, RealtimeChannelProtocol {
+final class MockRealtimeChannel: NSObject, InternalRealtimeChannelProtocol {
     let presence = MockRealtimePresence()
 
     private let attachSerial: String?
@@ -13,8 +13,8 @@ final class MockRealtimeChannel: NSObject, RealtimeChannelProtocol {
 
     // I don't see why the nonisolated(unsafe) keyword would cause a problem when used for tests in this context.
     nonisolated(unsafe) var lastMessagePublishedName: String?
-    nonisolated(unsafe) var lastMessagePublishedData: Any?
-    nonisolated(unsafe) var lastMessagePublishedExtras: (any ARTJsonCompatible)?
+    nonisolated(unsafe) var lastMessagePublishedData: JSONValue?
+    nonisolated(unsafe) var lastMessagePublishedExtras: [String: JSONValue]?
 
     // TODO: If we tighten up the types we then we should be able to get rid of the `@unchecked Sendable` here, but I’m in a rush. Revisit in https://github.com/ably/ably-chat-swift/issues/195
     struct MessageToEmit: @unchecked Sendable {
@@ -81,11 +81,7 @@ final class MockRealtimeChannel: NSObject, RealtimeChannelProtocol {
         fatalError("Not implemented")
     }
 
-    var options: ARTRealtimeChannelOptions? {
-        fatalError("Not implemented")
-    }
-
-    func attach() {
+    var underlying: any RealtimeChannelProtocol {
         fatalError("Not implemented")
     }
 
@@ -93,12 +89,12 @@ final class MockRealtimeChannel: NSObject, RealtimeChannelProtocol {
         case success
         case failure(ARTErrorInfo)
 
-        func performCallback(_ callback: ARTCallback?) {
+        func get() throws(InternalError) {
             switch self {
             case .success:
-                callback?(nil)
+                break
             case let .failure(error):
-                callback?(error)
+                throw error.toInternalError()
             }
         }
     }
@@ -107,43 +103,31 @@ final class MockRealtimeChannel: NSObject, RealtimeChannelProtocol {
 
     let attachCallCounter = Counter()
 
-    func attach(_ callback: ARTCallback? = nil) {
+    func attach() async throws(InternalError) {
         attachCallCounter.increment()
 
         guard let attachResult else {
             fatalError("attachResult must be set before attach is called")
         }
 
-        attachResult.performCallback(callback)
+        try attachResult.get()
     }
 
     private let detachResult: AttachOrDetachResult?
 
     let detachCallCounter = Counter()
 
-    func detach() {
-        fatalError("Not implemented")
-    }
-
-    func detach(_ callback: ARTCallback? = nil) {
+    func detach() async throws(InternalError) {
         detachCallCounter.increment()
 
         guard let detachResult else {
             fatalError("detachResult must be set before detach is called")
         }
 
-        detachResult.performCallback(callback)
+        try detachResult.get()
     }
 
     let messageToEmitOnSubscribe: MessageToEmit?
-
-    func subscribe(_: @escaping ARTMessageCallback) -> ARTEventListener? {
-        fatalError("Not implemented")
-    }
-
-    func subscribe(attachCallback _: ARTCallback?, callback _: @escaping ARTMessageCallback) -> ARTEventListener? {
-        fatalError("Not implemented")
-    }
 
     func subscribe(_: String, callback: @escaping ARTMessageCallback) -> ARTEventListener? {
         if let messageToEmitOnSubscribe {
@@ -159,28 +143,8 @@ final class MockRealtimeChannel: NSObject, RealtimeChannelProtocol {
         return ARTEventListener()
     }
 
-    func subscribe(_: String, onAttach _: ARTCallback?, callback _: @escaping ARTMessageCallback) -> ARTEventListener? {
-        fatalError("Not implemented")
-    }
-
-    func unsubscribe() {
-        fatalError("Not implemented")
-    }
-
     func unsubscribe(_: ARTEventListener?) {
         // no-op; revisit if we need to test something that depends on this method actually stopping `subscribe` from emitting more events
-    }
-
-    func unsubscribe(_: String, listener _: ARTEventListener?) {
-        fatalError("Not implemented")
-    }
-
-    func history(_: ARTRealtimeHistoryQuery?, callback _: @escaping ARTPaginatedMessagesCallback) throws {
-        fatalError("Not implemented")
-    }
-
-    func setOptions(_: ARTRealtimeChannelOptions?, callback _: ARTCallback? = nil) {
-        fatalError("Not implemented")
     }
 
     func on(_: ARTChannelEvent, callback _: @escaping (ARTChannelStateChange) -> Void) -> ARTEventListener {
@@ -191,24 +155,8 @@ final class MockRealtimeChannel: NSObject, RealtimeChannelProtocol {
         fatalError("Not implemented")
     }
 
-    func once(_: ARTChannelEvent, callback _: @escaping (ARTChannelStateChange) -> Void) -> ARTEventListener {
-        fatalError("Not implemented")
-    }
-
-    func once(_: @escaping (ARTChannelStateChange) -> Void) -> ARTEventListener {
-        fatalError("Not implemented")
-    }
-
-    func off(_: ARTChannelEvent, listener _: ARTEventListener) {
-        fatalError("Not implemented")
-    }
-
     func off(_: ARTEventListener) {
         // no-op; revisit if we need to test something that depends on this method actually stopping `on` from emitting more events
-    }
-
-    func off() {
-        fatalError("Not implemented")
     }
 
     var name: String {
@@ -218,50 +166,9 @@ final class MockRealtimeChannel: NSObject, RealtimeChannelProtocol {
         return name
     }
 
-    func publish(_: String?, data _: Any?) {
-        fatalError("Not implemented")
-    }
-
-    func publish(_: String?, data _: Any?, callback _: ARTCallback? = nil) {
-        fatalError("Not implemented")
-    }
-
-    func publish(_: String?, data _: Any?, clientId _: String) {
-        fatalError("Not implemented")
-    }
-
-    func publish(_: String?, data _: Any?, clientId _: String, callback _: ARTCallback? = nil) {
-        fatalError("Not implemented")
-    }
-
-    func publish(_: String?, data _: Any?, extras _: (any ARTJsonCompatible)?) {
-        fatalError("Not implemented")
-    }
-
-    func publish(_ name: String?, data: Any?, extras: (any ARTJsonCompatible)?, callback: ARTCallback? = nil) {
+    func publish(_ name: String?, data: JSONValue?, extras: [String: JSONValue]?) {
         lastMessagePublishedName = name
         lastMessagePublishedExtras = extras
         lastMessagePublishedData = data
-        callback?(nil)
-    }
-
-    func publish(_: String?, data _: Any?, clientId _: String, extras _: (any ARTJsonCompatible)?) {
-        fatalError("Not implemented")
-    }
-
-    func publish(_: String?, data _: Any?, clientId _: String, extras _: (any ARTJsonCompatible)?, callback _: ARTCallback? = nil) {
-        fatalError("Not implemented")
-    }
-
-    func publish(_: [ARTMessage]) {
-        fatalError("Not implemented")
-    }
-
-    func publish(_: [ARTMessage], callback _: ARTCallback? = nil) {
-        fatalError("Not implemented")
-    }
-
-    func history(_: @escaping ARTPaginatedMessagesCallback) {
-        fatalError("Not implemented")
     }
 }
