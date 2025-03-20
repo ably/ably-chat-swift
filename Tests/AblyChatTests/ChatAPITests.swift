@@ -179,10 +179,9 @@ struct ChatAPITests {
     @Test
     func getMessages_whenGetMessagesReturnsServerError_throwsARTError() async {
         // Given
-        let paginatedResponse = MockHTTPPaginatedResponse.successGetMessagesWithNoItems
         let artError = ARTErrorInfo.create(withCode: 50000, message: "Internal server error")
         let realtime = MockRealtime {
-            (paginatedResponse, artError)
+            (nil, artError)
         }
         let chatAPI = ChatAPI(realtime: realtime)
         let roomId = "basketball::$chat::$chatMessages"
