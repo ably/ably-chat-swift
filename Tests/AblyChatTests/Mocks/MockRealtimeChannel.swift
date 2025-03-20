@@ -1,7 +1,7 @@
 import Ably
 @testable import AblyChat
 
-final class MockRealtimeChannel: NSObject, InternalRealtimeChannelProtocol {
+final actor MockRealtimeChannel: InternalRealtimeChannelProtocol {
     let presence = MockRealtimePresence()
 
     private let attachSerial: String?
@@ -9,12 +9,11 @@ final class MockRealtimeChannel: NSObject, InternalRealtimeChannelProtocol {
     private let _name: String?
     private let _state: ARTRealtimeChannelState?
 
-    var properties: ARTChannelProperties { .init(attachSerial: attachSerial, channelSerial: channelSerial) }
+    nonisolated var properties: ARTChannelProperties { .init(attachSerial: attachSerial, channelSerial: channelSerial) }
 
-    // I don't see why the nonisolated(unsafe) keyword would cause a problem when used for tests in this context.
-    nonisolated(unsafe) var lastMessagePublishedName: String?
-    nonisolated(unsafe) var lastMessagePublishedData: JSONValue?
-    nonisolated(unsafe) var lastMessagePublishedExtras: [String: JSONValue]?
+    var lastMessagePublishedName: String?
+    var lastMessagePublishedData: JSONValue?
+    var lastMessagePublishedExtras: [String: JSONValue]?
 
     // TODO: If we tighten up the types we then we should be able to get rid of the `@unchecked Sendable` here, but I’m in a rush. Revisit in https://github.com/ably/ably-chat-swift/issues/195
     struct MessageToEmit: @unchecked Sendable {
@@ -44,44 +43,18 @@ final class MockRealtimeChannel: NSObject, InternalRealtimeChannelProtocol {
         channelSerial = properties.channelSerial
     }
 
-    /// A threadsafe counter that starts at zero.
-    class Counter: @unchecked Sendable {
-        private var mutex = NSLock()
-        private var _value = 0
-
-        var value: Int {
-            mutex.withLock {
-                _value
-            }
-        }
-
-        func increment() {
-            mutex.withLock {
-                _value += 1
-            }
-        }
-
-        var isZero: Bool {
-            value == 0
-        }
-
-        var isNonZero: Bool {
-            value > 0
-        }
-    }
-
-    var state: ARTRealtimeChannelState {
+    nonisolated var state: ARTRealtimeChannelState {
         guard let state = _state else {
             fatalError("Channel state not set")
         }
         return state
     }
 
-    var errorReason: ARTErrorInfo? {
+    nonisolated var errorReason: ARTErrorInfo? {
         fatalError("Not implemented")
     }
 
-    var underlying: any RealtimeChannelProtocol {
+    nonisolated var underlying: any RealtimeChannelProtocol {
         fatalError("Not implemented")
     }
 
@@ -101,10 +74,10 @@ final class MockRealtimeChannel: NSObject, InternalRealtimeChannelProtocol {
 
     private let attachResult: AttachOrDetachResult?
 
-    let attachCallCounter = Counter()
+    var attachCallCount = 0
 
     func attach() async throws(InternalError) {
-        attachCallCounter.increment()
+        attachCallCount += 1
 
         guard let attachResult else {
             fatalError("attachResult must be set before attach is called")
@@ -115,10 +88,10 @@ final class MockRealtimeChannel: NSObject, InternalRealtimeChannelProtocol {
 
     private let detachResult: AttachOrDetachResult?
 
-    let detachCallCounter = Counter()
+    var detachCallCount = 0
 
     func detach() async throws(InternalError) {
-        detachCallCounter.increment()
+        detachCallCount += 1
 
         guard let detachResult else {
             fatalError("detachResult must be set before detach is called")
@@ -129,7 +102,7 @@ final class MockRealtimeChannel: NSObject, InternalRealtimeChannelProtocol {
 
     let messageToEmitOnSubscribe: MessageToEmit?
 
-    func subscribe(_: String, callback: @escaping ARTMessageCallback) -> ARTEventListener? {
+    nonisolated func subscribe(_: String, callback: @escaping ARTMessageCallback) -> ARTEventListener? {
         if let messageToEmitOnSubscribe {
             let message = ARTMessage(name: nil, data: messageToEmitOnSubscribe.data)
             message.action = messageToEmitOnSubscribe.action
@@ -143,23 +116,23 @@ final class MockRealtimeChannel: NSObject, InternalRealtimeChannelProtocol {
         return ARTEventListener()
     }
 
-    func unsubscribe(_: ARTEventListener?) {
+    nonisolated func unsubscribe(_: ARTEventListener?) {
         // no-op; revisit if we need to test something that depends on this method actually stopping `subscribe` from emitting more events
     }
 
-    func on(_: ARTChannelEvent, callback _: @escaping (ARTChannelStateChange) -> Void) -> ARTEventListener {
+    nonisolated func on(_: ARTChannelEvent, callback _: @escaping (ARTChannelStateChange) -> Void) -> ARTEventListener {
         ARTEventListener()
     }
 
-    func on(_: @escaping (ARTChannelStateChange) -> Void) -> ARTEventListener {
+    nonisolated func on(_: @escaping (ARTChannelStateChange) -> Void) -> ARTEventListener {
         fatalError("Not implemented")
     }
 
-    func off(_: ARTEventListener) {
+    nonisolated func off(_: ARTEventListener) {
         // no-op; revisit if we need to test something that depends on this method actually stopping `on` from emitting more events
     }
 
-    var name: String {
+    nonisolated var name: String {
         guard let name = _name else {
             fatalError("Channel name not set")
         }
