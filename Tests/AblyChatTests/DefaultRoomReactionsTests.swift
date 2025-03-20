@@ -24,9 +24,9 @@ struct DefaultRoomReactionsTests {
         try await defaultRoomReactions.send(params: sendReactionParams)
 
         // Then
-        #expect(channel.lastMessagePublishedName == RoomReactionEvents.reaction.rawValue)
-        #expect(channel.lastMessagePublishedData == ["type": "like", "metadata": ["someMetadataKey": "someMetadataValue"]])
-        #expect(channel.lastMessagePublishedExtras == ["headers": ["someHeadersKey": "someHeadersValue"]])
+        #expect(await channel.lastMessagePublishedName == RoomReactionEvents.reaction.rawValue)
+        #expect(await channel.lastMessagePublishedData == ["type": "like", "metadata": ["someMetadataKey": "someMetadataValue"]])
+        #expect(await channel.lastMessagePublishedExtras == ["headers": ["someHeadersKey": "someHeadersValue"]])
     }
 
     // @spec CHA-ER4

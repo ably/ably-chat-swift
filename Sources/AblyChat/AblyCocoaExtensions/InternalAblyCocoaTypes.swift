@@ -224,8 +224,8 @@ internal final class InternalRealtimeClientAdapter: InternalRealtimeClientProtoc
             underlying.unsubscribe(listener)
         }
 
-        internal func publish(_ name: String?, data: Any?, extras: (any ARTJsonCompatible)?) {
-            underlying.publish(name, data: data, extras: extras)
+        internal func publish(_ name: String?, data: JSONValue?, extras: [String: JSONValue]?) {
+            underlying.publish(name, data: data?.toAblyCocoaData, extras: extras?.toARTJsonCompatible)
         }
 
         internal func subscribe(_ name: String, callback: @escaping ARTMessageCallback) -> ARTEventListener? {
