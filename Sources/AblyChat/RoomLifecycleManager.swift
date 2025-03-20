@@ -1,38 +1,13 @@
 import Ably
 import AsyncAlgorithms
 
-/// The interface that the lifecycle manager expects its contributing realtime channels to conform to.
-///
-/// We use this instead of the ``RealtimeChannelProtocol`` interface as:
-///
-/// - its ``attach`` and ``detach`` methods are `async` instead of using callbacks
-/// - it uses `AsyncSequence` to emit state changes instead of using callbacks
-///
-/// This makes it easier to write mocks for (since ``RealtimeChannelProtocol`` doesn’t express to the type system that the callbacks it receives need to be `Sendable`, it’s hard to, for example, create a mock that creates a `Task` and then calls the callback from inside this task).
-///
-/// We choose to also mark the channel’s mutable state as `async`. This is a way of highlighting at the call site of accessing this state that, since `ARTRealtimeChannel` mutates this state on a separate thread, it’s possible for this state to have changed since the last time you checked it, or since the last time you performed an operation that might have mutated it, or since the last time you recieved an event informing you that it changed. To be clear, marking these as `async` doesn’t _solve_ these issues; it just makes them a bit more visible. We’ll decide how to address them in https://github.com/ably-labs/ably-chat-swift/issues/49.
-internal protocol RoomLifecycleContributorChannel: Sendable {
-    func attach() async throws(InternalError)
-    func detach() async throws(InternalError)
-
-    var state: ARTRealtimeChannelState { get async }
-    var errorReason: ARTErrorInfo? { get async }
-
-    /// Equivalent to subscribing to a `RealtimeChannelProtocol` object’s state changes via its `on(_:)` method. The subscription should use the ``BufferingPolicy/unbounded`` buffering policy.
-    ///
-    /// It is marked as `async` purely to make it easier to write mocks for this method (i.e. to use an actor as a mock).
-    func subscribeToState() async -> Subscription<ARTChannelStateChange>
-}
-
 /// A realtime channel that contributes to the room lifecycle.
 ///
 /// The identity implied by the `Identifiable` conformance must distinguish each of the contributors passed to a given ``RoomLifecycleManager`` instance.
 internal protocol RoomLifecycleContributor: Identifiable, Sendable {
-    associatedtype Channel: RoomLifecycleContributorChannel
-
     /// The room feature that this contributor corresponds to. Used only for choosing which error to throw when a contributor operation fails.
     var feature: RoomFeature { get }
-    var channel: Channel { get }
+    var channel: any InternalRealtimeChannelProtocol { get }
 
     /// Informs the contributor that there has been a break in channel continuity, which it should inform library users about.
     ///
@@ -378,7 +353,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
         /// - (if the state change is ATTACHED) the manager has recorded that an ATTACHED state change has been observed for the contributor
         /// - the manager has recorded all pending discontinuity events provoked by the state change (you can retrieve these using ``testsOnly_pendingDiscontinuityEvent(for:)``)
         /// - the manager has performed all status changes provoked by the state change (this does _not_ include the case in which the state change provokes the creation of a transient disconnect timeout which subsequently provokes a status change; use ``testsOnly_subscribeToHandledTransientDisconnectTimeouts()`` to find out about those)
-        /// - the manager has performed all contributor actions provoked by the state change, namely calls to ``RoomLifecycleContributorChannel/detach()`` or ``RoomLifecycleContributor/emitDiscontinuity(_:)``
+        /// - the manager has performed all contributor actions provoked by the state change, namely calls to ``InternalRealtimeChannelProtocol/detach()`` or ``InternalRealtimeChannelProtocol/emitDiscontinuity(_:)``
         /// - the manager has recorded all transient disconnect timeouts provoked by the state change (you can retrieve this information using ``testsOnly_hasTransientDisconnectTimeout(for:) or ``testsOnly_idOfTransientDisconnectTimeout(for:)``)
         /// - the manager has performed all transient disconnect timeout cancellations provoked by the state change (you can retrieve this information using ``testsOnly_hasTransientDisconnectTimeout(for:) or ``testsOnly_idOfTransientDisconnectTimeout(for:)``)
         internal func testsOnly_subscribeToHandledContributorStateChanges() -> Subscription<ARTChannelStateChange> {

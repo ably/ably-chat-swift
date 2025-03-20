@@ -36,8 +36,8 @@ internal protocol InternalRealtimeChannelProtocol: AnyObject, Sendable {
     func attach() async throws(InternalError)
     func detach() async throws(InternalError)
     var name: String { get }
-    var state: ARTRealtimeChannelState { get }
-    var errorReason: ARTErrorInfo? { get }
+    var state: ARTRealtimeChannelState { get async }
+    var errorReason: ARTErrorInfo? { get async }
     func on(_ cb: @escaping (ARTChannelStateChange) -> Void) -> ARTEventListener
     func on(_ event: ARTChannelEvent, callback cb: @escaping (ARTChannelStateChange) -> Void) -> ARTEventListener
     func unsubscribe(_: ARTEventListener?)
@@ -45,6 +45,11 @@ internal protocol InternalRealtimeChannelProtocol: AnyObject, Sendable {
     func subscribe(_ name: String, callback: @escaping ARTMessageCallback) -> ARTEventListener?
     var properties: ARTChannelProperties { get }
     func off(_ listener: ARTEventListener)
+
+    /// Equivalent to subscribing to a `RealtimeChannelProtocol` object’s state changes via its `on(_:)` method. The subscription should use the ``BufferingPolicy/unbounded`` buffering policy.
+    ///
+    /// It is marked as `async` purely to make it easier to write mocks for this method (i.e. to use an actor as a mock). (TODO: we can revisit this)
+    func subscribeToState() async -> Subscription<ARTChannelStateChange>
 }
 
 /// Expresses the requirements of the object returned by ``InternalRealtimeChannelProtocol/presence``.
@@ -220,6 +225,15 @@ internal final class InternalRealtimeClientAdapter: InternalRealtimeClientProtoc
 
         internal func off(_ listener: ARTEventListener) {
             underlying.off(listener)
+        }
+
+        internal func subscribeToState() async -> Subscription<ARTChannelStateChange> {
+            let subscription = Subscription<ARTChannelStateChange>(bufferingPolicy: .unbounded)
+            let eventListener = underlying.on { subscription.emit($0) }
+            subscription.addTerminationHandler { [weak underlying] in
+                underlying?.unsubscribe(eventListener)
+            }
+            return subscription
         }
     }
 

@@ -42,7 +42,7 @@ internal enum RoomFeature: CaseIterable {
 ///
 /// This mishmash exists to give a room feature access to:
 ///
-/// - a `RealtimeChannelProtocol` object (this is the interface that our features are currently written against, as opposed to, say, `RoomLifecycleContributorChannel`)
+/// - a `RealtimeChannelProtocol` object
 /// - the discontinuities emitted by the room lifecycle
 /// - the presence-readiness wait mechanism supplied by the room lifecycle
 internal protocol FeatureChannel: Sendable, EmitsDiscontinuities {

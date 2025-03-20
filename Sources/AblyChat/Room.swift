@@ -345,7 +345,7 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
             // Give the contributor the first of the enabled features that correspond to this channel, using CHA-RC2e ordering. This will determine which feature is used for atttachment and detachment errors.
             let contributorFeature = features.map(\.toRoomFeature).sorted { RoomFeature.areInPrecedenceListOrder($0, $1) }[0]
 
-            let contributor = DefaultRoomLifecycleContributor(channel: .init(underlyingChannel: channel), feature: contributorFeature)
+            let contributor = DefaultRoomLifecycleContributor(channel: channel, feature: contributorFeature)
             let featureChannelPartialDependencies = FeatureChannelPartialDependencies(channel: channel, contributor: contributor)
 
             return (features.map(\.toRoomFeature), featureChannelPartialDependencies)

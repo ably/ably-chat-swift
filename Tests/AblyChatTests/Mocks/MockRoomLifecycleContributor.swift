@@ -3,13 +3,17 @@ import Ably
 
 actor MockRoomLifecycleContributor: RoomLifecycleContributor {
     nonisolated let feature: RoomFeature
-    nonisolated let channel: MockRoomLifecycleContributorChannel
+    /// Provides access to the non-type-erased underlying mock channel (so that you can call mocking-related methods on it).
+    nonisolated let mockChannel: MockRealtimeChannel
+    nonisolated var channel: any InternalRealtimeChannelProtocol {
+        mockChannel
+    }
 
     private(set) var emitDiscontinuityArguments: [DiscontinuityEvent] = []
 
-    init(feature: RoomFeature, channel: MockRoomLifecycleContributorChannel) {
+    init(feature: RoomFeature, channel: MockRealtimeChannel) {
         self.feature = feature
-        self.channel = channel
+        mockChannel = channel
     }
 
     func emitDiscontinuity(_ discontinuity: DiscontinuityEvent) async {
