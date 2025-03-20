@@ -164,7 +164,7 @@ internal final class DefaultTyping: Typing {
                 logger.log(message: "Stopping typing indicator for client: \(clientID)", level: .debug)
                 // (CHA-T5b) If typing is in progress, he CHA-T3 timeout is cancelled. The client then leaves presence.
                 await timerManager.cancelTimer()
-                channel.presence.leaveClient(clientID, data: nil)
+                try await channel.presence.leaveClientAsync(clientID, data: nil)
             } else {
                 // (CHA-T5a) If typing is not in progress, this operation is no-op.
                 logger.log(message: "User is not typing. No need to leave presence.", level: .debug)
