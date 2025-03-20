@@ -7,6 +7,7 @@ final class MockRealtimeChannel: NSObject, RealtimeChannelProtocol {
     private let attachSerial: String?
     private let channelSerial: String?
     private let _name: String?
+    private let _state: ARTRealtimeChannelState?
 
     var properties: ARTChannelProperties { .init(attachSerial: attachSerial, channelSerial: channelSerial) }
 
@@ -29,12 +30,13 @@ final class MockRealtimeChannel: NSObject, RealtimeChannelProtocol {
     init(
         name: String? = nil,
         properties: ARTChannelProperties = .init(),
-        state _: ARTRealtimeChannelState = .suspended,
+        state: ARTRealtimeChannelState? = nil,
         attachResult: AttachOrDetachResult? = nil,
         detachResult: AttachOrDetachResult? = nil,
         messageToEmitOnSubscribe: MessageToEmit? = nil
     ) {
         _name = name
+        _state = state
         self.attachResult = attachResult
         self.detachResult = detachResult
         self.messageToEmitOnSubscribe = messageToEmitOnSubscribe
@@ -69,7 +71,10 @@ final class MockRealtimeChannel: NSObject, RealtimeChannelProtocol {
     }
 
     var state: ARTRealtimeChannelState {
-        .attached
+        guard let state = _state else {
+            fatalError("Channel state not set")
+        }
+        return state
     }
 
     var errorReason: ARTErrorInfo? {
