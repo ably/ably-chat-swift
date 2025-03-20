@@ -60,6 +60,22 @@ internal extension ARTRealtimeChannelProtocol {
             throw error.toInternalError()
         }
     }
+
+    func publishAsync(_ name: String?, data: JSONValue?, extras: [String: JSONValue]?) async throws(InternalError) {
+        do {
+            try await withCheckedContinuation { (continuation: CheckedContinuation<Result<Void, ARTErrorInfo>, _>) in
+                publish(name, data: data?.toAblyCocoaData, extras: extras?.toARTJsonCompatible) { error in
+                    if let error {
+                        continuation.resume(returning: .failure(error))
+                    } else {
+                        continuation.resume(returning: .success(()))
+                    }
+                }
+            }.get()
+        } catch {
+            throw error.toInternalError()
+        }
+    }
 }
 
 /// A `Sendable` version of `ARTPresenceMessage`. Only contains the properties that the Chat SDK is currently using; add as needed.

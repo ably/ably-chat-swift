@@ -229,14 +229,15 @@ final class MockRealtimeChannel: NSObject, RealtimeChannelProtocol {
         fatalError("Not implemented")
     }
 
-    func publish(_ name: String?, data: Any?, extras: (any ARTJsonCompatible)?) {
+    func publish(_: String?, data _: Any?, extras _: (any ARTJsonCompatible)?) {
+        fatalError("Not implemented")
+    }
+
+    func publish(_ name: String?, data: Any?, extras: (any ARTJsonCompatible)?, callback: ARTCallback? = nil) {
         lastMessagePublishedName = name
         lastMessagePublishedExtras = extras
         lastMessagePublishedData = data
-    }
-
-    func publish(_: String?, data _: Any?, extras _: (any ARTJsonCompatible)?, callback _: ARTCallback? = nil) {
-        fatalError("Not implemented")
+        callback?(nil)
     }
 
     func publish(_: String?, data _: Any?, clientId _: String, extras _: (any ARTJsonCompatible)?) {
