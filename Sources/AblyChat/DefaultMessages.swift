@@ -276,7 +276,7 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
         private func resolveSubscriptionStart() async throws(InternalError) -> String {
             logger.log(message: "Resolving subscription start", level: .debug)
             // (CHA-M5a) If a subscription is added when the underlying realtime channel is ATTACHED, then the subscription point is the current channelSerial of the realtime channel.
-            if featureChannel.channel.state == .attached {
+            if await featureChannel.channel.state == .attached {
                 if let channelSerial = featureChannel.channel.properties.channelSerial {
                     logger.log(message: "Channel is attached, returning channelSerial: \(channelSerial)", level: .debug)
                     return channelSerial
@@ -295,7 +295,7 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
         private func serialOnChannelAttach() async throws(InternalError) -> String {
             logger.log(message: "Resolving serial on channel attach", level: .debug)
             // If the state is already 'attached', return the attachSerial immediately
-            if featureChannel.channel.state == .attached {
+            if await featureChannel.channel.state == .attached {
                 if let attachSerial = featureChannel.channel.properties.attachSerial {
                     logger.log(message: "Channel is attached, returning attachSerial: \(attachSerial)", level: .debug)
                     return attachSerial

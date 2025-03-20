@@ -10,7 +10,7 @@ struct DefaultMessagesTests {
         // Given
         let realtime = MockRealtime()
         let chatAPI = ChatAPI(realtime: realtime)
-        let channel = MockRealtimeChannel(state: .attached)
+        let channel = MockRealtimeChannel(initialState: .attached)
         let featureChannel = MockFeatureChannel(channel: channel)
         let defaultMessages = await DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
 
@@ -61,7 +61,7 @@ struct DefaultMessagesTests {
                 attachSerial: "001",
                 channelSerial: "001"
             ),
-            state: .attached
+            initialState: .attached
         )
         let featureChannel = MockFeatureChannel(channel: channel)
         let defaultMessages = await DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
@@ -89,7 +89,7 @@ struct DefaultMessagesTests {
                 attachSerial: "001",
                 channelSerial: "001"
             ),
-            state: .attached,
+            initialState: .attached,
             messageToEmitOnSubscribe: .init(
                 action: .create, // arbitrary
                 serial: "", // arbitrary
@@ -126,7 +126,7 @@ struct DefaultMessagesTests {
                 attachSerial: "001",
                 channelSerial: "001"
             ),
-            state: .attached,
+            initialState: .attached,
             messageToEmitOnSubscribe: .init(
                 action: .create, // arbitrary
                 serial: "", // arbitrary

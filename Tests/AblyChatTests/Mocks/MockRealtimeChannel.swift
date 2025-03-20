@@ -7,9 +7,11 @@ final actor MockRealtimeChannel: InternalRealtimeChannelProtocol {
     private let attachSerial: String?
     private let channelSerial: String?
     private let _name: String?
-    private let _state: ARTRealtimeChannelState?
 
     nonisolated var properties: ARTChannelProperties { .init(attachSerial: attachSerial, channelSerial: channelSerial) }
+
+    private var _state: ARTRealtimeChannelState?
+    var errorReason: ARTErrorInfo?
 
     var lastMessagePublishedName: String?
     var lastMessagePublishedData: JSONValue?
@@ -29,33 +31,48 @@ final actor MockRealtimeChannel: InternalRealtimeChannelProtocol {
     init(
         name: String? = nil,
         properties: ARTChannelProperties = .init(),
-        state: ARTRealtimeChannelState? = nil,
-        attachResult: AttachOrDetachResult? = nil,
-        detachResult: AttachOrDetachResult? = nil,
-        messageToEmitOnSubscribe: MessageToEmit? = nil
+        initialState: ARTRealtimeChannelState? = nil,
+        initialErrorReason: ARTErrorInfo? = nil,
+        attachBehavior: AttachOrDetachBehavior? = nil,
+        detachBehavior: AttachOrDetachBehavior? = nil,
+        messageToEmitOnSubscribe: MessageToEmit? = nil,
+        subscribeToStateBehavior: SubscribeToStateBehavior? = nil
     ) {
         _name = name
-        _state = state
-        self.attachResult = attachResult
-        self.detachResult = detachResult
+        _state = initialState
+        self.attachBehavior = attachBehavior
+        self.detachBehavior = detachBehavior
+        errorReason = initialErrorReason
         self.messageToEmitOnSubscribe = messageToEmitOnSubscribe
+        self.subscribeToStateBehavior = subscribeToStateBehavior ?? .justAddSubscription
         attachSerial = properties.attachSerial
         channelSerial = properties.channelSerial
     }
 
-    nonisolated var state: ARTRealtimeChannelState {
+    var state: ARTRealtimeChannelState {
         guard let state = _state else {
             fatalError("Channel state not set")
         }
         return state
     }
 
-    nonisolated var errorReason: ARTErrorInfo? {
+    nonisolated var underlying: any RealtimeChannelProtocol {
         fatalError("Not implemented")
     }
 
-    nonisolated var underlying: any RealtimeChannelProtocol {
-        fatalError("Not implemented")
+    enum AttachOrDetachBehavior {
+        /// Receives an argument indicating how many times (including the current call) the method for which this is providing a mock implementation has been called.
+        case fromFunction(@Sendable (Int) async -> AttachOrDetachBehavior)
+        case complete(AttachOrDetachResult)
+        case completeAndChangeState(AttachOrDetachResult, newState: ARTRealtimeChannelState)
+
+        static var success: Self {
+            .complete(.success)
+        }
+
+        static func failure(_ error: ARTErrorInfo) -> Self {
+            .complete(.failure(error))
+        }
     }
 
     enum AttachOrDetachResult {
@@ -72,32 +89,52 @@ final actor MockRealtimeChannel: InternalRealtimeChannelProtocol {
         }
     }
 
-    private let attachResult: AttachOrDetachResult?
+    private let attachBehavior: AttachOrDetachBehavior?
 
     var attachCallCount = 0
 
     func attach() async throws(InternalError) {
         attachCallCount += 1
 
-        guard let attachResult else {
-            fatalError("attachResult must be set before attach is called")
+        guard let attachBehavior else {
+            fatalError("attachBehavior must be set before attach is called")
         }
 
-        try attachResult.get()
+        try await performBehavior(attachBehavior, callCount: attachCallCount)
     }
 
-    private let detachResult: AttachOrDetachResult?
+    private let detachBehavior: AttachOrDetachBehavior?
 
     var detachCallCount = 0
 
     func detach() async throws(InternalError) {
         detachCallCount += 1
 
-        guard let detachResult else {
-            fatalError("detachResult must be set before detach is called")
+        guard let detachBehavior else {
+            fatalError("detachBehavior must be set before detach is called")
         }
 
-        try detachResult.get()
+        try await performBehavior(detachBehavior, callCount: detachCallCount)
+    }
+
+    private func performBehavior(_ behavior: AttachOrDetachBehavior, callCount: Int) async throws(InternalError) {
+        let result: AttachOrDetachResult
+        switch behavior {
+        case let .fromFunction(function):
+            let behavior = await function(callCount)
+            try await performBehavior(behavior, callCount: callCount)
+            return
+        case let .complete(completeResult):
+            result = completeResult
+        case let .completeAndChangeState(completeResult, newState):
+            _state = newState
+            if case let .failure(error) = completeResult {
+                errorReason = error
+            }
+            result = completeResult
+        }
+
+        try result.get()
     }
 
     let messageToEmitOnSubscribe: MessageToEmit?
@@ -143,5 +180,30 @@ final actor MockRealtimeChannel: InternalRealtimeChannelProtocol {
         lastMessagePublishedName = name
         lastMessagePublishedExtras = extras
         lastMessagePublishedData = data
+    }
+
+    enum SubscribeToStateBehavior {
+        case justAddSubscription
+        case addSubscriptionAndEmitStateChange(ARTChannelStateChange)
+    }
+
+    private let subscribeToStateBehavior: SubscribeToStateBehavior
+    private var subscriptions = SubscriptionStorage<ARTChannelStateChange>()
+
+    func subscribeToState() -> Subscription<ARTChannelStateChange> {
+        let subscription = subscriptions.create(bufferingPolicy: .unbounded)
+
+        switch subscribeToStateBehavior {
+        case .justAddSubscription:
+            break
+        case let .addSubscriptionAndEmitStateChange(stateChange):
+            emitStateChange(stateChange)
+        }
+
+        return subscription
+    }
+
+    func emitStateChange(_ stateChange: ARTChannelStateChange) {
+        subscriptions.emit(stateChange)
     }
 }

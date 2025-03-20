@@ -38,6 +38,8 @@ internal protocol InternalRealtimeChannelsProtocol: AnyObject, Sendable {
 }
 
 /// Expresses the requirements of the object returned by ``InternalRealtimeChannelsProtocol/get(_:options:)``.
+///
+/// We choose to mark the channel’s mutable state as `async`. This is a way of highlighting at the call site of accessing this state that, since `ARTRealtimeChannel` mutates this state on a separate thread, it’s possible for this state to have changed since the last time you checked it, or since the last time you performed an operation that might have mutated it, or since the last time you recieved an event informing you that it changed. To be clear, marking these as `async` doesn’t _solve_ these issues; it just makes them a bit more visible. We’ll decide how to address them in https://github.com/ably-labs/ably-chat-swift/issues/49. It also allows us to use an actor as a mock.
 internal protocol InternalRealtimeChannelProtocol: AnyObject, Sendable {
     associatedtype Presence: InternalRealtimePresenceProtocol
 
@@ -51,8 +53,8 @@ internal protocol InternalRealtimeChannelProtocol: AnyObject, Sendable {
     func attach() async throws(InternalError)
     func detach() async throws(InternalError)
     var name: String { get }
-    var state: ARTRealtimeChannelState { get }
-    var errorReason: ARTErrorInfo? { get }
+    var state: ARTRealtimeChannelState { get async }
+    var errorReason: ARTErrorInfo? { get async }
     func on(_ cb: @escaping (ARTChannelStateChange) -> Void) -> ARTEventListener
     func on(_ event: ARTChannelEvent, callback cb: @escaping (ARTChannelStateChange) -> Void) -> ARTEventListener
     func unsubscribe(_: ARTEventListener?)
@@ -60,6 +62,11 @@ internal protocol InternalRealtimeChannelProtocol: AnyObject, Sendable {
     func subscribe(_ name: String, callback: @escaping ARTMessageCallback) -> ARTEventListener?
     var properties: ARTChannelProperties { get }
     func off(_ listener: ARTEventListener)
+
+    /// Equivalent to subscribing to a `RealtimeChannelProtocol` object’s state changes via its `on(_:)` method. The subscription should use the ``BufferingPolicy/unbounded`` buffering policy.
+    ///
+    /// It is marked as `async` purely to make it easier to write mocks for this method (i.e. to use an actor as a mock).
+    func subscribeToState() async -> Subscription<ARTChannelStateChange>
 }
 
 /// Expresses the requirements of the object returned by ``InternalRealtimeChannelProtocol/presence``.
@@ -234,6 +241,15 @@ internal final class InternalRealtimeClientAdapter: InternalRealtimeClientProtoc
 
         internal func off(_ listener: ARTEventListener) {
             underlying.off(listener)
+        }
+
+        internal func subscribeToState() async -> Subscription<ARTChannelStateChange> {
+            let subscription = Subscription<ARTChannelStateChange>(bufferingPolicy: .unbounded)
+            let eventListener = underlying.on { subscription.emit($0) }
+            subscription.addTerminationHandler { [weak underlying] in
+                underlying?.unsubscribe(eventListener)
+            }
+            return subscription
         }
     }
 

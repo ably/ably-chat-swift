@@ -7,13 +7,13 @@ struct DefaultRoomLifecycleManagerTests {
 
     /// A mock implementation of a realtime channel’s `attach` or `detach` operation. Its ``complete(behavior:)`` method allows you to signal to the mock that the mocked operation should perform a given behavior (e.g. complete with a given result).
     final class SignallableChannelOperation: Sendable {
-        private let continuation: AsyncStream<MockRoomLifecycleContributorChannel.AttachOrDetachBehavior>.Continuation
+        private let continuation: AsyncStream<MockRealtimeChannel.AttachOrDetachBehavior>.Continuation
 
         /// When this behavior is set as a ``MockRealtimeChannel``’s `attachBehavior` or `detachBehavior`, calling ``complete(behavior:)`` will cause the corresponding channel operation to perform the behavior passed to that method.
-        let behavior: MockRoomLifecycleContributorChannel.AttachOrDetachBehavior
+        let behavior: MockRealtimeChannel.AttachOrDetachBehavior
 
         init() {
-            let (stream, continuation) = AsyncStream.makeStream(of: MockRoomLifecycleContributorChannel.AttachOrDetachBehavior.self)
+            let (stream, continuation) = AsyncStream.makeStream(of: MockRealtimeChannel.AttachOrDetachBehavior.self)
             self.continuation = continuation
 
             behavior = .fromFunction { _ in
@@ -22,7 +22,7 @@ struct DefaultRoomLifecycleManagerTests {
         }
 
         /// Causes the async function embedded in ``behavior`` to return with the given behavior.
-        func complete(behavior: MockRoomLifecycleContributorChannel.AttachOrDetachBehavior) {
+        func complete(behavior: MockRealtimeChannel.AttachOrDetachBehavior) {
             continuation.yield(behavior)
         }
     }
@@ -73,9 +73,9 @@ struct DefaultRoomLifecycleManagerTests {
         initialState: ARTRealtimeChannelState = .initialized,
         initialErrorReason: ARTErrorInfo? = nil,
         feature: RoomFeature = .messages, // Arbitrarily chosen, its value only matters in test cases where we check which error is thrown
-        attachBehavior: MockRoomLifecycleContributorChannel.AttachOrDetachBehavior? = nil,
-        detachBehavior: MockRoomLifecycleContributorChannel.AttachOrDetachBehavior? = nil,
-        subscribeToStateBehavior: MockRoomLifecycleContributorChannel.SubscribeToStateBehavior? = nil
+        attachBehavior: MockRealtimeChannel.AttachOrDetachBehavior? = nil,
+        detachBehavior: MockRealtimeChannel.AttachOrDetachBehavior? = nil,
+        subscribeToStateBehavior: MockRealtimeChannel.SubscribeToStateBehavior? = nil
     ) -> MockRoomLifecycleContributor {
         .init(
             feature: feature,
@@ -129,7 +129,7 @@ struct DefaultRoomLifecycleManagerTests {
         try await manager.performAttachOperation()
 
         // Then: The room attach operation succeeds, and no attempt is made to attach a contributor (which we’ll consider as satisfying the spec’s requirement that a "no-op" happen)
-        #expect(await contributor.channel.attachCallCount == 0)
+        #expect(await contributor.mockChannel.attachCallCount == 0)
     }
 
     // @spec CHA-RL1b
@@ -250,7 +250,7 @@ struct DefaultRoomLifecycleManagerTests {
 
         // Then: It calls `attach` on all the contributors, the room attach operation succeeds, it emits a status change to ATTACHED, and its current status is ATTACHED
         for contributor in contributors {
-            #expect(await contributor.channel.attachCallCount > 0)
+            #expect(await contributor.mockChannel.attachCallCount > 0)
         }
 
         _ = try #require(await attachedStatusChange, "Expected status change to ATTACHED")
@@ -398,13 +398,13 @@ struct DefaultRoomLifecycleManagerTests {
         await retryOperationTask.value
 
         // We confirm that a RETRY happened by checking for its expected side effects:
-        #expect(await contributors[0].channel.detachCallCount == 0) // RETRY doesn’t touch this since it’s the one that triggered the RETRY
-        #expect(await contributors[1].channel.detachCallCount == 1) // From the CHA-RL5a RETRY detachment cycle
-        #expect(await contributors[2].channel.detachCallCount == 1) // From the CHA-RL5a RETRY detachment cycle
+        #expect(await contributors[0].mockChannel.detachCallCount == 0) // RETRY doesn’t touch this since it’s the one that triggered the RETRY
+        #expect(await contributors[1].mockChannel.detachCallCount == 1) // From the CHA-RL5a RETRY detachment cycle
+        #expect(await contributors[2].mockChannel.detachCallCount == 1) // From the CHA-RL5a RETRY detachment cycle
 
-        #expect(await contributors[0].channel.attachCallCount == 2) // From the ATTACH operation and the CHA-RL5f RETRY attachment cycle
-        #expect(await contributors[1].channel.attachCallCount == 1) // From the CHA-RL5f RETRY attachment cycle
-        #expect(await contributors[2].channel.attachCallCount == 1) // From the CHA-RL5f RETRY attachment cycle
+        #expect(await contributors[0].mockChannel.attachCallCount == 2) // From the ATTACH operation and the CHA-RL5f RETRY attachment cycle
+        #expect(await contributors[1].mockChannel.attachCallCount == 1) // From the CHA-RL5f RETRY attachment cycle
+        #expect(await contributors[2].mockChannel.attachCallCount == 1) // From the CHA-RL5f RETRY attachment cycle
 
         _ = try #require(await roomStatusChangeSubscription.first { $0.current == .attached }) // Room status changes to ATTACHED
     }
@@ -506,9 +506,9 @@ struct DefaultRoomLifecycleManagerTests {
 
         _ = await rundownOperationTask.value
 
-        #expect(await contributors[0].channel.detachCallCount > 0)
-        #expect(await contributors[2].channel.detachCallCount > 0)
-        #expect(await contributors[1].channel.detachCallCount == 0)
+        #expect(await contributors[0].mockChannel.detachCallCount > 0)
+        #expect(await contributors[2].mockChannel.detachCallCount > 0)
+        #expect(await contributors[1].mockChannel.detachCallCount == 0)
     }
 
     // MARK: - DETACH operation
@@ -524,7 +524,7 @@ struct DefaultRoomLifecycleManagerTests {
         try await manager.performDetachOperation()
 
         // Then: The room detach operation succeeds, and no attempt is made to detach a contributor (which we’ll consider as satisfying the spec’s requirement that a "no-op" happen)
-        #expect(await contributor.channel.detachCallCount == 0)
+        #expect(await contributor.mockChannel.detachCallCount == 0)
     }
 
     // @spec CHA-RL2b
@@ -622,7 +622,7 @@ struct DefaultRoomLifecycleManagerTests {
 
         // Then: It calls `detach` on all the contributors, the room detach operation succeeds, it emits a status change to DETACHED, and its current status is DETACHED
         for contributor in contributors {
-            #expect(await contributor.channel.detachCallCount > 0)
+            #expect(await contributor.mockChannel.detachCallCount > 0)
         }
 
         _ = try #require(await detachedStatusChange, "Expected status change to DETACHED")
@@ -667,7 +667,7 @@ struct DefaultRoomLifecycleManagerTests {
         // - calls `detach` on all of the contributors
         // - emits a status change to FAILED and the call to `performDetachOperation()` fails; the error associated with the status change and the `performDetachOperation()` has the *DetachmentFailed code corresponding to contributor 1’s feature, and its `cause` is the error thrown by contributor 1’s `detach()` call (contributor 1 because it’s the "first feature to fail" as the spec says)
         for contributor in contributors {
-            #expect(await contributor.channel.detachCallCount > 0)
+            #expect(await contributor.mockChannel.detachCallCount > 0)
         }
 
         let failedStatusChange = try #require(await maybeFailedStatusChange)
@@ -686,7 +686,7 @@ struct DefaultRoomLifecycleManagerTests {
         //
         // - the first two times `detach` is called, it throws an error, leaving it in the ATTACHED state
         // - the third time `detach` is called, it succeeds
-        let detachImpl = { @Sendable (callCount: Int) async -> MockRoomLifecycleContributorChannel.AttachOrDetachBehavior in
+        let detachImpl = { @Sendable (callCount: Int) async -> MockRealtimeChannel.AttachOrDetachBehavior in
             if callCount < 3 {
                 return .failure(ARTErrorInfo(domain: "SomeDomain", code: 123)) // exact error is unimportant
             }
@@ -704,7 +704,7 @@ struct DefaultRoomLifecycleManagerTests {
         try await manager.performDetachOperation()
 
         // Then: It attempts to detach the channel 3 times, waiting 250ms between each attempt, the room transitions from DETACHING to DETACHED with no status updates in between, and the call to `performDetachOperation()` succeeds
-        #expect(await contributor.channel.detachCallCount == 3)
+        #expect(await contributor.mockChannel.detachCallCount == 3)
 
         // We use "did it call clock.sleep(…)?" as a good-enough proxy for the question "did it wait for the right amount of time at the right moment?"
         #expect(await clock.sleepCallArguments == Array(repeating: 0.25, count: 2))
@@ -725,7 +725,7 @@ struct DefaultRoomLifecycleManagerTests {
         await manager.performReleaseOperation()
 
         // Then: The room release operation succeeds, and no attempt is made to detach a contributor (which we’ll consider as satisfying the spec’s requirement that a "no-op" happen)
-        #expect(await contributor.channel.detachCallCount == 0)
+        #expect(await contributor.mockChannel.detachCallCount == 0)
     }
 
     @Test(
@@ -750,7 +750,7 @@ struct DefaultRoomLifecycleManagerTests {
         // Then: The room release operation succeeds, the room transitions to RELEASED, and no attempt is made to detach a contributor (which we’ll consider as satisfying the spec’s requirement that the transition be "immediate")
         #expect(try #require(await statusChange).current == .released)
         #expect(await manager.roomStatus == .released)
-        #expect(await contributor.channel.detachCallCount == 0)
+        #expect(await contributor.mockChannel.detachCallCount == 0)
     }
 
     // @spec CHA-RL3c
@@ -799,7 +799,7 @@ struct DefaultRoomLifecycleManagerTests {
         // Check that the second RELEASE completes
         await secondReleaseResult
 
-        #expect(await contributor.channel.detachCallCount == 1)
+        #expect(await contributor.mockChannel.detachCallCount == 1)
     }
 
     // @spec CHA-RL3l
@@ -863,10 +863,10 @@ struct DefaultRoomLifecycleManagerTests {
         // - the room transitions to RELEASED
         // - the call to `performReleaseOperation()` completes
         for nonFailedContributor in [contributors[0], contributors[2]] {
-            #expect(await nonFailedContributor.channel.detachCallCount == 1)
+            #expect(await nonFailedContributor.mockChannel.detachCallCount == 1)
         }
 
-        #expect(await contributors[1].channel.detachCallCount == 0)
+        #expect(await contributors[1].mockChannel.detachCallCount == 0)
 
         _ = await releasedStatusChange
 
@@ -879,7 +879,7 @@ struct DefaultRoomLifecycleManagerTests {
         // Given: A DefaultRoomLifecycleManager, with a contributor for which:
         // - the first two times that `detach()` is called, it fails, leaving the contributor in a non-FAILED state
         // - the third time that `detach()` is called, it succeeds
-        let detachImpl = { @Sendable (callCount: Int) async -> MockRoomLifecycleContributorChannel.AttachOrDetachBehavior in
+        let detachImpl = { @Sendable (callCount: Int) async -> MockRealtimeChannel.AttachOrDetachBehavior in
             if callCount < 3 {
                 return .failure(ARTErrorInfo(domain: "SomeDomain", code: 123)) // exact error is unimportant
             }
@@ -899,7 +899,7 @@ struct DefaultRoomLifecycleManagerTests {
         await manager.performReleaseOperation()
 
         // It: calls `detach()` on the channel 3 times, with a 0.25s pause between each attempt, and the call to `performReleaseOperation` completes
-        #expect(await contributor.channel.detachCallCount == 3)
+        #expect(await contributor.mockChannel.detachCallCount == 3)
 
         // We use "did it call clock.sleep(…)?" as a good-enough proxy for the question "did it wait for the right amount of time at the right moment?"
         #expect(await clock.sleepCallArguments == Array(repeating: 0.25, count: 2))
@@ -930,7 +930,7 @@ struct DefaultRoomLifecycleManagerTests {
         // - it waits 0.25s (TODO: confirm my interpretation of CHA-RL3f, which is that the wait still happens, but is not followed by a retry; have asked in https://github.com/ably/specification/pull/200/files#r1765372854)
         // - the room transitions to RELEASED
         // - the call to `performReleaseOperation()` completes
-        #expect(await contributor.channel.detachCallCount == 1)
+        #expect(await contributor.mockChannel.detachCallCount == 1)
 
         // We use "did it call clock.sleep(…)?" as a good-enough proxy for the question "did it wait for the right amount of time at the right moment?"
         #expect(await clock.sleepCallArguments == [0.25])
@@ -976,9 +976,9 @@ struct DefaultRoomLifecycleManagerTests {
         await manager.performRetryOperation(triggeredByContributor: contributors[0], errorForSuspendedStatus: .createUnknownError() /* arbitrary */ )
 
         // Then: The manager calls `detach` on all contributors except that which triggered the RETRY (I’m using this, combined with the CHA-RL5b and CHA-RL5c tests, as a good-enough way of checking that a CHA-RL2f detachment cycle happened)
-        #expect(await contributors[0].channel.detachCallCount == 0)
-        #expect(await contributors[1].channel.detachCallCount == 1)
-        #expect(await contributors[2].channel.detachCallCount == 1)
+        #expect(await contributors[0].mockChannel.detachCallCount == 0)
+        #expect(await contributors[1].mockChannel.detachCallCount == 1)
+        #expect(await contributors[2].mockChannel.detachCallCount == 1)
     }
 
     // @specOneOf(2/2) CHA-RL5a - Verifies that, when the RETRY operation triggers a CHA-RL2f detachment cycle, the retry behaviour of CHA-RL2h3 is performed.
@@ -987,7 +987,7 @@ struct DefaultRoomLifecycleManagerTests {
         // Given: A RoomLifecycleManager, whose contributor at index 1 has an implementation of `detach()` which:
         // - throws an error and transitions the contributor to a non-FAILED state the first time it’s called
         // - succeeds the second time it’s called
-        let detachImpl = { @Sendable (callCount: Int) -> MockRoomLifecycleContributorChannel.AttachOrDetachBehavior in
+        let detachImpl = { @Sendable (callCount: Int) -> MockRealtimeChannel.AttachOrDetachBehavior in
             if callCount == 1 {
                 return .completeAndChangeState(.failure(.createUnknownError() /* arbitrary */ ), newState: .attached /* this is what CHA-RL2h3 mentions as being the only non-FAILED state that would happen in this situation in reality */ )
             } else {
@@ -1029,9 +1029,9 @@ struct DefaultRoomLifecycleManagerTests {
         // Then: The manager calls `detach` in sequence on all contributors except that which triggered the RETRY, stopping upon one of these `detach` calls throwing an error, then sleeps for 250ms, then performs these `detach` calls again
 
         // (Note that for simplicity of the test I’m not actually making assertions about the sequence in which events happen here)
-        #expect(await contributors[0].channel.detachCallCount == 0)
-        #expect(await contributors[1].channel.detachCallCount == 2)
-        #expect(await contributors[2].channel.detachCallCount == 1)
+        #expect(await contributors[0].mockChannel.detachCallCount == 0)
+        #expect(await contributors[1].mockChannel.detachCallCount == 2)
+        #expect(await contributors[2].mockChannel.detachCallCount == 1)
         #expect(await clock.sleepCallArguments == [0.25])
     }
 
@@ -1065,9 +1065,9 @@ struct DefaultRoomLifecycleManagerTests {
         // Then:
         // 1. (This is basically just testing the behaviour of CHA-RL2h1 again, plus the fact that we don’t try to detach the channel that triggered the RETRY) The manager calls `detach` in sequence on all contributors except that which triggered the RETRY, and enters the FAILED status, the associated error for this status being the *DetachmentFailed code corresponding to contributor 1’s feature, and its `cause` is contributor 1’s `errorReason`
         // 2. the RETRY operation is terminated (which we confirm here by checking that it has not attempted to attach any of the contributors, which shows us that CHA-RL5f didn’t happen)
-        #expect(await contributors[0].channel.detachCallCount == 0)
-        #expect(await contributors[1].channel.detachCallCount == 1)
-        #expect(await contributors[2].channel.detachCallCount == 1)
+        #expect(await contributors[0].mockChannel.detachCallCount == 0)
+        #expect(await contributors[1].mockChannel.detachCallCount == 1)
+        #expect(await contributors[2].mockChannel.detachCallCount == 1)
 
         let roomStatus = await manager.roomStatus
         let failedStatusChange = try #require(await maybeFailedStatusChange)
@@ -1078,7 +1078,7 @@ struct DefaultRoomLifecycleManagerTests {
         }
 
         for contributor in contributors {
-            #expect(await contributor.channel.attachCallCount == 0)
+            #expect(await contributor.mockChannel.attachCallCount == 0)
         }
     }
 
@@ -1166,7 +1166,7 @@ struct DefaultRoomLifecycleManagerTests {
         }
 
         for contributor in contributors {
-            #expect(await contributor.channel.attachCallCount == 0)
+            #expect(await contributor.mockChannel.attachCallCount == 0)
         }
     }
 
@@ -1227,7 +1227,7 @@ struct DefaultRoomLifecycleManagerTests {
         #expect(attachingStatusChange.error == nil)
 
         for contributor in contributors {
-            #expect(await contributor.channel.attachCallCount == 1)
+            #expect(await contributor.mockChannel.attachCallCount == 1)
         }
     }
 
@@ -1269,7 +1269,7 @@ struct DefaultRoomLifecycleManagerTests {
 
         // Then: The room performs a CHA-RL1e attachment cycle (we sufficiently satisfy ourselves of this fact by checking that it’s attempted to attach all of the channels), transitions to ATTACHED, and the RETRY operation completes
         for contributor in contributors {
-            #expect(await contributor.channel.attachCallCount == 1)
+            #expect(await contributor.mockChannel.attachCallCount == 1)
         }
 
         _ = try #require(await attachedStatusChange)
@@ -1331,13 +1331,13 @@ struct DefaultRoomLifecycleManagerTests {
 
         _ = await rundownOperationTask.value
 
-        #expect(await contributors[0].channel.attachCallCount == 1)
-        #expect(await contributors[1].channel.attachCallCount == 1)
-        #expect(await contributors[2].channel.attachCallCount == 0)
+        #expect(await contributors[0].mockChannel.attachCallCount == 1)
+        #expect(await contributors[1].mockChannel.attachCallCount == 1)
+        #expect(await contributors[2].mockChannel.attachCallCount == 0)
 
-        #expect(await contributors[0].channel.detachCallCount == 1) // from CHA-RL1h5’s triggered RUNDOWN
-        #expect(await contributors[1].channel.detachCallCount == 1) // from CHA-RL5a detachment cycle
-        #expect(await contributors[2].channel.detachCallCount == 2) // from CHA-RL5a detachment cycle and CHA-RL1h5’s triggered RUNDOWN
+        #expect(await contributors[0].mockChannel.detachCallCount == 1) // from CHA-RL1h5’s triggered RUNDOWN
+        #expect(await contributors[1].mockChannel.detachCallCount == 1) // from CHA-RL5a detachment cycle
+        #expect(await contributors[2].mockChannel.detachCallCount == 2) // from CHA-RL5a detachment cycle and CHA-RL1h5’s triggered RUNDOWN
 
         _ = try #require(await failedStatusChange)
         #expect(await manager.roomStatus.isFailed)
@@ -1378,9 +1378,9 @@ struct DefaultRoomLifecycleManagerTests {
         // - the lifecycle manager calls `detach` on contributors 0 and 2
         // - the lifecycle manager does not call `detach` on contributor 1
         // - the call to `performRundownOperation()` completes
-        #expect(await contributors[0].channel.detachCallCount == 1)
-        #expect(await contributors[2].channel.detachCallCount == 1)
-        #expect(await contributors[1].channel.detachCallCount == 0)
+        #expect(await contributors[0].mockChannel.detachCallCount == 1)
+        #expect(await contributors[2].mockChannel.detachCallCount == 1)
+        #expect(await contributors[1].mockChannel.detachCallCount == 0)
     }
 
     // @spec CHA-RL1h6 - see TODO on `performRundownOperation` for my interpretation of CHA-RL1h5, in which I introduce RUNDOWN
@@ -1388,7 +1388,7 @@ struct DefaultRoomLifecycleManagerTests {
     func rundown_ifADetachFailsItIsRetriedUntilSuccess() async throws {
         // Given: A room with a contributor in the ATTACHED state (i.e. an arbitrarily-chosen state that is not FAILED) and for whom calling `detach` will fail on the first attempt and succeed on the second
 
-        let detachResult = { @Sendable (callCount: Int) async -> MockRoomLifecycleContributorChannel.AttachOrDetachBehavior in
+        let detachResult = { @Sendable (callCount: Int) async -> MockRealtimeChannel.AttachOrDetachBehavior in
             if callCount == 1 {
                 return .failure(.create(withCode: 123, message: ""))
             } else {
@@ -1408,7 +1408,7 @@ struct DefaultRoomLifecycleManagerTests {
         await manager.performRundownOperation(errorForFailedStatus: .createUnknownError() /* arbitrary */ )
 
         // Then: the lifecycle manager calls `detach` twice on the contributor (i.e. it retries the failed detach)
-        #expect(await contributors[0].channel.detachCallCount == 2)
+        #expect(await contributors[0].mockChannel.detachCallCount == 2)
     }
 
     // MARK: - Handling contributor UPDATE events
@@ -1431,7 +1431,7 @@ struct DefaultRoomLifecycleManagerTests {
         )
 
         await waitForManager(manager, toHandleContributorStateChange: previousContributorStateChange) {
-            await contributor.channel.emitStateChange(previousContributorStateChange)
+            await contributor.mockChannel.emitStateChange(previousContributorStateChange)
         }
 
         // When: This contributor emits an UPDATE event with `resumed` flag set to true
@@ -1444,7 +1444,7 @@ struct DefaultRoomLifecycleManagerTests {
         )
 
         await waitForManager(manager, toHandleContributorStateChange: contributorStateChange) {
-            await contributor.channel.emitStateChange(contributorStateChange)
+            await contributor.mockChannel.emitStateChange(contributorStateChange)
         }
 
         // Then: The manager does not record a pending discontinuity event for this contributor, nor does it call `emitDiscontinuity` on the contributor; this shows us that the actions described in CHA-RL4a3 and CHA-RL4a4 haven’t been performed
@@ -1469,7 +1469,7 @@ struct DefaultRoomLifecycleManagerTests {
         )
 
         await waitForManager(manager, toHandleContributorStateChange: contributorStateChange) {
-            await contributor.channel.emitStateChange(contributorStateChange)
+            await contributor.mockChannel.emitStateChange(contributorStateChange)
         }
 
         // Then: The manager does not record a pending discontinuity event for this contributor, nor does it call `emitDiscontinuity` on the contributor; this shows us that the actions described in CHA-RL4a3 and CHA-RL4a4 haven’t been performed
@@ -1498,7 +1498,7 @@ struct DefaultRoomLifecycleManagerTests {
         )
 
         await waitForManager(manager, toHandleContributorStateChange: previousContributorStateChange) {
-            await contributor.channel.emitStateChange(previousContributorStateChange)
+            await contributor.mockChannel.emitStateChange(previousContributorStateChange)
         }
 
         // When: This contributor emits an UPDATE event with `resumed` flag set to false
@@ -1511,7 +1511,7 @@ struct DefaultRoomLifecycleManagerTests {
         )
 
         await waitForManager(manager, toHandleContributorStateChange: contributorStateChange) {
-            await contributor.channel.emitStateChange(contributorStateChange)
+            await contributor.mockChannel.emitStateChange(contributorStateChange)
         }
 
         // Then: The manager records a pending discontinuity event for this contributor, and this discontinuity event has error equal to the contributor UPDATE event’s `reason`
@@ -1544,7 +1544,7 @@ struct DefaultRoomLifecycleManagerTests {
         )
 
         await waitForManager(manager, toHandleContributorStateChange: previousContributorStateChange) {
-            await contributor.channel.emitStateChange(previousContributorStateChange)
+            await contributor.mockChannel.emitStateChange(previousContributorStateChange)
         }
 
         // When: The aforementioned contributor emits an UPDATE event with `resumed` flag set to false
@@ -1557,7 +1557,7 @@ struct DefaultRoomLifecycleManagerTests {
         )
 
         await waitForManager(manager, toHandleContributorStateChange: contributorStateChange) {
-            await contributor.channel.emitStateChange(contributorStateChange)
+            await contributor.mockChannel.emitStateChange(contributorStateChange)
         }
 
         // Then: The manager does not replace the existing pending discontinuity event for this contributor
@@ -1586,7 +1586,7 @@ struct DefaultRoomLifecycleManagerTests {
         )
 
         await waitForManager(manager, toHandleContributorStateChange: previousContributorStateChange) {
-            await contributor.channel.emitStateChange(previousContributorStateChange)
+            await contributor.mockChannel.emitStateChange(previousContributorStateChange)
         }
 
         // When: This contributor emits an UPDATE event with `resumed` flag set to false
@@ -1599,7 +1599,7 @@ struct DefaultRoomLifecycleManagerTests {
         )
 
         await waitForManager(manager, toHandleContributorStateChange: contributorStateChange) {
-            await contributor.channel.emitStateChange(contributorStateChange)
+            await contributor.mockChannel.emitStateChange(contributorStateChange)
         }
 
         // Then: The manager calls `emitDiscontinuity` on the contributor, with error equal to the contributor UPDATE event’s `reason`
@@ -1631,7 +1631,7 @@ struct DefaultRoomLifecycleManagerTests {
         )
 
         await waitForManager(manager, toHandleContributorStateChange: previousContributorStateChange) {
-            await contributor.channel.emitStateChange(previousContributorStateChange)
+            await contributor.mockChannel.emitStateChange(previousContributorStateChange)
         }
 
         // This is to put the manager into the DETACHING state, to satisfy "with a room lifecycle operation in progress"
@@ -1649,7 +1649,7 @@ struct DefaultRoomLifecycleManagerTests {
         )
 
         await waitForManager(manager, toHandleContributorStateChange: contributorStateChange) {
-            await contributor.channel.emitStateChange(contributorStateChange)
+            await contributor.mockChannel.emitStateChange(contributorStateChange)
         }
 
         // Then: The manager records a pending discontinuity event for this contributor, and this discontinuity event has error equal to the contributor ATTACHED event’s `reason`
@@ -1680,7 +1680,7 @@ struct DefaultRoomLifecycleManagerTests {
         )
 
         await waitForManager(manager, toHandleContributorStateChange: contributorStateChange) {
-            await contributor.channel.emitStateChange(contributorStateChange)
+            await contributor.mockChannel.emitStateChange(contributorStateChange)
         }
 
         // Then: The manager does not record a pending discontinuity event for this contributor
@@ -1720,7 +1720,7 @@ struct DefaultRoomLifecycleManagerTests {
         )
 
         await waitForManager(manager, toHandleContributorStateChange: contributorStateChange) {
-            await contributors[0].channel.emitStateChange(contributorStateChange)
+            await contributors[0].mockChannel.emitStateChange(contributorStateChange)
         }
 
         // Then:
@@ -1731,7 +1731,7 @@ struct DefaultRoomLifecycleManagerTests {
         #expect(await manager.roomStatus.isFailed)
 
         for contributor in contributors {
-            #expect(await contributor.channel.detachCallCount == 1)
+            #expect(await contributor.mockChannel.detachCallCount == 1)
         }
 
         #expect(await !manager.testsOnly_hasTransientDisconnectTimeoutForAnyContributor)
@@ -1758,7 +1758,7 @@ struct DefaultRoomLifecycleManagerTests {
         )
 
         await waitForManager(manager, toHandleContributorStateChange: contributorStateChange) {
-            await contributor.channel.emitStateChange(contributorStateChange)
+            await contributor.mockChannel.emitStateChange(contributorStateChange)
         }
 
         // Then: It does not set a new transient disconnect timeout
@@ -1794,7 +1794,7 @@ struct DefaultRoomLifecycleManagerTests {
         async let maybeClockSleepArgument = clock.sleepCallArgumentsAsyncSequence.first { _ in true }
 
         await waitForManager(manager, toHandleContributorStateChange: contributorStateChange) {
-            await contributor.channel.emitStateChange(contributorStateChange)
+            await contributor.mockChannel.emitStateChange(contributorStateChange)
         }
 
         // Then: The manager records a 5 second transient disconnect timeout for this contributor
@@ -1847,7 +1847,7 @@ struct DefaultRoomLifecycleManagerTests {
         )
 
         await waitForManager(manager, toHandleContributorStateChange: contributorAttachedStateChange) {
-            await contributorThatWillEmitAttachedStateChange.channel.emitStateChange(contributorAttachedStateChange)
+            await contributorThatWillEmitAttachedStateChange.mockChannel.emitStateChange(contributorAttachedStateChange)
         }
 
         // Then: The manager clears any transient disconnect timeout for that contributor
@@ -1878,7 +1878,7 @@ struct DefaultRoomLifecycleManagerTests {
         async let maybeClockSleepArgument = clock.sleepCallArgumentsAsyncSequence.first { _ in true }
         // We create a transient disconnect timeout by fulfilling the conditions of CHA-RL4b7
         await waitForManager(manager, toHandleContributorStateChange: contributorStateChange) {
-            await contributor.channel.emitStateChange(contributorStateChange)
+            await contributor.mockChannel.emitStateChange(contributorStateChange)
         }
         try #require(await maybeClockSleepArgument != nil)
 
@@ -1893,7 +1893,7 @@ struct DefaultRoomLifecycleManagerTests {
         )
 
         await waitForManager(manager, toHandleTransientDisconnectTimeoutWithID: transientDisconnectTimeoutID) {
-            await contributor.channel.emitStateChange(contributorAttachedStateChange)
+            await contributor.mockChannel.emitStateChange(contributorAttachedStateChange)
         }
 
         // Then: The manager’s status remains unchanged. In particular, it has not changed to ATTACHING, meaning that the CHA-RL4b7 side effect has not happened and hence that the transient disconnect timeout was properly cancelled
@@ -1927,7 +1927,7 @@ struct DefaultRoomLifecycleManagerTests {
             resumed: false // arbitrary
         )
 
-        await contributors[0].channel.emitStateChange(contributorStateChange)
+        await contributors[0].mockChannel.emitStateChange(contributorStateChange)
 
         // Then: The room status transitions to ATTACHED
         _ = try #require(await maybeAttachedRoomStatusChange)
@@ -1959,7 +1959,7 @@ struct DefaultRoomLifecycleManagerTests {
         )
 
         await waitForManager(manager, toHandleContributorStateChange: contributorStateChange) {
-            await contributors[0].channel.emitStateChange(contributorStateChange)
+            await contributors[0].mockChannel.emitStateChange(contributorStateChange)
         }
 
         // Then: The room status does not change
@@ -2024,7 +2024,7 @@ struct DefaultRoomLifecycleManagerTests {
         )
 
         await waitForManager(manager, toHandleContributorStateChange: contributorStateChange) {
-            await contributorThatWillEmitStateChange.channel.emitStateChange(contributorStateChange)
+            await contributorThatWillEmitStateChange.mockChannel.emitStateChange(contributorStateChange)
         }
 
         // Then:
@@ -2059,13 +2059,13 @@ struct DefaultRoomLifecycleManagerTests {
         await retryOperationTask.value
 
         // We confirm that a RETRY happened by checking for its expected side effects:
-        #expect(await contributors[0].channel.detachCallCount == 0) // RETRY doesn’t touch this since it’s the one that triggered the RETRY
-        #expect(await contributors[1].channel.detachCallCount == 1) // From the CHA-RL5a RETRY detachment cycle
-        #expect(await contributors[2].channel.detachCallCount == 1) // From the CHA-RL5a RETRY detachment cycle
+        #expect(await contributors[0].mockChannel.detachCallCount == 0) // RETRY doesn’t touch this since it’s the one that triggered the RETRY
+        #expect(await contributors[1].mockChannel.detachCallCount == 1) // From the CHA-RL5a RETRY detachment cycle
+        #expect(await contributors[2].mockChannel.detachCallCount == 1) // From the CHA-RL5a RETRY detachment cycle
 
-        #expect(await contributors[0].channel.attachCallCount == 1) // From the CHA-RL5f RETRY attachment cycle
-        #expect(await contributors[1].channel.attachCallCount == 1) // From the CHA-RL5f RETRY attachment cycle
-        #expect(await contributors[2].channel.attachCallCount == 1) // From the CHA-RL5f RETRY attachment cycle
+        #expect(await contributors[0].mockChannel.attachCallCount == 1) // From the CHA-RL5f RETRY attachment cycle
+        #expect(await contributors[1].mockChannel.attachCallCount == 1) // From the CHA-RL5f RETRY attachment cycle
+        #expect(await contributors[2].mockChannel.attachCallCount == 1) // From the CHA-RL5f RETRY attachment cycle
 
         _ = try #require(await roomStatusSubscription.first { $0.current == .attached }) // Room status changes to ATTACHED
     }
