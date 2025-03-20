@@ -3,20 +3,6 @@ import Ably
 import Testing
 
 struct DefaultRoomReactionsTests {
-    // @spec CHA-ER1
-    @Test
-    func init_channelNameIsSetAsReactionsChannelName() async throws {
-        // Given
-        let channel = MockRealtimeChannel(name: "basketball::$chat::$reactions")
-        let featureChannel = MockFeatureChannel(channel: channel)
-
-        // When
-        let defaultRoomReactions = await DefaultRoomReactions(featureChannel: featureChannel, clientID: "mockClientId", roomID: "basketball", logger: TestLogger())
-
-        // Then
-        #expect(defaultRoomReactions.channel.name == "basketball::$chat::$reactions")
-    }
-
     // @spec CHA-ER3a
     @Test
     func reactionsAreSentInTheCorrectFormat() async throws {
