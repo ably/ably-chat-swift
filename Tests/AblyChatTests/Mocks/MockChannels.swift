@@ -1,7 +1,7 @@
 import Ably
-import AblyChat
+@testable import AblyChat
 
-final class MockChannels: RealtimeChannelsProtocol, @unchecked Sendable {
+final class MockChannels: InternalRealtimeChannelsProtocol, @unchecked Sendable {
     private let channels: [MockRealtimeChannel]
     private let mutex = NSLock()
     /// Access must be synchronized via ``mutex``.
@@ -14,9 +14,9 @@ final class MockChannels: RealtimeChannelsProtocol, @unchecked Sendable {
     }
 
     func get(_ name: String, options: ARTRealtimeChannelOptions) -> MockRealtimeChannel {
-        mutex.lock()
-        _getArguments.append((name: name, options: options))
-        mutex.unlock()
+        mutex.withLock {
+            _getArguments.append((name: name, options: options))
+        }
 
         guard let channel = (channels.first { $0.name == name }) else {
             fatalError("There is no mock channel with name \(name)")
@@ -26,32 +26,20 @@ final class MockChannels: RealtimeChannelsProtocol, @unchecked Sendable {
     }
 
     var getArguments: [(name: String, options: ARTRealtimeChannelOptions)] {
-        let result: [(name: String, options: ARTRealtimeChannelOptions)]
-        mutex.lock()
-        result = _getArguments
-        mutex.unlock()
-        return result
-    }
-
-    func exists(_: String) -> Bool {
-        fatalError("Not implemented")
-    }
-
-    func release(_: String, callback _: ARTCallback? = nil) {
-        fatalError("Not implemented")
+        mutex.withLock {
+            _getArguments
+        }
     }
 
     func release(_ name: String) {
-        mutex.lock()
-        defer { mutex.unlock() }
-        _releaseArguments.append(name)
+        mutex.withLock {
+            _releaseArguments.append(name)
+        }
     }
 
     var releaseArguments: [String] {
-        let result: [String]
-        mutex.lock()
-        result = _releaseArguments
-        mutex.unlock()
-        return result
+        mutex.withLock {
+            _releaseArguments
+        }
     }
 }

@@ -1,19 +1,21 @@
 import Ably
-import AblyChat
+@testable import AblyChat
 
-final class MockRealtimeChannel: NSObject, RealtimeChannelProtocol {
+final actor MockRealtimeChannel: InternalRealtimeChannelProtocol {
     let presence = MockRealtimePresence()
 
     private let attachSerial: String?
     private let channelSerial: String?
     private let _name: String?
 
-    var properties: ARTChannelProperties { .init(attachSerial: attachSerial, channelSerial: channelSerial) }
+    nonisolated var properties: ARTChannelProperties { .init(attachSerial: attachSerial, channelSerial: channelSerial) }
 
-    // I don't see why the nonisolated(unsafe) keyword would cause a problem when used for tests in this context.
-    nonisolated(unsafe) var lastMessagePublishedName: String?
-    nonisolated(unsafe) var lastMessagePublishedData: Any?
-    nonisolated(unsafe) var lastMessagePublishedExtras: (any ARTJsonCompatible)?
+    private var _state: ARTRealtimeChannelState?
+    var errorReason: ARTErrorInfo?
+
+    var lastMessagePublishedName: String?
+    var lastMessagePublishedData: JSONValue?
+    var lastMessagePublishedExtras: [String: JSONValue]?
 
     // TODO: If we tighten up the types we then we should be able to get rid of the `@unchecked Sendable` here, but I’m in a rush. Revisit in https://github.com/ably/ably-chat-swift/issues/195
     struct MessageToEmit: @unchecked Sendable {
@@ -29,120 +31,115 @@ final class MockRealtimeChannel: NSObject, RealtimeChannelProtocol {
     init(
         name: String? = nil,
         properties: ARTChannelProperties = .init(),
-        state _: ARTRealtimeChannelState = .suspended,
-        attachResult: AttachOrDetachResult? = nil,
-        detachResult: AttachOrDetachResult? = nil,
-        messageToEmitOnSubscribe: MessageToEmit? = nil
+        initialState: ARTRealtimeChannelState? = nil,
+        initialErrorReason: ARTErrorInfo? = nil,
+        attachBehavior: AttachOrDetachBehavior? = nil,
+        detachBehavior: AttachOrDetachBehavior? = nil,
+        messageToEmitOnSubscribe: MessageToEmit? = nil,
+        subscribeToStateBehavior: SubscribeToStateBehavior? = nil
     ) {
         _name = name
-        self.attachResult = attachResult
-        self.detachResult = detachResult
+        _state = initialState
+        self.attachBehavior = attachBehavior
+        self.detachBehavior = detachBehavior
+        errorReason = initialErrorReason
         self.messageToEmitOnSubscribe = messageToEmitOnSubscribe
+        self.subscribeToStateBehavior = subscribeToStateBehavior ?? .justAddSubscription
         attachSerial = properties.attachSerial
         channelSerial = properties.channelSerial
     }
 
-    /// A threadsafe counter that starts at zero.
-    class Counter: @unchecked Sendable {
-        private var mutex = NSLock()
-        private var _value = 0
-
-        var value: Int {
-            let value: Int
-            mutex.lock()
-            value = _value
-            mutex.unlock()
-            return value
-        }
-
-        func increment() {
-            mutex.lock()
-            _value += 1
-            mutex.unlock()
-        }
-
-        var isZero: Bool {
-            value == 0
-        }
-
-        var isNonZero: Bool {
-            value > 0
-        }
-    }
-
     var state: ARTRealtimeChannelState {
-        .attached
+        guard let state = _state else {
+            fatalError("Channel state not set")
+        }
+        return state
     }
 
-    var errorReason: ARTErrorInfo? {
+    nonisolated var underlying: any RealtimeChannelProtocol {
         fatalError("Not implemented")
     }
 
-    var options: ARTRealtimeChannelOptions? {
-        fatalError("Not implemented")
-    }
+    enum AttachOrDetachBehavior {
+        /// Receives an argument indicating how many times (including the current call) the method for which this is providing a mock implementation has been called.
+        case fromFunction(@Sendable (Int) async -> AttachOrDetachBehavior)
+        case complete(AttachOrDetachResult)
+        case completeAndChangeState(AttachOrDetachResult, newState: ARTRealtimeChannelState)
 
-    func attach() {
-        fatalError("Not implemented")
+        static var success: Self {
+            .complete(.success)
+        }
+
+        static func failure(_ error: ARTErrorInfo) -> Self {
+            .complete(.failure(error))
+        }
     }
 
     enum AttachOrDetachResult {
         case success
         case failure(ARTErrorInfo)
 
-        func performCallback(_ callback: ARTCallback?) {
+        func get() throws(InternalError) {
             switch self {
             case .success:
-                callback?(nil)
+                break
             case let .failure(error):
-                callback?(error)
+                throw error.toInternalError()
             }
         }
     }
 
-    private let attachResult: AttachOrDetachResult?
+    private let attachBehavior: AttachOrDetachBehavior?
 
-    let attachCallCounter = Counter()
+    var attachCallCount = 0
 
-    func attach(_ callback: ARTCallback? = nil) {
-        attachCallCounter.increment()
+    func attach() async throws(InternalError) {
+        attachCallCount += 1
 
-        guard let attachResult else {
-            fatalError("attachResult must be set before attach is called")
+        guard let attachBehavior else {
+            fatalError("attachBehavior must be set before attach is called")
         }
 
-        attachResult.performCallback(callback)
+        try await performBehavior(attachBehavior, callCount: attachCallCount)
     }
 
-    private let detachResult: AttachOrDetachResult?
+    private let detachBehavior: AttachOrDetachBehavior?
 
-    let detachCallCounter = Counter()
+    var detachCallCount = 0
 
-    func detach() {
-        fatalError("Not implemented")
-    }
+    func detach() async throws(InternalError) {
+        detachCallCount += 1
 
-    func detach(_ callback: ARTCallback? = nil) {
-        detachCallCounter.increment()
-
-        guard let detachResult else {
-            fatalError("detachResult must be set before detach is called")
+        guard let detachBehavior else {
+            fatalError("detachBehavior must be set before detach is called")
         }
 
-        detachResult.performCallback(callback)
+        try await performBehavior(detachBehavior, callCount: detachCallCount)
+    }
+
+    private func performBehavior(_ behavior: AttachOrDetachBehavior, callCount: Int) async throws(InternalError) {
+        let result: AttachOrDetachResult
+        switch behavior {
+        case let .fromFunction(function):
+            let behavior = await function(callCount)
+            try await performBehavior(behavior, callCount: callCount)
+            return
+        case let .complete(completeResult):
+            result = completeResult
+        case let .completeAndChangeState(completeResult, newState):
+            _state = newState
+            if case let .failure(error) = completeResult {
+                errorReason = error
+            }
+            result = completeResult
+        }
+
+        try result.get()
     }
 
     let messageToEmitOnSubscribe: MessageToEmit?
 
-    func subscribe(_: @escaping ARTMessageCallback) -> ARTEventListener? {
-        fatalError("Not implemented")
-    }
-
-    func subscribe(attachCallback _: ARTCallback?, callback _: @escaping ARTMessageCallback) -> ARTEventListener? {
-        fatalError("Not implemented")
-    }
-
-    func subscribe(_: String, callback: @escaping ARTMessageCallback) -> ARTEventListener? {
+    nonisolated func subscribe(_: String, callback: @escaping ARTMessageCallback) -> ARTEventListener? {
         if let messageToEmitOnSubscribe {
             let message = ARTMessage(name: nil, data: messageToEmitOnSubscribe.data)
             message.action = messageToEmitOnSubscribe.action
@@ -156,108 +153,57 @@ final class MockRealtimeChannel: NSObject, RealtimeChannelProtocol {
         return ARTEventListener()
     }
 
-    func subscribe(_: String, onAttach _: ARTCallback?, callback _: @escaping ARTMessageCallback) -> ARTEventListener? {
-        fatalError("Not implemented")
-    }
-
-    func unsubscribe() {
-        fatalError("Not implemented")
-    }
-
-    func unsubscribe(_: ARTEventListener?) {
+    nonisolated func unsubscribe(_: ARTEventListener?) {
         // no-op; revisit if we need to test something that depends on this method actually stopping `subscribe` from emitting more events
     }
 
-    func unsubscribe(_: String, listener _: ARTEventListener?) {
-        fatalError("Not implemented")
-    }
-
-    func history(_: ARTRealtimeHistoryQuery?, callback _: @escaping ARTPaginatedMessagesCallback) throws {
-        fatalError("Not implemented")
-    }
-
-    func setOptions(_: ARTRealtimeChannelOptions?, callback _: ARTCallback? = nil) {
-        fatalError("Not implemented")
-    }
-
-    func on(_: ARTChannelEvent, callback _: @escaping (ARTChannelStateChange) -> Void) -> ARTEventListener {
+    nonisolated func on(_: ARTChannelEvent, callback _: @escaping (ARTChannelStateChange) -> Void) -> ARTEventListener {
         ARTEventListener()
     }
 
-    func on(_: @escaping (ARTChannelStateChange) -> Void) -> ARTEventListener {
+    nonisolated func on(_: @escaping (ARTChannelStateChange) -> Void) -> ARTEventListener {
         fatalError("Not implemented")
     }
 
-    func once(_: ARTChannelEvent, callback _: @escaping (ARTChannelStateChange) -> Void) -> ARTEventListener {
-        fatalError("Not implemented")
-    }
-
-    func once(_: @escaping (ARTChannelStateChange) -> Void) -> ARTEventListener {
-        fatalError("Not implemented")
-    }
-
-    func off(_: ARTChannelEvent, listener _: ARTEventListener) {
-        fatalError("Not implemented")
-    }
-
-    func off(_: ARTEventListener) {
+    nonisolated func off(_: ARTEventListener) {
         // no-op; revisit if we need to test something that depends on this method actually stopping `on` from emitting more events
     }
 
-    func off() {
-        fatalError("Not implemented")
-    }
-
-    var name: String {
+    nonisolated var name: String {
         guard let name = _name else {
             fatalError("Channel name not set")
         }
         return name
     }
 
-    func publish(_: String?, data _: Any?) {
-        fatalError("Not implemented")
-    }
-
-    func publish(_: String?, data _: Any?, callback _: ARTCallback? = nil) {
-        fatalError("Not implemented")
-    }
-
-    func publish(_: String?, data _: Any?, clientId _: String) {
-        fatalError("Not implemented")
-    }
-
-    func publish(_: String?, data _: Any?, clientId _: String, callback _: ARTCallback? = nil) {
-        fatalError("Not implemented")
-    }
-
-    func publish(_ name: String?, data: Any?, extras: (any ARTJsonCompatible)?) {
+    func publish(_ name: String?, data: JSONValue?, extras: [String: JSONValue]?) {
         lastMessagePublishedName = name
         lastMessagePublishedExtras = extras
         lastMessagePublishedData = data
     }
 
-    func publish(_: String?, data _: Any?, extras _: (any ARTJsonCompatible)?, callback _: ARTCallback? = nil) {
-        fatalError("Not implemented")
+    enum SubscribeToStateBehavior {
+        case justAddSubscription
+        case addSubscriptionAndEmitStateChange(ARTChannelStateChange)
     }
 
-    func publish(_: String?, data _: Any?, clientId _: String, extras _: (any ARTJsonCompatible)?) {
-        fatalError("Not implemented")
+    private let subscribeToStateBehavior: SubscribeToStateBehavior
+    private var subscriptions = SubscriptionStorage<ARTChannelStateChange>()
+
+    func subscribeToState() -> Subscription<ARTChannelStateChange> {
+        let subscription = subscriptions.create(bufferingPolicy: .unbounded)
+
+        switch subscribeToStateBehavior {
+        case .justAddSubscription:
+            break
+        case let .addSubscriptionAndEmitStateChange(stateChange):
+            emitStateChange(stateChange)
+        }
+
+        return subscription
     }
 
-    func publish(_: String?, data _: Any?, clientId _: String, extras _: (any ARTJsonCompatible)?, callback _: ARTCallback? = nil) {
-        fatalError("Not implemented")
-    }
-
-    func publish(_: [ARTMessage]) {
-        fatalError("Not implemented")
-    }
-
-    func publish(_: [ARTMessage], callback _: ARTCallback? = nil) {
-        fatalError("Not implemented")
-    }
-
-    func history(_: @escaping ARTPaginatedMessagesCallback) {
-        fatalError("Not implemented")
+    func emitStateChange(_ stateChange: ARTChannelStateChange) {
+        subscriptions.emit(stateChange)
     }
 }

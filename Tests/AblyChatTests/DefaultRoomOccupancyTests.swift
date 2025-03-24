@@ -8,14 +8,14 @@ struct DefaultRoomOccupancyTests {
     func requestOccupancyCheck() async throws {
         // Given
         let realtime = MockRealtime {
-            (MockHTTPPaginatedResponse(
+            MockHTTPPaginatedResponse(
                 items: [
                     [
                         "connections": 5,
                         "presenceMembers": 2,
                     ],
                 ]
-            ), nil)
+            )
         }
         let chatAPI = ChatAPI(realtime: realtime)
         let channel = MockRealtimeChannel(name: "basketball::$chat::$chatMessages")

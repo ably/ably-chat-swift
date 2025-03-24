@@ -3,20 +3,6 @@ import Ably
 import Testing
 
 struct DefaultRoomReactionsTests {
-    // @spec CHA-ER1
-    @Test
-    func init_channelNameIsSetAsReactionsChannelName() async throws {
-        // Given
-        let channel = MockRealtimeChannel(name: "basketball::$chat::$reactions")
-        let featureChannel = MockFeatureChannel(channel: channel)
-
-        // When
-        let defaultRoomReactions = await DefaultRoomReactions(featureChannel: featureChannel, clientID: "mockClientId", roomID: "basketball", logger: TestLogger())
-
-        // Then
-        #expect(defaultRoomReactions.channel.name == "basketball::$chat::$reactions")
-    }
-
     // @spec CHA-ER3a
     @Test
     func reactionsAreSentInTheCorrectFormat() async throws {
@@ -38,9 +24,9 @@ struct DefaultRoomReactionsTests {
         try await defaultRoomReactions.send(params: sendReactionParams)
 
         // Then
-        #expect(channel.lastMessagePublishedName == RoomReactionEvents.reaction.rawValue)
-        #expect(channel.lastMessagePublishedData as? NSObject == ["type": "like", "metadata": ["someMetadataKey": "someMetadataValue"]] as NSObject)
-        #expect(channel.lastMessagePublishedExtras as? Dictionary == ["headers": ["someHeadersKey": "someHeadersValue"]])
+        #expect(await channel.lastMessagePublishedName == RoomReactionEvents.reaction.rawValue)
+        #expect(await channel.lastMessagePublishedData == ["type": "like", "metadata": ["someMetadataKey": "someMetadataValue"]])
+        #expect(await channel.lastMessagePublishedExtras == ["headers": ["someHeadersKey": "someHeadersValue"]])
     }
 
     // @spec CHA-ER4
