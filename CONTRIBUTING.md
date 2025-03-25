@@ -126,11 +126,16 @@ You can run `swift run BuildTool spec-coverage` to generate a report about how m
 In addition to the above, you can add the following as a comment anywhere in the test suite:
 
 - `@specUntested <spec-item-id> - <explanation>` — This indicates that the SDK implements the given spec point, but that there are no automated tests for it. This should be used sparingly; only use it when there is no way to test a spec point. It must be accompanied by an explanation of why this spec point is not tested.
+- `@specNotApplicable <spec-item-id> - <explanation>` — This indicates that the spec item is not relevant for this version of the SDK. It must be accompanied by an explanation of why.
 
 Example:
 
 ```swift
 // @specUntested CHA-EX2b - I was unable to find a way to test this spec point in an environment in which concurrency is being used; there is no obvious moment at which to stop observing the emitted state changes in order to be sure that FAILED has not been emitted twice.
+```
+
+```swift
+// @specNotApplicable CHA-EX3a - Our API does not have a concept of "partial options" unlike the JS API which this spec item considers.
 ```
 
 ## Release process
