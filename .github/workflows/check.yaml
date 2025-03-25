@@ -53,7 +53,7 @@ jobs:
           xcode-version: 16.2
 
       - name: Spec coverage
-        run: swift run BuildTool spec-coverage
+        run: swift run BuildTool spec-coverage --spec-commit-sha 3cc7e2f
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
