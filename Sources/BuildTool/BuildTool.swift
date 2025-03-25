@@ -272,6 +272,9 @@ struct SpecCoverage: AsyncParsableCommand {
         discussion: "You can set the GITHUB_TOKEN environment variable to provide a GitHub authentication token to use when fetching the latest commit."
     )
 
+    @Option(help: "The SHA of the spec commit to use")
+    var specCommitSHA: String?
+
     enum Error: Swift.Error {
         case unexpectedStatusCodeLoadingCommit(Int)
         case unexpectedStatusCodeLoadingSpec(Int)
@@ -634,10 +637,16 @@ struct SpecCoverage: AsyncParsableCommand {
     mutating func run() async throws {
         let branchName = "main"
 
-        let commitSHA = try await fetchLatestSpecCommitSHAForBranchName(branchName)
-        print("Using latest spec commit (\(commitSHA.prefix(7))) from branch \(branchName).\n")
+        let specCommitSHA: String
+        if let specCommitSHAOption = self.specCommitSHA {
+            print("Using forced spec commit (\(specCommitSHAOption.prefix(7))).\n")
+            specCommitSHA = specCommitSHAOption
+        } else {
+            specCommitSHA = try await fetchLatestSpecCommitSHAForBranchName(branchName)
+            print("Using latest spec commit (\(specCommitSHA.prefix(7))) from branch \(branchName).\n")
+        }
 
-        let specFile = try await loadSpecFile(forCommitSHA: commitSHA)
+        let specFile = try await loadSpecFile(forCommitSHA: specCommitSHA)
         let conformanceTags = try await fetchConformanceTags()
 
         let report = try CoverageReport.generate(specFile: specFile, conformanceTags: conformanceTags)
