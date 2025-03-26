@@ -334,7 +334,7 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
                     case .failed, .suspended:
                         // TODO: Revisit as part of https://github.com/ably-labs/ably-chat-swift/issues/32
                         logger.log(message: "Channel failed to attach", level: .error)
-                        let errorCodeCase = ErrorCode.CaseThatImpliesFixedStatusCode.messagesAttachmentFailed
+                        let errorCodeCase = ErrorCode.CaseThatImpliesFixedStatusCode.badRequest
                         nillableContinuation?.resume(
                             returning: .failure(
                                 ARTErrorInfo.create(
