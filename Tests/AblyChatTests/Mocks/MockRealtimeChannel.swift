@@ -182,7 +182,7 @@ final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
     }
 
     private let subscribeToStateBehavior: SubscribeToStateBehavior
-    private var stateChangeSubscriptions = SubscriptionStorage<ARTChannelStateChange>()
+    private let stateChangeSubscriptions = SubscriptionStorage<ARTChannelStateChange>()
 
     func subscribeToState() -> Subscription<ARTChannelStateChange> {
         let subscription = stateChangeSubscriptions.create(bufferingPolicy: .unbounded)
