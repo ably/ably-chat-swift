@@ -3,7 +3,7 @@ import Ably
 
 final class MockFeatureChannel: FeatureChannel {
     let channel: any InternalRealtimeChannelProtocol
-    private var discontinuitySubscriptions = SubscriptionStorage<DiscontinuityEvent>()
+    private let discontinuitySubscriptions = SubscriptionStorage<DiscontinuityEvent>()
     private let resultOfWaitToBeAbleToPerformPresenceOperations: Result<Void, ARTErrorInfo>?
 
     init(

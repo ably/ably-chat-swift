@@ -8,7 +8,7 @@ class MockRoomLifecycleManager: RoomLifecycleManager {
     private(set) var detachCallCount = 0
     private(set) var releaseCallCount = 0
     private let _roomStatus: RoomStatus?
-    private var subscriptions = SubscriptionStorage<RoomStatusChange>()
+    private let subscriptions = SubscriptionStorage<RoomStatusChange>()
 
     init(attachResult: Result<Void, ARTErrorInfo>? = nil, detachResult: Result<Void, ARTErrorInfo>? = nil, roomStatus: RoomStatus? = nil) {
         self.attachResult = attachResult

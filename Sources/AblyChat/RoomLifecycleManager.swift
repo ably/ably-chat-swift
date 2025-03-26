@@ -63,7 +63,7 @@ internal class DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
     /// Manager state that relates to individual contributors, keyed by contributors’ ``Contributor/id``. Stored separately from ``contributors`` so that the latter can be a `let`, to make it clear that the contributors remain fixed for the lifetime of the manager.
     private var contributorAnnotations: ContributorAnnotations
     private var listenForStateChangesTask: Task<Void, Never>!
-    private var roomStatusChangeSubscriptions = SubscriptionStorage<RoomStatusChange>()
+    private let roomStatusChangeSubscriptions = SubscriptionStorage<RoomStatusChange>()
     private var operationResultContinuations = OperationResultContinuations()
 
     // MARK: - Initializers and `deinit`
@@ -300,7 +300,7 @@ internal class DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
 
     #if DEBUG
         /// Supports the ``testsOnly_onRoomStatusChange()`` method.
-        private var statusChangeSubscriptions = SubscriptionStorage<StatusChange>()
+        private let statusChangeSubscriptions = SubscriptionStorage<StatusChange>()
 
         internal struct StatusChange {
             internal var current: Status
@@ -335,7 +335,7 @@ internal class DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
 
     #if DEBUG
         /// Supports the ``testsOnly_subscribeToHandledContributorStateChanges()`` method.
-        private var stateChangeHandledSubscriptions = SubscriptionStorage<ARTChannelStateChange>()
+        private let stateChangeHandledSubscriptions = SubscriptionStorage<ARTChannelStateChange>()
 
         /// Returns a subscription which emits the contributor state changes that have been handled by the manager.
         ///
@@ -368,7 +368,7 @@ internal class DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
         }
 
         /// Supports the ``testsOnly_subscribeToHandledTransientDisconnectTimeouts()`` method.
-        private var transientDisconnectTimeoutHandledSubscriptions = SubscriptionStorage<UUID>()
+        private let transientDisconnectTimeoutHandledSubscriptions = SubscriptionStorage<UUID>()
 
         /// Returns a subscription which emits the IDs of the transient disconnect timeouts that have been handled by the manager.
         ///
@@ -575,7 +575,7 @@ internal class DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
         }
 
         /// Supports the ``testsOnly_subscribeToOperationWaitEvents()`` method.
-        private var operationWaitEventSubscriptions = SubscriptionStorage<OperationWaitEvent>()
+        private let operationWaitEventSubscriptions = SubscriptionStorage<OperationWaitEvent>()
 
         /// Returns a subscription which emits an event each time one room lifecycle operation is going to wait for another to complete.
         internal func testsOnly_subscribeToOperationWaitEvents() -> Subscription<OperationWaitEvent> {
@@ -1225,7 +1225,7 @@ internal class DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
         }
 
         /// Supports the ``testsOnly_subscribeToStatusChangeWaitEvents()`` method.
-        private var statusChangeWaitEventSubscriptions = SubscriptionStorage<StatusChangeWaitEvent>()
+        private let statusChangeWaitEventSubscriptions = SubscriptionStorage<StatusChangeWaitEvent>()
 
         /// Returns a subscription which emits an event each time ``waitToBeAbleToPerformPresenceOperations(requestedByFeature:)`` is going to wait for a room status change.
         internal func testsOnly_subscribeToStatusChangeWaitEvents() -> Subscription<StatusChangeWaitEvent> {

@@ -3,7 +3,7 @@ import Ably
 internal class DefaultRoomLifecycleContributor: RoomLifecycleContributor, EmitsDiscontinuities, CustomDebugStringConvertible {
     internal nonisolated let channel: any InternalRealtimeChannelProtocol
     internal nonisolated let feature: RoomFeature
-    private var discontinuitySubscriptions = SubscriptionStorage<DiscontinuityEvent>()
+    private let discontinuitySubscriptions = SubscriptionStorage<DiscontinuityEvent>()
 
     internal init(channel: any InternalRealtimeChannelProtocol, feature: RoomFeature) {
         self.channel = channel

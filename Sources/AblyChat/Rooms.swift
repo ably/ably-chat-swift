@@ -139,7 +139,7 @@ internal class DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
         }
 
         /// Supports the ``testsOnly_subscribeToOperationWaitEvents()`` method.
-        private var operationWaitEventSubscriptions = SubscriptionStorage<OperationWaitEvent>()
+        private let operationWaitEventSubscriptions = SubscriptionStorage<OperationWaitEvent>()
 
         /// Returns a subscription which emits an event each time one operation is going to wait for another to complete.
         internal func testsOnly_subscribeToOperationWaitEvents() -> Subscription<OperationWaitEvent> {
