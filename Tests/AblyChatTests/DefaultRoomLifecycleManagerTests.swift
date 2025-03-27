@@ -193,7 +193,7 @@ struct DefaultRoomLifecycleManagerTests {
         _ = await detachingStatusChange
 
         let operationWaitEventSubscription = manager.testsOnly_subscribeToOperationWaitEvents()
-        async let attachedWaitingForDetachedEvent = operationWaitEventSubscription.first { operationWaitEvent in
+        async let attachWaitingForDetachEvent = operationWaitEventSubscription.first { operationWaitEvent in
             operationWaitEvent == .init(waitingOperationID: attachOperationID, waitedOperationID: detachOperationID)
         }
 
@@ -204,7 +204,7 @@ struct DefaultRoomLifecycleManagerTests {
         // - the manager informs us that the ATTACH operation is waiting for the DETACH operation to complete
         // - when the DETACH completes, the ATTACH operation proceeds (which we check here by verifying that it eventually completes) — note that (as far as I can tell) there is no way to test that the ATTACH operation would have proceeded _only if_ the DETACH had completed; the best we can do is allow the manager to tell us that that this is indeed what it’s doing (which is what we check for in the previous bullet)
 
-        _ = try #require(await attachedWaitingForDetachedEvent)
+        _ = try #require(await attachWaitingForDetachEvent)
 
         // Allow the DETACH to complete
         contributorDetachOperation.complete(behavior: .success /* arbitrary */ )
