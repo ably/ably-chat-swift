@@ -1,16 +1,10 @@
 import Ably
 
 internal final class DefaultTyping: Typing {
-    private let featureChannel: FeatureChannel
     private let implementation: Implementation
 
-    internal init(featureChannel: FeatureChannel, roomID: String, clientID: String, logger: InternalLogger, timeout: TimeInterval) {
-        self.featureChannel = featureChannel
-        implementation = .init(featureChannel: featureChannel, roomID: roomID, clientID: clientID, logger: logger, timeout: timeout)
-    }
-
-    internal nonisolated var channel: any RealtimeChannelProtocol {
-        featureChannel.channel.underlying
+    internal init(channel: any InternalRealtimeChannelProtocol, roomLifecycleManager: any RoomLifecycleManager, roomID: String, clientID: String, logger: InternalLogger, timeout: TimeInterval) {
+        implementation = .init(channel: channel, roomLifecycleManager: roomLifecycleManager, roomID: roomID, clientID: clientID, logger: logger, timeout: timeout)
     }
 
     internal func subscribe(bufferingPolicy: BufferingPolicy) async -> Subscription<TypingEvent> {
@@ -29,22 +23,20 @@ internal final class DefaultTyping: Typing {
         try await implementation.stop()
     }
 
-    internal func onDiscontinuity(bufferingPolicy: BufferingPolicy) async -> Subscription<DiscontinuityEvent> {
-        await implementation.onDiscontinuity(bufferingPolicy: bufferingPolicy)
-    }
-
     /// This class exists to make sure that the internals of the SDK only access ably-cocoa via the `InternalRealtimeChannelProtocol` interface. It does this by removing access to the `channel` property that exists as part of the public API of the `Typing` protocol, making it unlikely that we accidentally try to call the `ARTRealtimeChannelProtocol` interface. We can remove this `Implementation` class when we remove the feature-level `channel` property in https://github.com/ably/ably-chat-swift/issues/242.
     private final class Implementation: Sendable {
-        private let featureChannel: FeatureChannel
+        private let channel: any InternalRealtimeChannelProtocol
+        private let roomLifecycleManager: any RoomLifecycleManager
         private let roomID: String
         private let clientID: String
         private let logger: InternalLogger
         private let timeout: TimeInterval
         private let timerManager = TimerManager()
 
-        internal init(featureChannel: FeatureChannel, roomID: String, clientID: String, logger: InternalLogger, timeout: TimeInterval) {
+        internal init(channel: any InternalRealtimeChannelProtocol, roomLifecycleManager: any RoomLifecycleManager, roomID: String, clientID: String, logger: InternalLogger, timeout: TimeInterval) {
             self.roomID = roomID
-            self.featureChannel = featureChannel
+            self.channel = channel
+            self.roomLifecycleManager = roomLifecycleManager
             self.clientID = clientID
             self.logger = logger
             self.timeout = timeout
@@ -55,7 +47,7 @@ internal final class DefaultTyping: Typing {
             let subscription = Subscription<TypingEvent>(bufferingPolicy: bufferingPolicy)
             let eventTracker = EventTracker()
 
-            let eventListener = featureChannel.channel.presence.subscribe { [weak self] message in
+            let eventListener = channel.presence.subscribe { [weak self] message in
                 guard let self else {
                     return
                 }
@@ -104,7 +96,7 @@ internal final class DefaultTyping: Typing {
 
             subscription.addTerminationHandler { [weak self] in
                 if let eventListener {
-                    self?.featureChannel.channel.presence.unsubscribe(eventListener)
+                    self?.channel.presence.unsubscribe(eventListener)
                 }
             }
 
@@ -118,7 +110,7 @@ internal final class DefaultTyping: Typing {
 
                 // CHA-T2c to CHA-T2f
                 do {
-                    try await featureChannel.waitToBeAbleToPerformPresenceOperations(requestedByFeature: RoomFeature.presence)
+                    try await roomLifecycleManager.waitToBeAbleToPerformPresenceOperations(requestedByFeature: .typing)
                 } catch {
                     logger.log(message: "Error waiting to be able to perform presence get operation: \(error)", level: .error)
                     throw error
@@ -126,7 +118,7 @@ internal final class DefaultTyping: Typing {
 
                 let members: [PresenceMessage]
                 do {
-                    members = try await featureChannel.channel.presence.get()
+                    members = try await channel.presence.get()
                 } catch {
                     logger.log(message: error.message, level: .error)
                     throw error
@@ -143,7 +135,7 @@ internal final class DefaultTyping: Typing {
                 logger.log(message: "Starting typing indicator for client: \(clientID)", level: .debug)
 
                 do {
-                    try await featureChannel.waitToBeAbleToPerformPresenceOperations(requestedByFeature: RoomFeature.presence)
+                    try await roomLifecycleManager.waitToBeAbleToPerformPresenceOperations(requestedByFeature: .typing)
                 } catch {
                     logger.log(message: "Error waiting to be able to perform presence enter operation: \(error)", level: .error)
                     throw error
@@ -183,7 +175,7 @@ internal final class DefaultTyping: Typing {
         internal func stop() async throws(ARTErrorInfo) {
             do throws(InternalError) {
                 do {
-                    try await featureChannel.waitToBeAbleToPerformPresenceOperations(requestedByFeature: RoomFeature.presence)
+                    try await roomLifecycleManager.waitToBeAbleToPerformPresenceOperations(requestedByFeature: .typing)
                 } catch {
                     logger.log(message: "Error waiting to be able to perform presence leave operation: \(error)", level: .error)
                     throw error
@@ -194,7 +186,7 @@ internal final class DefaultTyping: Typing {
                     logger.log(message: "Stopping typing indicator for client: \(clientID)", level: .debug)
                     // (CHA-T5b) If typing is in progress, he CHA-T3 timeout is cancelled. The client then leaves presence.
                     await timerManager.cancelTimer()
-                    try await featureChannel.channel.presence.leaveClient(clientID, data: nil)
+                    try await channel.presence.leaveClient(clientID, data: nil)
                 } else {
                     // (CHA-T5a) If typing is not in progress, this operation is no-op.
                     logger.log(message: "User is not typing. No need to leave presence.", level: .debug)
@@ -202,11 +194,6 @@ internal final class DefaultTyping: Typing {
             } catch {
                 throw error.toARTErrorInfo()
             }
-        }
-
-        // (CHA-T7) Users may subscribe to discontinuity events to know when there’s been a break in typing indicators. Their listener will be called when a discontinuity event is triggered from the room lifecycle. For typing, there shouldn’t need to be user action as the underlying core SDK will heal the presence set.
-        internal func onDiscontinuity(bufferingPolicy: BufferingPolicy) async -> Subscription<DiscontinuityEvent> {
-            await featureChannel.onDiscontinuity(bufferingPolicy: bufferingPolicy)
         }
 
         private func processPresenceGet(members: [PresenceMessage]) throws(InternalError) -> Set<String> {
@@ -227,7 +214,7 @@ internal final class DefaultTyping: Typing {
             // (CHA-T4a1) When a typing session is started, the client is entered into presence on the typing channel.
             Task {
                 do {
-                    try await featureChannel.channel.presence.enterClient(clientID, data: nil)
+                    try await channel.presence.enterClient(clientID, data: nil)
                 } catch {
                     logger.log(message: "Error entering presence: \(error)", level: .error)
                     throw error
