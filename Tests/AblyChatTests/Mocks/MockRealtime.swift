@@ -4,6 +4,8 @@ import Foundation
 
 /// A mock implementation of `InternalRealtimeClientProtocol`. We’ll figure out how to do mocking in tests properly in https://github.com/ably-labs/ably-chat-swift/issues/5.
 final class MockRealtime: NSObject, InternalRealtimeClientProtocol, @unchecked Sendable {
+    let callRecorder = MockMethodCallRecorder()
+
     let connection: MockConnection
     let channels: MockChannels
     let paginatedCallback: (@Sendable () throws(ARTErrorInfo) -> ARTHTTPPaginatedResponse)?
@@ -39,6 +41,10 @@ final class MockRealtime: NSObject, InternalRealtimeClientProtocol, @unchecked S
             fatalError("Paginated callback not set")
         }
         do {
+            callRecorder.addRecord(
+                signature: "request(_:path:params:body:headers:)",
+                arguments: ["method": method, "path": path, "params": params, "body": body == nil ? [:] : body as? [String: Any], "headers": headers]
+            )
             return try paginatedCallback()
         } catch {
             throw error.toInternalError()

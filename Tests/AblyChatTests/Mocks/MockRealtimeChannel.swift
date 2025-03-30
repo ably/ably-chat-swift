@@ -11,6 +11,7 @@ final actor MockRealtimeChannel: InternalRealtimeChannelProtocol {
     nonisolated var properties: ARTChannelProperties { .init(attachSerial: attachSerial, channelSerial: channelSerial) }
 
     private var _state: ARTRealtimeChannelState?
+    private let stateChangeToEmitForListener: ARTChannelStateChange?
     var errorReason: ARTErrorInfo?
 
     var lastMessagePublishedName: String?
@@ -35,18 +36,22 @@ final actor MockRealtimeChannel: InternalRealtimeChannelProtocol {
         initialErrorReason: ARTErrorInfo? = nil,
         attachBehavior: AttachOrDetachBehavior? = nil,
         detachBehavior: AttachOrDetachBehavior? = nil,
+        messageJSONToEmitOnSubscribe: [String: Sendable]? = nil,
         messageToEmitOnSubscribe: MessageToEmit? = nil,
-        subscribeToStateBehavior: SubscribeToStateBehavior? = nil
+        subscribeToStateBehavior: SubscribeToStateBehavior? = nil,
+        stateChangeToEmitForListener: ARTChannelStateChange? = nil
     ) {
         _name = name
         _state = initialState
         self.attachBehavior = attachBehavior
         self.detachBehavior = detachBehavior
         errorReason = initialErrorReason
+        self.messageJSONToEmitOnSubscribe = messageJSONToEmitOnSubscribe
         self.messageToEmitOnSubscribe = messageToEmitOnSubscribe
         self.subscribeToStateBehavior = subscribeToStateBehavior ?? .justAddSubscription
         attachSerial = properties.attachSerial
         channelSerial = properties.channelSerial
+        self.stateChangeToEmitForListener = stateChangeToEmitForListener
     }
 
     var state: ARTRealtimeChannelState {
@@ -137,9 +142,29 @@ final actor MockRealtimeChannel: InternalRealtimeChannelProtocol {
         try result.get()
     }
 
+    let messageJSONToEmitOnSubscribe: [String: Sendable]?
     let messageToEmitOnSubscribe: MessageToEmit?
 
     nonisolated func subscribe(_: String, callback: @escaping ARTMessageCallback) -> ARTEventListener? {
+        if let json = messageJSONToEmitOnSubscribe {
+            let message = ARTMessage(name: nil, data: json["data"] ?? "")
+            if let action = json["action"] as? UInt {
+                message.action = ARTMessageAction(rawValue: action) ?? .create
+            }
+            if let serial = json["serial"] as? String {
+                message.serial = serial
+            }
+            if let clientId = json["clientId"] as? String {
+                message.clientId = clientId
+            }
+            if let extras = json["extras"] as? ARTJsonCompatible {
+                message.extras = extras
+            }
+            if let ts = json["timestamp"] as? String {
+                message.timestamp = Date(timeIntervalSince1970: TimeInterval(ts)!)
+            }
+            callback(message)
+        }
         if let messageToEmitOnSubscribe {
             let message = ARTMessage(name: nil, data: messageToEmitOnSubscribe.data)
             message.action = messageToEmitOnSubscribe.action
@@ -157,12 +182,25 @@ final actor MockRealtimeChannel: InternalRealtimeChannelProtocol {
         // no-op; revisit if we need to test something that depends on this method actually stopping `subscribe` from emitting more events
     }
 
-    nonisolated func on(_: ARTChannelEvent, callback _: @escaping (ARTChannelStateChange) -> Void) -> ARTEventListener {
-        ARTEventListener()
+    private let stateChangeLock = NSLock()
+    nonisolated(unsafe) var stateChangeCallback: ((ARTChannelStateChange) -> Void)?
+    nonisolated(unsafe) var stateChangeForEventCallbacks = [ARTChannelEvent: ((ARTChannelStateChange) -> Void)]()
+
+    nonisolated func on(_ event: ARTChannelEvent, callback: @escaping (ARTChannelStateChange) -> Void) -> ARTEventListener {
+        stateChangeLock.lock()
+        self.stateChangeForEventCallbacks[event] = callback
+        stateChangeLock.unlock()
+        return ARTEventListener()
     }
 
-    nonisolated func on(_: @escaping (ARTChannelStateChange) -> Void) -> ARTEventListener {
-        fatalError("Not implemented")
+    nonisolated func on(_ callback: @escaping (ARTChannelStateChange) -> Void) -> ARTEventListener {
+        stateChangeLock.lock()
+        self.stateChangeCallback = callback
+        stateChangeLock.unlock()
+        if let stateChangeToEmitForListener {
+            callback(stateChangeToEmitForListener)
+        }
+        return ARTEventListener()
     }
 
     nonisolated func off(_: ARTEventListener) {
@@ -205,5 +243,19 @@ final actor MockRealtimeChannel: InternalRealtimeChannelProtocol {
 
     func emitStateChange(_ stateChange: ARTChannelStateChange) {
         subscriptions.emit(stateChange)
+    }
+
+    @MainActor
+    func callStateChangeCallback(_ stateChange: ARTChannelStateChange) {
+        stateChangeLock.lock()
+        self.stateChangeCallback?(stateChange)
+        stateChangeLock.unlock()
+    }
+
+    @MainActor
+    func callStateChangeCallbackForEvent(_ event: ARTChannelEvent, stateChange: ARTChannelStateChange) {
+        stateChangeLock.lock()
+        self.stateChangeForEventCallbacks[event]?(stateChange)
+        stateChangeLock.unlock()
     }
 }
