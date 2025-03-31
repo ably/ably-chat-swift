@@ -413,7 +413,7 @@ struct ContentView: View {
         if newMessage.isEmpty {
             try await room().typing.stop()
         } else {
-            try await room().typing.start()
+            try await room().typing.keystroke()
         }
     }
 }

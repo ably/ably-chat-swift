@@ -13,9 +13,13 @@ final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
     private var _state: ARTRealtimeChannelState?
     var errorReason: ARTErrorInfo?
 
-    var lastMessagePublishedName: String?
-    var lastMessagePublishedData: JSONValue?
-    var lastMessagePublishedExtras: [String: JSONValue]?
+    var publishedMessages: [TestMessage] = []
+
+    struct TestMessage {
+        let name: String?
+        let data: JSONValue?
+        let extras: [String: JSONValue]?
+    }
 
     init(
         name: String? = nil,
@@ -159,9 +163,7 @@ final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
     }
 
     func publish(_ name: String?, data: JSONValue?, extras: [String: JSONValue]?) {
-        lastMessagePublishedName = name
-        lastMessagePublishedExtras = extras
-        lastMessagePublishedData = data
+        publishedMessages.append(TestMessage(name: name, data: data, extras: extras))
     }
 
     enum SubscribeToStateBehavior {
