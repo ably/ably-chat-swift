@@ -2085,7 +2085,6 @@ struct DefaultRoomLifecycleManagerTests {
     // @specPartial CHA-PR3d - Tests the wait described in the spec point, but not that the feature actually performs this wait nor the side effect. TODO change this to a specOneOf once the feature is implemented
     // @specPartial CHA-PR10d - Tests the wait described in the spec point, but not that the feature actually performs this wait nor the side effect. TODO change this to a specOneOf once the feature is implemented
     // @specPartial CHA-PR6c - Tests the wait described in the spec point, but not that the feature actually performs this wait nor the side effect. TODO change this to a specOneOf once the feature is implemented
-    // @specPartial CHA-T2c - Tests the wait described in the spec point, but not that the feature actually performs this wait nor the side effect. TODO change this to a specOneOf once the feature is implemented
     @Test
     func waitToBeAbleToPerformPresenceOperations_whenAttaching_whenTransitionsToAttached() async throws {
         // Given: A DefaultRoomLifecycleManager, with an ATTACH operation in progress and hence in the ATTACHING status
@@ -2125,7 +2124,6 @@ struct DefaultRoomLifecycleManagerTests {
     // @specPartial CHA-PR3d - Tests the wait described in the spec point, but not that the feature actually performs this wait nor the side effect. TODO change this to a specOneOf once the feature is implemented
     // @specPartial CHA-PR10d - Tests the wait described in the spec point, but not that the feature actually performs this wait nor the side effect. TODO change this to a specOneOf once the feature is implemented
     // @specPartial CHA-PR6c - Tests the wait described in the spec point, but not that the feature actually performs this wait nor the side effect. TODO change this to a specOneOf once the feature is implemented
-    // @specPartial CHA-T2c - Tests the wait described in the spec point, but not that the feature actually performs this wait nor the side effect. TODO change this to a specOneOf once the feature is implemented
     @Test
     func waitToBeAbleToPerformPresenceOperations_whenAttaching_whenTransitionsToNonAttachedStatus() async throws {
         // Given: A DefaultRoomLifecycleManager, with an ATTACH operation in progress and hence in the ATTACHING status
@@ -2171,7 +2169,6 @@ struct DefaultRoomLifecycleManagerTests {
     // @specPartial CHA-PR3e - Tests the wait described in the spec point, but not that the feature actually performs this wait nor the side effect. TODO change this to a specOneOf once the feature is implemented
     // @specPartial CHA-PR10e - Tests the wait described in the spec point, but not that the feature actually performs this wait nor the side effect. TODO change this to a specOneOf once the feature is implemented
     // @specPartial CHA-PR6d - Tests the wait described in the spec point, but not that the feature actually performs this wait nor the side effect. TODO change this to a specOneOf once the feature is implemented
-    // @specPartial CHA-T2d - Tests the wait described in the spec point, but not that the feature actually performs this wait nor the side effect. TODO change this to a specOneOf once the feature is implemented
     @Test
     func waitToBeAbleToPerformPresenceOperations_whenAttached() async throws {
         // Given: A DefaultRoomLifecycleManager in the ATTACHED status
@@ -2187,7 +2184,6 @@ struct DefaultRoomLifecycleManagerTests {
     // @specPartial CHA-PR3h - Tests the wait described in the spec point, but not that the feature actually performs this wait. TODO change this to a specOneOf once the feature is implemented
     // @specPartial CHA-PR10h - Tests the wait described in the spec point, but not that the feature actually performs this wait. TODO change this to a specOneOf once the feature is implemented
     // @specPartial CHA-PR6h - Tests the wait described in the spec point, but not that the feature actually performs this wait. TODO change this to a specOneOf once the feature is implemented
-    // @specPartial CHA-T2g - Tests the wait described in the spec point, but not that the feature actually performs this wait. TODO change this to a specOneOf once the feature is implemented
     @Test
     func waitToBeAbleToPerformPresenceOperations_whenAnyOtherStatus() async throws {
         // Given: A DefaultRoomLifecycleManager in a status other than ATTACHING or ATTACHED

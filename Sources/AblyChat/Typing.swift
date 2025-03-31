@@ -31,16 +31,17 @@ public protocol Typing: AnyObject, Sendable, EmitsDiscontinuities {
     func get() async throws(ARTErrorInfo) -> Set<String>
 
     /**
-     * Start indicates that the current user is typing. This will emit a ``TypingEvent`` event to inform listening clients and begin a timer,
+     * Keystroke indicates that the current user is typing. This will emit a ``TypingEvent`` event to inform listening clients and begin a timer,
      * once the timer expires, another ``TypingEvent`` event will be emitted. In both cases ``TypingEvent/currentlyTyping``
      * contains a list of userIds who are currently typing.
      *
-     * The timeout is configurable through the ``TypingOptions/timeout`` parameter.
-     * If the current user is already typing, it will reset the timer and begin counting down again without emitting a new event.
+     * The heartbeat throttle interval is configurable through the ``TypingOptions/heartbeatThrottle`` parameter.
+     * It will show the current user as typing for the duration of the throttle, plus an internally defined timeout.
+     * Any keystrokes within the throttle period will be ignored, with no new events being sent.
      *
      * - Throws: An `ARTErrorInfo`.
      */
-    func start() async throws(ARTErrorInfo)
+    func keystroke() async throws(ARTErrorInfo)
 
     /**
      * Stop indicates that the current user has stopped typing. This will emit a ``TypingEvent`` event to inform listening clients,
@@ -73,7 +74,23 @@ public struct TypingEvent: Sendable {
      */
     public var currentlyTyping: Set<String>
 
-    public init(currentlyTyping: Set<String>) {
+    /**
+     * Get the details of the operation that modified the typing event.
+      */
+    public var change: Change
+
+    public init(currentlyTyping: Set<String>, change: Change) {
         self.currentlyTyping = currentlyTyping
+        self.change = change
+    }
+
+    public struct Change: Sendable {
+        public var clientId: String
+        public var type: TypingEvents
+
+        public init(clientId: String, type: TypingEvents) {
+            self.clientId = clientId
+            self.type = type
+        }
     }
 }

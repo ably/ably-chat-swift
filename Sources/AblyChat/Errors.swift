@@ -268,7 +268,7 @@ internal enum ChatError {
             // CHA-RL9c
             .variableStatusCode(.roomInInvalidState, statusCode: 500)
         case .presenceOperationRequiresRoomAttach:
-            // CHA-PR3h, CHA-PR10h, CHA-PR6h, CHA-T2g
+            // CHA-PR3h, CHA-PR10h, CHA-PR6h
             .variableStatusCode(.roomInInvalidState, statusCode: 400)
         }
     }

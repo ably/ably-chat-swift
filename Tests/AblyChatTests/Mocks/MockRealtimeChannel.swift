@@ -13,9 +13,13 @@ final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
     private var _state: ARTRealtimeChannelState?
     var errorReason: ARTErrorInfo?
 
-    var lastMessagePublishedName: String?
-    var lastMessagePublishedData: JSONValue?
-    var lastMessagePublishedExtras: [String: JSONValue]?
+    var publishedMessages: [TestMessage] = []
+
+    struct TestMessage {
+        let name: String?
+        let data: JSONValue?
+        let extras: [String: JSONValue]?
+    }
 
     init(
         name: String? = nil,
@@ -127,12 +131,22 @@ final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
     }
 
     let messageToEmitOnSubscribe: ARTMessage?
+    private var channelSubscriptions: [(String, (ARTMessage) -> Void)] = []
 
-    func subscribe(_: String, callback: @escaping @MainActor (ARTMessage) -> Void) -> ARTEventListener? {
+    // Added the ability to emit a message whenever we want instead of just on subscribe... I didn't want to dig into what the messageToEmitOnSubscribe is too much so just if/else between the two.
+    func subscribe(_ name: String, callback: @escaping @MainActor (ARTMessage) -> Void) -> ARTEventListener? {
         if let messageToEmitOnSubscribe {
             callback(messageToEmitOnSubscribe)
+        } else {
+            channelSubscriptions.append((name, callback))
         }
         return ARTEventListener()
+    }
+
+    func simulateIncomingMessage(_ with: ARTMessage, for name: String) {
+        for (messageName, callback) in channelSubscriptions where messageName == name {
+            callback(with)
+        }
     }
 
     func unsubscribe(_: ARTEventListener?) {
@@ -159,9 +173,7 @@ final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
     }
 
     func publish(_ name: String?, data: JSONValue?, extras: [String: JSONValue]?) {
-        lastMessagePublishedName = name
-        lastMessagePublishedExtras = extras
-        lastMessagePublishedData = data
+        publishedMessages.append(TestMessage(name: name, data: data, extras: extras))
     }
 
     enum SubscribeToStateBehavior {
@@ -170,10 +182,10 @@ final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
     }
 
     private let subscribeToStateBehavior: SubscribeToStateBehavior
-    private var subscriptions = SubscriptionStorage<ARTChannelStateChange>()
+    private var stateChangeSubscriptions = SubscriptionStorage<ARTChannelStateChange>()
 
     func subscribeToState() -> Subscription<ARTChannelStateChange> {
-        let subscription = subscriptions.create(bufferingPolicy: .unbounded)
+        let subscription = stateChangeSubscriptions.create(bufferingPolicy: .unbounded)
 
         switch subscribeToStateBehavior {
         case .justAddSubscription:
@@ -186,6 +198,6 @@ final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
     }
 
     func emitStateChange(_ stateChange: ARTChannelStateChange) {
-        subscriptions.emit(stateChange)
+        stateChangeSubscriptions.emit(stateChange)
     }
 }

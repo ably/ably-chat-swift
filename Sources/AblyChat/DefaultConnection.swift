@@ -2,7 +2,7 @@ import Ably
 
 internal final class DefaultConnection: Connection {
     private let realtime: any InternalRealtimeClientProtocol
-    private let timerManager = TimerManager()
+    private let timerManager = TimerManager(clock: SystemClock())
 
     // (CHA-CS2a) The chat client must expose its current connection status.
     internal private(set) var status: ConnectionStatus

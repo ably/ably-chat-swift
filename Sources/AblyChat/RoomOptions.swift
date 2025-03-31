@@ -74,21 +74,24 @@ public struct PresenceOptions: Sendable, Equatable {
     }
 }
 
-// (CHA-T3) Users may configure a timeout interval for when they are typing. This configuration is provided as part of the RoomOptions typing.timeoutMs property, or idiomatic equivalent. The default is 5000ms.
-
 /**
  * Represents the typing options for a chat room.
  */
 public struct TypingOptions: Sendable, Equatable {
+    // (CHA-T10) Users may configure a heartbeat interval (the no-op period for typing.keystroke when the heartbeat timer is set active at CHA-T4a4). This configuration is provided at the RoomOptions.typing.heartbeatThrottleMs property, or idiomatic equivalent. The default is 10000ms.
     /**
-     * The timeout for typing events in seconds. If ``Typing/start()`` is not called for this amount of time, a stop
-     * typing event will be fired, resulting in the user being removed from the currently typing set.
-     * Defaults to 5 seconds.
+     * The heartbeat interval for typing events in seconds. Once ``Typing/keystroke()`` is called, subsequent keystroke events will be
+     * ignored until this interval, and an internally defined timeout has passed. This is useful for preventing a user from sending too many typing events, and thus messages on the channel.
+     *
+     * A stop typing event is automatically emitted after this interval has passed.
+     * These events can be observed via ``Typing/subscribe()``.
+     *
+     * Defaults to 10 seconds.
      */
-    public var timeout: TimeInterval = 5
+    public var heartbeatThrottle: TimeInterval = 10
 
-    public init(timeout: TimeInterval = 5) {
-        self.timeout = timeout
+    public init(heartbeatThrottle: TimeInterval = 10) {
+        self.heartbeatThrottle = heartbeatThrottle
     }
 }
 
