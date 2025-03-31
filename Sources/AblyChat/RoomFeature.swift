@@ -10,7 +10,7 @@ internal enum RoomFeature: CaseIterable {
     case occupancy
 
     internal func channelNameForRoomID(_ roomID: String) -> String {
-        "\(roomID)::$chat::$\(channelNameSuffix)"
+        "\(roomID)::$chat\(channelNameSuffix)"
     }
 
     private var channelNameSuffix: String {
@@ -19,13 +19,13 @@ internal enum RoomFeature: CaseIterable {
             // (CHA-M1) Chat messages for a Room are sent on a corresponding realtime channel <roomId>::$chat::$chatMessages. For example, if your room id is my-room then the messages channel will be my-room::$chat::$chatMessages.
             // (CHA-PR1) Presence for a Room is exposed on the realtime channel used for chat messages, in the format <roomId>::$chat::$chatMessages. For example, if your room id is my-room then the presence channel will be my-room::$chat::$chatMessages.
             // (CHA-O1) Occupancy for a room is exposed on the realtime channel used for chat messages, in the format <roomId>::$chat::$chatMessages. For example, if your room id is my-room then the presence channel will be my-room::$chat::$chatMessages.
-            "chatMessages"
+            "::$chatMessages"
         case .reactions:
             // (CHA-ER1) Reactions for a Room are sent on a corresponding realtime channel <roomId>::$chat::$reactions. For example, if your room id is my-room then the reactions channel will be my-room::$chat::$reactions.
-            "reactions"
+            "::$reactions"
         case .typing:
-            // (CHA-T1) Typing Indicators for a Room is exposed on a dedicated Realtime channel. These channels use the format <roomId>::$chat::$typingIndicators. For example, if your room id is my-room then the typing channel will be my-room::$chat::$typingIndicators.
-            "typingIndicators"
+            // (CHA-T8) Typing Indicators for a Room are exposed on the main room channel, in the format <roomId>::$chat. For example, if your room id is my-room then the channel will be my-room::$chat.
+            ""
         }
     }
 

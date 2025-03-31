@@ -292,7 +292,7 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
                 roomID: roomID,
                 clientID: clientId,
                 logger: logger,
-                timeout: options.typing?.timeout ?? 5
+                heartbeatThrottle: options.typing?.heartbeatThrottle ?? 10
             )
         } else {
             nil
