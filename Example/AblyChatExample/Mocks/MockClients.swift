@@ -247,10 +247,13 @@ class MockTyping: Typing {
 
     private func createSubscription() -> MockSubscription<TypingEvent> {
         mockSubscriptions.create(randomElement: {
-            TypingEvent(currentlyTyping: [
-                MockStrings.names.randomElement()!,
-                MockStrings.names.randomElement()!,
-            ])
+            TypingEvent(
+                currentlyTyping: [
+                    MockStrings.names.randomElement()!,
+                    MockStrings.names.randomElement()!,
+                ],
+                change: .init(clientId: MockStrings.names.randomElement()!, type: .started)
+            )
         }, interval: 2)
     }
 
@@ -262,12 +265,12 @@ class MockTyping: Typing {
         Set(MockStrings.names.shuffled().prefix(2))
     }
 
-    func start() async throws(ARTErrorInfo) {
-        mockSubscriptions.emit(TypingEvent(currentlyTyping: [clientID]))
+    func keystroke() async throws(ARTErrorInfo) {
+        mockSubscriptions.emit(TypingEvent(currentlyTyping: [clientID], change: .init(clientId: clientID, type: .started)))
     }
 
     func stop() async throws(ARTErrorInfo) {
-        mockSubscriptions.emit(TypingEvent(currentlyTyping: []))
+        mockSubscriptions.emit(TypingEvent(currentlyTyping: [], change: .init(clientId: clientID, type: .stopped)))
     }
 
     func onDiscontinuity(bufferingPolicy _: BufferingPolicy) -> Subscription<DiscontinuityEvent> {
