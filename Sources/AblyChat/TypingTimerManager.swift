@@ -1,0 +1,117 @@
+import Foundation
+
+@MainActor
+internal final class TypingTimerManager {
+    private let heartbeatThrottle: TimeInterval
+    private let gracePeriod: TimeInterval
+    private let logger: InternalLogger
+    private let clock: ClockProvider
+
+    /// Stores the CHA-T13b1 "is somebody typing" timers. Keys are clientID.
+    private var whoIsTypingTimers = [String: TimerManager]()
+
+    /// Stores the moment when the CHA-T4a4 heartbeat timer (which we use for deciding whether to publish another typing event for the current user) was started. If `nil`, then there is no active heartbeat timer.
+    private var heartbeatTimerStartedAt: Date?
+
+    internal init(heartbeatThrottle: TimeInterval, gracePeriod: TimeInterval, logger: InternalLogger, clock: ClockProvider = SystemClock()) {
+        self.heartbeatThrottle = heartbeatThrottle
+        self.gracePeriod = gracePeriod
+        self.logger = logger
+        self.clock = clock
+    }
+
+    // MARK: Managing the CHA-T4a4 heartbeat timer
+
+    internal func startHeartbeatTimer() {
+        heartbeatTimerStartedAt = clock.now()
+    }
+
+    internal var isHeartbeatTimerActive: Bool {
+        guard let heartbeatTimerStartedAt else {
+            return false
+        }
+
+        return heartbeatTimerStartedAt + heartbeatThrottle > clock.now()
+    }
+
+    internal func cancelHeartbeatTimer() {
+        heartbeatTimerStartedAt = nil
+    }
+
+    // MARK: Managing CHA-T13b1 "is this person typing" timers
+
+    /// Starts a CHA-T13b1 "is this person typing" timer, thus adding this clientID to the typing set.
+    internal func startTypingTimer(for clientID: String, handler: (@MainActor () -> Void)? = nil) {
+        let timerManager = whoIsTypingTimers[clientID] ?? TimerManager(clock: clock)
+        whoIsTypingTimers[clientID] = timerManager
+
+        // (CHA-T10a1) This grace period is used to determine how long to wait, beyond the heartbeat interval, before removing a client from the typing set. This is used to prevent flickering when a user is typing and stops typing for a short period of time. See CHA-T13b1 for a detailed description of how this is used.
+        let timerDuration = heartbeatThrottle + gracePeriod
+
+        logger.log(message: "Starting timer for clientID: \(clientID) with interval: \(timerDuration)", level: .debug)
+
+        // (CHA-T13b2) Each additional typing heartbeat from the same client shall reset the (CHA-T13b1) timeout.
+        timerManager.setTimer(interval: timerDuration) { [weak self] in
+            guard let self else {
+                return
+            }
+            logger.log(message: "Typing timer expired for clientID: \(clientID)", level: .debug)
+
+            // (CHA-T13b3) (1/2) If the (CHA-T13b1) timeout expires, the client shall remove the clientId from the typing set and emit a synthetic typing stop event for the given client.
+            cancelTypingTimer(for: clientID)
+            handler?()
+        }
+    }
+
+    /// Per CHA-T13b4, cancels the CHA-T13b1 "is this person typing", thus removing this clientID from the typing set.
+    internal func cancelTypingTimer(for clientID: String) {
+        guard let timer = whoIsTypingTimers[clientID] else {
+            logger.log(message: "No typing timer to cancel for clientID: \(clientID)", level: .debug)
+            return
+        }
+
+        logger.log(message: "Cancelling typing timer for clientID: \(clientID)", level: .debug)
+        timer.cancelTimer()
+        whoIsTypingTimers[clientID] = nil
+    }
+
+    // TODO: add documentation once we see how these are being used
+    internal func isTypingTimerActive(for clientID: String) -> Bool {
+        currentlyTypingClients().contains(clientID)
+    }
+
+    // TODO: add documentation once we see how these are being used
+    internal func currentlyTypingClients() -> Set<String> {
+        Set(whoIsTypingTimers.keys)
+    }
+}
+
+@MainActor
+internal protocol TypingTimerManagerProtocol {
+    /// Starts a CHA-T4a4 heartbeat timer.
+    func startHeartbeatTimer()
+    /// Returns whether there is an active CHA-T4a4 heartbeat timer.
+    var isHeartbeatTimerActive: Bool { get }
+    /// Clears any active CHA-T4a4 heartbeat timer.
+    func cancelHeartbeatTimer()
+
+    /// Starts a CHA-T13b1 "is this person typing" timer, thus adding this clientID to the typing set.
+    func startTypingTimer(for clientID: String, handler: (@MainActor () -> Void)?)
+    /// Per CHA-T13b4, cancels the CHA-T13b1 "is this person typing", thus removing this clientID from the typing set.
+    func cancelTypingTimer(for clientID: String)
+    func isTypingTimerActive(for clientID: String) -> Bool
+    func currentlyTypingClients() -> Set<String>
+}
+
+// Extend the actual TypingTimerManager to conform to our protocol
+extension TypingTimerManager: TypingTimerManagerProtocol {}
+
+internal protocol ClockProvider {
+    func now() -> Date
+}
+
+internal struct SystemClock: ClockProvider {
+    internal func now() -> Date {
+        Date()
+    }
+}

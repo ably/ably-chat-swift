@@ -74,7 +74,7 @@ struct IntegrationTests {
             roomID: roomID,
             options: .init(
                 presence: .init(),
-                typing: .init(timeout: 2),
+                typing: .init(heartbeatThrottle: 2),
                 reactions: .init(),
                 occupancy: .init()
             )
@@ -83,7 +83,7 @@ struct IntegrationTests {
             roomID: roomID,
             options: .init(
                 presence: .init(),
-                typing: .init(timeout: 2),
+                typing: .init(heartbeatThrottle: 2),
                 reactions: .init(),
                 occupancy: .init()
             )
@@ -335,13 +335,14 @@ struct IntegrationTests {
         let rxTypingSubscription = rxRoom.typing.subscribe()
 
         // (2) Start typing on txRoom and check that we receive the typing event on the subscription
-        try await txRoom.typing.start()
+        try await txRoom.typing.keystroke()
 
         // (3) Wait for the typing event to be received
         var typingEvents: [TypingEvent] = []
         for await typingEvent in rxTypingSubscription {
             typingEvents.append(typingEvent)
             if typingEvents.count == 1 { break }
+            break
         }
 
         // (4) Check that we received the typing event showing that txRoom is typing
@@ -355,6 +356,41 @@ struct IntegrationTests {
         }
 
         // (6) Check that we received the typing event showing that txRoom is no longer typing
+        #expect(typingEvents.count == 2)
+        #expect(typingEvents[1].currentlyTyping.isEmpty)
+
+        // MARK: - Typing Indicators Heartbeat Throttle
+
+        // This should be tested using the RxRoom since it is the client themselves that are typing
+
+        // (1) Start repeatedly typing on rxRoom
+        for _ in 0 ..< 5 {
+            try await rxRoom.typing.keystroke()
+        }
+
+        // (2) Wait enough time for the events to come through
+        let throttle: TimeInterval = 1
+        let startTime = Date()
+        typingEvents = []
+        for await typingEvent in rxTypingSubscription {
+            typingEvents.append(typingEvent)
+
+            if Date().timeIntervalSince(startTime) >= throttle {
+                break
+            }
+        }
+
+        // (3) Check that we received only 1 typing event
+        #expect(typingEvents.count { event in
+            event.change.type == .started
+        } == 1)
+
+        // (3) Check that we received 1 stopped typing event
+        #expect(typingEvents.count { event in
+            event.change.type == .stopped
+        } == 1)
+
+        // (5) Check that we received a total of 2 typing events, and there are no currently typing users
         #expect(typingEvents.count == 2)
         #expect(typingEvents[1].currentlyTyping.isEmpty)
 

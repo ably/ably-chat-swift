@@ -3,22 +3,36 @@ import Foundation
 @MainActor
 internal final class TimerManager {
     private var currentTask: Task<Void, Never>?
+    private var scheduledTime: Date?
+    private let clock: ClockProvider
+
+    internal init(clock: ClockProvider = SystemClock()) {
+        self.clock = clock
+    }
 
     internal func setTimer(interval: TimeInterval, handler: @escaping @MainActor () -> Void) {
         cancelTimer()
+        scheduledTime = clock.now().addingTimeInterval(interval)
 
         currentTask = Task {
-            try? await Task.sleep(nanoseconds: UInt64(interval * 1_000_000_000))
-            guard !Task.isCancelled else {
-                return
+            while !Task.isCancelled {
+                // Check if we've reached the scheduled time
+                if let scheduledTime, clock.now() >= scheduledTime {
+                    guard !Task.isCancelled else {
+                        return
+                    }
+                    handler()
+                    break
+                }
+                await Task.yield()
             }
-            handler()
         }
     }
 
     internal func cancelTimer() {
         currentTask?.cancel()
         currentTask = nil
+        scheduledTime = nil
     }
 
     internal func hasRunningTask() -> Bool {
