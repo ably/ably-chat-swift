@@ -272,6 +272,9 @@ struct SpecCoverage: AsyncParsableCommand {
         discussion: "You can set the GITHUB_TOKEN environment variable to provide a GitHub authentication token to use when fetching the latest commit."
     )
 
+    @Option(help: "The SHA of the spec commit to use")
+    var specCommitSHA: String?
+
     enum Error: Swift.Error {
         case unexpectedStatusCodeLoadingCommit(Int)
         case unexpectedStatusCodeLoadingSpec(Int)
@@ -279,6 +282,7 @@ struct SpecCoverage: AsyncParsableCommand {
         case couldNotFindTestTarget
         case malformedSpecOneOfTag
         case specUntestedTagMissingComment
+        case specNotApplicableTagMissingComment
         case specOneOfIncorrectTotals(specPointID: String, coverageTagTotals: [Int], actualTotal: Int)
         case specOneOfIncorrectIndices(specPointID: String, coverageTagIndices: [Int], expectedIndices: [Int])
         case multipleConformanceTagTypes(specPointID: String, types: [String])
@@ -327,12 +331,14 @@ struct SpecCoverage: AsyncParsableCommand {
             case specOneOf(index: Int, total: Int, comment: String?)
             case specPartial(comment: String?)
             case specUntested(comment: String)
+            case specNotApplicable(comment: String)
 
             enum Case {
                 case spec
                 case specOneOf
                 case specPartial
                 case specUntested
+                case specNotApplicable
             }
 
             var `case`: Case {
@@ -345,6 +351,8 @@ struct SpecCoverage: AsyncParsableCommand {
                     .specPartial
                 case .specUntested:
                     .specUntested
+                case .specNotApplicable:
+                    .specNotApplicable
                 }
             }
         }
@@ -353,7 +361,7 @@ struct SpecCoverage: AsyncParsableCommand {
         var specPointID: String
 
         init?(sourceLine: String) throws {
-            let conformanceTagSourceLineRegex = /^\s+\/\/ @spec(OneOf|Partial|Untested)?(?:\((\d)?\/(\d)?\))? (.*?)(?: - (.*))?$/
+            let conformanceTagSourceLineRegex = /^\s+\/\/ @spec(OneOf|Partial|Untested|NotApplicable)?(?:\((\d)?\/(\d)?\))? (.*?)(?: - (.*))?$/
 
             guard let match = try conformanceTagSourceLineRegex.firstMatch(in: sourceLine) else {
                 return nil
@@ -382,6 +390,11 @@ struct SpecCoverage: AsyncParsableCommand {
                     throw Error.specUntestedTagMissingComment
                 }
                 type = .specUntested(comment: comment)
+            case "NotApplicable":
+                guard let comment else {
+                    throw Error.specNotApplicableTagMissingComment
+                }
+                type = .specNotApplicable(comment: comment)
             default:
                 preconditionFailure("Incorrect assumption when reading regex captures")
             }
@@ -430,6 +443,7 @@ struct SpecCoverage: AsyncParsableCommand {
             case partiallyTested
             case implementedButDeliberatelyNotTested
             case notTested
+            case notApplicable
         }
 
         struct SpecPointCoverage {
@@ -502,6 +516,9 @@ struct SpecCoverage: AsyncParsableCommand {
                     }
                 case let .specUntested(comment: comment):
                     coverageLevel = .implementedButDeliberatelyNotTested
+                    comments.append(comment)
+                case let .specNotApplicable(comment: comment):
+                    coverageLevel = .notApplicable
                     comments.append(comment)
                 }
 
@@ -627,6 +644,8 @@ struct SpecCoverage: AsyncParsableCommand {
                 "Implemented, not tested"
             case .notTested:
                 "Not tested"
+            case .notApplicable:
+                "Not applicable"
             }
         }
     }
@@ -634,10 +653,16 @@ struct SpecCoverage: AsyncParsableCommand {
     mutating func run() async throws {
         let branchName = "main"
 
-        let commitSHA = try await fetchLatestSpecCommitSHAForBranchName(branchName)
-        print("Using latest spec commit (\(commitSHA.prefix(7))) from branch \(branchName).\n")
+        let specCommitSHA: String
+        if let specCommitSHAOption = self.specCommitSHA {
+            print("Using forced spec commit (\(specCommitSHAOption.prefix(7))).\n")
+            specCommitSHA = specCommitSHAOption
+        } else {
+            specCommitSHA = try await fetchLatestSpecCommitSHAForBranchName(branchName)
+            print("Using latest spec commit (\(specCommitSHA.prefix(7))) from branch \(branchName).\n")
+        }
 
-        let specFile = try await loadSpecFile(forCommitSHA: commitSHA)
+        let specFile = try await loadSpecFile(forCommitSHA: specCommitSHA)
         let conformanceTags = try await fetchConformanceTags()
 
         let report = try CoverageReport.generate(specFile: specFile, conformanceTags: conformanceTags)

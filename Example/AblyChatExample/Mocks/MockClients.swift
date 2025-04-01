@@ -47,6 +47,8 @@ actor MockRoom: Room {
     nonisolated let roomID: String
     nonisolated let options: RoomOptions
 
+    let channel: any RealtimeChannelProtocol = MockRealtime.Channel()
+
     init(roomID: String, options: RoomOptions) {
         self.roomID = roomID
         self.options = options
@@ -83,19 +85,21 @@ actor MockRoom: Room {
     func onStatusChange(bufferingPolicy _: BufferingPolicy) async -> Subscription<RoomStatusChange> {
         .init(mockAsyncSequence: createSubscription())
     }
+
+    func onDiscontinuity(bufferingPolicy _: BufferingPolicy) -> Subscription<DiscontinuityEvent> {
+        fatalError("Not yet implemented")
+    }
 }
 
 actor MockMessages: Messages {
     let clientID: String
     let roomID: String
-    let channel: any RealtimeChannelProtocol
 
     private let mockSubscriptions = MockSubscriptionStorage<Message>()
 
     init(clientID: String, roomID: String) {
         self.clientID = clientID
         self.roomID = roomID
-        channel = MockRealtime.Channel()
     }
 
     private func createSubscription() -> MockSubscription<Message> {
@@ -179,23 +183,17 @@ actor MockMessages: Messages {
         mockSubscriptions.emit(message)
         return message
     }
-
-    func onDiscontinuity(bufferingPolicy _: BufferingPolicy) -> Subscription<DiscontinuityEvent> {
-        fatalError("Not yet implemented")
-    }
 }
 
 actor MockRoomReactions: RoomReactions {
     let clientID: String
     let roomID: String
-    let channel: any RealtimeChannelProtocol
 
     private let mockSubscriptions = MockSubscriptionStorage<Reaction>()
 
     init(clientID: String, roomID: String) {
         self.clientID = clientID
         self.roomID = roomID
-        channel = MockRealtime.Channel()
     }
 
     private func createSubscription() -> MockSubscription<Reaction> {
@@ -226,23 +224,17 @@ actor MockRoomReactions: RoomReactions {
     func subscribe(bufferingPolicy _: BufferingPolicy) -> Subscription<Reaction> {
         .init(mockAsyncSequence: createSubscription())
     }
-
-    func onDiscontinuity(bufferingPolicy _: BufferingPolicy) -> Subscription<DiscontinuityEvent> {
-        fatalError("Not yet implemented")
-    }
 }
 
 actor MockTyping: Typing {
     let clientID: String
     let roomID: String
-    let channel: any RealtimeChannelProtocol
 
     private let mockSubscriptions = MockSubscriptionStorage<TypingEvent>()
 
     init(clientID: String, roomID: String) {
         self.clientID = clientID
         self.roomID = roomID
-        channel = MockRealtime.Channel()
     }
 
     private func createSubscription() -> MockSubscription<TypingEvent> {
@@ -271,10 +263,6 @@ actor MockTyping: Typing {
 
     func stop() async throws(ARTErrorInfo) {
         mockSubscriptions.emit(TypingEvent(currentlyTyping: [], change: .init(clientId: clientID, type: .stopped)))
-    }
-
-    func onDiscontinuity(bufferingPolicy _: BufferingPolicy) -> Subscription<DiscontinuityEvent> {
-        fatalError("Not yet implemented")
     }
 }
 
@@ -392,23 +380,17 @@ actor MockPresence: Presence {
     func subscribe(events _: [PresenceEventType], bufferingPolicy _: BufferingPolicy) -> Subscription<PresenceEvent> {
         .init(mockAsyncSequence: createSubscription())
     }
-
-    func onDiscontinuity(bufferingPolicy _: BufferingPolicy) -> Subscription<DiscontinuityEvent> {
-        fatalError("Not yet implemented")
-    }
 }
 
 actor MockOccupancy: Occupancy {
     let clientID: String
     let roomID: String
-    let channel: any RealtimeChannelProtocol
 
     private let mockSubscriptions = MockSubscriptionStorage<OccupancyEvent>()
 
     init(clientID: String, roomID: String) {
         self.clientID = clientID
         self.roomID = roomID
-        channel = MockRealtime.Channel()
     }
 
     private func createSubscription() -> MockSubscription<OccupancyEvent> {
@@ -424,10 +406,6 @@ actor MockOccupancy: Occupancy {
 
     func get() async throws(ARTErrorInfo) -> OccupancyEvent {
         OccupancyEvent(connections: 10, presenceMembers: 5)
-    }
-
-    func onDiscontinuity(bufferingPolicy _: BufferingPolicy) -> Subscription<DiscontinuityEvent> {
-        fatalError("Not yet implemented")
     }
 }
 

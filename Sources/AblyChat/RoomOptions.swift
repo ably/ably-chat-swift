@@ -5,48 +5,32 @@ import Foundation
  */
 public struct RoomOptions: Sendable, Equatable {
     /**
-     * The presence options for the room. To enable presence in the room, set this property.
-     * Alternatively, you may use ``RoomOptions/allFeaturesEnabled`` to enable presence with the default options.
+     * The presence options for the room.
      */
-    public var presence: PresenceOptions?
+    public var presence = PresenceOptions()
 
     /**
-     * The typing options for the room. To enable typing in the room, set this property.
-     * Alternatively, you may use ``RoomOptions/allFeaturesEnabled`` to enable typing with the default options.
+     * The typing options for the room.
      */
-    public var typing: TypingOptions?
+    public var typing = TypingOptions()
 
     /**
-     * The reactions options for the room. To enable reactions in the room, set this property.
-     * Alternatively, you may use ``RoomOptions/allFeaturesEnabled`` to enable reactions with the default options.
+     * The reactions options for the room.
      */
-    public var reactions: RoomReactionsOptions?
+    public var reactions = RoomReactionsOptions()
 
     /**
-     * The occupancy options for the room. To enable occupancy in the room, set this property.
-     * Alternatively, you may use ``RoomOptions/allFeaturesEnabled`` to enable occupancy with the default options.
+     * The occupancy options for the room.
      */
-    public var occupancy: OccupancyOptions?
+    public var occupancy = OccupancyOptions()
 
-    /// A `RoomOptions` which enables all room features, using the default settings for each feature.
-    public static let allFeaturesEnabled: Self = .init(
-        presence: .init(),
-        typing: .init(),
-        reactions: .init(),
-        occupancy: .init()
-    )
-
-    public init(presence: PresenceOptions? = nil, typing: TypingOptions? = nil, reactions: RoomReactionsOptions? = nil, occupancy: OccupancyOptions? = nil) {
+    public init(presence: PresenceOptions = PresenceOptions(), typing: TypingOptions = TypingOptions(), reactions: RoomReactionsOptions = RoomReactionsOptions(), occupancy: OccupancyOptions = OccupancyOptions()) {
         self.presence = presence
         self.typing = typing
         self.reactions = reactions
         self.occupancy = occupancy
     }
 }
-
-// (CHA-PR9) Users may configure their presence options via the RoomOptions provided at room configuration time.
-// (CHA-PR9a) Setting enter to false prevents the user from entering presence by means of the ChannelMode on the underlying realtime channel. Entering presence will result in an error. The default is true.
-// (CHA-PR9b) Setting subscribe to false prevents the user from subscribing to presence by means of the ChannelMode on the underlying realtime channel. This does not prevent them from receiving their own presence messages, but they will not receive them from others. The default is true.
 
 /**
  * Represents the presence options for a chat room.
@@ -58,19 +42,17 @@ public struct PresenceOptions: Sendable, Equatable {
      * in order to enter presence.
      * Defaults to true.
      */
-    public var enter = true
-
     /**
-     * Whether the underlying Realtime channel should use the presence subscribe mode, allowing subscription to presence.
-     * This property does not affect the presence lifecycle, and users must still call ``Presence/subscribe(events:)``
-     * in order to subscribe to presence.
+     * Whether or not the client should receive presence events from the server. This setting
+     * can be disabled if you are using presence in your Chat Room, but this particular client does not
+     * need to receive the messages.
+     *
      * Defaults to true.
      */
-    public var subscribe = true
+    public var receivePresenceEvents = true
 
-    public init(enter: Bool = true, subscribe: Bool = true) {
-        self.enter = enter
-        self.subscribe = subscribe
+    public init(receivePresenceEvents: Bool = true) {
+        self.receivePresenceEvents = receivePresenceEvents
     }
 }
 
@@ -106,5 +88,16 @@ public struct RoomReactionsOptions: Sendable, Equatable {
  * Represents the occupancy options for a chat room.
  */
 public struct OccupancyOptions: Sendable, Equatable {
-    public init() {}
+    /**
+     * Whether to enable inbound occupancy events.
+     *
+     * Note that enabling this feature will increase the number of messages received by the client.
+     *
+     * Defaults to false.
+     */
+    public var enableInboundOccupancy = false
+
+    public init(enableInboundOccupancy: Bool = false) {
+        self.enableInboundOccupancy = enableInboundOccupancy
+    }
 }

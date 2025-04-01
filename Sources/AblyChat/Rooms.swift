@@ -27,6 +27,11 @@ public protocol Rooms: AnyObject, Sendable {
      */
     func get(roomID: String, options: RoomOptions) async throws(ARTErrorInfo) -> any Room
 
+    /// Same as calling ``get(roomID:options:)`` with `RoomOptions()`.
+    ///
+    /// The `Rooms` protocol provides a default implementation of this method.
+    func get(roomID: String) async throws(ARTErrorInfo) -> any Room
+
     /**
      * Release the ``Room`` object if it exists. This method only releases the reference
      * to the Room object from the Rooms instance and detaches the room from Ably. It does not unsubscribe to any
@@ -48,6 +53,13 @@ public protocol Rooms: AnyObject, Sendable {
      * - Returns: ``ClientOptions`` object.
      */
     var clientOptions: ChatClientOptions { get }
+}
+
+public extension Rooms {
+    func get(roomID: String) async throws(ARTErrorInfo) -> any Room {
+        // CHA-RC4a
+        try await get(roomID: roomID, options: .init())
+    }
 }
 
 internal actor DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
@@ -138,7 +150,7 @@ internal actor DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
         }
 
         /// Supports the ``testsOnly_subscribeToOperationWaitEvents()`` method.
-        private var operationWaitEventSubscriptions = SubscriptionStorage<OperationWaitEvent>()
+        private let operationWaitEventSubscriptions = SubscriptionStorage<OperationWaitEvent>()
 
         /// Returns a subscription which emits an event each time one operation is going to wait for another to complete.
         internal func testsOnly_subscribeToOperationWaitEvents() -> Subscription<OperationWaitEvent> {
