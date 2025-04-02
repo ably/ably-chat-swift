@@ -198,15 +198,19 @@ struct ContentView: View {
                     }
             }
         }
-        .tryTask {
-            try await attachRoom()
-            try await showMessages()
-            try await showReactions()
-            try await showPresence()
-            try await showOccupancy()
-            try await showTypings()
-            try await showRoomStatus()
-            await printConnectionStatusChange()
+        .task {
+            do {
+                try await attachRoom()
+                try await showMessages()
+                try await showReactions()
+                try await showPresence()
+                try await showOccupancy()
+                try await showTypings()
+                try await showRoomStatus()
+                await printConnectionStatusChange()
+            } catch {
+                print("Failed to initialize room: \(error)") // TODO: replace with logger (+ message to the user?)
+            }
         }
     }
 
@@ -495,16 +499,6 @@ extension PresenceEventType {
 }
 
 extension View {
-    nonisolated func tryTask(priority: TaskPriority = .userInitiated, _ action: @escaping @Sendable () async throws -> Void) -> some View {
-        task(priority: priority) {
-            do {
-                try await action()
-            } catch {
-                print("Action can't be performed: \(error)") // TODO: replace with logger (+ message to the user?)
-            }
-        }
-    }
-
     func flip() -> some View {
         rotationEffect(.radians(.pi))
             .scaleEffect(x: -1, y: 1, anchor: .center)
