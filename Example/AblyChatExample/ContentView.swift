@@ -44,7 +44,6 @@ struct ContentView: View {
 
     @State private var chatClient = Environment.current.createChatClient()
 
-    @State private var title = "Room"
     @State private var reactions: [Reaction] = []
     @State private var newMessage = ""
     @State private var typingInfo = ""
@@ -88,7 +87,7 @@ struct ContentView: View {
     var body: some View {
         ZStack {
             VStack {
-                Text(title)
+                Text(roomID)
                     .font(.headline)
                     .padding(5)
                 HStack {
@@ -200,7 +199,6 @@ struct ContentView: View {
             }
         }
         .tryTask {
-            try await setDefaultTitle()
             try await attachRoom()
             try await showMessages()
             try await showReactions()
@@ -227,10 +225,6 @@ struct ContentView: View {
                 try await sendMessage()
             }
         }
-    }
-
-    func setDefaultTitle() async throws {
-        title = try await "\(room().roomID)"
     }
 
     func attachRoom() async throws {
