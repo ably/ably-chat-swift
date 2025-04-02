@@ -30,7 +30,6 @@ private enum Environment: Equatable {
     }
 }
 
-@MainActor
 struct ContentView: View {
     #if os(macOS)
         let screenWidth = NSScreen.main?.frame.width ?? 500
