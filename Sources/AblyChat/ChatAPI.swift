@@ -1,5 +1,6 @@
 import Ably
 
+@MainActor
 internal final class ChatAPI: Sendable {
     private let realtime: any InternalRealtimeClientProtocol
     private let apiVersion = "/chat/v1"

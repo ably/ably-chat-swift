@@ -2,6 +2,7 @@ import Ably
 @testable import AblyChat
 import Testing
 
+@MainActor
 struct DefaultRoomReactionsTests {
     // @spec CHA-ER3a
     @Test
@@ -12,7 +13,7 @@ struct DefaultRoomReactionsTests {
         let featureChannel = MockFeatureChannel(channel: channel)
 
         // When
-        let defaultRoomReactions = await DefaultRoomReactions(featureChannel: featureChannel, clientID: "mockClientId", roomID: "basketball", logger: TestLogger())
+        let defaultRoomReactions = DefaultRoomReactions(featureChannel: featureChannel, clientID: "mockClientId", roomID: "basketball", logger: TestLogger())
 
         let sendReactionParams = SendReactionParams(
             type: "like",
@@ -24,9 +25,9 @@ struct DefaultRoomReactionsTests {
         try await defaultRoomReactions.send(params: sendReactionParams)
 
         // Then
-        #expect(await channel.lastMessagePublishedName == RoomReactionEvents.reaction.rawValue)
-        #expect(await channel.lastMessagePublishedData == ["type": "like", "metadata": ["someMetadataKey": "someMetadataValue"]])
-        #expect(await channel.lastMessagePublishedExtras == ["headers": ["someHeadersKey": "someHeadersValue"]])
+        #expect(channel.lastMessagePublishedName == RoomReactionEvents.reaction.rawValue)
+        #expect(channel.lastMessagePublishedData == ["type": "like", "metadata": ["someMetadataKey": "someMetadataValue"]])
+        #expect(channel.lastMessagePublishedExtras == ["headers": ["someHeadersKey": "someHeadersValue"]])
     }
 
     // @spec CHA-ER4
@@ -38,10 +39,10 @@ struct DefaultRoomReactionsTests {
         let featureChannel = MockFeatureChannel(channel: channel)
 
         // When
-        let defaultRoomReactions = await DefaultRoomReactions(featureChannel: featureChannel, clientID: "mockClientId", roomID: "basketball", logger: TestLogger())
+        let defaultRoomReactions = DefaultRoomReactions(featureChannel: featureChannel, clientID: "mockClientId", roomID: "basketball", logger: TestLogger())
 
         // When
-        let subscription: Subscription<Reaction>? = await defaultRoomReactions.subscribe()
+        let subscription: Subscription<Reaction>? = defaultRoomReactions.subscribe()
 
         // Then
         #expect(subscription != nil)
@@ -54,15 +55,15 @@ struct DefaultRoomReactionsTests {
         // Given: A DefaultRoomReactions instance
         let channel = MockRealtimeChannel()
         let featureChannel = MockFeatureChannel(channel: channel)
-        let roomReactions = await DefaultRoomReactions(featureChannel: featureChannel, clientID: "mockClientId", roomID: "basketball", logger: TestLogger())
+        let roomReactions = DefaultRoomReactions(featureChannel: featureChannel, clientID: "mockClientId", roomID: "basketball", logger: TestLogger())
 
         // When: The feature channel emits a discontinuity through `onDiscontinuity`
         let featureChannelDiscontinuity = DiscontinuityEvent(error: ARTErrorInfo.createUnknownError() /* arbitrary */ )
-        let messagesDiscontinuitySubscription = await roomReactions.onDiscontinuity()
-        await featureChannel.emitDiscontinuity(featureChannelDiscontinuity)
+        let messagesDiscontinuitySubscription = roomReactions.onDiscontinuity()
+        featureChannel.emitDiscontinuity(featureChannelDiscontinuity)
 
         // Then: The DefaultRoomReactions instance emits this discontinuity through `onDiscontinuity`
-        let messagesDiscontinuity = try #require(await messagesDiscontinuitySubscription.first { _ in true })
+        let messagesDiscontinuity = try #require(await messagesDiscontinuitySubscription.first { @Sendable _ in true })
         #expect(messagesDiscontinuity == featureChannelDiscontinuity)
     }
 }

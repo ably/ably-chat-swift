@@ -22,6 +22,7 @@ struct SubscriptionTests {
         #expect(await emittedElements == ["First", "Second"])
     }
 
+    @MainActor
     @Test
     func addTerminationHandler_terminationHandlerCalledWhenSubscriptionDiscarded() async throws {
         let onTerminationCalled = AsyncStream<Void>.makeStream()
@@ -34,9 +35,10 @@ struct SubscriptionTests {
             // Now there are no more references to `subscription`.
         })()
 
-        await onTerminationCalled.stream.first { _ in true }
+        await onTerminationCalled.stream.first { @Sendable _ in true }
     }
 
+    @MainActor
     @Test
     func addTerminationHandler_terminationHandlerCalledWhenIterationTaskCancelled() async throws {
         let onTerminationCalled = AsyncStream<Void>.makeStream()
@@ -51,6 +53,6 @@ struct SubscriptionTests {
         }
         iterationTask.cancel()
 
-        await onTerminationCalled.stream.first { _ in true }
+        await onTerminationCalled.stream.first { @Sendable _ in true }
     }
 }

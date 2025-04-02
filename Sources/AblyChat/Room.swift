@@ -3,20 +3,21 @@ import Ably
 /**
  * Represents a chat room.
  */
+@MainActor
 public protocol Room: AnyObject, Sendable {
     /**
      * The unique identifier of the room.
      *
      * - Returns: The room identifier.
      */
-    var roomID: String { get }
+    nonisolated var roomID: String { get }
 
     /**
      * Allows you to send, subscribe-to and query messages in the room.
      *
      * - Returns: The messages instance for the room.
      */
-    var messages: any Messages { get }
+    nonisolated var messages: any Messages { get }
 
     /**
      * Allows you to subscribe to presence events in the room.
@@ -25,7 +26,7 @@ public protocol Room: AnyObject, Sendable {
      *
      * - Returns: The presence instance for the room.
      */
-    var presence: any Presence { get }
+    nonisolated var presence: any Presence { get }
 
     /**
      * Allows you to interact with room-level reactions.
@@ -34,7 +35,7 @@ public protocol Room: AnyObject, Sendable {
      *
      * - Returns: The room reactions instance for the room.
      */
-    var reactions: any RoomReactions { get }
+    nonisolated var reactions: any RoomReactions { get }
 
     /**
      * Allows you to interact with typing events in the room.
@@ -43,7 +44,7 @@ public protocol Room: AnyObject, Sendable {
      *
      * - Returns: The typing instance for the room.
      */
-    var typing: any Typing { get }
+    nonisolated var typing: any Typing { get }
 
     /**
      * Allows you to interact with occupancy metrics for the room.
@@ -52,14 +53,14 @@ public protocol Room: AnyObject, Sendable {
      *
      * - Returns: The occupancy instance for the room.
      */
-    var occupancy: any Occupancy { get }
+    nonisolated var occupancy: any Occupancy { get }
 
     /**
      * The current status of the room.
      *
      * - Returns: The current room status.
      */
-    var status: RoomStatus { get async }
+    var status: RoomStatus { get }
 
     /**
      * Subscribes a given listener to the room status changes.
@@ -69,12 +70,12 @@ public protocol Room: AnyObject, Sendable {
      *
      * - Returns: A subscription `AsyncSequence` that can be used to iterate through ``RoomStatusChange`` events.
      */
-    func onStatusChange(bufferingPolicy: BufferingPolicy) async -> Subscription<RoomStatusChange>
+    func onStatusChange(bufferingPolicy: BufferingPolicy) -> Subscription<RoomStatusChange>
 
     /// Same as calling ``onStatusChange(bufferingPolicy:)`` with ``BufferingPolicy/unbounded``.
     ///
     /// The `Room` protocol provides a default implementation of this method.
-    func onStatusChange() async -> Subscription<RoomStatusChange>
+    func onStatusChange() -> Subscription<RoomStatusChange>
 
     /**
      * Attaches to the room to receive events in realtime.
@@ -102,12 +103,12 @@ public protocol Room: AnyObject, Sendable {
      *
      * - Returns: A copy of the options used to create the room.
      */
-    var options: RoomOptions { get }
+    nonisolated var options: RoomOptions { get }
 }
 
 public extension Room {
-    func onStatusChange() async -> Subscription<RoomStatusChange> {
-        await onStatusChange(bufferingPolicy: .unbounded)
+    func onStatusChange() -> Subscription<RoomStatusChange> {
+        onStatusChange(bufferingPolicy: .unbounded)
     }
 }
 
@@ -136,17 +137,18 @@ public struct RoomStatusChange: Sendable, Equatable {
     }
 }
 
+@MainActor
 internal protocol RoomFactory: Sendable {
     associatedtype Room: AblyChat.InternalRoom
 
-    func createRoom(realtime: any InternalRealtimeClientProtocol, chatAPI: ChatAPI, roomID: String, options: RoomOptions, logger: InternalLogger) async throws(InternalError) -> Room
+    func createRoom(realtime: any InternalRealtimeClientProtocol, chatAPI: ChatAPI, roomID: String, options: RoomOptions, logger: InternalLogger) throws(InternalError) -> Room
 }
 
 internal final class DefaultRoomFactory: Sendable, RoomFactory {
     private let lifecycleManagerFactory = DefaultRoomLifecycleManagerFactory()
 
-    internal func createRoom(realtime: any InternalRealtimeClientProtocol, chatAPI: ChatAPI, roomID: String, options: RoomOptions, logger: InternalLogger) async throws(InternalError) -> DefaultRoom<DefaultRoomLifecycleManagerFactory> {
-        try await DefaultRoom(
+    internal func createRoom(realtime: any InternalRealtimeClientProtocol, chatAPI: ChatAPI, roomID: String, options: RoomOptions, logger: InternalLogger) throws(InternalError) -> DefaultRoom<DefaultRoomLifecycleManagerFactory> {
+        try DefaultRoom(
             realtime: realtime,
             chatAPI: chatAPI,
             roomID: roomID,
@@ -157,7 +159,7 @@ internal final class DefaultRoomFactory: Sendable, RoomFactory {
     }
 }
 
-internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>: InternalRoom where LifecycleManagerFactory.Contributor == DefaultRoomLifecycleContributor {
+internal class DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>: InternalRoom where LifecycleManagerFactory.Contributor == DefaultRoomLifecycleContributor {
     internal nonisolated let roomID: String
     internal nonisolated let options: RoomOptions
     private let chatAPI: ChatAPI
@@ -221,7 +223,7 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
         }
     }
 
-    internal init(realtime: any InternalRealtimeClientProtocol, chatAPI: ChatAPI, roomID: String, options: RoomOptions, logger: InternalLogger, lifecycleManagerFactory: LifecycleManagerFactory) async throws(InternalError) {
+    internal init(realtime: any InternalRealtimeClientProtocol, chatAPI: ChatAPI, roomID: String, options: RoomOptions, logger: InternalLogger, lifecycleManagerFactory: LifecycleManagerFactory) throws(InternalError) {
         self.realtime = realtime
         self.roomID = roomID
         self.options = options
@@ -238,14 +240,14 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
         channels = featureChannelPartialDependencies.map(\.featureChannelPartialDependencies.channel)
         let contributors = featureChannelPartialDependencies.map(\.featureChannelPartialDependencies.contributor)
 
-        lifecycleManager = await lifecycleManagerFactory.createManager(
+        lifecycleManager = lifecycleManagerFactory.createManager(
             contributors: contributors,
             logger: logger
         )
 
         let featureChannels = Self.createFeatureChannels(partialDependencies: featureChannelPartialDependencies, lifecycleManager: lifecycleManager)
 
-        messages = await DefaultMessages(
+        messages = DefaultMessages(
             featureChannel: featureChannels[.messages]!,
             chatAPI: chatAPI,
             roomID: roomID,
@@ -254,7 +256,7 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
         )
 
         _reactions = if let featureChannel = featureChannels[.reactions] {
-            await DefaultRoomReactions(
+            DefaultRoomReactions(
                 featureChannel: featureChannel,
                 clientID: clientId,
                 roomID: roomID,
@@ -265,7 +267,7 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
         }
 
         _presence = if let featureChannel = featureChannels[.presence] {
-            await DefaultPresence(
+            DefaultPresence(
                 featureChannel: featureChannel,
                 roomID: roomID,
                 clientID: clientId,
@@ -424,13 +426,11 @@ internal actor DefaultRoom<LifecycleManagerFactory: RoomLifecycleManagerFactory>
 
     // MARK: - Room status
 
-    internal func onStatusChange(bufferingPolicy: BufferingPolicy) async -> Subscription<RoomStatusChange> {
-        await lifecycleManager.onRoomStatusChange(bufferingPolicy: bufferingPolicy)
+    internal func onStatusChange(bufferingPolicy: BufferingPolicy) -> Subscription<RoomStatusChange> {
+        lifecycleManager.onRoomStatusChange(bufferingPolicy: bufferingPolicy)
     }
 
     internal var status: RoomStatus {
-        get async {
-            await lifecycleManager.roomStatus
-        }
+        lifecycleManager.roomStatus
     }
 }
