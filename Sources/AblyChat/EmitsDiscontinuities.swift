@@ -12,6 +12,7 @@ public struct DiscontinuityEvent: Sendable, Equatable {
 /**
  * An interface to be implemented by objects that can emit discontinuities to listeners.
  */
+@MainActor
 public protocol EmitsDiscontinuities {
     /**
      * Subscribes a given listener to a detected discontinuity.
@@ -21,16 +22,16 @@ public protocol EmitsDiscontinuities {
      *
      * - Returns: A subscription `AsyncSequence` that can be used to iterate through ``DiscontinuityEvent`` events.
      */
-    func onDiscontinuity(bufferingPolicy: BufferingPolicy) async -> Subscription<DiscontinuityEvent>
+    func onDiscontinuity(bufferingPolicy: BufferingPolicy) -> Subscription<DiscontinuityEvent>
 
     /// Same as calling ``onDiscontinuity(bufferingPolicy:)`` with ``BufferingPolicy/unbounded``.
     ///
     /// The `EmitsDiscontinuities` protocol provides a default implementation of this method.
-    func onDiscontinuity() async -> Subscription<DiscontinuityEvent>
+    func onDiscontinuity() -> Subscription<DiscontinuityEvent>
 }
 
 public extension EmitsDiscontinuities {
-    func onDiscontinuity() async -> Subscription<DiscontinuityEvent> {
-        await onDiscontinuity(bufferingPolicy: .unbounded)
+    func onDiscontinuity() -> Subscription<DiscontinuityEvent> {
+        onDiscontinuity(bufferingPolicy: .unbounded)
     }
 }

@@ -6,6 +6,7 @@ import Ably
  *
  * Get an instance via ``Room/typing``.
  */
+@MainActor
 public protocol Typing: AnyObject, Sendable, EmitsDiscontinuities {
     /**
      * Subscribes a given listener to all typing events from users in the chat room.
@@ -15,12 +16,12 @@ public protocol Typing: AnyObject, Sendable, EmitsDiscontinuities {
      *
      * - Returns: A subscription `AsyncSequence` that can be used to iterate through ``TypingEvent`` events.
      */
-    func subscribe(bufferingPolicy: BufferingPolicy) async -> Subscription<TypingEvent>
+    func subscribe(bufferingPolicy: BufferingPolicy) -> Subscription<TypingEvent>
 
     /// Same as calling ``subscribe(bufferingPolicy:)`` with ``BufferingPolicy/unbounded``.
     ///
     /// The `Typing` protocol provides a default implementation of this method.
-    func subscribe() async -> Subscription<TypingEvent>
+    func subscribe() -> Subscription<TypingEvent>
 
     /**
      * Get the current typers, a set of clientIds.
@@ -54,12 +55,12 @@ public protocol Typing: AnyObject, Sendable, EmitsDiscontinuities {
      *
      * - Returns: The Ably realtime channel.
      */
-    var channel: any RealtimeChannelProtocol { get }
+    nonisolated var channel: any RealtimeChannelProtocol { get }
 }
 
 public extension Typing {
-    func subscribe() async -> Subscription<TypingEvent> {
-        await subscribe(bufferingPolicy: .unbounded)
+    func subscribe() -> Subscription<TypingEvent> {
+        subscribe(bufferingPolicy: .unbounded)
     }
 }
 

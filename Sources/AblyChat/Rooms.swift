@@ -3,6 +3,7 @@ import Ably
 /**
  * Manages the lifecycle of chat rooms.
  */
+@MainActor
 public protocol Rooms: AnyObject, Sendable {
     /**
      * Gets a room reference by ID. The Rooms class ensures that only one reference
@@ -47,10 +48,10 @@ public protocol Rooms: AnyObject, Sendable {
      *
      * - Returns: ``ClientOptions`` object.
      */
-    var clientOptions: ChatClientOptions { get }
+    nonisolated var clientOptions: ChatClientOptions { get }
 }
 
-internal actor DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
+internal class DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
     private nonisolated let realtime: any InternalRealtimeClientProtocol
     private let chatAPI: ChatAPI
 
@@ -234,7 +235,7 @@ internal actor DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
                                 return await group.next() ?? .success(())
                             }.get()
 
-                            return try await .success(createRoom(roomID: roomID, options: options))
+                            return try .success(createRoom(roomID: roomID, options: options))
                         } catch {
                             return .failure(error)
                         }
@@ -254,7 +255,7 @@ internal actor DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
             }
 
             // CHA-RC1f3
-            return try await createRoom(roomID: roomID, options: options)
+            return try createRoom(roomID: roomID, options: options)
         } catch {
             throw error.toARTErrorInfo()
         }
@@ -291,9 +292,9 @@ internal actor DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
         logger.log(message: "\(waitingOperationType) operation completed waiting for in-progress \(waitedOperationType) operation to complete", level: .debug)
     }
 
-    private func createRoom(roomID: String, options: RoomOptions) async throws(InternalError) -> RoomFactory.Room {
+    private func createRoom(roomID: String, options: RoomOptions) throws(InternalError) -> RoomFactory.Room {
         logger.log(message: "Creating room with ID \(roomID), options \(options)", level: .debug)
-        let room = try await roomFactory.createRoom(realtime: realtime, chatAPI: chatAPI, roomID: roomID, options: options, logger: logger)
+        let room = try roomFactory.createRoom(realtime: realtime, chatAPI: chatAPI, roomID: roomID, options: options, logger: logger)
         roomStates[roomID] = .roomMapEntry(.created(room: room))
         return room
     }
@@ -343,7 +344,7 @@ internal actor DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
                 logger.log(message: "Release operation completed waiting for room release operation to complete", level: .debug)
             }
 
-            // Note that, since we’re in an actor, we expect `releaseTask` to always be executed _after_ this synchronous code section, meaning that the `roomStates` mutations happen in the correct order
+            // Note that, since we’re in an actor (specifically, the MainActor), we expect `releaseTask` to always be executed _after_ this synchronous code section, meaning that the `roomStates` mutations happen in the correct order
 
             // This also achieves CHA-RC1g5 (remove room from room map)
             roomStates[roomID] = .releaseOperationInProgress(releaseTask: releaseTask)

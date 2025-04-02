@@ -1,6 +1,5 @@
 import Ably
 
-@MainActor
 internal final class DefaultPresence: Presence, EmitsDiscontinuities {
     private let featureChannel: FeatureChannel
     private let implementation: Implementation
@@ -50,16 +49,16 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
         try await implementation.leave()
     }
 
-    internal func subscribe(event: PresenceEventType, bufferingPolicy: BufferingPolicy) async -> Subscription<PresenceEvent> {
-        await implementation.subscribe(event: event, bufferingPolicy: bufferingPolicy)
+    internal func subscribe(event: PresenceEventType, bufferingPolicy: BufferingPolicy) -> Subscription<PresenceEvent> {
+        implementation.subscribe(event: event, bufferingPolicy: bufferingPolicy)
     }
 
-    internal func subscribe(events: [PresenceEventType], bufferingPolicy: BufferingPolicy) async -> Subscription<PresenceEvent> {
-        await implementation.subscribe(events: events, bufferingPolicy: bufferingPolicy)
+    internal func subscribe(events: [PresenceEventType], bufferingPolicy: BufferingPolicy) -> Subscription<PresenceEvent> {
+        implementation.subscribe(events: events, bufferingPolicy: bufferingPolicy)
     }
 
-    internal func onDiscontinuity(bufferingPolicy: BufferingPolicy) async -> Subscription<DiscontinuityEvent> {
-        await implementation.onDiscontinuity(bufferingPolicy: bufferingPolicy)
+    internal func onDiscontinuity(bufferingPolicy: BufferingPolicy) -> Subscription<DiscontinuityEvent> {
+        implementation.onDiscontinuity(bufferingPolicy: bufferingPolicy)
     }
 
     /// This class exists to make sure that the internals of the SDK only access ably-cocoa via the `InternalRealtimeChannelProtocol` interface. It does this by removing access to the `channel` property that exists as part of the public API of the `Presence` protocol, making it unlikely that we accidentally try to call the `ARTRealtimeChannelProtocol` interface. We can remove this `Implementation` class when we remove the feature-level `channel` property in https://github.com/ably/ably-chat-swift/issues/242.
@@ -259,43 +258,51 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
 
         // (CHA-PR7a) Users may provide a listener to subscribe to all presence events in a room.
         // (CHA-PR7b) Users may provide a listener and a list of selected presence events, to subscribe to just those events in a room.
-        internal func subscribe(event: PresenceEventType, bufferingPolicy: BufferingPolicy) async -> Subscription<PresenceEvent> {
+        internal func subscribe(event: PresenceEventType, bufferingPolicy: BufferingPolicy) -> Subscription<PresenceEvent> {
             logger.log(message: "Subscribing to presence events", level: .debug)
             let subscription = Subscription<PresenceEvent>(bufferingPolicy: bufferingPolicy)
             let eventListener = featureChannel.channel.presence.subscribe(event.toARTPresenceAction()) { [processPresenceSubscribe, logger] message in
                 logger.log(message: "Received presence message: \(message)", level: .debug)
-                Task {
+                do {
                     // processPresenceSubscribe is logging so we don't need to log here
                     let presenceEvent = try processPresenceSubscribe(PresenceMessage(ablyCocoaPresenceMessage: message), event)
                     subscription.emit(presenceEvent)
+                } catch {
+                    // note: this replaces some existing code that also didn't handle the processPresenceSubscribe error; I suspect not intentional, will leave whoever writes the tests for this class to see what's going on
                 }
             }
             subscription.addTerminationHandler { [weak self] in
                 if let eventListener {
-                    self?.featureChannel.channel.presence.unsubscribe(eventListener)
+                    Task { @MainActor in
+                        self?.featureChannel.channel.presence.unsubscribe(eventListener)
+                    }
                 }
             }
             return subscription
         }
 
-        internal func subscribe(events: [PresenceEventType], bufferingPolicy: BufferingPolicy) async -> Subscription<PresenceEvent> {
+        internal func subscribe(events: [PresenceEventType], bufferingPolicy: BufferingPolicy) -> Subscription<PresenceEvent> {
             logger.log(message: "Subscribing to presence events", level: .debug)
             let subscription = Subscription<PresenceEvent>(bufferingPolicy: bufferingPolicy)
 
             let eventListeners = events.map { event in
                 featureChannel.channel.presence.subscribe(event.toARTPresenceAction()) { [processPresenceSubscribe, logger] message in
                     logger.log(message: "Received presence message: \(message)", level: .debug)
-                    Task {
+                    do {
                         let presenceEvent = try processPresenceSubscribe(PresenceMessage(ablyCocoaPresenceMessage: message), event)
                         subscription.emit(presenceEvent)
+                    } catch {
+                        // note: this replaces some existing code that also didn't handle the processPresenceSubscribe error; I suspect not intentional, will leave whoever writes the tests for this class to see what's going on
                     }
                 }
             }
 
             subscription.addTerminationHandler { [weak self] in
-                for eventListener in eventListeners {
-                    if let eventListener {
-                        self?.featureChannel.channel.presence.unsubscribe(eventListener)
+                Task { @MainActor in
+                    for eventListener in eventListeners {
+                        if let eventListener {
+                            self?.featureChannel.channel.presence.unsubscribe(eventListener)
+                        }
                     }
                 }
             }
@@ -304,8 +311,8 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
         }
 
         // (CHA-PR8) Users may subscribe to discontinuity events to know when there’s been a break in presence. Their listener will be called when a discontinuity event is triggered from the room lifecycle. For presence, there shouldn’t need to be user action as the underlying core SDK will heal the presence set.
-        internal func onDiscontinuity(bufferingPolicy: BufferingPolicy) async -> Subscription<DiscontinuityEvent> {
-            await featureChannel.onDiscontinuity(bufferingPolicy: bufferingPolicy)
+        internal func onDiscontinuity(bufferingPolicy: BufferingPolicy) -> Subscription<DiscontinuityEvent> {
+            featureChannel.onDiscontinuity(bufferingPolicy: bufferingPolicy)
         }
 
         private func decodePresenceDataDTO(from presenceData: JSONValue?) throws(InternalError) -> PresenceDataDTO {

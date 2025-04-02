@@ -2,6 +2,7 @@ import Ably
 @testable import AblyChat
 import Testing
 
+@MainActor
 struct DefaultRoomOccupancyTests {
     // @spec CHA-O3
     @Test
@@ -44,11 +45,11 @@ struct DefaultRoomOccupancyTests {
         // CHA-O4a, CHA-O4c
 
         // When
-        let subscription = await defaultOccupancy.subscribe()
+        let subscription = defaultOccupancy.subscribe()
         subscription.emit(OccupancyEvent(connections: 5, presenceMembers: 2))
 
         // Then
-        let occupancyInfo = try #require(await subscription.first { _ in true })
+        let occupancyInfo = try #require(await subscription.first { @Sendable _ in true })
         #expect(occupancyInfo.connections == 5)
         #expect(occupancyInfo.presenceMembers == 2)
     }
@@ -65,11 +66,11 @@ struct DefaultRoomOccupancyTests {
 
         // When: The feature channel emits a discontinuity through `onDiscontinuity`
         let featureChannelDiscontinuity = DiscontinuityEvent(error: ARTErrorInfo.createUnknownError()) // arbitrary error
-        let discontinuitySubscription = await defaultOccupancy.onDiscontinuity()
-        await featureChannel.emitDiscontinuity(featureChannelDiscontinuity)
+        let discontinuitySubscription = defaultOccupancy.onDiscontinuity()
+        featureChannel.emitDiscontinuity(featureChannelDiscontinuity)
 
         // Then: The DefaultOccupancy instance emits this discontinuity through `onDiscontinuity`
-        let discontinuity = try #require(await discontinuitySubscription.first { _ in true })
+        let discontinuity = try #require(await discontinuitySubscription.first { @Sendable _ in true })
         #expect(discontinuity == featureChannelDiscontinuity)
     }
 }

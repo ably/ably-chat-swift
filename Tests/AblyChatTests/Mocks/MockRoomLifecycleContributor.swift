@@ -1,7 +1,7 @@
 import Ably
 @testable import AblyChat
 
-actor MockRoomLifecycleContributor: RoomLifecycleContributor {
+class MockRoomLifecycleContributor: RoomLifecycleContributor {
     nonisolated let feature: RoomFeature
     /// Provides access to the non-type-erased underlying mock channel (so that you can call mocking-related methods on it).
     nonisolated let mockChannel: MockRealtimeChannel
@@ -16,7 +16,7 @@ actor MockRoomLifecycleContributor: RoomLifecycleContributor {
         mockChannel = channel
     }
 
-    func emitDiscontinuity(_ discontinuity: DiscontinuityEvent) async {
+    func emitDiscontinuity(_ discontinuity: DiscontinuityEvent) {
         emitDiscontinuityArguments.append(discontinuity)
     }
 }

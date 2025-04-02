@@ -114,7 +114,7 @@ let room = try await chatClient.rooms.get(
     roomID: "readme-getting-started", options: RoomOptions.allFeaturesEnabled)
 
 // Add a listener to observe changes to the chat rooms status
-let statusSubscription = await room.onStatusChange()
+let statusSubscription = room.onStatusChange()
 Task {
     for await status in statusSubscription {
         print("Room status changed: \(status.current)")

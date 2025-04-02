@@ -1,12 +1,13 @@
 import Ably
 
+@MainActor
 public protocol ChatClient: AnyObject, Sendable {
     /**
      * Returns the rooms object, which provides access to chat rooms.
      *
      * - Returns: The rooms object.
      */
-    var rooms: any Rooms { get }
+    nonisolated var rooms: any Rooms { get }
 
     /**
      * Returns the underlying connection to Ably, which can be used to monitor the clients
@@ -14,7 +15,7 @@ public protocol ChatClient: AnyObject, Sendable {
      *
      * - Returns: The connection object.
      */
-    var connection: any Connection { get }
+    nonisolated var connection: any Connection { get }
 
     /**
      * Returns the clientId of the current client.
@@ -28,18 +29,19 @@ public protocol ChatClient: AnyObject, Sendable {
      *
      * - Returns: The Ably Realtime client.
      */
-    var realtime: RealtimeClient { get }
+    nonisolated var realtime: RealtimeClient { get }
 
     /**
      * Returns the resolved client options for the client, including any defaults that have been set.
      *
      * - Returns: The client options.
      */
-    var clientOptions: ChatClientOptions { get }
+    nonisolated var clientOptions: ChatClientOptions { get }
 }
 
 public typealias RealtimeClient = any RealtimeClientProtocol
 
+@MainActor
 internal protocol InternalRealtimeClientFactory {
     func createInternalRealtimeClient(_ ablyCocoaRealtime: any RealtimeClientProtocol) -> any InternalRealtimeClientProtocol
 }
@@ -53,15 +55,15 @@ internal final class DefaultInternalRealtimeClientFactory: InternalRealtimeClien
 /**
  * This is the core client for Ably chat. It provides access to chat rooms.
  */
-public actor DefaultChatClient: ChatClient {
+public class DefaultChatClient: ChatClient {
     public nonisolated let realtime: RealtimeClient
     public nonisolated let clientOptions: ChatClientOptions
-    public nonisolated let rooms: Rooms
+    public let rooms: Rooms
     private let logger: InternalLogger
 
     // (CHA-CS1) Every chat client has a status, which describes the current status of the connection.
     // (CHA-CS4) The chat client must allow its connection status to be observed by clients.
-    public nonisolated let connection: any Connection
+    public let connection: any Connection
 
     /**
      * Constructor for Chat
@@ -70,7 +72,7 @@ public actor DefaultChatClient: ChatClient {
      *   - realtime: The Ably Realtime client.
      *   - clientOptions: The client options.
      */
-    public init(realtime suppliedRealtime: any SuppliedRealtimeClientProtocol, clientOptions: ChatClientOptions?) {
+    public convenience init(realtime suppliedRealtime: any SuppliedRealtimeClientProtocol, clientOptions: ChatClientOptions?) {
         self.init(realtime: suppliedRealtime, clientOptions: clientOptions, internalRealtimeClientFactory: DefaultInternalRealtimeClientFactory())
     }
 
