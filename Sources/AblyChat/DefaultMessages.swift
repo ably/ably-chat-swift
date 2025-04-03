@@ -1,11 +1,5 @@
 import Ably
 
-// Wraps the MessageSubscription with the message serial of when the subscription was attached or resumed.
-private struct MessageSubscriptionWrapper {
-    let subscription: MessageSubscription
-    var serial: String
-}
-
 // TODO: Don't have a strong understanding of why @MainActor is needed here. Revisit as part of https://github.com/ably-labs/ably-chat-swift/issues/83
 @MainActor
 internal final class DefaultMessages: Messages, EmitsDiscontinuities {
@@ -60,8 +54,7 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
         private let clientID: String
         private let logger: InternalLogger
 
-        // UUID acts as a unique identifier for each listener/subscription. MessageSubscriptionWrapper houses the subscription and the serial of when it was attached or resumed.
-        private var subscriptionPoints: [UUID: MessageSubscriptionWrapper] = [:]
+        private let subscriptionStore = SubscriptionStore()
 
         internal nonisolated init(featureChannel: FeatureChannel, chatAPI: ChatAPI, roomID: String, clientID: String, logger: InternalLogger) async {
             self.featureChannel = featureChannel
@@ -80,7 +73,6 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
             do {
                 logger.log(message: "Subscribing to messages", level: .debug)
                 let uuid = UUID()
-                let serial = try await resolveSubscriptionStart()
                 let messageSubscription = MessageSubscription(
                     bufferingPolicy: bufferingPolicy
                 ) { [weak self] queryOptions in
@@ -88,8 +80,8 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
                     return try await getBeforeSubscriptionStart(uuid, params: queryOptions)
                 }
 
-                // (CHA-M4a) A subscription can be registered to receive incoming messages. Adding a subscription has no side effects on the status of the room or the underlying realtime channel.
-                subscriptionPoints[uuid] = .init(subscription: messageSubscription, serial: serial)
+                await subscriptionStore.addSubscription(uuid: uuid, subscription: .init(subscription: messageSubscription))
+                try await resolveSubscriptionStart(for: uuid)
 
                 // (CHA-M4c) When a realtime message with name set to message.created is received, it is translated into a message event, which contains a type field with the event type as well as a message field containing the Message Struct. This event is then broadcast to all subscribers.
                 // (CHA-M4d) If a realtime message with an unknown name is received, the SDK shall silently discard the message, though it may log at DEBUG or TRACE level.
@@ -160,7 +152,9 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
                                 return
                             }
                             featureChannel.channel.unsubscribe(eventListener)
-                            subscriptionPoints.removeValue(forKey: uuid)
+                            Task {
+                                await subscriptionStore.removeSubscription(uuid: uuid)
+                            }
                         }
                     }
                 }
@@ -210,7 +204,7 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
         }
 
         private func getBeforeSubscriptionStart(_ uuid: UUID, params: QueryOptions) async throws -> any PaginatedResult<Message> {
-            guard let subscriptionPoint = subscriptionPoints[uuid]?.serial else {
+            guard let subscriptionPoint = await subscriptionStore.getSubscription(uuid: uuid)?.serial else {
                 throw ARTErrorInfo.create(
                     withCode: 40000,
                     status: 400,
@@ -263,9 +257,9 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
             do {
                 let serialOnChannelAttach = try await serialOnChannelAttach()
 
-                for uuid in subscriptionPoints.keys {
+                for uuid in await subscriptionStore.subscriptions.keys {
                     logger.log(message: "Resetting subscription point for listener: \(uuid)", level: .debug)
-                    subscriptionPoints[uuid]?.serial = serialOnChannelAttach
+                    await subscriptionStore.setSerial(uuid: uuid, serial: serialOnChannelAttach)
                 }
             } catch {
                 logger.log(message: "Error handling attach: \(error)", level: .error)
@@ -273,13 +267,14 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
             }
         }
 
-        private func resolveSubscriptionStart() async throws(InternalError) -> String {
+        private func resolveSubscriptionStart(for uuid: UUID) async throws(InternalError) {
             logger.log(message: "Resolving subscription start", level: .debug)
             // (CHA-M5a) If a subscription is added when the underlying realtime channel is ATTACHED, then the subscription point is the current channelSerial of the realtime channel.
             if await featureChannel.channel.state == .attached {
                 if let channelSerial = featureChannel.channel.properties.channelSerial {
                     logger.log(message: "Channel is attached, returning channelSerial: \(channelSerial)", level: .debug)
-                    return channelSerial
+                    await subscriptionStore.setSerial(uuid: uuid, serial: channelSerial)
+                    return
                 } else {
                     let error = ARTErrorInfo.create(withCode: 40000, status: 400, message: "channel is attached, but channelSerial is not defined")
                     logger.log(message: "Error resolving subscription start: \(error)", level: .error)
@@ -288,7 +283,9 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
             }
 
             // (CHA-M5b) If a subscription is added when the underlying realtime channel is in any other state, then its subscription point becomes the attachSerial at the the point of channel attachment.
-            return try await serialOnChannelAttach()
+            Task {
+                try await subscriptionStore.setSerial(uuid: uuid, serial: serialOnChannelAttach())
+            }
         }
 
         // Always returns the attachSerial and not the channelSerial to also serve (CHA-M5c) - If a channel leaves the ATTACHED state and then re-enters ATTACHED with resumed=false, then it must be assumed that messages have been missed. The subscription point of any subscribers must be reset to the attachSerial.
@@ -365,5 +362,34 @@ private extension ARTMessageOperation {
             description: descriptionText,
             metadata: metadata != nil ? JSONValue(ablyCocoaData: metadata!).objectValue : nil
         )
+    }
+}
+
+// Wraps the MessageSubscription with the message serial of when the subscription was attached or resumed.
+private struct MessageSubscriptionWrapper {
+    let subscription: MessageSubscription
+    var serial: String?
+}
+
+// Thread-safe store for subscriptions. Used so we can return a Subscription from `subscribe` immediately and then later update it with the `serial` when we get it.
+private actor SubscriptionStore {
+    // UUID acts as a unique identifier for each listener/subscription. MessageSubscriptionWrapper houses the subscription and the serial of when it was attached or resumed.
+    var subscriptions: [UUID: MessageSubscriptionWrapper] = [:]
+
+    // (CHA-M4a) A subscription can be registered to receive incoming messages. Adding a subscription has no side effects on the status of the room or the underlying realtime channel.
+    func addSubscription(uuid: UUID, subscription: MessageSubscriptionWrapper) {
+        subscriptions[uuid] = subscription
+    }
+
+    func setSerial(uuid: UUID, serial: String) {
+        subscriptions[uuid]?.serial = serial
+    }
+
+    func removeSubscription(uuid: UUID) {
+        subscriptions.removeValue(forKey: uuid)
+    }
+
+    func getSubscription(uuid: UUID) -> MessageSubscriptionWrapper? {
+        subscriptions[uuid]
     }
 }
