@@ -2,6 +2,7 @@ import Ably
 @testable import AblyChat
 import Testing
 
+@MainActor
 struct DefaultRoomTests {
     // MARK: - Fetching channels
 
@@ -14,7 +15,7 @@ struct DefaultRoomTests {
         ]
         let channels = MockChannels(channels: channelsList)
         let realtime = MockRealtime(channels: channels)
-        _ = try await DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), roomID: "basketball", options: .init(), logger: TestLogger(), lifecycleManagerFactory: MockRoomLifecycleManagerFactory())
+        _ = try DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), roomID: "basketball", options: .init(), logger: TestLogger(), lifecycleManagerFactory: MockRoomLifecycleManagerFactory())
 
         // Then: When it fetches a channel, it does so with the `attachOnSubscribe` channel option set to false
         let channelsGetArguments = channels.getArguments
@@ -32,7 +33,7 @@ struct DefaultRoomTests {
         let channels = MockChannels(channels: channelsList)
         let realtime = MockRealtime(channels: channels)
         let roomOptions = RoomOptions(presence: PresenceOptions(), occupancy: OccupancyOptions())
-        _ = try await DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), roomID: "basketball", options: roomOptions, logger: TestLogger(), lifecycleManagerFactory: MockRoomLifecycleManagerFactory())
+        _ = try DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), roomID: "basketball", options: roomOptions, logger: TestLogger(), lifecycleManagerFactory: MockRoomLifecycleManagerFactory())
 
         // Then: It fetches the …$chatMessages channel (which is used by messages, presence, and occupancy) only once, and the options with which it does so are the result of merging the options used by the presence feature and those used by the occupancy feature
         let channelsGetArguments = channels.getArguments
@@ -55,7 +56,7 @@ struct DefaultRoomTests {
         ]
         let channels = MockChannels(channels: channelsList)
         let realtime = MockRealtime(channels: channels)
-        let room = try await DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), roomID: "basketball", options: .init(), logger: TestLogger(), lifecycleManagerFactory: MockRoomLifecycleManagerFactory())
+        let room = try DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), roomID: "basketball", options: .init(), logger: TestLogger(), lifecycleManagerFactory: MockRoomLifecycleManagerFactory())
 
         // Then
         let defaultMessages = try #require(room.messages as? DefaultMessages)
@@ -72,7 +73,7 @@ struct DefaultRoomTests {
         ]
         let channels = MockChannels(channels: channelsList)
         let realtime = MockRealtime(channels: channels)
-        let room = try await DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), roomID: "basketball", options: .init(reactions: .init()), logger: TestLogger(), lifecycleManagerFactory: MockRoomLifecycleManagerFactory())
+        let room = try DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), roomID: "basketball", options: .init(reactions: .init()), logger: TestLogger(), lifecycleManagerFactory: MockRoomLifecycleManagerFactory())
 
         // Then
         let defaultReactions = try #require(room.reactions as? DefaultRoomReactions)
@@ -98,13 +99,13 @@ struct DefaultRoomTests {
             reactions: .init()
         )
         let lifecycleManagerFactory = MockRoomLifecycleManagerFactory()
-        _ = try await DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), roomID: "basketball", options: roomOptions, logger: TestLogger(), lifecycleManagerFactory: lifecycleManagerFactory)
+        _ = try DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), roomID: "basketball", options: roomOptions, logger: TestLogger(), lifecycleManagerFactory: lifecycleManagerFactory)
 
         // Then: It:
         // - fetches the channel that corresponds to each feature requested by the room options, plus the messages feature
         // - initializes the RoomLifecycleManager with a contributor for each fetched channel, and the feature assigned to each contributor is the feature, of the enabled features that correspond to that channel, which appears first in the CHA-RC2e list
         // - initializes the RoomLifecycleManager with a contributor for each feature requested by the room options, plus the messages feature
-        let lifecycleManagerCreationArguments = try #require(await lifecycleManagerFactory.createManagerArguments.first)
+        let lifecycleManagerCreationArguments = try #require(lifecycleManagerFactory.createManagerArguments.first)
         let expectedFeatures: [RoomFeature] = [.messages, .reactions] // i.e. since messages and presence share a channel, we create a single contributor for this channel and its assigned feature is messages
         #expect(lifecycleManagerCreationArguments.contributors.count == expectedFeatures.count)
         #expect(Set(lifecycleManagerCreationArguments.contributors.map(\.feature)) == Set(expectedFeatures))
@@ -131,14 +132,14 @@ struct DefaultRoomTests {
         let channels = MockChannels(channels: channelsList)
         let realtime = MockRealtime(channels: channels)
         let lifecycleManagerFactory = MockRoomLifecycleManagerFactory()
-        _ = try await DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), roomID: "basketball", options: .allFeaturesEnabled, logger: TestLogger(), lifecycleManagerFactory: lifecycleManagerFactory)
+        _ = try DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), roomID: "basketball", options: .allFeaturesEnabled, logger: TestLogger(), lifecycleManagerFactory: lifecycleManagerFactory)
 
         // Then: The array of contributors with which it initializes the RoomLifecycleManager are in the same order as the following list:
         //
         // messages, presence, typing, reactions, occupancy
         //
         // (note that we do not say that it is the _same_ list, because we combine multiple features into a single contributor)
-        let lifecycleManagerCreationArguments = try #require(await lifecycleManagerFactory.createManagerArguments.first)
+        let lifecycleManagerCreationArguments = try #require(lifecycleManagerFactory.createManagerArguments.first)
         #expect(lifecycleManagerCreationArguments.contributors.map(\.feature) == [.messages, .typing, .reactions])
     }
 
@@ -171,7 +172,7 @@ struct DefaultRoomTests {
         }
         let channels = MockChannels(channels: channelsList)
         let realtime = MockRealtime(channels: channels)
-        let room = try await DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), roomID: "basketball", options: roomOptions, logger: TestLogger(), lifecycleManagerFactory: MockRoomLifecycleManagerFactory())
+        let room = try DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), roomID: "basketball", options: roomOptions, logger: TestLogger(), lifecycleManagerFactory: MockRoomLifecycleManagerFactory())
 
         // When: We call the room’s getter for that feature
         // Then: It returns an object (i.e. does not `fatalError()`)
@@ -208,10 +209,10 @@ struct DefaultRoomTests {
         let lifecycleManager = MockRoomLifecycleManager(attachResult: managerAttachResult)
         let lifecycleManagerFactory = MockRoomLifecycleManagerFactory(manager: lifecycleManager)
 
-        let room = try await DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), roomID: "basketball", options: .init(), logger: TestLogger(), lifecycleManagerFactory: lifecycleManagerFactory)
+        let room = try DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), roomID: "basketball", options: .init(), logger: TestLogger(), lifecycleManagerFactory: lifecycleManagerFactory)
 
         // When: `attach()` is called on the room
-        let result = await Result { () async throws(ARTErrorInfo) in
+        let result = await Result { @Sendable () async throws(ARTErrorInfo) in
             do {
                 try await room.attach()
             } catch {
@@ -222,7 +223,7 @@ struct DefaultRoomTests {
 
         // Then: It calls through to the `performAttachOperation()` method on the room lifecycle manager
         #expect(Result.areIdentical(result, managerAttachResult))
-        #expect(await lifecycleManager.attachCallCount == 1)
+        #expect(lifecycleManager.attachCallCount == 1)
     }
 
     // MARK: - Detach
@@ -244,10 +245,10 @@ struct DefaultRoomTests {
         let lifecycleManager = MockRoomLifecycleManager(detachResult: managerDetachResult)
         let lifecycleManagerFactory = MockRoomLifecycleManagerFactory(manager: lifecycleManager)
 
-        let room = try await DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), roomID: "basketball", options: .init(), logger: TestLogger(), lifecycleManagerFactory: lifecycleManagerFactory)
+        let room = try DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), roomID: "basketball", options: .init(), logger: TestLogger(), lifecycleManagerFactory: lifecycleManagerFactory)
 
         // When: `detach()` is called on the room
-        let result = await Result { () async throws(ARTErrorInfo) in
+        let result = await Result { @Sendable () async throws(ARTErrorInfo) in
             do {
                 try await room.detach()
             } catch {
@@ -258,7 +259,7 @@ struct DefaultRoomTests {
 
         // Then: It calls through to the `performDetachOperation()` method on the room lifecycle manager
         #expect(Result.areIdentical(result, managerDetachResult))
-        #expect(await lifecycleManager.detachCallCount == 1)
+        #expect(lifecycleManager.detachCallCount == 1)
     }
 
     // MARK: - Release
@@ -276,7 +277,7 @@ struct DefaultRoomTests {
         let lifecycleManager = MockRoomLifecycleManager()
         let lifecycleManagerFactory = MockRoomLifecycleManagerFactory(manager: lifecycleManager)
 
-        let room = try await DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), roomID: "basketball", options: .init(), logger: TestLogger(), lifecycleManagerFactory: lifecycleManagerFactory)
+        let room = try DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), roomID: "basketball", options: .init(), logger: TestLogger(), lifecycleManagerFactory: lifecycleManagerFactory)
 
         // When: `release()` is called on the room
         await room.release()
@@ -284,7 +285,7 @@ struct DefaultRoomTests {
         // Then: It:
         // 1. calls `performReleaseOperation()` on the room lifecycle manager
         // 2. calls `channels.release()` with the name of each of the features’ channels
-        #expect(await lifecycleManager.releaseCallCount == 1)
+        #expect(lifecycleManager.releaseCallCount == 1)
         #expect(Set(channels.releaseArguments) == Set(channelsList.map(\.name)))
     }
 
@@ -304,10 +305,10 @@ struct DefaultRoomTests {
         let lifecycleManager = MockRoomLifecycleManager(roomStatus: lifecycleManagerRoomStatus)
         let lifecycleManagerFactory = MockRoomLifecycleManagerFactory(manager: lifecycleManager)
 
-        let room = try await DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), roomID: "basketball", options: .init(), logger: TestLogger(), lifecycleManagerFactory: lifecycleManagerFactory)
+        let room = try DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), roomID: "basketball", options: .init(), logger: TestLogger(), lifecycleManagerFactory: lifecycleManagerFactory)
 
         // Then: The `status` property returns that of the room lifecycle manager
-        #expect(await room.status == lifecycleManagerRoomStatus)
+        #expect(room.status == lifecycleManagerRoomStatus)
     }
 
     @Test
@@ -322,15 +323,15 @@ struct DefaultRoomTests {
         let lifecycleManager = MockRoomLifecycleManager()
         let lifecycleManagerFactory = MockRoomLifecycleManagerFactory(manager: lifecycleManager)
 
-        let room = try await DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), roomID: "basketball", options: .init(), logger: TestLogger(), lifecycleManagerFactory: lifecycleManagerFactory)
+        let room = try DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), roomID: "basketball", options: .init(), logger: TestLogger(), lifecycleManagerFactory: lifecycleManagerFactory)
 
         // When: The room lifecycle manager emits a status change through `subscribeToState`
         let managerStatusChange = RoomStatusChange(current: .detached, previous: .detaching) // arbitrary
-        let roomStatusSubscription = await room.onStatusChange()
-        await lifecycleManager.emitStatusChange(managerStatusChange)
+        let roomStatusSubscription = room.onStatusChange()
+        lifecycleManager.emitStatusChange(managerStatusChange)
 
         // Then: The room emits this status change through `onStatusChange`
-        let roomStatusChange = try #require(await roomStatusSubscription.first { _ in true })
+        let roomStatusChange = try #require(await roomStatusSubscription.first { @Sendable _ in true })
         #expect(roomStatusChange == managerStatusChange)
     }
 }

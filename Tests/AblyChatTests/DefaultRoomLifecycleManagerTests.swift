@@ -2,6 +2,7 @@ import Ably
 @testable import AblyChat
 import Testing
 
+@MainActor
 struct DefaultRoomLifecycleManagerTests {
     // MARK: - Test helpers
 
@@ -58,8 +59,8 @@ struct DefaultRoomLifecycleManagerTests {
         forTestingWhatHappensWhenHasTransientDisconnectTimeoutForTheseContributorIDs idsOfContributorsWithTransientDisconnectTimeout: Set<MockRoomLifecycleContributor.ID>? = nil,
         contributors: [MockRoomLifecycleContributor] = [],
         clock: SimpleClock = MockSimpleClock()
-    ) async -> DefaultRoomLifecycleManager<MockRoomLifecycleContributor> {
-        await .init(
+    ) -> DefaultRoomLifecycleManager<MockRoomLifecycleContributor> {
+        .init(
             testsOnly_status: status,
             testsOnly_pendingDiscontinuityEvents: pendingDiscontinuityEvents,
             testsOnly_idsOfContributorsWithTransientDisconnectTimeout: idsOfContributorsWithTransientDisconnectTimeout,
@@ -91,7 +92,7 @@ struct DefaultRoomLifecycleManagerTests {
 
     /// Given a room lifecycle manager and a channel state change, this method will return once the manager has performed all of the side effects that it will perform as a result of receiving this state change. You can provide a function which will be called after ``waitForManager`` has started listening for the manager’s “state change handled” notifications.
     func waitForManager(_ manager: DefaultRoomLifecycleManager<some RoomLifecycleContributor>, toHandleContributorStateChange stateChange: ARTChannelStateChange, during action: () async -> Void) async {
-        let subscription = await manager.testsOnly_subscribeToHandledContributorStateChanges()
+        let subscription = manager.testsOnly_subscribeToHandledContributorStateChanges()
         async let handledSignal = subscription.first { $0 === stateChange }
         await action()
         _ = await handledSignal
@@ -99,7 +100,7 @@ struct DefaultRoomLifecycleManagerTests {
 
     /// Given a room lifecycle manager and the ID of a transient disconnect timeout, this method will return once the manager has performed all of the side effects that it will perform as a result of creating that timeout. You can provide a function which will be called after ``waitForManager`` has started listening for the manager’s “transient disconnect timeout handled” notifications.
     func waitForManager(_ manager: DefaultRoomLifecycleManager<some RoomLifecycleContributor>, toHandleTransientDisconnectTimeoutWithID id: UUID, during action: () async -> Void) async {
-        let subscription = await manager.testsOnly_subscribeToHandledTransientDisconnectTimeouts()
+        let subscription = manager.testsOnly_subscribeToHandledTransientDisconnectTimeouts()
         async let handledSignal = subscription.first { $0 == id }
         await action()
         _ = await handledSignal
@@ -111,9 +112,9 @@ struct DefaultRoomLifecycleManagerTests {
     // @spec CHA-RS3
     @Test
     func current_startsAsInitialized() async {
-        let manager = await createManager()
+        let manager = createManager()
 
-        #expect(await manager.roomStatus == .initialized)
+        #expect(manager.roomStatus == .initialized)
     }
 
     // MARK: - ATTACH operation
@@ -123,20 +124,20 @@ struct DefaultRoomLifecycleManagerTests {
     func attach_whenAlreadyAttached() async throws {
         // Given: A DefaultRoomLifecycleManager in the ATTACHED status
         let contributor = createContributor()
-        let manager = await createManager(forTestingWhatHappensWhenCurrentlyIn: .attached, contributors: [contributor])
+        let manager = createManager(forTestingWhatHappensWhenCurrentlyIn: .attached, contributors: [contributor])
 
         // When: `performAttachOperation()` is called on the lifecycle manager
         try await manager.performAttachOperation()
 
         // Then: The room attach operation succeeds, and no attempt is made to attach a contributor (which we’ll consider as satisfying the spec’s requirement that a "no-op" happen)
-        #expect(await contributor.mockChannel.attachCallCount == 0)
+        #expect(contributor.mockChannel.attachCallCount == 0)
     }
 
     // @spec CHA-RL1b
     @Test
     func attach_whenReleasing() async throws {
         // Given: A DefaultRoomLifecycleManager in the RELEASING status
-        let manager = await createManager(
+        let manager = createManager(
             forTestingWhatHappensWhenCurrentlyIn: .releasing(releaseOperationID: UUID() /* arbitrary */ )
         )
 
@@ -153,7 +154,7 @@ struct DefaultRoomLifecycleManagerTests {
     @Test
     func attach_whenReleased() async throws {
         // Given: A DefaultRoomLifecycleManager in the RELEASED status
-        let manager = await createManager(forTestingWhatHappensWhenCurrentlyIn: .released)
+        let manager = createManager(forTestingWhatHappensWhenCurrentlyIn: .released)
 
         // When: `performAttachOperation()` is called on the lifecycle manager
         // Then: It throws a roomIsReleased error
@@ -169,7 +170,7 @@ struct DefaultRoomLifecycleManagerTests {
     func attach_ifOtherOperationInProgress_waitsForItToComplete() async throws {
         // Given: A DefaultRoomLifecycleManager with a DETACH lifecycle operation in progress (the fact that it is a DETACH is not important; it is just an operation whose execution it is easy to prolong and subsequently complete, which is helpful for this test)
         let contributorDetachOperation = SignallableChannelOperation()
-        let manager = await createManager(
+        let manager = createManager(
             contributors: [
                 createContributor(
                     // Arbitrary, allows the ATTACH to eventually complete
@@ -183,7 +184,7 @@ struct DefaultRoomLifecycleManagerTests {
         let detachOperationID = UUID()
         let attachOperationID = UUID()
 
-        let statusChangeSubscription = await manager.onRoomStatusChange(bufferingPolicy: .unbounded)
+        let statusChangeSubscription = manager.onRoomStatusChange(bufferingPolicy: .unbounded)
         // Wait for the manager to enter DETACHING; this our sign that the DETACH operation triggered in (1) has started
         async let detachingStatusChange = statusChangeSubscription.first { $0.current == .detaching }
 
@@ -191,7 +192,7 @@ struct DefaultRoomLifecycleManagerTests {
         async let _ = manager.performDetachOperation(testsOnly_forcingOperationID: detachOperationID)
         _ = await detachingStatusChange
 
-        let operationWaitEventSubscription = await manager.testsOnly_subscribeToOperationWaitEvents()
+        let operationWaitEventSubscription = manager.testsOnly_subscribeToOperationWaitEvents()
         async let attachedWaitingForDetachedEvent = operationWaitEventSubscription.first { operationWaitEvent in
             operationWaitEvent == .init(waitingOperationID: attachOperationID, waitedOperationID: detachOperationID)
         }
@@ -218,8 +219,8 @@ struct DefaultRoomLifecycleManagerTests {
         // Given: A DefaultRoomLifecycleManager, with a contributor on whom calling `attach()` will not complete until after the "Then" part of this test (the motivation for this is to suppress the room from transitioning to ATTACHED, so that we can assert its current status as being ATTACHING)
         let contributorAttachOperation = SignallableChannelOperation()
 
-        let manager = await createManager(contributors: [createContributor(attachBehavior: contributorAttachOperation.behavior)])
-        let statusChangeSubscription = await manager.onRoomStatusChange(bufferingPolicy: .unbounded)
+        let manager = createManager(contributors: [createContributor(attachBehavior: contributorAttachOperation.behavior)])
+        let statusChangeSubscription = manager.onRoomStatusChange(bufferingPolicy: .unbounded)
         async let statusChange = statusChangeSubscription.first { _ in true }
 
         // When: `performAttachOperation()` is called on the lifecycle manager
@@ -228,7 +229,7 @@ struct DefaultRoomLifecycleManagerTests {
         // Then: It emits a status change to ATTACHING, and its current status is ATTACHING
         #expect(try #require(await statusChange).current == .attaching(error: nil))
 
-        #expect(await manager.roomStatus == .attaching(error: nil))
+        #expect(manager.roomStatus == .attaching(error: nil))
 
         // Post-test: Now that we’ve seen the ATTACHING status, allow the contributor `attach` call to complete
         contributorAttachOperation.complete(behavior: .success)
@@ -240,9 +241,9 @@ struct DefaultRoomLifecycleManagerTests {
     func attach_attachesAllContributors_andWhenTheyAllAttachSuccessfully_transitionsToAttached() async throws {
         // Given: A DefaultRoomLifecycleManager, all of whose contributors’ calls to `attach` succeed
         let contributors = (1 ... 3).map { _ in createContributor(attachBehavior: .success) }
-        let manager = await createManager(contributors: contributors)
+        let manager = createManager(contributors: contributors)
 
-        let statusChangeSubscription = await manager.onRoomStatusChange(bufferingPolicy: .unbounded)
+        let statusChangeSubscription = manager.onRoomStatusChange(bufferingPolicy: .unbounded)
         async let attachedStatusChange = statusChangeSubscription.first { $0.current == .attached }
 
         // When: `performAttachOperation()` is called on the lifecycle manager
@@ -250,11 +251,11 @@ struct DefaultRoomLifecycleManagerTests {
 
         // Then: It calls `attach` on all the contributors, the room attach operation succeeds, it emits a status change to ATTACHED, and its current status is ATTACHED
         for contributor in contributors {
-            #expect(await contributor.mockChannel.attachCallCount > 0)
+            #expect(contributor.mockChannel.attachCallCount > 0)
         }
 
         _ = try #require(await attachedStatusChange, "Expected status change to ATTACHED")
-        try #require(await manager.roomStatus == .attached)
+        try #require(manager.roomStatus == .attached)
     }
 
     // @spec CHA-RL1g2
@@ -266,7 +267,7 @@ struct DefaultRoomLifecycleManagerTests {
             contributors[1].id: .init(error: .init(domain: "SomeDomain", code: 123) /* arbitrary */ ),
             contributors[2].id: .init(error: .init(domain: "SomeDomain", code: 456) /* arbitrary */ ),
         ]
-        let manager = await createManager(
+        let manager = createManager(
             forTestingWhatHappensWhenHasPendingDiscontinuityEvents: pendingDiscontinuityEvents,
             contributors: contributors
         )
@@ -279,13 +280,13 @@ struct DefaultRoomLifecycleManagerTests {
         // - clears all pending discontinuity events
         for contributor in contributors {
             let expectedPendingDiscontinuityEvent = pendingDiscontinuityEvents[contributor.id]
-            let emitDiscontinuityArguments = await contributor.emitDiscontinuityArguments
+            let emitDiscontinuityArguments = contributor.emitDiscontinuityArguments
             try #require(emitDiscontinuityArguments.count == (expectedPendingDiscontinuityEvent == nil ? 0 : 1))
             #expect(emitDiscontinuityArguments.first == expectedPendingDiscontinuityEvent)
         }
 
         for contributor in contributors {
-            #expect(await manager.testsOnly_pendingDiscontinuityEvent(for: contributor) == nil)
+            #expect(manager.testsOnly_pendingDiscontinuityEvent(for: contributor) == nil)
         }
     }
 
@@ -294,7 +295,7 @@ struct DefaultRoomLifecycleManagerTests {
     func attach_uponSuccess_clearsTransientDisconnectTimeouts() async throws {
         // Given: A DefaultRoomLifecycleManager, all of whose contributors’ calls to `attach` succeed
         let contributors = (1 ... 3).map { _ in createContributor(attachBehavior: .success) }
-        let manager = await createManager(
+        let manager = createManager(
             forTestingWhatHappensWhenHasTransientDisconnectTimeoutForTheseContributorIDs: [contributors[1].id],
             contributors: contributors
         )
@@ -303,7 +304,7 @@ struct DefaultRoomLifecycleManagerTests {
         try await manager.performAttachOperation()
 
         // Then: It clears all transient disconnect timeouts
-        #expect(await !manager.testsOnly_hasTransientDisconnectTimeoutForAnyContributor)
+        #expect(!manager.testsOnly_hasTransientDisconnectTimeoutForAnyContributor)
     }
 
     // @spec CHA-RL1h2
@@ -346,12 +347,12 @@ struct DefaultRoomLifecycleManagerTests {
             }
         }
 
-        let manager = await createManager(contributors: contributors)
+        let manager = createManager(contributors: contributors)
 
-        let roomStatusChangeSubscription = await manager.onRoomStatusChange(bufferingPolicy: .unbounded)
+        let roomStatusChangeSubscription = manager.onRoomStatusChange(bufferingPolicy: .unbounded)
         async let maybeSuspendedRoomStatusChange = roomStatusChangeSubscription.suspendedElements().first { _ in true }
 
-        let managerStatusChangeSubscription = await manager.testsOnly_onStatusChange()
+        let managerStatusChangeSubscription = manager.testsOnly_onStatusChange()
 
         // When: `performAttachOperation()` is called on the lifecycle manager
         async let roomAttachResult: Void = manager.performAttachOperation()
@@ -363,7 +364,7 @@ struct DefaultRoomLifecycleManagerTests {
         // 3. the room attach operation fails with this same error
         let suspendedRoomStatusChange = try #require(await maybeSuspendedRoomStatusChange)
 
-        #expect(await manager.roomStatus.isSuspended)
+        #expect(manager.roomStatus.isSuspended)
 
         var roomAttachError: Error?
         do {
@@ -372,7 +373,7 @@ struct DefaultRoomLifecycleManagerTests {
             roomAttachError = error
         }
 
-        for error in await [suspendedRoomStatusChange.error, manager.roomStatus.error, roomAttachError] {
+        for error in [suspendedRoomStatusChange.error, manager.roomStatus.error, roomAttachError] {
             #expect(isChatError(error, withCodeAndStatusCode: .fixedStatusCode(.messagesAttachmentFailed), cause: contributorAttachError))
         }
 
@@ -391,22 +392,24 @@ struct DefaultRoomLifecycleManagerTests {
             }
             return nil
         }
-        .first { _ in
+        .first { @Sendable _ in
             true
         })
 
         await retryOperationTask.value
 
         // We confirm that a RETRY happened by checking for its expected side effects:
-        #expect(await contributors[0].mockChannel.detachCallCount == 0) // RETRY doesn’t touch this since it’s the one that triggered the RETRY
-        #expect(await contributors[1].mockChannel.detachCallCount == 1) // From the CHA-RL5a RETRY detachment cycle
-        #expect(await contributors[2].mockChannel.detachCallCount == 1) // From the CHA-RL5a RETRY detachment cycle
+        #expect(contributors[0].mockChannel.detachCallCount == 0) // RETRY doesn’t touch this since it’s the one that triggered the RETRY
+        #expect(contributors[1].mockChannel.detachCallCount == 1) // From the CHA-RL5a RETRY detachment cycle
+        #expect(contributors[2].mockChannel.detachCallCount == 1) // From the CHA-RL5a RETRY detachment cycle
 
-        #expect(await contributors[0].mockChannel.attachCallCount == 2) // From the ATTACH operation and the CHA-RL5f RETRY attachment cycle
-        #expect(await contributors[1].mockChannel.attachCallCount == 1) // From the CHA-RL5f RETRY attachment cycle
-        #expect(await contributors[2].mockChannel.attachCallCount == 1) // From the CHA-RL5f RETRY attachment cycle
+        #expect(contributors[0].mockChannel.attachCallCount == 2) // From the ATTACH operation and the CHA-RL5f RETRY attachment cycle
+        #expect(contributors[1].mockChannel.attachCallCount == 1) // From the CHA-RL5f RETRY attachment cycle
+        #expect(contributors[2].mockChannel.attachCallCount == 1) // From the CHA-RL5f RETRY attachment cycle
 
-        _ = try #require(await roomStatusChangeSubscription.first { $0.current == .attached }) // Room status changes to ATTACHED
+        _ = try #require(await roomStatusChangeSubscription.first { @Sendable statusChange in
+            statusChange.current == .attached
+        }) // Room status changes to ATTACHED
     }
 
     // @spec CHA-RL1h4
@@ -430,9 +433,9 @@ struct DefaultRoomLifecycleManagerTests {
             }
         }
 
-        let manager = await createManager(contributors: contributors)
+        let manager = createManager(contributors: contributors)
 
-        let statusChangeSubscription = await manager.onRoomStatusChange(bufferingPolicy: .unbounded)
+        let statusChangeSubscription = manager.onRoomStatusChange(bufferingPolicy: .unbounded)
         async let maybeFailedStatusChange = statusChangeSubscription.failedElements().first { _ in true }
 
         // When: `performAttachOperation()` is called on the lifecycle manager
@@ -444,7 +447,7 @@ struct DefaultRoomLifecycleManagerTests {
         // 3. the room attach operation fails with this same error
         let failedStatusChange = try #require(await maybeFailedStatusChange)
 
-        #expect(await manager.roomStatus.isFailed)
+        #expect(manager.roomStatus.isFailed)
 
         var roomAttachError: Error?
         do {
@@ -453,7 +456,7 @@ struct DefaultRoomLifecycleManagerTests {
             roomAttachError = error
         }
 
-        for error in await [failedStatusChange.error, manager.roomStatus.error, roomAttachError] {
+        for error in [failedStatusChange.error, manager.roomStatus.error, roomAttachError] {
             #expect(isChatError(error, withCodeAndStatusCode: .fixedStatusCode(.messagesAttachmentFailed), cause: contributorAttachError))
         }
     }
@@ -481,9 +484,9 @@ struct DefaultRoomLifecycleManagerTests {
             ),
         ]
 
-        let manager = await createManager(contributors: contributors)
+        let manager = createManager(contributors: contributors)
 
-        let managerStatusSubscription = await manager.testsOnly_onStatusChange()
+        let managerStatusSubscription = manager.testsOnly_onStatusChange()
 
         // When: `performAttachOperation()` is called on the lifecycle manager
         try? await manager.performAttachOperation()
@@ -502,13 +505,13 @@ struct DefaultRoomLifecycleManagerTests {
                 nil
             }
         }
-        .first { _ in true })
+        .first { @Sendable _ in true })
 
         _ = await rundownOperationTask.value
 
-        #expect(await contributors[0].mockChannel.detachCallCount > 0)
-        #expect(await contributors[2].mockChannel.detachCallCount > 0)
-        #expect(await contributors[1].mockChannel.detachCallCount == 0)
+        #expect(contributors[0].mockChannel.detachCallCount > 0)
+        #expect(contributors[2].mockChannel.detachCallCount > 0)
+        #expect(contributors[1].mockChannel.detachCallCount == 0)
     }
 
     // MARK: - DETACH operation
@@ -518,20 +521,20 @@ struct DefaultRoomLifecycleManagerTests {
     func detach_whenAlreadyDetached() async throws {
         // Given: A DefaultRoomLifecycleManager in the DETACHED status
         let contributor = createContributor()
-        let manager = await createManager(forTestingWhatHappensWhenCurrentlyIn: .detached, contributors: [contributor])
+        let manager = createManager(forTestingWhatHappensWhenCurrentlyIn: .detached, contributors: [contributor])
 
         // When: `performDetachOperation()` is called on the lifecycle manager
         try await manager.performDetachOperation()
 
         // Then: The room detach operation succeeds, and no attempt is made to detach a contributor (which we’ll consider as satisfying the spec’s requirement that a "no-op" happen)
-        #expect(await contributor.mockChannel.detachCallCount == 0)
+        #expect(contributor.mockChannel.detachCallCount == 0)
     }
 
     // @spec CHA-RL2b
     @Test
     func detach_whenReleasing() async throws {
         // Given: A DefaultRoomLifecycleManager in the RELEASING status
-        let manager = await createManager(
+        let manager = createManager(
             forTestingWhatHappensWhenCurrentlyIn: .releasing(releaseOperationID: UUID() /* arbitrary */ )
         )
 
@@ -548,7 +551,7 @@ struct DefaultRoomLifecycleManagerTests {
     @Test
     func detach_whenReleased() async throws {
         // Given: A DefaultRoomLifecycleManager in the RELEASED status
-        let manager = await createManager(forTestingWhatHappensWhenCurrentlyIn: .released)
+        let manager = createManager(forTestingWhatHappensWhenCurrentlyIn: .released)
 
         // When: `performAttachOperation()` is called on the lifecycle manager
         // Then: It throws a roomIsReleased error
@@ -563,7 +566,7 @@ struct DefaultRoomLifecycleManagerTests {
     @Test
     func detach_whenFailed() async throws {
         // Given: A DefaultRoomLifecycleManager in the FAILED status
-        let manager = await createManager(
+        let manager = createManager(
             forTestingWhatHappensWhenCurrentlyIn: .failed(
                 error: .createUnknownError() /* arbitrary */
             )
@@ -586,12 +589,12 @@ struct DefaultRoomLifecycleManagerTests {
 
         let contributor = createContributor(detachBehavior: contributorDetachOperation.behavior)
 
-        let manager = await createManager(
+        let manager = createManager(
             // We set a transient disconnect timeout, just so we can check that it gets cleared, as the spec point specifies
             forTestingWhatHappensWhenHasTransientDisconnectTimeoutForTheseContributorIDs: [contributor.id],
             contributors: [contributor]
         )
-        let statusChangeSubscription = await manager.onRoomStatusChange(bufferingPolicy: .unbounded)
+        let statusChangeSubscription = manager.onRoomStatusChange(bufferingPolicy: .unbounded)
         async let statusChange = statusChangeSubscription.first { _ in true }
 
         // When: `performDetachOperation()` is called on the lifecycle manager
@@ -599,8 +602,8 @@ struct DefaultRoomLifecycleManagerTests {
 
         // Then: It emits a status change to DETACHING, its current status is DETACHING, and it clears transient disconnect timeouts
         #expect(try #require(await statusChange).current == .detaching)
-        #expect(await manager.roomStatus == .detaching)
-        #expect(await !manager.testsOnly_hasTransientDisconnectTimeoutForAnyContributor)
+        #expect(manager.roomStatus == .detaching)
+        #expect(!manager.testsOnly_hasTransientDisconnectTimeoutForAnyContributor)
 
         // Post-test: Now that we’ve seen the DETACHING status, allow the contributor `detach` call to complete
         contributorDetachOperation.complete(behavior: .success)
@@ -612,9 +615,9 @@ struct DefaultRoomLifecycleManagerTests {
     func detach_detachesAllContributors_andWhenTheyAllDetachSuccessfully_transitionsToDetached() async throws {
         // Given: A DefaultRoomLifecycleManager, all of whose contributors’ calls to `detach` succeed
         let contributors = (1 ... 3).map { _ in createContributor(detachBehavior: .success) }
-        let manager = await createManager(contributors: contributors)
+        let manager = createManager(contributors: contributors)
 
-        let statusChangeSubscription = await manager.onRoomStatusChange(bufferingPolicy: .unbounded)
+        let statusChangeSubscription = manager.onRoomStatusChange(bufferingPolicy: .unbounded)
         async let detachedStatusChange = statusChangeSubscription.first { $0.current == .detached }
 
         // When: `performDetachOperation()` is called on the lifecycle manager
@@ -622,11 +625,11 @@ struct DefaultRoomLifecycleManagerTests {
 
         // Then: It calls `detach` on all the contributors, the room detach operation succeeds, it emits a status change to DETACHED, and its current status is DETACHED
         for contributor in contributors {
-            #expect(await contributor.mockChannel.detachCallCount > 0)
+            #expect(contributor.mockChannel.detachCallCount > 0)
         }
 
         _ = try #require(await detachedStatusChange, "Expected status change to DETACHED")
-        #expect(await manager.roomStatus == .detached)
+        #expect(manager.roomStatus == .detached)
     }
 
     // @spec CHA-RL2h1
@@ -649,9 +652,9 @@ struct DefaultRoomLifecycleManagerTests {
             createContributor(feature: .typing, detachBehavior: .success),
         ]
 
-        let manager = await createManager(contributors: contributors)
+        let manager = createManager(contributors: contributors)
 
-        let statusChangeSubscription = await manager.onRoomStatusChange(bufferingPolicy: .unbounded)
+        let statusChangeSubscription = manager.onRoomStatusChange(bufferingPolicy: .unbounded)
         async let maybeFailedStatusChange = statusChangeSubscription.failedElements().first { _ in true }
 
         // When: `performDetachOperation()` is called on the lifecycle manager
@@ -667,7 +670,7 @@ struct DefaultRoomLifecycleManagerTests {
         // - calls `detach` on all of the contributors
         // - emits a status change to FAILED and the call to `performDetachOperation()` fails; the error associated with the status change and the `performDetachOperation()` has the *DetachmentFailed code corresponding to contributor 1’s feature, and its `cause` is the error thrown by contributor 1’s `detach()` call (contributor 1 because it’s the "first feature to fail" as the spec says)
         for contributor in contributors {
-            #expect(await contributor.mockChannel.detachCallCount > 0)
+            #expect(contributor.mockChannel.detachCallCount > 0)
         }
 
         let failedStatusChange = try #require(await maybeFailedStatusChange)
@@ -695,19 +698,19 @@ struct DefaultRoomLifecycleManagerTests {
         let contributor = createContributor(initialState: .attached, detachBehavior: .fromFunction(detachImpl))
         let clock = MockSimpleClock()
 
-        let manager = await createManager(contributors: [contributor], clock: clock)
+        let manager = createManager(contributors: [contributor], clock: clock)
 
-        let statusChangeSubscription = await manager.onRoomStatusChange(bufferingPolicy: .unbounded)
+        let statusChangeSubscription = manager.onRoomStatusChange(bufferingPolicy: .unbounded)
         async let asyncLetStatusChanges = Array(statusChangeSubscription.prefix(2))
 
         // When: `performDetachOperation()` is called on the manager
         try await manager.performDetachOperation()
 
         // Then: It attempts to detach the channel 3 times, waiting 250ms between each attempt, the room transitions from DETACHING to DETACHED with no status updates in between, and the call to `performDetachOperation()` succeeds
-        #expect(await contributor.mockChannel.detachCallCount == 3)
+        #expect(contributor.mockChannel.detachCallCount == 3)
 
         // We use "did it call clock.sleep(…)?" as a good-enough proxy for the question "did it wait for the right amount of time at the right moment?"
-        #expect(await clock.sleepCallArguments == Array(repeating: 0.25, count: 2))
+        #expect(clock.sleepCallArguments == Array(repeating: 0.25, count: 2))
 
         #expect(await asyncLetStatusChanges.map(\.current) == [.detaching, .detached])
     }
@@ -719,13 +722,13 @@ struct DefaultRoomLifecycleManagerTests {
     func release_whenAlreadyReleased() async {
         // Given: A DefaultRoomLifecycleManager in the RELEASED status
         let contributor = createContributor()
-        let manager = await createManager(forTestingWhatHappensWhenCurrentlyIn: .released, contributors: [contributor])
+        let manager = createManager(forTestingWhatHappensWhenCurrentlyIn: .released, contributors: [contributor])
 
         // When: `performReleaseOperation()` is called on the lifecycle manager
         await manager.performReleaseOperation()
 
         // Then: The room release operation succeeds, and no attempt is made to detach a contributor (which we’ll consider as satisfying the spec’s requirement that a "no-op" happen)
-        #expect(await contributor.mockChannel.detachCallCount == 0)
+        #expect(contributor.mockChannel.detachCallCount == 0)
     }
 
     @Test(
@@ -739,9 +742,9 @@ struct DefaultRoomLifecycleManagerTests {
     func release_whenDetachedOrInitialized(status: DefaultRoomLifecycleManager<MockRoomLifecycleContributor>.Status) async throws {
         // Given: A DefaultRoomLifecycleManager in the DETACHED or INITIALIZED status
         let contributor = createContributor()
-        let manager = await createManager(forTestingWhatHappensWhenCurrentlyIn: status, contributors: [contributor])
+        let manager = createManager(forTestingWhatHappensWhenCurrentlyIn: status, contributors: [contributor])
 
-        let statusChangeSubscription = await manager.onRoomStatusChange(bufferingPolicy: .unbounded)
+        let statusChangeSubscription = manager.onRoomStatusChange(bufferingPolicy: .unbounded)
         async let statusChange = statusChangeSubscription.first { _ in true }
 
         // When: `performReleaseOperation()` is called on the lifecycle manager
@@ -749,8 +752,8 @@ struct DefaultRoomLifecycleManagerTests {
 
         // Then: The room release operation succeeds, the room transitions to RELEASED, and no attempt is made to detach a contributor (which we’ll consider as satisfying the spec’s requirement that the transition be "immediate")
         #expect(try #require(await statusChange).current == .released)
-        #expect(await manager.roomStatus == .released)
-        #expect(await contributor.mockChannel.detachCallCount == 0)
+        #expect(manager.roomStatus == .released)
+        #expect(contributor.mockChannel.detachCallCount == 0)
     }
 
     // @spec CHA-RL3c
@@ -762,7 +765,7 @@ struct DefaultRoomLifecycleManagerTests {
             // This allows us to prolong the execution of the RELEASE triggered in (1)
             detachBehavior: contributorDetachOperation.behavior
         )
-        let manager = await createManager(
+        let manager = createManager(
             forTestingWhatHappensWhenCurrentlyIn: .attached, // arbitrary non-{RELEASED, DETACHED, INITIALIZED} status, so that the first RELEASE gets as far as CHA-RL3l
             contributors: [contributor]
         )
@@ -770,7 +773,7 @@ struct DefaultRoomLifecycleManagerTests {
         let firstReleaseOperationID = UUID()
         let secondReleaseOperationID = UUID()
 
-        let statusChangeSubscription = await manager.onRoomStatusChange(bufferingPolicy: .unbounded)
+        let statusChangeSubscription = manager.onRoomStatusChange(bufferingPolicy: .unbounded)
         // Wait for the manager to enter RELEASING; this our sign that the DETACH operation triggered in (1) has started
         async let releasingStatusChange = statusChangeSubscription.first { $0.current == .releasing }
 
@@ -778,7 +781,7 @@ struct DefaultRoomLifecycleManagerTests {
         async let _ = manager.performReleaseOperation(testsOnly_forcingOperationID: firstReleaseOperationID)
         _ = await releasingStatusChange
 
-        let operationWaitEventSubscription = await manager.testsOnly_subscribeToOperationWaitEvents()
+        let operationWaitEventSubscription = manager.testsOnly_subscribeToOperationWaitEvents()
         async let secondReleaseWaitingForFirstReleaseEvent = operationWaitEventSubscription.first { operationWaitEvent in
             operationWaitEvent == .init(waitingOperationID: secondReleaseOperationID, waitedOperationID: firstReleaseOperationID)
         }
@@ -799,7 +802,7 @@ struct DefaultRoomLifecycleManagerTests {
         // Check that the second RELEASE completes
         await secondReleaseResult
 
-        #expect(await contributor.mockChannel.detachCallCount == 1)
+        #expect(contributor.mockChannel.detachCallCount == 1)
     }
 
     // @spec CHA-RL3l
@@ -810,13 +813,13 @@ struct DefaultRoomLifecycleManagerTests {
 
         let contributor = createContributor(detachBehavior: contributorDetachOperation.behavior)
 
-        let manager = await createManager(
+        let manager = createManager(
             forTestingWhatHappensWhenCurrentlyIn: .attached, // arbitrary non-{RELEASED, DETACHED, INITIALIZED} status, so that we get as far as CHA-RL3l
             // We set a transient disconnect timeout, just so we can check that it gets cleared, as the spec point specifies
             forTestingWhatHappensWhenHasTransientDisconnectTimeoutForTheseContributorIDs: [contributor.id],
             contributors: [contributor]
         )
-        let statusChangeSubscription = await manager.onRoomStatusChange(bufferingPolicy: .unbounded)
+        let statusChangeSubscription = manager.onRoomStatusChange(bufferingPolicy: .unbounded)
         async let statusChange = statusChangeSubscription.first { _ in true }
 
         // When: `performReleaseOperation()` is called on the lifecycle manager
@@ -824,8 +827,8 @@ struct DefaultRoomLifecycleManagerTests {
 
         // Then: It emits a status change to RELEASING, its current status is RELEASING, and it clears transient disconnect timeouts
         #expect(try #require(await statusChange).current == .releasing)
-        #expect(await manager.roomStatus == .releasing)
-        #expect(await !manager.testsOnly_hasTransientDisconnectTimeoutForAnyContributor)
+        #expect(manager.roomStatus == .releasing)
+        #expect(!manager.testsOnly_hasTransientDisconnectTimeoutForAnyContributor)
 
         // Post-test: Now that we’ve seen the RELEASING status, allow the contributor `detach` call to complete
         contributorDetachOperation.complete(behavior: .success)
@@ -846,12 +849,12 @@ struct DefaultRoomLifecycleManagerTests {
             createContributor(initialState: .detached /* arbitrary non-FAILED */, detachBehavior: .success),
         ]
 
-        let manager = await createManager(
+        let manager = createManager(
             forTestingWhatHappensWhenCurrentlyIn: .attached, // arbitrary non-{RELEASED, DETACHED, INITIALIZED} status, so that we get as far as CHA-RL3l
             contributors: contributors
         )
 
-        let statusChangeSubscription = await manager.onRoomStatusChange(bufferingPolicy: .unbounded)
+        let statusChangeSubscription = manager.onRoomStatusChange(bufferingPolicy: .unbounded)
         async let releasedStatusChange = statusChangeSubscription.first { $0.current == .released }
 
         // When: `performReleaseOperation()` is called on the lifecycle manager
@@ -863,14 +866,14 @@ struct DefaultRoomLifecycleManagerTests {
         // - the room transitions to RELEASED
         // - the call to `performReleaseOperation()` completes
         for nonFailedContributor in [contributors[0], contributors[2]] {
-            #expect(await nonFailedContributor.mockChannel.detachCallCount == 1)
+            #expect(nonFailedContributor.mockChannel.detachCallCount == 1)
         }
 
-        #expect(await contributors[1].mockChannel.detachCallCount == 0)
+        #expect(contributors[1].mockChannel.detachCallCount == 0)
 
         _ = await releasedStatusChange
 
-        #expect(await manager.roomStatus == .released)
+        #expect(manager.roomStatus == .released)
     }
 
     // @spec CHA-RL3f
@@ -889,7 +892,7 @@ struct DefaultRoomLifecycleManagerTests {
 
         let clock = MockSimpleClock()
 
-        let manager = await createManager(
+        let manager = createManager(
             forTestingWhatHappensWhenCurrentlyIn: .attached, // arbitrary non-{RELEASED, DETACHED, INITIALIZED} status, so that we get as far as CHA-RL3l
             contributors: [contributor],
             clock: clock
@@ -899,10 +902,10 @@ struct DefaultRoomLifecycleManagerTests {
         await manager.performReleaseOperation()
 
         // It: calls `detach()` on the channel 3 times, with a 0.25s pause between each attempt, and the call to `performReleaseOperation` completes
-        #expect(await contributor.mockChannel.detachCallCount == 3)
+        #expect(contributor.mockChannel.detachCallCount == 3)
 
         // We use "did it call clock.sleep(…)?" as a good-enough proxy for the question "did it wait for the right amount of time at the right moment?"
-        #expect(await clock.sleepCallArguments == Array(repeating: 0.25, count: 2))
+        #expect(clock.sleepCallArguments == Array(repeating: 0.25, count: 2))
     }
 
     // @specOneOf(2/2) CHA-RL3e - Tests that this spec point suppresses CHA-RL3f retries
@@ -913,13 +916,13 @@ struct DefaultRoomLifecycleManagerTests {
 
         let clock = MockSimpleClock()
 
-        let manager = await createManager(
+        let manager = createManager(
             forTestingWhatHappensWhenCurrentlyIn: .attached, // arbitrary non-{RELEASED, DETACHED, INITIALIZED} status, so that we get as far as CHA-RL3l
             contributors: [contributor],
             clock: clock
         )
 
-        let statusChangeSubscription = await manager.onRoomStatusChange(bufferingPolicy: .unbounded)
+        let statusChangeSubscription = manager.onRoomStatusChange(bufferingPolicy: .unbounded)
         async let releasedStatusChange = statusChangeSubscription.first { $0.current == .released }
 
         // When: `performReleaseOperation()` is called on the lifecycle manager
@@ -930,14 +933,14 @@ struct DefaultRoomLifecycleManagerTests {
         // - it waits 0.25s (TODO: confirm my interpretation of CHA-RL3f, which is that the wait still happens, but is not followed by a retry; have asked in https://github.com/ably/specification/pull/200/files#r1765372854)
         // - the room transitions to RELEASED
         // - the call to `performReleaseOperation()` completes
-        #expect(await contributor.mockChannel.detachCallCount == 1)
+        #expect(contributor.mockChannel.detachCallCount == 1)
 
         // We use "did it call clock.sleep(…)?" as a good-enough proxy for the question "did it wait for the right amount of time at the right moment?"
-        #expect(await clock.sleepCallArguments == [0.25])
+        #expect(clock.sleepCallArguments == [0.25])
 
         _ = await releasedStatusChange
 
-        #expect(await manager.roomStatus == .released)
+        #expect(manager.roomStatus == .released)
     }
 
     // MARK: - RETRY operation
@@ -970,15 +973,15 @@ struct DefaultRoomLifecycleManagerTests {
             ),
         ]
 
-        let manager = await createManager(contributors: contributors)
+        let manager = createManager(contributors: contributors)
 
         // When: `performRetryOperation(triggeredByContributor:errorForSuspendedStatus:)` is called on the manager
         await manager.performRetryOperation(triggeredByContributor: contributors[0], errorForSuspendedStatus: .createUnknownError() /* arbitrary */ )
 
         // Then: The manager calls `detach` on all contributors except that which triggered the RETRY (I’m using this, combined with the CHA-RL5b and CHA-RL5c tests, as a good-enough way of checking that a CHA-RL2f detachment cycle happened)
-        #expect(await contributors[0].mockChannel.detachCallCount == 0)
-        #expect(await contributors[1].mockChannel.detachCallCount == 1)
-        #expect(await contributors[2].mockChannel.detachCallCount == 1)
+        #expect(contributors[0].mockChannel.detachCallCount == 0)
+        #expect(contributors[1].mockChannel.detachCallCount == 1)
+        #expect(contributors[2].mockChannel.detachCallCount == 1)
     }
 
     // @specOneOf(2/2) CHA-RL5a - Verifies that, when the RETRY operation triggers a CHA-RL2f detachment cycle, the retry behaviour of CHA-RL2h3 is performed.
@@ -1021,7 +1024,7 @@ struct DefaultRoomLifecycleManagerTests {
 
         let clock = MockSimpleClock()
 
-        let manager = await createManager(contributors: contributors, clock: clock)
+        let manager = createManager(contributors: contributors, clock: clock)
 
         // When: `performRetryOperation(triggeredByContributor:errorForSuspendedStatus:)` is called on the manager, triggered by a contributor that isn’t that at index 1
         await manager.performRetryOperation(triggeredByContributor: contributors[0], errorForSuspendedStatus: .createUnknownError() /* arbitrary */ )
@@ -1029,10 +1032,10 @@ struct DefaultRoomLifecycleManagerTests {
         // Then: The manager calls `detach` in sequence on all contributors except that which triggered the RETRY, stopping upon one of these `detach` calls throwing an error, then sleeps for 250ms, then performs these `detach` calls again
 
         // (Note that for simplicity of the test I’m not actually making assertions about the sequence in which events happen here)
-        #expect(await contributors[0].mockChannel.detachCallCount == 0)
-        #expect(await contributors[1].mockChannel.detachCallCount == 2)
-        #expect(await contributors[2].mockChannel.detachCallCount == 1)
-        #expect(await clock.sleepCallArguments == [0.25])
+        #expect(contributors[0].mockChannel.detachCallCount == 0)
+        #expect(contributors[1].mockChannel.detachCallCount == 2)
+        #expect(contributors[2].mockChannel.detachCallCount == 1)
+        #expect(clock.sleepCallArguments == [0.25])
     }
 
     // @spec CHA-RL5c
@@ -1054,9 +1057,9 @@ struct DefaultRoomLifecycleManagerTests {
             ),
         ]
 
-        let manager = await createManager(contributors: contributors)
+        let manager = createManager(contributors: contributors)
 
-        let roomStatusSubscription = await manager.onRoomStatusChange(bufferingPolicy: .unbounded)
+        let roomStatusSubscription = manager.onRoomStatusChange(bufferingPolicy: .unbounded)
         async let maybeFailedStatusChange = roomStatusSubscription.failedElements().first { _ in true }
 
         // When: `performRetryOperation(triggeredByContributor:errorForSuspendedStatus:)` is called on the manager, triggered by the contributor at index 0
@@ -1065,11 +1068,11 @@ struct DefaultRoomLifecycleManagerTests {
         // Then:
         // 1. (This is basically just testing the behaviour of CHA-RL2h1 again, plus the fact that we don’t try to detach the channel that triggered the RETRY) The manager calls `detach` in sequence on all contributors except that which triggered the RETRY, and enters the FAILED status, the associated error for this status being the *DetachmentFailed code corresponding to contributor 1’s feature, and its `cause` is contributor 1’s `errorReason`
         // 2. the RETRY operation is terminated (which we confirm here by checking that it has not attempted to attach any of the contributors, which shows us that CHA-RL5f didn’t happen)
-        #expect(await contributors[0].mockChannel.detachCallCount == 0)
-        #expect(await contributors[1].mockChannel.detachCallCount == 1)
-        #expect(await contributors[2].mockChannel.detachCallCount == 1)
+        #expect(contributors[0].mockChannel.detachCallCount == 0)
+        #expect(contributors[1].mockChannel.detachCallCount == 1)
+        #expect(contributors[2].mockChannel.detachCallCount == 1)
 
-        let roomStatus = await manager.roomStatus
+        let roomStatus = manager.roomStatus
         let failedStatusChange = try #require(await maybeFailedStatusChange)
 
         #expect(roomStatus.isFailed)
@@ -1078,7 +1081,7 @@ struct DefaultRoomLifecycleManagerTests {
         }
 
         for contributor in contributors {
-            #expect(await contributor.mockChannel.attachCallCount == 0)
+            #expect(contributor.mockChannel.attachCallCount == 0)
         }
     }
 
@@ -1140,11 +1143,11 @@ struct DefaultRoomLifecycleManagerTests {
             ),
         ]
 
-        let manager = await createManager(
+        let manager = createManager(
             contributors: contributors
         )
 
-        let roomStatusSubscription = await manager.onRoomStatusChange(bufferingPolicy: .unbounded)
+        let roomStatusSubscription = manager.onRoomStatusChange(bufferingPolicy: .unbounded)
         async let maybeFailedStatusChange = roomStatusSubscription.failedElements().first { _ in true }
 
         // When: `performRetryOperation(triggeredByContributor:errorForSuspendedStatus:)` is called on the manager, triggered by the aforementioned contributor
@@ -1158,7 +1161,7 @@ struct DefaultRoomLifecycleManagerTests {
 
         let failedStatusChange = try #require(await maybeFailedStatusChange)
 
-        let roomStatus = await manager.roomStatus
+        let roomStatus = manager.roomStatus
         #expect(roomStatus.isFailed)
 
         for error in [failedStatusChange.error, roomStatus.error] {
@@ -1166,7 +1169,7 @@ struct DefaultRoomLifecycleManagerTests {
         }
 
         for contributor in contributors {
-            #expect(await contributor.mockChannel.attachCallCount == 0)
+            #expect(contributor.mockChannel.attachCallCount == 0)
         }
     }
 
@@ -1211,11 +1214,11 @@ struct DefaultRoomLifecycleManagerTests {
             ),
         ]
 
-        let manager = await createManager(
+        let manager = createManager(
             contributors: contributors
         )
 
-        let roomStatusSubscription = await manager.onRoomStatusChange(bufferingPolicy: .unbounded)
+        let roomStatusSubscription = manager.onRoomStatusChange(bufferingPolicy: .unbounded)
         async let maybeAttachingStatusChange = roomStatusSubscription.attachingElements().first { _ in true }
 
         // When: `performRetryOperation(triggeredByContributor:errorForSuspendedStatus:)` is called on the manager, triggered by the aforementioned contributor
@@ -1227,7 +1230,7 @@ struct DefaultRoomLifecycleManagerTests {
         #expect(attachingStatusChange.error == nil)
 
         for contributor in contributors {
-            #expect(await contributor.mockChannel.attachCallCount == 1)
+            #expect(contributor.mockChannel.attachCallCount == 1)
         }
     }
 
@@ -1257,11 +1260,11 @@ struct DefaultRoomLifecycleManagerTests {
             ),
         ]
 
-        let manager = await createManager(
+        let manager = createManager(
             contributors: contributors
         )
 
-        let roomStatusSubscription = await manager.onRoomStatusChange(bufferingPolicy: .unbounded)
+        let roomStatusSubscription = manager.onRoomStatusChange(bufferingPolicy: .unbounded)
         async let attachedStatusChange = roomStatusSubscription.first { $0.current == .attached }
 
         // When: `performRetryOperation(triggeredByContributor:errorForSuspendedStatus:)` is called on the manager
@@ -1269,11 +1272,11 @@ struct DefaultRoomLifecycleManagerTests {
 
         // Then: The room performs a CHA-RL1e attachment cycle (we sufficiently satisfy ourselves of this fact by checking that it’s attempted to attach all of the channels), transitions to ATTACHED, and the RETRY operation completes
         for contributor in contributors {
-            #expect(await contributor.mockChannel.attachCallCount == 1)
+            #expect(contributor.mockChannel.attachCallCount == 1)
         }
 
         _ = try #require(await attachedStatusChange)
-        #expect(await manager.roomStatus == .attached)
+        #expect(manager.roomStatus == .attached)
     }
 
     // @specOneOf(3/3) CHA-RL5f - Tests the case where the CHA-RL1e attachment cycle fails
@@ -1305,14 +1308,14 @@ struct DefaultRoomLifecycleManagerTests {
             ),
         ]
 
-        let manager = await createManager(
+        let manager = createManager(
             contributors: contributors
         )
 
-        let roomStatusSubscription = await manager.onRoomStatusChange(bufferingPolicy: .unbounded)
+        let roomStatusSubscription = manager.onRoomStatusChange(bufferingPolicy: .unbounded)
         async let failedStatusChange = roomStatusSubscription.failedElements().first { _ in true }
 
-        let managerStatusSubscription = await manager.testsOnly_onStatusChange()
+        let managerStatusSubscription = manager.testsOnly_onStatusChange()
 
         // When: `performRetryOperation(triggeredByContributor:errorForSuspendedStatus:)` is called on the manager
         await manager.performRetryOperation(triggeredByContributor: contributors[0], errorForSuspendedStatus: .createUnknownError() /* arbitrary */ )
@@ -1327,20 +1330,20 @@ struct DefaultRoomLifecycleManagerTests {
                 nil
             }
         }
-        .first { _ in true })
+        .first { @Sendable _ in true })
 
         _ = await rundownOperationTask.value
 
-        #expect(await contributors[0].mockChannel.attachCallCount == 1)
-        #expect(await contributors[1].mockChannel.attachCallCount == 1)
-        #expect(await contributors[2].mockChannel.attachCallCount == 0)
+        #expect(contributors[0].mockChannel.attachCallCount == 1)
+        #expect(contributors[1].mockChannel.attachCallCount == 1)
+        #expect(contributors[2].mockChannel.attachCallCount == 0)
 
-        #expect(await contributors[0].mockChannel.detachCallCount == 1) // from CHA-RL1h5’s triggered RUNDOWN
-        #expect(await contributors[1].mockChannel.detachCallCount == 1) // from CHA-RL5a detachment cycle
-        #expect(await contributors[2].mockChannel.detachCallCount == 2) // from CHA-RL5a detachment cycle and CHA-RL1h5’s triggered RUNDOWN
+        #expect(contributors[0].mockChannel.detachCallCount == 1) // from CHA-RL1h5’s triggered RUNDOWN
+        #expect(contributors[1].mockChannel.detachCallCount == 1) // from CHA-RL5a detachment cycle
+        #expect(contributors[2].mockChannel.detachCallCount == 2) // from CHA-RL5a detachment cycle and CHA-RL1h5’s triggered RUNDOWN
 
         _ = try #require(await failedStatusChange)
-        #expect(await manager.roomStatus.isFailed)
+        #expect(manager.roomStatus.isFailed)
     }
 
     // MARK: - RUNDOWN operation
@@ -1368,7 +1371,7 @@ struct DefaultRoomLifecycleManagerTests {
             ),
         ]
 
-        let manager = await createManager(contributors: contributors)
+        let manager = createManager(contributors: contributors)
 
         // When: `performRundownOperation()` is called on the lifecycle manager
         await manager.performRundownOperation(errorForFailedStatus: .createUnknownError() /* arbitrary */ )
@@ -1378,9 +1381,9 @@ struct DefaultRoomLifecycleManagerTests {
         // - the lifecycle manager calls `detach` on contributors 0 and 2
         // - the lifecycle manager does not call `detach` on contributor 1
         // - the call to `performRundownOperation()` completes
-        #expect(await contributors[0].mockChannel.detachCallCount == 1)
-        #expect(await contributors[2].mockChannel.detachCallCount == 1)
-        #expect(await contributors[1].mockChannel.detachCallCount == 0)
+        #expect(contributors[0].mockChannel.detachCallCount == 1)
+        #expect(contributors[2].mockChannel.detachCallCount == 1)
+        #expect(contributors[1].mockChannel.detachCallCount == 0)
     }
 
     // @spec CHA-RL1h6 - see TODO on `performRundownOperation` for my interpretation of CHA-RL1h5, in which I introduce RUNDOWN
@@ -1402,13 +1405,13 @@ struct DefaultRoomLifecycleManagerTests {
             ),
         ]
 
-        let manager = await createManager(contributors: contributors)
+        let manager = createManager(contributors: contributors)
 
         // When: `performRundownOperation()` is called on the lifecycle manager
         await manager.performRundownOperation(errorForFailedStatus: .createUnknownError() /* arbitrary */ )
 
         // Then: the lifecycle manager calls `detach` twice on the contributor (i.e. it retries the failed detach)
-        #expect(await contributors[0].mockChannel.detachCallCount == 2)
+        #expect(contributors[0].mockChannel.detachCallCount == 2)
     }
 
     // MARK: - Handling contributor UPDATE events
@@ -1418,7 +1421,7 @@ struct DefaultRoomLifecycleManagerTests {
     func contributorUpdate_withResumedTrue_doesNothing() async throws {
         // Given: A DefaultRoomLifecycleManager, which has a contributor for which it has previously received an ATTACHED state change (so that we get through the CHA-RL4a2 check)
         let contributor = createContributor()
-        let manager = await createManager(contributors: [contributor])
+        let manager = createManager(contributors: [contributor])
 
         // This is to satisfy "for which it has previously received an ATTACHED state change"
         let previousContributorStateChange = ARTChannelStateChange(
@@ -1431,7 +1434,7 @@ struct DefaultRoomLifecycleManagerTests {
         )
 
         await waitForManager(manager, toHandleContributorStateChange: previousContributorStateChange) {
-            await contributor.mockChannel.emitStateChange(previousContributorStateChange)
+            contributor.mockChannel.emitStateChange(previousContributorStateChange)
         }
 
         // When: This contributor emits an UPDATE event with `resumed` flag set to true
@@ -1444,12 +1447,12 @@ struct DefaultRoomLifecycleManagerTests {
         )
 
         await waitForManager(manager, toHandleContributorStateChange: contributorStateChange) {
-            await contributor.mockChannel.emitStateChange(contributorStateChange)
+            contributor.mockChannel.emitStateChange(contributorStateChange)
         }
 
         // Then: The manager does not record a pending discontinuity event for this contributor, nor does it call `emitDiscontinuity` on the contributor; this shows us that the actions described in CHA-RL4a3 and CHA-RL4a4 haven’t been performed
-        #expect(await manager.testsOnly_pendingDiscontinuityEvent(for: contributor) == nil)
-        #expect(await contributor.emitDiscontinuityArguments.isEmpty)
+        #expect(manager.testsOnly_pendingDiscontinuityEvent(for: contributor) == nil)
+        #expect(contributor.emitDiscontinuityArguments.isEmpty)
     }
 
     // @specPartial CHA-RL4a2 - TODO: I have changed the criteria for deciding whether an ATTACHED status change represents a discontinuity, to be based on whether there was a previous ATTACHED state change instead of whether the `attach()` call has completed; see https://github.com/ably/specification/issues/239 and change this to @spec once we’re aligned with spec again
@@ -1457,7 +1460,7 @@ struct DefaultRoomLifecycleManagerTests {
     func contributorUpdate_withContributorNotPreviouslyAttached_doesNothing() async throws {
         // Given: A DefaultRoomLifecycleManager, which has a contributor for which it has not previously received an ATTACHED state change
         let contributor = createContributor()
-        let manager = await createManager(contributors: [contributor])
+        let manager = createManager(contributors: [contributor])
 
         // When: This contributor emits an UPDATE event with `resumed` flag set to false (so that we get through the CHA-RL4a1 check)
         let contributorStateChange = ARTChannelStateChange(
@@ -1469,12 +1472,12 @@ struct DefaultRoomLifecycleManagerTests {
         )
 
         await waitForManager(manager, toHandleContributorStateChange: contributorStateChange) {
-            await contributor.mockChannel.emitStateChange(contributorStateChange)
+            contributor.mockChannel.emitStateChange(contributorStateChange)
         }
 
         // Then: The manager does not record a pending discontinuity event for this contributor, nor does it call `emitDiscontinuity` on the contributor; this shows us that the actions described in CHA-RL4a3 and CHA-RL4a4 haven’t been performed
-        #expect(await manager.testsOnly_pendingDiscontinuityEvent(for: contributor) == nil)
-        #expect(await contributor.emitDiscontinuityArguments.isEmpty)
+        #expect(manager.testsOnly_pendingDiscontinuityEvent(for: contributor) == nil)
+        #expect(contributor.emitDiscontinuityArguments.isEmpty)
     }
 
     // @specOneOf(1/2) CHA-RL4a3
@@ -1482,7 +1485,7 @@ struct DefaultRoomLifecycleManagerTests {
     func contributorUpdate_withResumedFalse_withOperationInProgress_recordsPendingDiscontinuityEvent() async throws {
         // Given: A DefaultRoomLifecycleManager, with a room lifecycle operation in progress, and with a contributor for which it has previously received an ATTACHED state change
         let contributor = createContributor()
-        let manager = await createManager(
+        let manager = createManager(
             forTestingWhatHappensWhenCurrentlyIn: .attachingDueToAttachOperation(attachOperationID: UUID()), // case and ID arbitrary, just care that an operation is in progress
             contributors: [contributor]
         )
@@ -1498,7 +1501,7 @@ struct DefaultRoomLifecycleManagerTests {
         )
 
         await waitForManager(manager, toHandleContributorStateChange: previousContributorStateChange) {
-            await contributor.mockChannel.emitStateChange(previousContributorStateChange)
+            contributor.mockChannel.emitStateChange(previousContributorStateChange)
         }
 
         // When: This contributor emits an UPDATE event with `resumed` flag set to false
@@ -1511,11 +1514,11 @@ struct DefaultRoomLifecycleManagerTests {
         )
 
         await waitForManager(manager, toHandleContributorStateChange: contributorStateChange) {
-            await contributor.mockChannel.emitStateChange(contributorStateChange)
+            contributor.mockChannel.emitStateChange(contributorStateChange)
         }
 
         // Then: The manager records a pending discontinuity event for this contributor, and this discontinuity event has error equal to the contributor UPDATE event’s `reason`
-        let pendingDiscontinuityEvent = try #require(await manager.testsOnly_pendingDiscontinuityEvent(for: contributor))
+        let pendingDiscontinuityEvent = try #require(manager.testsOnly_pendingDiscontinuityEvent(for: contributor))
         #expect(pendingDiscontinuityEvent.error === contributorStateChange.reason)
     }
 
@@ -1525,7 +1528,7 @@ struct DefaultRoomLifecycleManagerTests {
         // Given: A DefaultRoomLifecycleManager, with a room lifecycle operation in progress, with a contributor for which it has previously received an ATTACHED state change, and with an existing pending discontinuity event for this contributor
         let contributor = createContributor()
         let existingPendingDiscontinuityEvent = DiscontinuityEvent(error: .createUnknownError())
-        let manager = await createManager(
+        let manager = createManager(
             forTestingWhatHappensWhenCurrentlyIn: .attachingDueToAttachOperation(attachOperationID: UUID()), // case and ID arbitrary, just care that an operation is in progress
             forTestingWhatHappensWhenHasPendingDiscontinuityEvents: [
                 contributor.id: existingPendingDiscontinuityEvent,
@@ -1544,7 +1547,7 @@ struct DefaultRoomLifecycleManagerTests {
         )
 
         await waitForManager(manager, toHandleContributorStateChange: previousContributorStateChange) {
-            await contributor.mockChannel.emitStateChange(previousContributorStateChange)
+            contributor.mockChannel.emitStateChange(previousContributorStateChange)
         }
 
         // When: The aforementioned contributor emits an UPDATE event with `resumed` flag set to false
@@ -1557,11 +1560,11 @@ struct DefaultRoomLifecycleManagerTests {
         )
 
         await waitForManager(manager, toHandleContributorStateChange: contributorStateChange) {
-            await contributor.mockChannel.emitStateChange(contributorStateChange)
+            contributor.mockChannel.emitStateChange(contributorStateChange)
         }
 
         // Then: The manager does not replace the existing pending discontinuity event for this contributor
-        let pendingDiscontinuityEvent = try #require(await manager.testsOnly_pendingDiscontinuityEvent(for: contributor))
+        let pendingDiscontinuityEvent = try #require(manager.testsOnly_pendingDiscontinuityEvent(for: contributor))
         #expect(pendingDiscontinuityEvent == existingPendingDiscontinuityEvent)
     }
 
@@ -1570,7 +1573,7 @@ struct DefaultRoomLifecycleManagerTests {
     func contributorUpdate_withResumedTrue_withNoOperationInProgress_emitsDiscontinuityEvent() async throws {
         // Given: A DefaultRoomLifecycleManager, with no room lifecycle operation in progress, and with a contributor for which it has previously received an ATTACHED state change
         let contributor = createContributor()
-        let manager = await createManager(
+        let manager = createManager(
             forTestingWhatHappensWhenCurrentlyIn: .initialized, // case arbitrary, just care that no operation is in progress
             contributors: [contributor]
         )
@@ -1586,7 +1589,7 @@ struct DefaultRoomLifecycleManagerTests {
         )
 
         await waitForManager(manager, toHandleContributorStateChange: previousContributorStateChange) {
-            await contributor.mockChannel.emitStateChange(previousContributorStateChange)
+            contributor.mockChannel.emitStateChange(previousContributorStateChange)
         }
 
         // When: This contributor emits an UPDATE event with `resumed` flag set to false
@@ -1599,11 +1602,11 @@ struct DefaultRoomLifecycleManagerTests {
         )
 
         await waitForManager(manager, toHandleContributorStateChange: contributorStateChange) {
-            await contributor.mockChannel.emitStateChange(contributorStateChange)
+            contributor.mockChannel.emitStateChange(contributorStateChange)
         }
 
         // Then: The manager calls `emitDiscontinuity` on the contributor, with error equal to the contributor UPDATE event’s `reason`
-        let emitDiscontinuityArguments = await contributor.emitDiscontinuityArguments
+        let emitDiscontinuityArguments = contributor.emitDiscontinuityArguments
         try #require(emitDiscontinuityArguments.count == 1)
 
         let discontinuity = emitDiscontinuityArguments[0]
@@ -1616,7 +1619,7 @@ struct DefaultRoomLifecycleManagerTests {
         // Given: A DefaultRoomLifecycleManager, with a room lifecycle operation in progress, and which has a contributor for which it has previously received an ATTACHED state change
         let contributorDetachOperation = SignallableChannelOperation()
         let contributor = createContributor(attachBehavior: .success, detachBehavior: contributorDetachOperation.behavior)
-        let manager = await createManager(
+        let manager = createManager(
             contributors: [contributor]
         )
 
@@ -1631,13 +1634,15 @@ struct DefaultRoomLifecycleManagerTests {
         )
 
         await waitForManager(manager, toHandleContributorStateChange: previousContributorStateChange) {
-            await contributor.mockChannel.emitStateChange(previousContributorStateChange)
+            contributor.mockChannel.emitStateChange(previousContributorStateChange)
         }
 
         // This is to put the manager into the DETACHING state, to satisfy "with a room lifecycle operation in progress"
-        let roomStatusSubscription = await manager.onRoomStatusChange(bufferingPolicy: .unbounded)
+        let roomStatusSubscription = manager.onRoomStatusChange(bufferingPolicy: .unbounded)
         async let _ = manager.performDetachOperation()
-        _ = await roomStatusSubscription.first { $0.current == .detaching }
+        _ = await roomStatusSubscription.first { @Sendable statusChange in
+            statusChange.current == .detaching
+        }
 
         // When: The aforementioned contributor emits an ATTACHED event with `resumed` flag set to false
         let contributorStateChange = ARTChannelStateChange(
@@ -1649,11 +1654,11 @@ struct DefaultRoomLifecycleManagerTests {
         )
 
         await waitForManager(manager, toHandleContributorStateChange: contributorStateChange) {
-            await contributor.mockChannel.emitStateChange(contributorStateChange)
+            contributor.mockChannel.emitStateChange(contributorStateChange)
         }
 
         // Then: The manager records a pending discontinuity event for this contributor, and this discontinuity event has error equal to the contributor ATTACHED event’s `reason`
-        let pendingDiscontinuityEvent = try #require(await manager.testsOnly_pendingDiscontinuityEvent(for: contributor))
+        let pendingDiscontinuityEvent = try #require(manager.testsOnly_pendingDiscontinuityEvent(for: contributor))
         #expect(pendingDiscontinuityEvent.error === contributorStateChange.reason)
 
         // Teardown: Allow performDetachOperation() call to complete
@@ -1665,7 +1670,7 @@ struct DefaultRoomLifecycleManagerTests {
     func contributorAttachEvent_withResumeFalse_withOperationInProgress_withContributorNotAttachedPreviously_doesNotRecordPendingDiscontinuityEvent() async throws {
         // Given: A DefaultRoomLifecycleManager, with a room lifecycle operation in progress, and which has a contributor for which it has not previously received an ATTACHED state change
         let contributor = createContributor()
-        let manager = await createManager(
+        let manager = createManager(
             forTestingWhatHappensWhenCurrentlyIn: .attachingDueToAttachOperation(attachOperationID: UUID()), // case and ID arbitrary, just care that an operation is in progress
             contributors: [contributor]
         )
@@ -1680,11 +1685,11 @@ struct DefaultRoomLifecycleManagerTests {
         )
 
         await waitForManager(manager, toHandleContributorStateChange: contributorStateChange) {
-            await contributor.mockChannel.emitStateChange(contributorStateChange)
+            contributor.mockChannel.emitStateChange(contributorStateChange)
         }
 
         // Then: The manager does not record a pending discontinuity event for this contributor
-        #expect(await manager.testsOnly_pendingDiscontinuityEvent(for: contributor) == nil)
+        #expect(manager.testsOnly_pendingDiscontinuityEvent(for: contributor) == nil)
     }
 
     // @spec CHA-RL4b5
@@ -1697,7 +1702,7 @@ struct DefaultRoomLifecycleManagerTests {
             createContributor(detachBehavior: .success),
             createContributor(detachBehavior: .success),
         ]
-        let manager = await createManager(
+        let manager = createManager(
             forTestingWhatHappensWhenCurrentlyIn: .initialized, // case arbitrary, just care that no operation is in progress
             forTestingWhatHappensWhenHasTransientDisconnectTimeoutForTheseContributorIDs: [
                 // Give 2 of the 3 contributors a transient disconnect timeout, so we can test that _all_ such timeouts get cleared (as the spec point specifies), not just those for the FAILED contributor
@@ -1707,7 +1712,7 @@ struct DefaultRoomLifecycleManagerTests {
             contributors: contributors
         )
 
-        let roomStatusSubscription = await manager.onRoomStatusChange(bufferingPolicy: .unbounded)
+        let roomStatusSubscription = manager.onRoomStatusChange(bufferingPolicy: .unbounded)
         async let failedStatusChange = roomStatusSubscription.failedElements().first { _ in true }
 
         // When: A contributor emits an FAILED event
@@ -1720,7 +1725,7 @@ struct DefaultRoomLifecycleManagerTests {
         )
 
         await waitForManager(manager, toHandleContributorStateChange: contributorStateChange) {
-            await contributors[0].mockChannel.emitStateChange(contributorStateChange)
+            contributors[0].mockChannel.emitStateChange(contributorStateChange)
         }
 
         // Then:
@@ -1728,26 +1733,26 @@ struct DefaultRoomLifecycleManagerTests {
         // - and it calls `detach` on all contributors
         // - it clears all transient disconnect timeouts
         _ = try #require(await failedStatusChange)
-        #expect(await manager.roomStatus.isFailed)
+        #expect(manager.roomStatus.isFailed)
 
         for contributor in contributors {
-            #expect(await contributor.mockChannel.detachCallCount == 1)
+            #expect(contributor.mockChannel.detachCallCount == 1)
         }
 
-        #expect(await !manager.testsOnly_hasTransientDisconnectTimeoutForAnyContributor)
+        #expect(!manager.testsOnly_hasTransientDisconnectTimeoutForAnyContributor)
     }
 
     // @specOneOf(1/2) CHA-RL4b7 - Tests that when a transient disconnect timeout already exists, a new one is not created
     func contributorAttachingEvent_withNoOperationInProgress_withTransientDisconnectTimeout() async throws {
         // Given: A DefaultRoomLifecycleManager, with no operation in progress, with a transient disconnect timeout for the contributor mentioned in "When:"
         let contributor = createContributor()
-        let manager = await createManager(
+        let manager = createManager(
             forTestingWhatHappensWhenCurrentlyIn: .initialized, // arbitrary no-operation-in-progress
             forTestingWhatHappensWhenHasTransientDisconnectTimeoutForTheseContributorIDs: [contributor.id],
             contributors: [contributor]
         )
 
-        let idOfExistingTransientDisconnectTimeout = try #require(await manager.testsOnly_idOfTransientDisconnectTimeout(for: contributor))
+        let idOfExistingTransientDisconnectTimeout = try #require(manager.testsOnly_idOfTransientDisconnectTimeout(for: contributor))
 
         // When: A contributor emits an ATTACHING event
         let contributorStateChange = ARTChannelStateChange(
@@ -1758,11 +1763,11 @@ struct DefaultRoomLifecycleManagerTests {
         )
 
         await waitForManager(manager, toHandleContributorStateChange: contributorStateChange) {
-            await contributor.mockChannel.emitStateChange(contributorStateChange)
+            contributor.mockChannel.emitStateChange(contributorStateChange)
         }
 
         // Then: It does not set a new transient disconnect timeout
-        #expect(await manager.testsOnly_idOfTransientDisconnectTimeout(for: contributor) == idOfExistingTransientDisconnectTimeout)
+        #expect(manager.testsOnly_idOfTransientDisconnectTimeout(for: contributor) == idOfExistingTransientDisconnectTimeout)
     }
 
     // @specOneOf(2/2) CHA-RL4b7 - Tests that when the conditions of this spec point are fulfilled, a transient disconnect timeout is created
@@ -1777,7 +1782,7 @@ struct DefaultRoomLifecycleManagerTests {
         let contributor = createContributor()
         let sleepOperation = SignallableSleepOperation()
         let clock = MockSimpleClock(sleepBehavior: sleepOperation.behavior)
-        let manager = await createManager(
+        let manager = createManager(
             forTestingWhatHappensWhenCurrentlyIn: .initialized, // arbitrary no-operation-in-progress
             contributors: [contributor],
             clock: clock
@@ -1794,16 +1799,16 @@ struct DefaultRoomLifecycleManagerTests {
         async let maybeClockSleepArgument = clock.sleepCallArgumentsAsyncSequence.first { _ in true }
 
         await waitForManager(manager, toHandleContributorStateChange: contributorStateChange) {
-            await contributor.mockChannel.emitStateChange(contributorStateChange)
+            contributor.mockChannel.emitStateChange(contributorStateChange)
         }
 
         // Then: The manager records a 5 second transient disconnect timeout for this contributor
         #expect(try #require(await maybeClockSleepArgument) == 5)
-        #expect(await manager.testsOnly_hasTransientDisconnectTimeout(for: contributor))
+        #expect(manager.testsOnly_hasTransientDisconnectTimeout(for: contributor))
 
         // and When: This transient disconnect timeout completes
 
-        let roomStatusSubscription = await manager.onRoomStatusChange(bufferingPolicy: .unbounded)
+        let roomStatusSubscription = manager.onRoomStatusChange(bufferingPolicy: .unbounded)
         async let maybeRoomAttachingStatusChange = roomStatusSubscription.attachingElements().first { _ in true }
 
         sleepOperation.complete()
@@ -1815,7 +1820,7 @@ struct DefaultRoomLifecycleManagerTests {
         let roomAttachingStatusChange = try #require(await maybeRoomAttachingStatusChange)
         #expect(roomAttachingStatusChange.error == contributorStateChangeReason)
 
-        #expect(await !manager.testsOnly_hasTransientDisconnectTimeout(for: contributor))
+        #expect(!manager.testsOnly_hasTransientDisconnectTimeout(for: contributor))
     }
 
     // @specOneOf(1/2) CHA-RL4b10
@@ -1828,7 +1833,7 @@ struct DefaultRoomLifecycleManagerTests {
             createContributor(),
             createContributor(),
         ]
-        let manager = await createManager(
+        let manager = createManager(
             forTestingWhatHappensWhenCurrentlyIn: .initialized, // case arbitrary, just care that no operation is in progress
             forTestingWhatHappensWhenHasTransientDisconnectTimeoutForTheseContributorIDs: [
                 // Give 2 of the 3 contributors a transient disconnect timeout, so we can test that only the timeout for the ATTACHED contributor gets cleared, not all of them
@@ -1847,13 +1852,13 @@ struct DefaultRoomLifecycleManagerTests {
         )
 
         await waitForManager(manager, toHandleContributorStateChange: contributorAttachedStateChange) {
-            await contributorThatWillEmitAttachedStateChange.mockChannel.emitStateChange(contributorAttachedStateChange)
+            contributorThatWillEmitAttachedStateChange.mockChannel.emitStateChange(contributorAttachedStateChange)
         }
 
         // Then: The manager clears any transient disconnect timeout for that contributor
-        #expect(await !manager.testsOnly_hasTransientDisconnectTimeout(for: contributorThatWillEmitAttachedStateChange))
+        #expect(!manager.testsOnly_hasTransientDisconnectTimeout(for: contributorThatWillEmitAttachedStateChange))
         // check the timeout for the other contributors didn’t get cleared
-        #expect(await manager.testsOnly_hasTransientDisconnectTimeout(for: contributors[1]))
+        #expect(manager.testsOnly_hasTransientDisconnectTimeout(for: contributors[1]))
     }
 
     // @specOneOf(2/2) CHA-RL4b10 - This test is more elaborate than contributorAttachedEvent_withNoOperationInProgress_clearsTransientDisconnectTimeouts; instead of telling the manager to pretend that it has a transient disconnect timeout, we create a proper one by fulfilling the conditions of CHA-RL4b7, and we then fulfill the conditions of CHA-RL4b10 and check that the _side effects_ of the transient disconnect timeout (i.e. the state change) do not get performed. This is the _only_ test in which we go to these lengths to confirm that a transient disconnect timeout is truly cancelled; I think it’s enough to check it properly only once and then use simpler ways of checking it in other tests.
@@ -1864,7 +1869,7 @@ struct DefaultRoomLifecycleManagerTests {
         let sleepOperation = SignallableSleepOperation()
         let clock = MockSimpleClock(sleepBehavior: sleepOperation.behavior)
         let initialManagerStatus = DefaultRoomLifecycleManager<MockRoomLifecycleContributor>.Status.initialized // arbitrary no-operation-in-progress
-        let manager = await createManager(
+        let manager = createManager(
             forTestingWhatHappensWhenCurrentlyIn: initialManagerStatus,
             contributors: [contributor],
             clock: clock
@@ -1878,11 +1883,11 @@ struct DefaultRoomLifecycleManagerTests {
         async let maybeClockSleepArgument = clock.sleepCallArgumentsAsyncSequence.first { _ in true }
         // We create a transient disconnect timeout by fulfilling the conditions of CHA-RL4b7
         await waitForManager(manager, toHandleContributorStateChange: contributorStateChange) {
-            await contributor.mockChannel.emitStateChange(contributorStateChange)
+            contributor.mockChannel.emitStateChange(contributorStateChange)
         }
         try #require(await maybeClockSleepArgument != nil)
 
-        let transientDisconnectTimeoutID = try #require(await manager.testsOnly_idOfTransientDisconnectTimeout(for: contributor))
+        let transientDisconnectTimeoutID = try #require(manager.testsOnly_idOfTransientDisconnectTimeout(for: contributor))
 
         // When: A contributor emits a state change to ATTACHED, and we wait for the manager to inform us that any side effects that the transient disconnect timeout may cause have taken place
         let contributorAttachedStateChange = ARTChannelStateChange(
@@ -1893,12 +1898,12 @@ struct DefaultRoomLifecycleManagerTests {
         )
 
         await waitForManager(manager, toHandleTransientDisconnectTimeoutWithID: transientDisconnectTimeoutID) {
-            await contributor.mockChannel.emitStateChange(contributorAttachedStateChange)
+            contributor.mockChannel.emitStateChange(contributorAttachedStateChange)
         }
 
         // Then: The manager’s status remains unchanged. In particular, it has not changed to ATTACHING, meaning that the CHA-RL4b7 side effect has not happened and hence that the transient disconnect timeout was properly cancelled
-        #expect(await manager.roomStatus == initialManagerStatus.toRoomStatus)
-        #expect(await !manager.testsOnly_hasTransientDisconnectTimeoutForAnyContributor)
+        #expect(manager.roomStatus == initialManagerStatus.toRoomStatus)
+        #expect(!manager.testsOnly_hasTransientDisconnectTimeoutForAnyContributor)
     }
 
     // @specOneOf(1/2) CHA-RL4b8
@@ -1910,12 +1915,12 @@ struct DefaultRoomLifecycleManagerTests {
             createContributor(initialState: .attached),
         ]
 
-        let manager = await createManager(
+        let manager = createManager(
             forTestingWhatHappensWhenCurrentlyIn: .initialized, // arbitrary non-ATTACHED
             contributors: contributors
         )
 
-        let roomStatusSubscription = await manager.onRoomStatusChange(bufferingPolicy: .unbounded)
+        let roomStatusSubscription = manager.onRoomStatusChange(bufferingPolicy: .unbounded)
         async let maybeAttachedRoomStatusChange = roomStatusSubscription.first { $0.current == .attached }
 
         // When: A contributor emits a state change to ATTACHED
@@ -1927,11 +1932,11 @@ struct DefaultRoomLifecycleManagerTests {
             resumed: false // arbitrary
         )
 
-        await contributors[0].mockChannel.emitStateChange(contributorStateChange)
+        contributors[0].mockChannel.emitStateChange(contributorStateChange)
 
         // Then: The room status transitions to ATTACHED
         _ = try #require(await maybeAttachedRoomStatusChange)
-        #expect(await manager.roomStatus == .attached)
+        #expect(manager.roomStatus == .attached)
     }
 
     // @specOneOf(2/2) CHA-RL4b8 - Tests that the specified side effect doesn’t happen if part of the condition (i.e. all contributors now being ATTACHED) is not met
@@ -1944,7 +1949,7 @@ struct DefaultRoomLifecycleManagerTests {
         ]
 
         let initialManagerStatus = DefaultRoomLifecycleManager<MockRoomLifecycleContributor>.Status.detached // arbitrary non-ATTACHED, no-operation-in-progress
-        let manager = await createManager(
+        let manager = createManager(
             forTestingWhatHappensWhenCurrentlyIn: initialManagerStatus,
             contributors: contributors
         )
@@ -1959,11 +1964,11 @@ struct DefaultRoomLifecycleManagerTests {
         )
 
         await waitForManager(manager, toHandleContributorStateChange: contributorStateChange) {
-            await contributors[0].mockChannel.emitStateChange(contributorStateChange)
+            contributors[0].mockChannel.emitStateChange(contributorStateChange)
         }
 
         // Then: The room status does not change
-        #expect(await manager.roomStatus == initialManagerStatus.toRoomStatus)
+        #expect(manager.roomStatus == initialManagerStatus.toRoomStatus)
     }
 
     // @spec CHA-RL4b9
@@ -1998,7 +2003,7 @@ struct DefaultRoomLifecycleManagerTests {
             )
         }
 
-        let manager = await createManager(
+        let manager = createManager(
             forTestingWhatHappensWhenCurrentlyIn: .initialized, // case arbitrary, just care that no operation is in progress
             // Give 2 of the 3 contributors a transient disconnect timeout, so we can test that _all_ such timeouts get cleared (as the spec point specifies), not just those for the SUSPENDED contributor
             forTestingWhatHappensWhenHasTransientDisconnectTimeoutForTheseContributorIDs: [
@@ -2008,10 +2013,10 @@ struct DefaultRoomLifecycleManagerTests {
             contributors: contributors
         )
 
-        let roomStatusSubscription = await manager.onRoomStatusChange(bufferingPolicy: .unbounded)
+        let roomStatusSubscription = manager.onRoomStatusChange(bufferingPolicy: .unbounded)
         async let maybeSuspendedRoomStatusChange = roomStatusSubscription.suspendedElements().first { _ in true }
 
-        let managerStatusChangeSubscription = await manager.testsOnly_onStatusChange()
+        let managerStatusChangeSubscription = manager.testsOnly_onStatusChange()
 
         // When: A contributor emits a state change to SUSPENDED
         let contributorStateChangeReason = ARTErrorInfo(domain: "SomeDomain", code: 123) // arbitrary
@@ -2024,7 +2029,7 @@ struct DefaultRoomLifecycleManagerTests {
         )
 
         await waitForManager(manager, toHandleContributorStateChange: contributorStateChange) {
-            await contributorThatWillEmitStateChange.mockChannel.emitStateChange(contributorStateChange)
+            contributorThatWillEmitStateChange.mockChannel.emitStateChange(contributorStateChange)
         }
 
         // Then:
@@ -2033,9 +2038,9 @@ struct DefaultRoomLifecycleManagerTests {
         let suspendedRoomStatusChange = try #require(await maybeSuspendedRoomStatusChange)
         #expect(suspendedRoomStatusChange.error === contributorStateChangeReason)
 
-        #expect(await manager.roomStatus == .suspended(error: contributorStateChangeReason))
+        #expect(manager.roomStatus == .suspended(error: contributorStateChangeReason))
 
-        #expect(await !manager.testsOnly_hasTransientDisconnectTimeoutForAnyContributor)
+        #expect(!manager.testsOnly_hasTransientDisconnectTimeoutForAnyContributor)
 
         // and:
         // 3. The manager performs a RETRY operation, triggered by the contributor that entered SUSPENDED
@@ -2052,22 +2057,24 @@ struct DefaultRoomLifecycleManagerTests {
             }
             return nil
         }
-        .first { _ in
+        .first { @Sendable _ in
             true
         })
 
         await retryOperationTask.value
 
         // We confirm that a RETRY happened by checking for its expected side effects:
-        #expect(await contributors[0].mockChannel.detachCallCount == 0) // RETRY doesn’t touch this since it’s the one that triggered the RETRY
-        #expect(await contributors[1].mockChannel.detachCallCount == 1) // From the CHA-RL5a RETRY detachment cycle
-        #expect(await contributors[2].mockChannel.detachCallCount == 1) // From the CHA-RL5a RETRY detachment cycle
+        #expect(contributors[0].mockChannel.detachCallCount == 0) // RETRY doesn’t touch this since it’s the one that triggered the RETRY
+        #expect(contributors[1].mockChannel.detachCallCount == 1) // From the CHA-RL5a RETRY detachment cycle
+        #expect(contributors[2].mockChannel.detachCallCount == 1) // From the CHA-RL5a RETRY detachment cycle
 
-        #expect(await contributors[0].mockChannel.attachCallCount == 1) // From the CHA-RL5f RETRY attachment cycle
-        #expect(await contributors[1].mockChannel.attachCallCount == 1) // From the CHA-RL5f RETRY attachment cycle
-        #expect(await contributors[2].mockChannel.attachCallCount == 1) // From the CHA-RL5f RETRY attachment cycle
+        #expect(contributors[0].mockChannel.attachCallCount == 1) // From the CHA-RL5f RETRY attachment cycle
+        #expect(contributors[1].mockChannel.attachCallCount == 1) // From the CHA-RL5f RETRY attachment cycle
+        #expect(contributors[2].mockChannel.attachCallCount == 1) // From the CHA-RL5f RETRY attachment cycle
 
-        _ = try #require(await roomStatusSubscription.first { $0.current == .attached }) // Room status changes to ATTACHED
+        _ = try #require(await roomStatusSubscription.first { @Sendable statusChange in
+            statusChange.current == .attached
+        }) // Room status changes to ATTACHED
     }
 
     // MARK: - Waiting to be able to perform presence operations
@@ -2086,24 +2093,24 @@ struct DefaultRoomLifecycleManagerTests {
 
         let contributor = createContributor(attachBehavior: contributorAttachOperation.behavior)
 
-        let manager = await createManager(
+        let manager = createManager(
             contributors: [contributor]
         )
 
-        let roomStatusSubscription = await manager.onRoomStatusChange(bufferingPolicy: .unbounded)
+        let roomStatusSubscription = manager.onRoomStatusChange(bufferingPolicy: .unbounded)
 
         let attachOperationID = UUID()
         async let _ = manager.performAttachOperation(testsOnly_forcingOperationID: attachOperationID)
 
         // Wait for room to become ATTACHING
-        _ = await roomStatusSubscription.attachingElements().first { _ in true }
+        _ = await roomStatusSubscription.attachingElements().first { @Sendable _ in true }
 
         // When: `waitToBeAbleToPerformPresenceOperations(requestedByFeature:)` is called on the lifecycle manager
-        let statusChangeWaitSubscription = await manager.testsOnly_subscribeToStatusChangeWaitEvents()
+        let statusChangeWaitSubscription = manager.testsOnly_subscribeToStatusChangeWaitEvents()
         async let waitToBeAbleToPerformPresenceOperationsResult: Void = manager.waitToBeAbleToPerformPresenceOperations(requestedByFeature: .messages /* arbitrary */ )
 
         // Then: The manager waits for its room status to change
-        _ = try #require(await statusChangeWaitSubscription.first { _ in true })
+        _ = try #require(await statusChangeWaitSubscription.first { @Sendable _ in true })
 
         // and When: The ATTACH operation succeeds, thus putting the room in the ATTACHED status
         contributorAttachOperation.complete(behavior: .success)
@@ -2126,24 +2133,24 @@ struct DefaultRoomLifecycleManagerTests {
 
         let contributor = createContributor(attachBehavior: contributorAttachOperation.behavior)
 
-        let manager = await createManager(
+        let manager = createManager(
             contributors: [contributor]
         )
 
-        let roomStatusSubscription = await manager.onRoomStatusChange(bufferingPolicy: .unbounded)
+        let roomStatusSubscription = manager.onRoomStatusChange(bufferingPolicy: .unbounded)
 
         let attachOperationID = UUID()
         async let _ = manager.performAttachOperation(testsOnly_forcingOperationID: attachOperationID)
 
         // Wait for room to become ATTACHING
-        _ = await roomStatusSubscription.attachingElements().first { _ in true }
+        _ = await roomStatusSubscription.attachingElements().first { @Sendable _ in true }
 
         // When: `waitToBeAbleToPerformPresenceOperations(requestedByFeature:)` is called on the lifecycle manager
-        let statusChangeWaitSubscription = await manager.testsOnly_subscribeToStatusChangeWaitEvents()
+        let statusChangeWaitSubscription = manager.testsOnly_subscribeToStatusChangeWaitEvents()
         async let waitToBeAbleToPerformPresenceOperationsResult: Void = manager.waitToBeAbleToPerformPresenceOperations(requestedByFeature: .messages /* arbitrary */ )
 
         // Then: The manager waits for its room status to change
-        _ = try #require(await statusChangeWaitSubscription.first { _ in true })
+        _ = try #require(await statusChangeWaitSubscription.first { @Sendable _ in true })
 
         // and When: The ATTACH operation fails, thus putting the room in the FAILED status (i.e. a non-ATTACHED status)
         let contributorAttachError = ARTErrorInfo.createUnknownError() // arbitrary
@@ -2168,7 +2175,7 @@ struct DefaultRoomLifecycleManagerTests {
     @Test
     func waitToBeAbleToPerformPresenceOperations_whenAttached() async throws {
         // Given: A DefaultRoomLifecycleManager in the ATTACHED status
-        let manager = await createManager(
+        let manager = createManager(
             forTestingWhatHappensWhenCurrentlyIn: .attached
         )
 
@@ -2184,7 +2191,7 @@ struct DefaultRoomLifecycleManagerTests {
     @Test
     func waitToBeAbleToPerformPresenceOperations_whenAnyOtherStatus() async throws {
         // Given: A DefaultRoomLifecycleManager in a status other than ATTACHING or ATTACHED
-        let manager = await createManager(
+        let manager = createManager(
             forTestingWhatHappensWhenCurrentlyIn: .detached // arbitrary given the above constraints
         )
 

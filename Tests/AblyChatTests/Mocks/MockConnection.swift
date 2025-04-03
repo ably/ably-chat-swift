@@ -1,7 +1,7 @@
 import Ably
 @testable import AblyChat
 
-final class MockConnection: NSObject, InternalConnectionProtocol {
+final class MockConnection: InternalConnectionProtocol {
     let state: ARTRealtimeConnectionState
 
     let errorReason: ARTErrorInfo?

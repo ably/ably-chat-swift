@@ -1,9 +1,9 @@
 @testable import AblyChat
 import Foundation
 
-final class MockInternalRealtimeClientFactory: @unchecked Sendable, InternalRealtimeClientFactory {
+final class MockInternalRealtimeClientFactory: InternalRealtimeClientFactory {
     private let createInternalRealtimeClientReturnValue: any InternalRealtimeClientProtocol
-    @SynchronizedAccess private(set) var createInternalRealtimeClientArgument: (any RealtimeClientProtocol)?
+    private(set) var createInternalRealtimeClientArgument: (any RealtimeClientProtocol)?
 
     init(createInternalRealtimeClientReturnValue: any InternalRealtimeClientProtocol) {
         self.createInternalRealtimeClientReturnValue = createInternalRealtimeClientReturnValue

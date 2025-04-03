@@ -1,7 +1,7 @@
 import Ably
 @testable import AblyChat
 
-final actor MockRealtimeChannel: InternalRealtimeChannelProtocol {
+final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
     let presence = MockRealtimePresence()
 
     private let attachSerial: String?

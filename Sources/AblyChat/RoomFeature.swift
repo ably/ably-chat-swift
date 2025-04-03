@@ -46,7 +46,7 @@ internal enum RoomFeature: CaseIterable {
 /// - the discontinuities emitted by the room lifecycle
 /// - the presence-readiness wait mechanism supplied by the room lifecycle
 internal protocol FeatureChannel: Sendable, EmitsDiscontinuities {
-    var channel: any InternalRealtimeChannelProtocol { get }
+    nonisolated var channel: any InternalRealtimeChannelProtocol { get }
 
     /// Waits until we can perform presence operations on the contributors of this room without triggering an implicit attach.
     ///
@@ -66,8 +66,8 @@ internal struct DefaultFeatureChannel: FeatureChannel {
     internal var contributor: DefaultRoomLifecycleContributor
     internal var roomLifecycleManager: RoomLifecycleManager
 
-    internal func onDiscontinuity(bufferingPolicy: BufferingPolicy) async -> Subscription<DiscontinuityEvent> {
-        await contributor.onDiscontinuity(bufferingPolicy: bufferingPolicy)
+    internal func onDiscontinuity(bufferingPolicy: BufferingPolicy) -> Subscription<DiscontinuityEvent> {
+        contributor.onDiscontinuity(bufferingPolicy: bufferingPolicy)
     }
 
     internal func waitToBeAbleToPerformPresenceOperations(requestedByFeature requester: RoomFeature) async throws(InternalError) {
