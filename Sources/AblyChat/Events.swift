@@ -42,3 +42,8 @@ internal enum RoomReactionEvents: String {
 internal enum OccupancyEvents: String {
     case meta = "[meta]occupancy"
 }
+
+public enum TypingEvents: String, Sendable {
+    case started = "typing.started"
+    case stopped = "typing.stopped"
+}
