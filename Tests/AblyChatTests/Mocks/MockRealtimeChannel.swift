@@ -27,6 +27,7 @@ final actor MockRealtimeChannel: InternalRealtimeChannelProtocol {
         var extras: NSDictionary
         var operation: ARTMessageOperation?
         var version: String
+        var timestamp: Date?
     }
 
     init(
@@ -173,6 +174,7 @@ final actor MockRealtimeChannel: InternalRealtimeChannelProtocol {
             message.extras = messageToEmitOnSubscribe.extras
             message.operation = messageToEmitOnSubscribe.operation
             message.version = messageToEmitOnSubscribe.version
+            message.timestamp = messageToEmitOnSubscribe.timestamp
             callback(message)
         }
         return ARTEventListener()
