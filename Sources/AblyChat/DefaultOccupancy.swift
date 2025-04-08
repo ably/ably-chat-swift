@@ -1,16 +1,10 @@
 import Ably
 
-internal final class DefaultOccupancy: Occupancy, EmitsDiscontinuities {
-    public nonisolated let featureChannel: FeatureChannel
+internal final class DefaultOccupancy: Occupancy {
     private let implementation: Implementation
 
-    internal nonisolated var channel: any RealtimeChannelProtocol {
-        featureChannel.channel.underlying
-    }
-
-    internal init(featureChannel: FeatureChannel, chatAPI: ChatAPI, roomID: String, logger: InternalLogger) {
-        self.featureChannel = featureChannel
-        implementation = .init(featureChannel: featureChannel, chatAPI: chatAPI, roomID: roomID, logger: logger)
+    internal init(channel: any InternalRealtimeChannelProtocol, chatAPI: ChatAPI, roomID: String, logger: InternalLogger) {
+        implementation = .init(channel: channel, chatAPI: chatAPI, roomID: roomID, logger: logger)
     }
 
     internal func subscribe(bufferingPolicy: BufferingPolicy) -> Subscription<OccupancyEvent> {
@@ -21,20 +15,16 @@ internal final class DefaultOccupancy: Occupancy, EmitsDiscontinuities {
         try await implementation.get()
     }
 
-    internal func onDiscontinuity(bufferingPolicy: BufferingPolicy) -> Subscription<DiscontinuityEvent> {
-        implementation.onDiscontinuity(bufferingPolicy: bufferingPolicy)
-    }
-
     /// This class exists to make sure that the internals of the SDK only access ably-cocoa via the `InternalRealtimeChannelProtocol` interface. It does this by removing access to the `channel` property that exists as part of the public API of the `Occupancy` protocol, making it unlikely that we accidentally try to call the `ARTRealtimeChannelProtocol` interface. We can remove this `Implementation` class when we remove the feature-level `channel` property in https://github.com/ably/ably-chat-swift/issues/242.
     @MainActor
     internal final class Implementation: Sendable {
         private let chatAPI: ChatAPI
         private let roomID: String
         private let logger: InternalLogger
-        public nonisolated let featureChannel: FeatureChannel
+        private let channel: any InternalRealtimeChannelProtocol
 
-        internal init(featureChannel: FeatureChannel, chatAPI: ChatAPI, roomID: String, logger: InternalLogger) {
-            self.featureChannel = featureChannel
+        internal init(channel: any InternalRealtimeChannelProtocol, chatAPI: ChatAPI, roomID: String, logger: InternalLogger) {
+            self.channel = channel
             self.chatAPI = chatAPI
             self.roomID = roomID
             self.logger = logger
@@ -48,7 +38,7 @@ internal final class DefaultOccupancy: Occupancy, EmitsDiscontinuities {
 
             let subscription = Subscription<OccupancyEvent>(bufferingPolicy: bufferingPolicy)
 
-            let eventListener = featureChannel.channel.subscribe(OccupancyEvents.meta.rawValue) { [logger] message in
+            let eventListener = channel.subscribe(OccupancyEvents.meta.rawValue) { [logger] message in
                 logger.log(message: "Received occupancy message: \(message)", level: .debug)
                 guard let data = message.data as? [String: Any],
                       let metrics = data["metrics"] as? [String: Any]
@@ -69,7 +59,7 @@ internal final class DefaultOccupancy: Occupancy, EmitsDiscontinuities {
             subscription.addTerminationHandler { [weak self] in
                 if let eventListener {
                     Task { @MainActor in
-                        self?.featureChannel.channel.off(eventListener)
+                        self?.channel.off(eventListener)
                     }
                 }
             }
@@ -85,11 +75,6 @@ internal final class DefaultOccupancy: Occupancy, EmitsDiscontinuities {
             } catch {
                 throw error.toARTErrorInfo()
             }
-        }
-
-        // (CHA-O5) Users may subscribe to discontinuity events to know when there’s been a break in occupancy. Their listener will be called when a discontinuity event is triggered from the room lifecycle. For occupancy, there shouldn’t need to be user action as most channels will send occupancy updates regularly as clients churn.
-        internal func onDiscontinuity(bufferingPolicy: BufferingPolicy) -> Subscription<DiscontinuityEvent> {
-            featureChannel.onDiscontinuity(bufferingPolicy: bufferingPolicy)
         }
     }
 }

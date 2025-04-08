@@ -69,10 +69,7 @@ struct ContentView: View {
     }
 
     private func room() async throws -> Room {
-        try await chatClient.rooms.get(
-            roomID: roomID,
-            options: .allFeaturesEnabled
-        )
+        try await chatClient.rooms.get(roomID: roomID)
     }
 
     private var sendTitle: String {

@@ -1,7 +1,7 @@
 @testable import AblyChat
 import Testing
 
-// The channel name of basketball::$chat::$chatMessages is passed in to these tests due to `DefaultRoom` kicking off the `DefaultMessages` initialization. This in turn needs a valid `roomId` or else the `MockChannels` class will throw an error as it would be expecting a channel with the name \(roomID)::$chat::$chatMessages to exist (where `roomId` is the property passed into `rooms.get`).
+// The channel name of basketball::$chat is passed in to these tests due to `DefaultRoom` kicking off the `DefaultMessages` initialization. This in turn needs a valid `roomId` or else the `MockChannels` class will throw an error as it would be expecting a channel with the name \(roomID)::$chat to exist (where `roomId` is the property passed into `rooms.get`).
 @MainActor
 struct DefaultRoomsTests {
     // MARK: - Test helpers
@@ -32,13 +32,36 @@ struct DefaultRoomsTests {
 
     // MARK: - Get a room
 
+    // @spec CHA-RC4a
+    @Test
+    func get_withoutOptions_usesDefaultOptions() async throws {
+        // Given: an instance of DefaultRooms
+        let realtime = MockRealtime(channels: .init(channels: [
+            .init(name: "basketball::$chat"),
+        ]))
+        let options = RoomOptions()
+        let roomToReturn = MockRoom(options: options)
+        let roomFactory = MockRoomFactory(room: roomToReturn)
+        let rooms = DefaultRooms(realtime: realtime, clientOptions: .init(), logger: TestLogger(), roomFactory: roomFactory)
+
+        // When: get(roomID:) is called
+        let roomID = "basketball"
+        _ = try await rooms.get(roomID: roomID)
+
+        // Then: It uses the default options
+        let createRoomArguments = try #require(roomFactory.createRoomArguments)
+        #expect(createRoomArguments.options == RoomOptions())
+    }
+
+    // @specNotApplicable CHA-RC4b - Our API does not have a concept of "partial options" unlike the JS API which this spec item considers.
+
     // @spec CHA-RC1f
     // @spec CHA-RC1f3
     @Test
     func get_returnsRoomWithGivenIDAndOptions() async throws {
         // Given: an instance of DefaultRooms
         let realtime = MockRealtime(channels: .init(channels: [
-            .init(name: "basketball::$chat::$chatMessages"),
+            .init(name: "basketball::$chat"),
         ]))
         let options = RoomOptions()
         let roomToReturn = MockRoom(options: options)
@@ -66,7 +89,7 @@ struct DefaultRoomsTests {
     func get_whenRoomExistsInRoomMap_returnsExistingRoomWithGivenID() async throws {
         // Given: an instance of DefaultRooms, which has, per CHA-RC1f3, a room in the room map with a given ID
         let realtime = MockRealtime(channels: .init(channels: [
-            .init(name: "basketball::$chat::$chatMessages"),
+            .init(name: "basketball::$chat"),
         ]))
         let options = RoomOptions()
         let roomToReturn = MockRoom(options: options)
@@ -89,7 +112,7 @@ struct DefaultRoomsTests {
     func get_whenFutureExistsInRoomMap_returnsExistingRoomWithGivenID() async throws {
         // Given: an instance of DefaultRooms, for which, per CHA-RC1f4, a previous call to get(roomID:options:) with a given ID is waiting for a CHA-RC1g release operation to complete
         let realtime = MockRealtime(channels: .init(channels: [
-            .init(name: "basketball::$chat::$chatMessages"),
+            .init(name: "basketball::$chat"),
         ]))
         let options = RoomOptions()
 
@@ -137,7 +160,7 @@ struct DefaultRoomsTests {
     func get_whenRoomExistsInRoomMap_throwsErrorWhenOptionsDoNotMatch() async throws {
         // Given: an instance of DefaultRooms, which has, per CHA-RC1f3, a room in the room map with a given ID and options
         let realtime = MockRealtime(channels: .init(channels: [
-            .init(name: "basketball::$chat::$chatMessages"),
+            .init(name: "basketball::$chat"),
         ]))
         let options = RoomOptions()
 
@@ -149,7 +172,7 @@ struct DefaultRoomsTests {
 
         // When: get(roomID:options:) is called with the same ID but different options
         // Then: It throws a `badRequest` error
-        let differentOptions = RoomOptions(presence: .init(subscribe: false))
+        let differentOptions = RoomOptions(presence: .init(receivePresenceEvents: false))
 
         // TODO: avoids compiler crash (https://github.com/ably/ably-chat-swift/issues/233), revert once Xcode 16.3 released
         let doIt = {
@@ -167,7 +190,7 @@ struct DefaultRoomsTests {
     func get_whenFutureExistsInRoomMap_throwsErrorWhenOptionsDoNotMatch() async throws {
         // Given: an instance of DefaultRooms, for which, per CHA-RC1f4, a previous call to get(roomID:options:) with a given ID and options is waiting for a CHA-RC1g release operation to complete
         let realtime = MockRealtime(channels: .init(channels: [
-            .init(name: "basketball::$chat::$chatMessages"),
+            .init(name: "basketball::$chat"),
         ]))
         let options = RoomOptions()
 
@@ -195,7 +218,7 @@ struct DefaultRoomsTests {
 
         // When: get(roomID:options:) is called with the same ID but different options
         // Then: The second call to get(roomID:options:) throws a `badRequest` error
-        let differentOptions = RoomOptions(presence: .init(subscribe: false))
+        let differentOptions = RoomOptions(presence: .init(receivePresenceEvents: false))
 
         // TODO: avoids compiler crash (https://github.com/ably/ably-chat-swift/issues/233), revert once Xcode 16.3 released
         let doIt = {
@@ -216,7 +239,7 @@ struct DefaultRoomsTests {
     func get_whenReleaseInProgress() async throws {
         // Given: an instance of DefaultRooms, for which a CHA-RC1g release operation is in progrss
         let realtime = MockRealtime(channels: .init(channels: [
-            .init(name: "basketball::$chat::$chatMessages"),
+            .init(name: "basketball::$chat"),
         ]))
 
         let roomReleaseOperation = SignallableReleaseOperation()
@@ -260,7 +283,7 @@ struct DefaultRoomsTests {
     func release_withNoRoomMapEntry_andNoReleaseInProgress() async throws {
         // Given: An instance of DefaultRooms, with neither a room map entry nor a release operation in progress for a given room ID
         let realtime = MockRealtime(channels: .init(channels: [
-            .init(name: "basketball::$chat::$chatMessages"),
+            .init(name: "basketball::$chat"),
         ]))
         let roomFactory = MockRoomFactory()
         let rooms = DefaultRooms(realtime: realtime, clientOptions: .init(), logger: TestLogger(), roomFactory: roomFactory)
@@ -276,7 +299,7 @@ struct DefaultRoomsTests {
     func release_withNoRoomMapEntry_andReleaseInProgress() async throws {
         // Given: an instance of DefaultRooms, for which a release operation is in progress
         let realtime = MockRealtime(channels: .init(channels: [
-            .init(name: "basketball::$chat::$chatMessages"),
+            .init(name: "basketball::$chat"),
         ]))
 
         let roomReleaseOperation = SignallableReleaseOperation()
@@ -318,7 +341,7 @@ struct DefaultRoomsTests {
     func release_withReleaseInProgress_failsPendingGetOperations() async throws {
         // Given: an instance of DefaultRooms, for which there is a release operation already in progress, and a CHA-RC1f4 future in the room map awaiting the completion of this release operation
         let realtime = MockRealtime(channels: .init(channels: [
-            .init(name: "basketball::$chat::$chatMessages"),
+            .init(name: "basketball::$chat"),
         ]))
 
         let roomReleaseOperation = SignallableReleaseOperation()
@@ -374,7 +397,7 @@ struct DefaultRoomsTests {
     func release() async throws {
         // Given: an instance of DefaultRooms, which has a room map entry for a given room ID and has no release operation in progress for that room ID
         let realtime = MockRealtime(channels: .init(channels: [
-            .init(name: "basketball::$chat::$chatMessages"),
+            .init(name: "basketball::$chat"),
         ]))
         let options = RoomOptions()
         let hasExistingRoomAtMomentRoomReleaseCalledStreamComponents = AsyncStream.makeStream(of: Bool.self)
