@@ -1,7 +1,7 @@
 import Ably
 @testable import AblyChat
 
-final actor MockRealtimeChannel: InternalRealtimeChannelProtocol {
+final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
     let presence = MockRealtimePresence()
 
     private let attachSerial: String?
@@ -139,7 +139,7 @@ final actor MockRealtimeChannel: InternalRealtimeChannelProtocol {
 
     let messageToEmitOnSubscribe: MessageToEmit?
 
-    nonisolated func subscribe(_: String, callback: @escaping ARTMessageCallback) -> ARTEventListener? {
+    func subscribe(_: String, callback: @escaping @MainActor (ARTMessage) -> Void) -> ARTEventListener? {
         if let messageToEmitOnSubscribe {
             let message = ARTMessage(name: nil, data: messageToEmitOnSubscribe.data)
             message.action = messageToEmitOnSubscribe.action
@@ -153,19 +153,19 @@ final actor MockRealtimeChannel: InternalRealtimeChannelProtocol {
         return ARTEventListener()
     }
 
-    nonisolated func unsubscribe(_: ARTEventListener?) {
+    func unsubscribe(_: ARTEventListener?) {
         // no-op; revisit if we need to test something that depends on this method actually stopping `subscribe` from emitting more events
     }
 
-    nonisolated func on(_: ARTChannelEvent, callback _: @escaping (ARTChannelStateChange) -> Void) -> ARTEventListener {
+    func on(_: ARTChannelEvent, callback _: @escaping @MainActor (ARTChannelStateChange) -> Void) -> ARTEventListener {
         ARTEventListener()
     }
 
-    nonisolated func on(_: @escaping (ARTChannelStateChange) -> Void) -> ARTEventListener {
+    func on(_: @escaping @MainActor (ARTChannelStateChange) -> Void) -> ARTEventListener {
         fatalError("Not implemented")
     }
 
-    nonisolated func off(_: ARTEventListener) {
+    func off(_: ARTEventListener) {
         // no-op; revisit if we need to test something that depends on this method actually stopping `on` from emitting more events
     }
 

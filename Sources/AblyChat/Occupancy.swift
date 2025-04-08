@@ -6,6 +6,7 @@ import Ably
  *
  * Get an instance via ``Room/occupancy``.
  */
+@MainActor
 public protocol Occupancy: AnyObject, Sendable, EmitsDiscontinuities {
     /**
      * Subscribes a given listener to occupancy updates of the chat room.
@@ -15,12 +16,12 @@ public protocol Occupancy: AnyObject, Sendable, EmitsDiscontinuities {
      *
      * - Returns: A subscription `AsyncSequence` that can be used to iterate through ``OccupancyEvent`` events.
      */
-    func subscribe(bufferingPolicy: BufferingPolicy) async -> Subscription<OccupancyEvent>
+    func subscribe(bufferingPolicy: BufferingPolicy) -> Subscription<OccupancyEvent>
 
     /// Same as calling ``subscribe(bufferingPolicy:)`` with ``BufferingPolicy/unbounded``.
     ///
     /// The `Occupancy` protocol provides a default implementation of this method.
-    func subscribe() async -> Subscription<OccupancyEvent>
+    func subscribe() -> Subscription<OccupancyEvent>
 
     /**
      * Get the current occupancy of the chat room.
@@ -34,12 +35,12 @@ public protocol Occupancy: AnyObject, Sendable, EmitsDiscontinuities {
      *
      * - Returns: The underlying Ably channel for occupancy events.
      */
-    var channel: any RealtimeChannelProtocol { get }
+    nonisolated var channel: any RealtimeChannelProtocol { get }
 }
 
 public extension Occupancy {
-    func subscribe() async -> Subscription<OccupancyEvent> {
-        await subscribe(bufferingPolicy: .unbounded)
+    func subscribe() -> Subscription<OccupancyEvent> {
+        subscribe(bufferingPolicy: .unbounded)
     }
 }
 

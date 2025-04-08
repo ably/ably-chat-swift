@@ -1,7 +1,7 @@
 import Ably
 import AblyChat
 
-actor MockChatClient: ChatClient {
+class MockChatClient: ChatClient {
     let realtime: RealtimeClient
     nonisolated let clientOptions: ChatClientOptions
     nonisolated let rooms: Rooms
@@ -19,7 +19,7 @@ actor MockChatClient: ChatClient {
     }
 }
 
-actor MockRooms: Rooms {
+class MockRooms: Rooms {
     let clientOptions: ChatClientOptions
     private var rooms = [String: MockRoom]()
 
@@ -41,26 +41,26 @@ actor MockRooms: Rooms {
     }
 }
 
-actor MockRoom: Room {
+class MockRoom: Room {
     private let clientID = "AblyTest"
 
     nonisolated let roomID: String
     nonisolated let options: RoomOptions
+    nonisolated let messages: any Messages
+    nonisolated let presence: any Presence
+    nonisolated let reactions: any RoomReactions
+    nonisolated let typing: any Typing
+    nonisolated let occupancy: any Occupancy
 
     init(roomID: String, options: RoomOptions) {
         self.roomID = roomID
         self.options = options
+        messages = MockMessages(clientID: clientID, roomID: roomID)
+        presence = MockPresence(clientID: clientID, roomID: roomID)
+        reactions = MockRoomReactions(clientID: clientID, roomID: roomID)
+        typing = MockTyping(clientID: clientID, roomID: roomID)
+        occupancy = MockOccupancy(clientID: clientID, roomID: roomID)
     }
-
-    nonisolated lazy var messages: any Messages = MockMessages(clientID: clientID, roomID: roomID)
-
-    nonisolated lazy var presence: any Presence = MockPresence(clientID: clientID, roomID: roomID)
-
-    nonisolated lazy var reactions: any RoomReactions = MockRoomReactions(clientID: clientID, roomID: roomID)
-
-    nonisolated lazy var typing: any Typing = MockTyping(clientID: clientID, roomID: roomID)
-
-    nonisolated lazy var occupancy: any Occupancy = MockOccupancy(clientID: clientID, roomID: roomID)
 
     var status: RoomStatus = .initialized
 
@@ -80,12 +80,12 @@ actor MockRoom: Room {
         }, interval: 8)
     }
 
-    func onStatusChange(bufferingPolicy _: BufferingPolicy) async -> Subscription<RoomStatusChange> {
+    func onStatusChange(bufferingPolicy _: BufferingPolicy) -> Subscription<RoomStatusChange> {
         .init(mockAsyncSequence: createSubscription())
     }
 }
 
-actor MockMessages: Messages {
+class MockMessages: Messages {
     let clientID: String
     let roomID: String
     let channel: any RealtimeChannelProtocol
@@ -116,7 +116,7 @@ actor MockMessages: Messages {
         }, interval: 3)
     }
 
-    func subscribe(bufferingPolicy _: BufferingPolicy) async -> MessageSubscription {
+    func subscribe(bufferingPolicy _: BufferingPolicy) -> MessageSubscription {
         MessageSubscription(mockAsyncSequence: createSubscription()) { _ in
             MockMessagesPaginatedResult(clientID: self.clientID, roomID: self.roomID)
         }
@@ -185,7 +185,7 @@ actor MockMessages: Messages {
     }
 }
 
-actor MockRoomReactions: RoomReactions {
+class MockRoomReactions: RoomReactions {
     let clientID: String
     let roomID: String
     let channel: any RealtimeChannelProtocol
@@ -232,7 +232,7 @@ actor MockRoomReactions: RoomReactions {
     }
 }
 
-actor MockTyping: Typing {
+class MockTyping: Typing {
     let clientID: String
     let roomID: String
     let channel: any RealtimeChannelProtocol
@@ -275,7 +275,7 @@ actor MockTyping: Typing {
     }
 }
 
-actor MockPresence: Presence {
+class MockPresence: Presence {
     let clientID: String
     let roomID: String
 
@@ -395,7 +395,7 @@ actor MockPresence: Presence {
     }
 }
 
-actor MockOccupancy: Occupancy {
+class MockOccupancy: Occupancy {
     let clientID: String
     let roomID: String
     let channel: any RealtimeChannelProtocol
@@ -415,7 +415,7 @@ actor MockOccupancy: Occupancy {
         }, interval: 1)
     }
 
-    func subscribe(bufferingPolicy _: BufferingPolicy) async -> Subscription<OccupancyEvent> {
+    func subscribe(bufferingPolicy _: BufferingPolicy) -> Subscription<OccupancyEvent> {
         .init(mockAsyncSequence: createSubscription())
     }
 
@@ -428,7 +428,7 @@ actor MockOccupancy: Occupancy {
     }
 }
 
-actor MockConnection: Connection {
+class MockConnection: Connection {
     let status: AblyChat.ConnectionStatus
     let error: ARTErrorInfo?
 

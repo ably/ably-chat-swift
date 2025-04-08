@@ -6,15 +6,13 @@ private struct MessageSubscriptionWrapper {
     var serial: String
 }
 
-// TODO: Don't have a strong understanding of why @MainActor is needed here. Revisit as part of https://github.com/ably-labs/ably-chat-swift/issues/83
-@MainActor
 internal final class DefaultMessages: Messages, EmitsDiscontinuities {
     public nonisolated let featureChannel: FeatureChannel
     private let implementation: Implementation
 
-    internal nonisolated init(featureChannel: FeatureChannel, chatAPI: ChatAPI, roomID: String, clientID: String, logger: InternalLogger) async {
+    internal init(featureChannel: FeatureChannel, chatAPI: ChatAPI, roomID: String, clientID: String, logger: InternalLogger) {
         self.featureChannel = featureChannel
-        implementation = await .init(featureChannel: featureChannel, chatAPI: chatAPI, roomID: roomID, clientID: clientID, logger: logger)
+        implementation = .init(featureChannel: featureChannel, chatAPI: chatAPI, roomID: roomID, clientID: clientID, logger: logger)
     }
 
     internal nonisolated var channel: any RealtimeChannelProtocol {
@@ -47,8 +45,8 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
         try await implementation.delete(message: message, params: params)
     }
 
-    internal func onDiscontinuity(bufferingPolicy: BufferingPolicy) async -> Subscription<DiscontinuityEvent> {
-        await implementation.onDiscontinuity(bufferingPolicy: bufferingPolicy)
+    internal func onDiscontinuity(bufferingPolicy: BufferingPolicy) -> Subscription<DiscontinuityEvent> {
+        implementation.onDiscontinuity(bufferingPolicy: bufferingPolicy)
     }
 
     /// This class exists to make sure that the internals of the SDK only access ably-cocoa via the `InternalRealtimeChannelProtocol` interface. It does this by removing access to the `channel` property that exists as part of the public API of the `Messages` protocol, making it unlikely that we accidentally try to call the `ARTRealtimeChannelProtocol` interface. We can remove this `Implementation` class when we remove the feature-level `channel` property in https://github.com/ably/ably-chat-swift/issues/242.
@@ -63,7 +61,7 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
         // UUID acts as a unique identifier for each listener/subscription. MessageSubscriptionWrapper houses the subscription and the serial of when it was attached or resumed.
         private var subscriptionPoints: [UUID: MessageSubscriptionWrapper] = [:]
 
-        internal nonisolated init(featureChannel: FeatureChannel, chatAPI: ChatAPI, roomID: String, clientID: String, logger: InternalLogger) async {
+        internal init(featureChannel: FeatureChannel, chatAPI: ChatAPI, roomID: String, clientID: String, logger: InternalLogger) {
             self.featureChannel = featureChannel
             self.chatAPI = chatAPI
             self.roomID = roomID
@@ -71,8 +69,7 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
             self.logger = logger
 
             // Implicitly handles channel events and therefore listners within this class. Alternative is to explicitly call something like `DefaultMessages.start()` which makes the SDK more cumbersome to interact with. This class is useless without kicking off this flow so I think leaving it here is suitable.
-            // "Calls to instance method 'handleChannelEvents(roomId:)' from outside of its actor context are implicitly asynchronous" hence the `await` here.
-            await handleChannelEvents(roomId: roomID)
+            handleChannelEvents(roomId: roomID)
         }
 
         // (CHA-M4) Messages can be received via a subscription in realtime.
@@ -95,7 +92,7 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
                 // (CHA-M4d) If a realtime message with an unknown name is received, the SDK shall silently discard the message, though it may log at DEBUG or TRACE level.
                 // (CHA-M5k) Incoming realtime events that are malformed (unknown field should be ignored) shall not be emitted to subscribers.
                 let eventListener = featureChannel.channel.subscribe(RealtimeMessageName.chatMessage.rawValue) { message in
-                    Task {
+                    do {
                         // TODO: Revisit errors thrown as part of https://github.com/ably-labs/ably-chat-swift/issues/32
                         guard let ablyCocoaData = message.data,
                               let data = JSONValue(ablyCocoaData: ablyCocoaData).objectValue,
@@ -150,6 +147,8 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
                         )
 
                         messageSubscription.emit(message)
+                    } catch {
+                        // note: this replaces some existing code that also didn't handle any thrown error; I suspect not intentional, will leave whoever writes the tests for this class to see what's going on
                     }
                 }
 
@@ -205,8 +204,8 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
         }
 
         // (CHA-M7) Users may subscribe to discontinuity events to know when there’s been a break in messages that they need to resolve. Their listener will be called when a discontinuity event is triggered from the room lifecycle.
-        internal func onDiscontinuity(bufferingPolicy: BufferingPolicy) async -> Subscription<DiscontinuityEvent> {
-            await featureChannel.onDiscontinuity(bufferingPolicy: bufferingPolicy)
+        internal func onDiscontinuity(bufferingPolicy: BufferingPolicy) -> Subscription<DiscontinuityEvent> {
+            featureChannel.onDiscontinuity(bufferingPolicy: bufferingPolicy)
         }
 
         private func getBeforeSubscriptionStart(_ uuid: UUID, params: QueryOptions) async throws -> any PaginatedResult<Message> {

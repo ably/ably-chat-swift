@@ -51,9 +51,7 @@ public final class Subscription<Element: Sendable>: @unchecked Sendable, AsyncSe
         }
     }
 
-    // Access must be synchronised using ``lock``.
-    private var terminationHandlers: [@Sendable () -> Void] = []
-    private let lock = NSLock()
+    @MainActor private var terminationHandlers: [@Sendable () -> Void] = []
     private let mode: Mode
 
     internal init(bufferingPolicy: BufferingPolicy) {
@@ -80,12 +78,9 @@ public final class Subscription<Element: Sendable>: @unchecked Sendable, AsyncSe
         }
     }
 
+    @MainActor
     internal func addTerminationHandler(_ terminationHandler: @escaping (@Sendable () -> Void)) {
-        lock.withLock {
-            var terminationHandlers = self.terminationHandlers
-            terminationHandlers.append(terminationHandler)
-            self.terminationHandlers = terminationHandlers
-        }
+        terminationHandlers.append(terminationHandler)
 
         switch mode {
         case let .default(_, continuation):

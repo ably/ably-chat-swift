@@ -2,7 +2,7 @@
 import Foundation
 
 /// A mock implementation of ``SimpleClock`` which records its arguments but does not actually sleep.
-actor MockSimpleClock: SimpleClock {
+class MockSimpleClock: SimpleClock {
     private let sleepBehavior: SleepBehavior
 
     enum SleepBehavior {

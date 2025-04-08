@@ -8,6 +8,7 @@ public typealias PresenceData = JSONValue
  *
  * Get an instance via ``Room/presence``.
  */
+@MainActor
 public protocol Presence: AnyObject, Sendable, EmitsDiscontinuities {
     /**
      * Same as ``get(params:)``, but with defaults params.
@@ -77,7 +78,7 @@ public protocol Presence: AnyObject, Sendable, EmitsDiscontinuities {
      *
      * - Returns: A subscription `AsyncSequence` that can be used to iterate through ``PresenceEvent`` events.
      */
-    func subscribe(event: PresenceEventType, bufferingPolicy: BufferingPolicy) async -> Subscription<PresenceEvent>
+    func subscribe(event: PresenceEventType, bufferingPolicy: BufferingPolicy) -> Subscription<PresenceEvent>
 
     /**
      * Subscribes a given listener to different presence events in the chat room.
@@ -88,7 +89,7 @@ public protocol Presence: AnyObject, Sendable, EmitsDiscontinuities {
      *
      * - Returns: A subscription `AsyncSequence` that can be used to iterate through ``PresenceEvent`` events.
      */
-    func subscribe(events: [PresenceEventType], bufferingPolicy: BufferingPolicy) async -> Subscription<PresenceEvent>
+    func subscribe(events: [PresenceEventType], bufferingPolicy: BufferingPolicy) -> Subscription<PresenceEvent>
 
     /**
      * Method to join room presence, will emit an enter event to all subscribers. Repeat calls will trigger more enter events.
@@ -117,21 +118,21 @@ public protocol Presence: AnyObject, Sendable, EmitsDiscontinuities {
     /// Same as calling ``subscribe(event:bufferingPolicy:)`` with ``BufferingPolicy/unbounded``.
     ///
     /// The `Presence` protocol provides a default implementation of this method.
-    func subscribe(event: PresenceEventType) async -> Subscription<PresenceEvent>
+    func subscribe(event: PresenceEventType) -> Subscription<PresenceEvent>
 
     /// Same as calling ``subscribe(events:bufferingPolicy:)`` with ``BufferingPolicy/unbounded``.
     ///
     /// The `Presence` protocol provides a default implementation of this method.
-    func subscribe(events: [PresenceEventType]) async -> Subscription<PresenceEvent>
+    func subscribe(events: [PresenceEventType]) -> Subscription<PresenceEvent>
 }
 
 public extension Presence {
-    func subscribe(event: PresenceEventType) async -> Subscription<PresenceEvent> {
-        await subscribe(event: event, bufferingPolicy: .unbounded)
+    func subscribe(event: PresenceEventType) -> Subscription<PresenceEvent> {
+        subscribe(event: event, bufferingPolicy: .unbounded)
     }
 
-    func subscribe(events: [PresenceEventType]) async -> Subscription<PresenceEvent> {
-        await subscribe(events: events, bufferingPolicy: .unbounded)
+    func subscribe(events: [PresenceEventType]) -> Subscription<PresenceEvent> {
+        subscribe(events: events, bufferingPolicy: .unbounded)
     }
 }
 

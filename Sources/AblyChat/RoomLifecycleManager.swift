@@ -4,26 +4,27 @@ import AsyncAlgorithms
 /// A realtime channel that contributes to the room lifecycle.
 ///
 /// The identity implied by the `Identifiable` conformance must distinguish each of the contributors passed to a given ``RoomLifecycleManager`` instance.
+@MainActor
 internal protocol RoomLifecycleContributor: Identifiable, Sendable {
     /// The room feature that this contributor corresponds to. Used only for choosing which error to throw when a contributor operation fails.
     var feature: RoomFeature { get }
     var channel: any InternalRealtimeChannelProtocol { get }
 
     /// Informs the contributor that there has been a break in channel continuity, which it should inform library users about.
-    ///
-    /// It is marked as `async` purely to make it easier to write mocks for this method (i.e. to use an actor as a mock).
-    func emitDiscontinuity(_ discontinuity: DiscontinuityEvent) async
+    func emitDiscontinuity(_ discontinuity: DiscontinuityEvent)
 }
 
+@MainActor
 internal protocol RoomLifecycleManager: Sendable {
     func performAttachOperation() async throws(InternalError)
     func performDetachOperation() async throws(InternalError)
     func performReleaseOperation() async
-    var roomStatus: RoomStatus { get async }
-    func onRoomStatusChange(bufferingPolicy: BufferingPolicy) async -> Subscription<RoomStatusChange>
+    var roomStatus: RoomStatus { get }
+    func onRoomStatusChange(bufferingPolicy: BufferingPolicy) -> Subscription<RoomStatusChange>
     func waitToBeAbleToPerformPresenceOperations(requestedByFeature requester: RoomFeature) async throws(InternalError)
 }
 
+@MainActor
 internal protocol RoomLifecycleManagerFactory: Sendable {
     associatedtype Contributor: RoomLifecycleContributor
     associatedtype Manager: RoomLifecycleManager
@@ -31,7 +32,7 @@ internal protocol RoomLifecycleManagerFactory: Sendable {
     func createManager(
         contributors: [Contributor],
         logger: InternalLogger
-    ) async -> Manager
+    ) -> Manager
 }
 
 internal final class DefaultRoomLifecycleManagerFactory: RoomLifecycleManagerFactory {
@@ -40,8 +41,8 @@ internal final class DefaultRoomLifecycleManagerFactory: RoomLifecycleManagerFac
     internal func createManager(
         contributors: [DefaultRoomLifecycleContributor],
         logger: InternalLogger
-    ) async -> DefaultRoomLifecycleManager<DefaultRoomLifecycleContributor> {
-        await .init(
+    ) -> DefaultRoomLifecycleManager<DefaultRoomLifecycleContributor> {
+        .init(
             contributors: contributors,
             logger: logger,
             clock: clock
@@ -49,7 +50,7 @@ internal final class DefaultRoomLifecycleManagerFactory: RoomLifecycleManagerFac
     }
 }
 
-internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor>: RoomLifecycleManager {
+internal class DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor>: RoomLifecycleManager {
     // MARK: - Constant properties
 
     private let logger: InternalLogger
@@ -67,12 +68,12 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
 
     // MARK: - Initializers and `deinit`
 
-    internal init(
+    internal convenience init(
         contributors: [Contributor],
         logger: InternalLogger,
         clock: SimpleClock
-    ) async {
-        await self.init(
+    ) {
+        self.init(
             status: nil,
             pendingDiscontinuityEvents: nil,
             idsOfContributorsWithTransientDisconnectTimeout: nil,
@@ -83,15 +84,15 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
     }
 
     #if DEBUG
-        internal init(
+        internal convenience init(
             testsOnly_status status: Status? = nil,
             testsOnly_pendingDiscontinuityEvents pendingDiscontinuityEvents: [Contributor.ID: DiscontinuityEvent]? = nil,
             testsOnly_idsOfContributorsWithTransientDisconnectTimeout idsOfContributorsWithTransientDisconnectTimeout: Set<Contributor.ID>? = nil,
             contributors: [Contributor],
             logger: InternalLogger,
             clock: SimpleClock
-        ) async {
-            await self.init(
+        ) {
+            self.init(
                 status: status,
                 pendingDiscontinuityEvents: pendingDiscontinuityEvents,
                 idsOfContributorsWithTransientDisconnectTimeout: idsOfContributorsWithTransientDisconnectTimeout,
@@ -109,7 +110,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
         contributors: [Contributor],
         logger: InternalLogger,
         clock: SimpleClock
-    ) async {
+    ) {
         self.status = status ?? .initialized
         self.contributors = contributors
         contributorAnnotations = .init(
@@ -120,24 +121,14 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
         self.logger = logger
         self.clock = clock
 
-        // The idea here is to make sure that, before the initializer completes, we are already listening for state changes, so that e.g. tests don’t miss a state change.
-        let subscriptions = await withTaskGroup(of: (contributor: Contributor, subscription: Subscription<ARTChannelStateChange>).self) { group in
-            for contributor in contributors {
-                group.addTask {
-                    await (contributor: contributor, subscription: contributor.channel.subscribeToState())
-                }
-            }
-
-            return await Array(group)
-        }
+        let subscriptions = contributors.map { (contributor: $0, subscription: $0.channel.subscribeToState()) }
 
         // CHA-RL4: listen for state changes from our contributors
         // TODO: Understand what happens when this task gets cancelled by `deinit`; I’m not convinced that the for-await loops will exit (https://github.com/ably-labs/ably-chat-swift/issues/29)
         listenForStateChangesTask = Task {
             await withTaskGroup(of: Void.self) { group in
                 for (contributor, subscription) in subscriptions {
-                    // This `@Sendable` is to make the compiler error "'self'-isolated value of type '() async -> Void' passed as a strongly transferred parameter; later accesses could race" go away. I don’t hugely understand what it means, but given the "'self'-isolated value" I guessed it was something vaguely to do with the fact that `async` actor initializers are actor-isolated and thought that marking it as `@Sendable` would sever this isolation and make the error go away, which it did 🤷. But there are almost certainly consequences that I am incapable of reasoning about with my current level of Swift concurrency knowledge.
-                    group.addTask { @Sendable [weak self] in
+                    group.addTask { [weak self] in
                         // We intentionally wait to finish processing one state change before moving on to the next; this means that when we process an ATTACHED state change, we can be sure that the current `hasBeenAttached` annotation correctly reflects the contributor’s previous state changes.
                         for await stateChange in subscription {
                             await self?.didReceiveStateChange(stateChange, forContributor: contributor)
@@ -416,7 +407,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
                 let discontinuity = DiscontinuityEvent(error: reason)
                 logger.log(message: "Emitting discontinuity event \(discontinuity) for contributor \(contributor)", level: .info)
 
-                await contributor.emitDiscontinuity(discontinuity)
+                contributor.emitDiscontinuity(discontinuity)
             }
         case .attached:
             let hadAlreadyAttached = contributorAnnotations[contributor].hasBeenAttached
@@ -432,7 +423,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
                 clearTransientDisconnectTimeouts(for: contributor)
 
                 if status != .attached {
-                    if await (contributors.async.map { await $0.channel.state }.allSatisfy { $0 == .attached }) {
+                    if await (contributors.async.map { await $0.channel.state }.allSatisfy { @Sendable state in state == .attached }) {
                         // CHA-RL4b8
                         logger.log(message: "Now that all contributors are ATTACHED, transitioning room to ATTACHED", level: .info)
                         changeStatus(to: .attached)
@@ -469,7 +460,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
 
                 clearTransientDisconnectTimeouts()
 
-                // My understanding is that, since this task is being created inside an actor’s synchronous code, the two .suspended* statuses will always come in the right order; i.e. first .suspendedAwaitingStartOfRetryOperation and then .suspended.
+                // My understanding is that, since this task is being created inside synchronous code which is isolated to an actor (specifically, the MainActor), the two .suspended* statuses will always come in the right order; i.e. first .suspendedAwaitingStartOfRetryOperation and then .suspended.
                 let retryOperationTask = scheduleAnOperation(
                     kind: .retry(
                         triggeringContributor: contributor,
@@ -632,7 +623,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
 
         do {
             let result = await withCheckedContinuation { (continuation: OperationResultContinuations.Continuation) in
-                // My “it is guaranteed” in the documentation for this method is really more of an “I hope that”, because it’s based on my pretty vague understanding of Swift concurrency concepts; namely, I believe that if you call this manager-isolated `async` method from another manager-isolated method, the initial synchronous part of this method — in particular the call to `addContinuation` below — will occur _before_ the call to this method suspends. (I think this can be roughly summarised as “calls to async methods on self don’t do actor hopping” but I could be completely misusing a load of Swift concurrency vocabulary there.)
+                // My “it is guaranteed” in the documentation for this method is really more of an “I hope that”, because it’s based on my pretty vague understanding of Swift concurrency concepts; namely, I believe that if you call this MainActor-isolated `async` method from another MainActor-isolated method, the initial synchronous part of this method — in particular the call to `addContinuation` below — will occur _before_ the call to this method suspends. (I think this can be roughly summarised as “calls to async methods on self don’t do actor hopping” but I could be completely misusing a load of Swift concurrency vocabulary there.)
                 operationResultContinuations.addContinuation(continuation, forResultOfOperationWithID: waitedOperationID)
 
                 #if DEBUG
@@ -780,7 +771,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
                     let error = ARTErrorInfo(chatError: .attachmentFailed(feature: contributor.feature, underlyingError: contributorAttachError.toARTErrorInfo()))
 
                     // CHA-RL1h3
-                    // My understanding is that, since this task is being created inside an actor’s synchronous code, the two .suspended* statuses will always come in the right order; i.e. first .suspendedAwaitingStartOfRetryOperation and then .suspended.
+                    // My understanding is that, since this task is being created inside synchronous code which is isolated to an actor (specifically, the MainActor), the two .suspended* statuses will always come in the right order; i.e. first .suspendedAwaitingStartOfRetryOperation and then .suspended.
                     let retryOperationTask = scheduleAnOperation(
                         kind: .retry(
                             triggeringContributor: contributor,
@@ -793,7 +784,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
                     let error = ARTErrorInfo(chatError: .attachmentFailed(feature: contributor.feature, underlyingError: contributorAttachError.toARTErrorInfo()))
 
                     // CHA-RL1h5
-                    // My understanding is that, since this task is being created inside an actor’s synchronous code, the two .failed* statuses will always come in the right order; i.e. first .failedAwaitingStartOfRundownOperation and then .failedAndPerformingRundownOperation.
+                    // My understanding is that, since this task is being created inside synchronous code which is isolated to an actor (specifically, the MainActor), the two .failed* statuses will always come in the right order; i.e. first .failedAwaitingStartOfRundownOperation and then .failedAndPerformingRundownOperation.
                     let rundownOperationTask = scheduleAnOperation(
                         kind: .rundown(
                             errorForFailedStatus: error
@@ -818,17 +809,17 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
 
         // CHA-RL1g2
         // TODO: It’s not clear to me whether this is considered to be part of the ATTACH operation or not; see the note on the ``hasOperationInProgress`` property
-        await emitPendingDiscontinuityEvents()
+        emitPendingDiscontinuityEvents()
     }
 
     /// Implements CHA-RL1g2’s emitting of pending discontinuity events.
-    private func emitPendingDiscontinuityEvents() async {
+    private func emitPendingDiscontinuityEvents() {
         // Emit all pending discontinuity events
         logger.log(message: "Emitting pending discontinuity events", level: .info)
         for contributor in contributors {
             if let pendingDiscontinuityEvent = contributorAnnotations[contributor].pendingDiscontinuityEvent {
                 logger.log(message: "Emitting pending discontinuity event \(String(describing: pendingDiscontinuityEvent)) to contributor \(contributor)", level: .info)
-                await contributor.emitDiscontinuity(pendingDiscontinuityEvent)
+                contributor.emitDiscontinuity(pendingDiscontinuityEvent)
             }
         }
 
@@ -1133,7 +1124,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
         }
 
         // TODO: this assumes that if you check a channel’s state, and it’s x, and you then immediately add a state listener, you’ll definitely find out if the channel changes to a state other than x; this may not be true due to threading, address in https://github.com/ably-labs/ably-chat-swift/issues/49
-        for await stateChange in await triggeringContributor.channel.subscribeToState() {
+        for await stateChange in triggeringContributor.channel.subscribeToState() {
             // (I prefer this way of writing it, in this case)
             // swiftlint:disable:next for_where
             if try handleState(stateChange.current, stateChange.reason) {
@@ -1209,7 +1200,7 @@ internal actor DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
             #if DEBUG
                 statusChangeWaitEventSubscriptions.emit(.init())
             #endif
-            let nextRoomStatusChange = await (subscription.first { _ in true })
+            let nextRoomStatusChange = await (subscription.first { @Sendable _ in true })
             logger.log(message: "waitToBeAbleToPerformPresenceOperations got status change \(String(describing: nextRoomStatusChange))", level: .debug)
 
             // CHA-RL9b

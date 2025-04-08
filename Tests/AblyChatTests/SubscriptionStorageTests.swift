@@ -1,6 +1,7 @@
 @testable import AblyChat
 import Testing
 
+@MainActor
 struct SubscriptionStorageTests {
     @Test
     func emit() async throws {
@@ -10,7 +11,7 @@ struct SubscriptionStorageTests {
 
         var emittedElements: [String] = []
         for subscription in subscriptions {
-            try emittedElements.append(#require(await subscription.first { _ in true }))
+            try emittedElements.append(#require(await subscription.first { @Sendable _ in true }))
         }
 
         #expect(emittedElements == Array(repeating: "hello", count: 10))
@@ -34,7 +35,7 @@ struct SubscriptionStorageTests {
             // Now there are no more references to `subscription`.
         })()
 
-        await subscriptionTerminatedSignal.stream.first { _ in true }
+        await subscriptionTerminatedSignal.stream.first { @Sendable _ in true }
         #expect(storage.testsOnly_subscriptionCount == 0)
     }
 }

@@ -2,11 +2,11 @@ import Ably
 @testable import AblyChat
 
 final class MockRealtimePresence: InternalRealtimePresenceProtocol {
-    func subscribe(_: @escaping ARTPresenceMessageCallback) -> ARTEventListener? {
+    func subscribe(_: @escaping @MainActor (ARTPresenceMessage) -> Void) -> ARTEventListener? {
         fatalError("Not implemented")
     }
 
-    func subscribe(_: ARTPresenceAction, callback _: @escaping ARTPresenceMessageCallback) -> ARTEventListener? {
+    func subscribe(_: ARTPresenceAction, callback _: @escaping @MainActor (ARTPresenceMessage) -> Void) -> ARTEventListener? {
         fatalError("Not implemented")
     }
 
