@@ -91,19 +91,22 @@ struct DefaultMessagesTests {
                 channelSerial: "001"
             ),
             initialState: .attached,
-            messageToEmitOnSubscribe: .init(
-                action: .create, // arbitrary
-                serial: "", // arbitrary
-                clientID: "", // arbitrary
-                data: [
+            messageToEmitOnSubscribe: {
+                let message = ARTMessage()
+                message.action = .create // arbitrary
+                message.serial = "" // arbitrary
+                message.clientId = "" // arbitrary
+                message.data = [
                     "text": "", // arbitrary
-                ],
-                extras: [
+                ]
+                message.extras = [
                     "headers": ["numberKey": 10, "stringKey": "hello"],
-                ],
-                operation: nil,
-                version: ""
-            )
+                ] as ARTJsonCompatible
+                message.operation = nil
+                message.version = ""
+
+                return message
+            }()
         )
         let featureChannel = MockFeatureChannel(channel: channel)
         let defaultMessages = DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
@@ -128,18 +131,21 @@ struct DefaultMessagesTests {
                 channelSerial: "001"
             ),
             initialState: .attached,
-            messageToEmitOnSubscribe: .init(
-                action: .create, // arbitrary
-                serial: "", // arbitrary
-                clientID: "", // arbitrary
-                data: [
+            messageToEmitOnSubscribe: {
+                let message = ARTMessage()
+                message.action = .create // arbitrary
+                message.serial = "" // arbitrary
+                message.clientId = "" // arbitrary
+                message.data = [
                     "text": "", // arbitrary
                     "metadata": ["numberKey": 10, "stringKey": "hello"],
-                ],
-                extras: [:],
-                operation: nil,
-                version: ""
-            )
+                ]
+                message.extras = [:] as ARTJsonCompatible
+                message.operation = nil
+                message.version = ""
+
+                return message
+            }()
         )
         let featureChannel = MockFeatureChannel(channel: channel)
         let defaultMessages = DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
