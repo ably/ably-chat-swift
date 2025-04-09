@@ -38,6 +38,10 @@ let package = Package(
             url: "https://github.com/apple/swift-docc-plugin",
             from: "1.0.0"
         ),
+        .package(
+            url: "https://github.com/groue/Semaphore",
+            from: "0.1.0"
+        ),
     ],
     targets: [
         .target(
@@ -50,6 +54,10 @@ let package = Package(
                 .product(
                     name: "AsyncAlgorithms",
                     package: "swift-async-algorithms"
+                ),
+                .product(
+                    name: "Semaphore",
+                    package: "Semaphore"
                 ),
             ]
         ),
@@ -80,6 +88,10 @@ let package = Package(
                 .product(
                     name: "Table",
                     package: "Table"
+                ),
+                .product(
+                    name: "Semaphore",
+                    package: "Semaphore"
                 ),
             ]
         ),

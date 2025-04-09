@@ -1192,7 +1192,7 @@ internal class DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
 
         switch status.toRoomStatus {
         case .attaching:
-            // CHA-RL9, which is invoked by CHA-PR3d, CHA-PR10d, CHA-PR6c, CHA-T2c
+            // CHA-RL9, which is invoked by CHA-PR3d, CHA-PR10d, CHA-PR6c
 
             // CHA-RL9a
             let subscription = onRoomStatusChange(bufferingPolicy: .unbounded)
@@ -1210,10 +1210,10 @@ internal class DefaultRoomLifecycleManager<Contributor: RoomLifecycleContributor
                 throw ARTErrorInfo(chatError: .roomTransitionedToInvalidStateForPresenceOperation(cause: nextRoomStatusChange?.current.error)).toInternalError()
             }
         case .attached:
-            // CHA-PR3e, CHA-PR10e, CHA-PR6d, CHA-T2d
+            // CHA-PR3e, CHA-PR10e, CHA-PR6d
             break
         default:
-            // CHA-PR3h, CHA-PR10h, CHA-PR6h, CHA-T2g
+            // CHA-PR3h, CHA-PR10h, CHA-PR6h
             throw ARTErrorInfo(chatError: .presenceOperationRequiresRoomAttach(feature: requester)).toInternalError()
         }
     }
