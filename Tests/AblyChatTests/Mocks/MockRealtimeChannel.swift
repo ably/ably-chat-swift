@@ -17,17 +17,6 @@ final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
     var lastMessagePublishedData: JSONValue?
     var lastMessagePublishedExtras: [String: JSONValue]?
 
-    // TODO: If we tighten up the types we then we should be able to get rid of the `@unchecked Sendable` here, but I’m in a rush. Revisit in https://github.com/ably/ably-chat-swift/issues/195
-    struct MessageToEmit: @unchecked Sendable {
-        var action: ARTMessageAction
-        var serial: String
-        var clientID: String
-        var data: Any
-        var extras: NSDictionary
-        var operation: ARTMessageOperation?
-        var version: String
-    }
-
     init(
         name: String? = nil,
         properties: ARTChannelProperties = .init(),
@@ -35,7 +24,7 @@ final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
         initialErrorReason: ARTErrorInfo? = nil,
         attachBehavior: AttachOrDetachBehavior? = nil,
         detachBehavior: AttachOrDetachBehavior? = nil,
-        messageToEmitOnSubscribe: MessageToEmit? = nil,
+        messageToEmitOnSubscribe: ARTMessage? = nil,
         subscribeToStateBehavior: SubscribeToStateBehavior? = nil
     ) {
         _name = name
@@ -137,18 +126,11 @@ final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
         try result.get()
     }
 
-    let messageToEmitOnSubscribe: MessageToEmit?
+    let messageToEmitOnSubscribe: ARTMessage?
 
     func subscribe(_: String, callback: @escaping @MainActor (ARTMessage) -> Void) -> ARTEventListener? {
         if let messageToEmitOnSubscribe {
-            let message = ARTMessage(name: nil, data: messageToEmitOnSubscribe.data)
-            message.action = messageToEmitOnSubscribe.action
-            message.serial = messageToEmitOnSubscribe.serial
-            message.clientId = messageToEmitOnSubscribe.clientID
-            message.extras = messageToEmitOnSubscribe.extras
-            message.operation = messageToEmitOnSubscribe.operation
-            message.version = messageToEmitOnSubscribe.version
-            callback(message)
+            callback(messageToEmitOnSubscribe)
         }
         return ARTEventListener()
     }

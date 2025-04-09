@@ -7,7 +7,6 @@ import Ably
 /// - `async` methods instead of callbacks
 /// - typed throws
 /// - `JSONValue` instead of `Any`
-/// - `Sendable` types where helpful
 /// - `AsyncSequence` where helpful
 ///
 /// Note that the API of this protocol is not currently consistent; for example there are some places in the codebase where we subscribe to Realtime channel state using callbacks, and other places where we subscribe using `AsyncSequence`. We should aim to make this consistent; see https://github.com/ably/ably-chat-swift/issues/245.
@@ -236,10 +235,6 @@ internal final class InternalRealtimeClientAdapter: InternalRealtimeClientProtoc
             underlying.unsubscribe(listener)
         }
 
-        internal func publish(_ name: String?, data: JSONValue?, extras: [String: JSONValue]?) {
-            underlying.publish(name, data: data?.toAblyCocoaData, extras: extras?.toARTJsonCompatible)
-        }
-
         internal func subscribe(_ name: String, callback: @escaping @MainActor (ARTMessage) -> Void) -> ARTEventListener? {
             underlying.subscribe(name, callback: callback)
         }
@@ -403,7 +398,7 @@ internal final class InternalRealtimeClientAdapter: InternalRealtimeClientProtoc
     }
 }
 
-/// A `Sendable` version of `ARTPresenceMessage`. Only contains the properties that the Chat SDK is currently using; add as needed.
+/// A version of `ARTPresenceMessage` that uses strongly-typed `data` and `extras` properties. Only contains the properties that the Chat SDK is currently using; add as needed.
 internal struct PresenceMessage {
     internal var clientId: String?
     internal var timestamp: Date?
