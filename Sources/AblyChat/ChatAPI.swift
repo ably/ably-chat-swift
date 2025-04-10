@@ -12,8 +12,11 @@ internal final class ChatAPI {
 
     // (CHA-M6) Messages should be queryable from a paginated REST API.
     internal func getMessages(roomId: String, params: QueryOptions) async throws(InternalError) -> any PaginatedResult<Message> {
+        // TODO: explain, add to CONTRIBUTING, make issue
+        // https://github.com/swiftlang/swift/issues/80735
         let endpoint = "\(apiVersionV2)/rooms/\(roomId)/messages"
-        return try await makePaginatedRequest(endpoint, params: params.asQueryItems())
+        let result: Result<PaginatedResultWrapper<Message>, InternalError> = await makePaginatedRequest(endpoint, params: params.asQueryItems())
+        return try result.get()
     }
 
     internal struct SendMessageResponse: JSONObjectDecodable {
@@ -196,13 +199,17 @@ internal final class ChatAPI {
     private func makePaginatedRequest<Response: JSONDecodable & Sendable & Equatable>(
         _ url: String,
         params: [String: String]? = nil
-    ) async throws(InternalError) -> any PaginatedResult<Response> {
-        let paginatedResponse = try await realtime.request("GET", path: url, params: params, body: nil, headers: [:])
-        let jsonValues = paginatedResponse.items.map { JSONValue(ablyCocoaData: $0) }
-        let items = try jsonValues.map { jsonValue throws(InternalError) in
-            try Response(jsonValue: jsonValue)
+    ) async -> Result<PaginatedResultWrapper<Response>, InternalError> {
+        do {
+            let paginatedResponse = try await realtime.request("GET", path: url, params: params, body: nil, headers: [:])
+            let jsonValues = paginatedResponse.items.map { JSONValue(ablyCocoaData: $0) }
+            let items = try jsonValues.map { jsonValue throws(InternalError) in
+                try Response(jsonValue: jsonValue)
+            }
+            return .success(paginatedResponse.toPaginatedResult(items: items))
+        } catch {
+            return .failure(error)
         }
-        return paginatedResponse.toPaginatedResult(items: items)
     }
 
     internal enum ChatError: Error {
