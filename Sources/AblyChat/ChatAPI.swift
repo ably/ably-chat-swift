@@ -1,7 +1,7 @@
 import Ably
 
 @MainActor
-internal final class ChatAPI: Sendable {
+internal final class ChatAPI {
     private let realtime: any InternalRealtimeClientProtocol
     private let apiVersion = "/chat/v1"
     private let apiVersionV2 = "/chat/v2" // TODO: remove v1 after full transition to v2

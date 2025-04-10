@@ -27,7 +27,7 @@ internal final class DefaultOccupancy: Occupancy, EmitsDiscontinuities {
 
     /// This class exists to make sure that the internals of the SDK only access ably-cocoa via the `InternalRealtimeChannelProtocol` interface. It does this by removing access to the `channel` property that exists as part of the public API of the `Occupancy` protocol, making it unlikely that we accidentally try to call the `ARTRealtimeChannelProtocol` interface. We can remove this `Implementation` class when we remove the feature-level `channel` property in https://github.com/ably/ably-chat-swift/issues/242.
     @MainActor
-    internal final class Implementation: Sendable {
+    internal final class Implementation {
         private let chatAPI: ChatAPI
         private let roomID: String
         private let logger: InternalLogger

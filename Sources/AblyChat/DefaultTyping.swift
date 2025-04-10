@@ -35,7 +35,7 @@ internal final class DefaultTyping: Typing {
 
     /// This class exists to make sure that the internals of the SDK only access ably-cocoa via the `InternalRealtimeChannelProtocol` interface. It does this by removing access to the `channel` property that exists as part of the public API of the `Typing` protocol, making it unlikely that we accidentally try to call the `ARTRealtimeChannelProtocol` interface. We can remove this `Implementation` class when we remove the feature-level `channel` property in https://github.com/ably/ably-chat-swift/issues/242.
     @MainActor
-    private final class Implementation: Sendable {
+    private final class Implementation {
         private let featureChannel: FeatureChannel
         private let roomID: String
         private let clientID: String
