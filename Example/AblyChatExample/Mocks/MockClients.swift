@@ -122,7 +122,7 @@ class MockMessages: Messages {
         }
     }
 
-    func get(options _: QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message> {
+    func get(options _: QueryOptions) async throws(ARTErrorInfo) -> AnyPaginatedResult<Message> {
         MockMessagesPaginatedResult(clientID: clientID, roomID: roomID)
     }
 

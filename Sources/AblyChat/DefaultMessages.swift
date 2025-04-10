@@ -29,7 +29,7 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
         try await implementation.subscribe(bufferingPolicy: bufferingPolicy)
     }
 
-    internal func get(options: QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message> {
+    internal func get(options: QueryOptions) async throws(ARTErrorInfo) -> AnyPaginatedResult<Message> {
         try await implementation.get(options: options)
     }
 
@@ -171,7 +171,7 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
         }
 
         // (CHA-M6a) A method must be exposed that accepts the standard Ably REST API query parameters. It shall call the “REST API”#rest-fetching-messages and return a PaginatedResult containing messages, which can then be paginated through.
-        internal func get(options: QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message> {
+        internal func get(options: QueryOptions) async throws(ARTErrorInfo) -> AnyPaginatedResult<Message> {
             do {
                 return try await chatAPI.getMessages(roomId: roomID, params: options)
             } catch {
@@ -208,7 +208,7 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
             featureChannel.onDiscontinuity(bufferingPolicy: bufferingPolicy)
         }
 
-        private func getBeforeSubscriptionStart(_ uuid: UUID, params: QueryOptions) async throws -> any PaginatedResult<Message> {
+        private func getBeforeSubscriptionStart(_ uuid: UUID, params: QueryOptions) async throws -> AnyPaginatedResult<Message> {
             guard let subscriptionPoint = subscriptionPoints[uuid]?.serial else {
                 throw ARTErrorInfo.create(
                     withCode: 40000,
