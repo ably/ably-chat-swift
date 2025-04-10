@@ -16,13 +16,9 @@ struct DefaultMessagesTests {
         let defaultMessages = DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
 
         // Then
-        // TODO: avoids compiler crash (https://github.com/ably/ably-chat-swift/issues/233), revert once Xcode 16.3 released
-        let doIt = {
+        await #expect(throws: ARTErrorInfo.create(withCode: 40000, status: 400, message: "channel is attached, but channelSerial is not defined"), performing: {
             // When
             try await defaultMessages.subscribe()
-        }
-        await #expect(throws: ARTErrorInfo.create(withCode: 40000, status: 400, message: "channel is attached, but channelSerial is not defined"), performing: {
-            try await doIt()
         })
     }
 
@@ -38,15 +34,11 @@ struct DefaultMessagesTests {
         let defaultMessages = DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
 
         // Then
-        // TODO: avoids compiler crash (https://github.com/ably/ably-chat-swift/issues/233), revert once Xcode 16.3 released
-        let doIt = {
+        await #expect(throws: Never.self, performing: {
             // When
             // `_ =` is required to avoid needing iOS 16 to run this test
             // Error: Runtime support for parameterized protocol types is only available in iOS 16.0.0 or newer
             _ = try await defaultMessages.get(options: .init())
-        }
-        await #expect(throws: Never.self, performing: {
-            try await doIt()
         })
     }
 

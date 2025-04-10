@@ -2195,17 +2195,12 @@ struct DefaultRoomLifecycleManagerTests {
             forTestingWhatHappensWhenCurrentlyIn: .detached // arbitrary given the above constraints
         )
 
-        // (Note: I wanted to use #expect(…, throws:) below, but for some reason it made the compiler _crash_! No idea why. So, gave up on that.)
-
         // When: `waitToBeAbleToPerformPresenceOperations(requestedByFeature:)` is called on the lifecycle manager
-        var caughtError: Error?
-        do {
+        let error = await #expect(throws: InternalError.self) {
             try await manager.waitToBeAbleToPerformPresenceOperations(requestedByFeature: .messages /* arbitrary */ )
-        } catch {
-            caughtError = error
         }
 
         // Then: It throws a roomInInvalidState error for that feature, with status code 400, and a message explaining that the room must first be attached
-        #expect(isChatError(caughtError, withCodeAndStatusCode: .variableStatusCode(.roomInInvalidState, statusCode: 400), message: "To perform this messages operation, you must first attach the room."))
+        #expect(isChatError(error, withCodeAndStatusCode: .variableStatusCode(.roomInInvalidState, statusCode: 400), message: "To perform this messages operation, you must first attach the room."))
     }
 }

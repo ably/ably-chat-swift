@@ -151,12 +151,8 @@ struct DefaultRoomsTests {
         // Then: It throws a `badRequest` error
         let differentOptions = RoomOptions(presence: .init(subscribe: false))
 
-        // TODO: avoids compiler crash (https://github.com/ably/ably-chat-swift/issues/233), revert once Xcode 16.3 released
-        let doIt = {
-            try await rooms.get(roomID: roomID, options: differentOptions)
-        }
         await #expect {
-            try await doIt()
+            try await rooms.get(roomID: roomID, options: differentOptions)
         } throws: { error in
             isChatError(error, withCodeAndStatusCode: .fixedStatusCode(.badRequest))
         }
@@ -197,12 +193,8 @@ struct DefaultRoomsTests {
         // Then: The second call to get(roomID:options:) throws a `badRequest` error
         let differentOptions = RoomOptions(presence: .init(subscribe: false))
 
-        // TODO: avoids compiler crash (https://github.com/ably/ably-chat-swift/issues/233), revert once Xcode 16.3 released
-        let doIt = {
-            try await rooms.get(roomID: roomID, options: differentOptions)
-        }
         await #expect {
-            try await doIt()
+            try await rooms.get(roomID: roomID, options: differentOptions)
         } throws: { error in
             isChatError(error, withCodeAndStatusCode: .fixedStatusCode(.badRequest))
         }
