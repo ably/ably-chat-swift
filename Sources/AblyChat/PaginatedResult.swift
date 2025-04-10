@@ -7,9 +7,9 @@ public protocol PaginatedResult<T>: AnyObject, Sendable, Equatable {
     var hasNext: Bool { get }
     var isLast: Bool { get }
     // TODO: (https://github.com/ably-labs/ably-chat-swift/issues/11): consider how to avoid the need for an unwrap
-    func next() async throws(ARTErrorInfo) -> (any PaginatedResult<T>)?
-    func first() async throws(ARTErrorInfo) -> (any PaginatedResult<T>)
-    func current() async throws(ARTErrorInfo) -> (any PaginatedResult<T>)
+    func next() async throws -> (any PaginatedResult<T>)?
+    func first() async throws -> (any PaginatedResult<T>)
+    func current() async throws -> (any PaginatedResult<T>)
 }
 
 /// Used internally to reduce the amount of duplicate code when interacting with `ARTHTTPPaginatedCallback`'s. The wrapper takes in the callback result from the caller e.g. `realtime.request` and either throws the appropriate error, or decodes and returns the response.
@@ -61,29 +61,21 @@ internal final class PaginatedResultWrapper<T: JSONDecodable & Sendable & Equata
     }
 
     /// Asynchronously fetch the next page if available
-    internal func next() async throws(ARTErrorInfo) -> (any PaginatedResult<T>)? {
-        do {
-            return try await withCheckedContinuation { continuation in
-                paginatedResponse.next { paginatedResponse, error in
-                    ARTHTTPPaginatedCallbackWrapper(callbackResult: (paginatedResponse, error)).handleResponse(continuation: continuation)
-                }
-            }.get()
-        } catch {
-            throw error.toARTErrorInfo()
-        }
+    internal func next() async throws -> (any PaginatedResult<T>)? {
+        try await withCheckedContinuation { continuation in
+            paginatedResponse.next { paginatedResponse, error in
+                ARTHTTPPaginatedCallbackWrapper(callbackResult: (paginatedResponse, error)).handleResponse(continuation: continuation)
+            }
+        }.get()
     }
 
     /// Asynchronously fetch the first page
-    internal func first() async throws(ARTErrorInfo) -> (any PaginatedResult<T>) {
-        do {
-            return try await withCheckedContinuation { continuation in
-                paginatedResponse.first { paginatedResponse, error in
-                    ARTHTTPPaginatedCallbackWrapper(callbackResult: (paginatedResponse, error)).handleResponse(continuation: continuation)
-                }
-            }.get()
-        } catch {
-            throw error.toARTErrorInfo()
-        }
+    internal func first() async throws -> (any PaginatedResult<T>) {
+        try await withCheckedContinuation { continuation in
+            paginatedResponse.first { paginatedResponse, error in
+                ARTHTTPPaginatedCallbackWrapper(callbackResult: (paginatedResponse, error)).handleResponse(continuation: continuation)
+            }
+        }.get()
     }
 
     /// Asynchronously fetch the current page
