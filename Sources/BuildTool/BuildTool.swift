@@ -136,7 +136,7 @@ struct GenerateMatrices: ParsableCommand {
     mutating func run() throws {
         let tooling = [
             [
-                "xcodeVersion": "16.2",
+                "xcodeVersion": "16.3",
             ],
         ]
 
