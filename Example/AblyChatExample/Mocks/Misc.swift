@@ -30,11 +30,11 @@ final class MockMessagesPaginatedResult: PaginatedResult {
 
     var isLast: Bool { fatalError("Not implemented") }
 
-    var next: (any PaginatedResult<T>)? { fatalError("Not implemented") }
+    func next() -> (any PaginatedResult<T>)? { fatalError("Not implemented") }
 
-    var first: any PaginatedResult<T> { fatalError("Not implemented") }
+    func first() -> any PaginatedResult<T> { fatalError("Not implemented") }
 
-    var current: any PaginatedResult<T> { fatalError("Not implemented") }
+    func current() -> any PaginatedResult<T> { fatalError("Not implemented") }
 
     init(clientID: String, roomID: String, numberOfMockMessages: Int = 3) {
         self.clientID = clientID

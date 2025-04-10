@@ -9,11 +9,11 @@ private final class MockPaginatedResult<T: Equatable>: PaginatedResult {
 
     var isLast: Bool { fatalError("Not implemented") }
 
-    var next: (any AblyChat.PaginatedResult<T>)? { fatalError("Not implemented") }
+    func next() -> (any AblyChat.PaginatedResult<T>)? { fatalError("Not implemented") }
 
-    var first: any AblyChat.PaginatedResult<T> { fatalError("Not implemented") }
+    func first() -> any AblyChat.PaginatedResult<T> { fatalError("Not implemented") }
 
-    var current: any AblyChat.PaginatedResult<T> { fatalError("Not implemented") }
+    func current() -> any AblyChat.PaginatedResult<T> { fatalError("Not implemented") }
 
     init() {}
 
