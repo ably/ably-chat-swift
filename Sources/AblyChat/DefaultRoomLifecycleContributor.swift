@@ -1,6 +1,6 @@
 import Ably
 
-internal actor DefaultRoomLifecycleContributor: RoomLifecycleContributor, EmitsDiscontinuities, CustomDebugStringConvertible {
+internal class DefaultRoomLifecycleContributor: RoomLifecycleContributor, EmitsDiscontinuities, CustomDebugStringConvertible {
     internal nonisolated let channel: any InternalRealtimeChannelProtocol
     internal nonisolated let feature: RoomFeature
     private var discontinuitySubscriptions = SubscriptionStorage<DiscontinuityEvent>()

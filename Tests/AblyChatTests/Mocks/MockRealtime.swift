@@ -3,7 +3,7 @@ import Ably
 import Foundation
 
 /// A mock implementation of `InternalRealtimeClientProtocol`. We’ll figure out how to do mocking in tests properly in https://github.com/ably-labs/ably-chat-swift/issues/5.
-final class MockRealtime: NSObject, InternalRealtimeClientProtocol, @unchecked Sendable {
+final class MockRealtime: InternalRealtimeClientProtocol {
     let callRecorder = MockMethodCallRecorder()
 
     let connection: MockConnection
@@ -11,11 +11,8 @@ final class MockRealtime: NSObject, InternalRealtimeClientProtocol, @unchecked S
     let paginatedCallback: (@Sendable () throws(ARTErrorInfo) -> ARTHTTPPaginatedResponse)?
     let createWrapperSDKProxyReturnValue: MockSuppliedRealtime?
 
-    private let mutex = NSLock()
-    /// Access must be synchronized via ``mutex``.
-    private(set) var _requestArguments: [(method: String, path: String, params: [String: String]?, body: Any?, headers: [String: String]?)] = []
-    /// Access must be synchronized via ``mutex``.
-    private(set) var _createWrapperSDKProxyOptionsArgument: ARTWrapperSDKProxyOptions?
+    private(set) var requestArguments: [(method: String, path: String, params: [String: String]?, body: Any?, headers: [String: String]?)] = []
+    private(set) var createWrapperSDKProxyOptionsArgument: ARTWrapperSDKProxyOptions?
 
     var clientId: String? {
         "mockClientId"
@@ -34,9 +31,7 @@ final class MockRealtime: NSObject, InternalRealtimeClientProtocol, @unchecked S
     }
 
     func request(_ method: String, path: String, params: [String: String]?, body: Any?, headers: [String: String]?) async throws(InternalError) -> ARTHTTPPaginatedResponse {
-        mutex.withLock {
-            _requestArguments.append((method: method, path: path, params: params, body: body, headers: headers))
-        }
+        requestArguments.append((method: method, path: path, params: params, body: body, headers: headers))
         guard let paginatedCallback else {
             fatalError("Paginated callback not set")
         }
@@ -51,29 +46,13 @@ final class MockRealtime: NSObject, InternalRealtimeClientProtocol, @unchecked S
         }
     }
 
-    var requestArguments: [(method: String, path: String, params: [String: String]?, body: Any?, headers: [String: String]?)] {
-        mutex.withLock {
-            _requestArguments
-        }
-    }
-
     func createWrapperSDKProxy(with options: ARTWrapperSDKProxyOptions) -> some RealtimeClientProtocol {
         guard let createWrapperSDKProxyReturnValue else {
             fatalError("createWrapperSDKProxyReturnValue must be set in order to call createWrapperSDKProxy(with:)")
         }
 
-        mutex.lock()
-        _createWrapperSDKProxyOptionsArgument = options
-        mutex.unlock()
+        createWrapperSDKProxyOptionsArgument = options
 
         return createWrapperSDKProxyReturnValue
-    }
-
-    var createWrapperSDKProxyOptionsArgument: ARTWrapperSDKProxyOptions? {
-        let result: ARTWrapperSDKProxyOptions?
-        mutex.lock()
-        result = _createWrapperSDKProxyOptionsArgument
-        mutex.unlock()
-        return result
     }
 }

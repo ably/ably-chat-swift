@@ -1,7 +1,7 @@
 import Ably
 @testable import AblyChat
 
-final actor MockFeatureChannel: FeatureChannel {
+final class MockFeatureChannel: FeatureChannel {
     let callRecorder = MockMethodCallRecorder()
 
     let channel: any InternalRealtimeChannelProtocol
@@ -16,7 +16,7 @@ final actor MockFeatureChannel: FeatureChannel {
         resultOfWaitToBeAbleToPerformPresenceOperations = resultOfWaitToBeAblePerformPresenceOperations
     }
 
-    func onDiscontinuity(bufferingPolicy: BufferingPolicy) async -> Subscription<DiscontinuityEvent> {
+    func onDiscontinuity(bufferingPolicy: BufferingPolicy) -> Subscription<DiscontinuityEvent> {
         discontinuitySubscriptions.create(bufferingPolicy: bufferingPolicy)
     }
 

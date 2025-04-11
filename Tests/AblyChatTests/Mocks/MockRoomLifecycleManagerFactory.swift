@@ -1,6 +1,6 @@
 @testable import AblyChat
 
-actor MockRoomLifecycleManagerFactory: RoomLifecycleManagerFactory {
+class MockRoomLifecycleManagerFactory: RoomLifecycleManagerFactory {
     private let manager: MockRoomLifecycleManager
     private(set) var createManagerArguments: [(contributors: [DefaultRoomLifecycleContributor], logger: any InternalLogger)] = []
 
@@ -8,7 +8,7 @@ actor MockRoomLifecycleManagerFactory: RoomLifecycleManagerFactory {
         self.manager = manager
     }
 
-    func createManager(contributors: [DefaultRoomLifecycleContributor], logger: any InternalLogger) async -> MockRoomLifecycleManager {
+    func createManager(contributors: [DefaultRoomLifecycleContributor], logger: any InternalLogger) -> MockRoomLifecycleManager {
         createManagerArguments.append((contributors: contributors, logger: logger))
         return manager
     }

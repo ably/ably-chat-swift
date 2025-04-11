@@ -10,8 +10,8 @@ struct DefaultRoomPresenceTests {
     @Test
     func usersMayEnterPresence() async throws {
         // Given
-        let channel = MockRealtimeChannel(name: "basketball::$chat::$chatMessages")
-        let featureChannel = MockFeatureChannel(channel: channel, resultOfWaitToBeAblePerformPresenceOperations: .success(()))
+        let channel = await MockRealtimeChannel(name: "basketball::$chat::$chatMessages")
+        let featureChannel = await MockFeatureChannel(channel: channel, resultOfWaitToBeAblePerformPresenceOperations: .success(()))
         let defaultPresence = await DefaultPresence(featureChannel: featureChannel, roomID: "basketball", clientID: "client1", logger: TestLogger())
 
         // When
@@ -29,8 +29,8 @@ struct DefaultRoomPresenceTests {
     @Test
     func usersMayEnterPresenceWhileAttaching() async throws {
         // Given
-        let channel = MockRealtimeChannel(name: "basketball::$chat::$chatMessages")
-        let featureChannel = MockFeatureChannel(channel: channel, resultOfWaitToBeAblePerformPresenceOperations: .success(()))
+        let channel = await MockRealtimeChannel(name: "basketball::$chat::$chatMessages")
+        let featureChannel = await MockFeatureChannel(channel: channel, resultOfWaitToBeAblePerformPresenceOperations: .success(()))
         let defaultPresence = await DefaultPresence(featureChannel: featureChannel, roomID: "basketball", clientID: "mockClientId", logger: TestLogger())
 
         // When
@@ -51,8 +51,8 @@ struct DefaultRoomPresenceTests {
         let attachError = ARTErrorInfo(domain: "SomeDomain", code: 123)
         let error = ARTErrorInfo(chatError: .roomTransitionedToInvalidStateForPresenceOperation(cause: attachError))
 
-        let channel = MockRealtimeChannel(name: "basketball::$chat::$chatMessages")
-        let featureChannel = MockFeatureChannel(channel: channel, resultOfWaitToBeAblePerformPresenceOperations: .failure(error))
+        let channel = await MockRealtimeChannel(name: "basketball::$chat::$chatMessages")
+        let featureChannel = await MockFeatureChannel(channel: channel, resultOfWaitToBeAblePerformPresenceOperations: .failure(error))
         let defaultPresence = await DefaultPresence(featureChannel: featureChannel, roomID: "basketball", clientID: "mockClientId", logger: TestLogger())
 
         // TODO: avoids compiler crash (https://github.com/ably/ably-chat-swift/issues/233), revert once Xcode 16.3 released
@@ -78,9 +78,9 @@ struct DefaultRoomPresenceTests {
     @Test
     func failToEnterPresenceWhenRoomInInvalidState() async throws {
         // Given
-        let channel = MockRealtimeChannel(name: "basketball::$chat::$chatMessages")
+        let channel = await MockRealtimeChannel(name: "basketball::$chat::$chatMessages")
         let error = ARTErrorInfo(chatError: .presenceOperationRequiresRoomAttach(feature: .presence))
-        let featureChannel = MockFeatureChannel(channel: channel, resultOfWaitToBeAblePerformPresenceOperations: .failure(error))
+        let featureChannel = await MockFeatureChannel(channel: channel, resultOfWaitToBeAblePerformPresenceOperations: .failure(error))
         let defaultPresence = await DefaultPresence(featureChannel: featureChannel, roomID: "basketball", clientID: "mockClientId", logger: TestLogger())
 
         // Then
@@ -102,8 +102,8 @@ struct DefaultRoomPresenceTests {
     @Test
     func usersMayUpdatePresence() async throws {
         // Given
-        let channel = MockRealtimeChannel(name: "basketball::$chat::$chatMessages")
-        let featureChannel = MockFeatureChannel(channel: channel, resultOfWaitToBeAblePerformPresenceOperations: .success(()))
+        let channel = await MockRealtimeChannel(name: "basketball::$chat::$chatMessages")
+        let featureChannel = await MockFeatureChannel(channel: channel, resultOfWaitToBeAblePerformPresenceOperations: .success(()))
         let defaultPresence = await DefaultPresence(featureChannel: featureChannel, roomID: "basketball", clientID: "client1", logger: TestLogger())
 
         // When
@@ -121,8 +121,8 @@ struct DefaultRoomPresenceTests {
     @Test
     func usersMayUpdatePresenceWhileAttaching() async throws {
         // Given
-        let channel = MockRealtimeChannel(name: "basketball::$chat::$chatMessages")
-        let featureChannel = MockFeatureChannel(channel: channel, resultOfWaitToBeAblePerformPresenceOperations: .success(()))
+        let channel = await MockRealtimeChannel(name: "basketball::$chat::$chatMessages")
+        let featureChannel = await MockFeatureChannel(channel: channel, resultOfWaitToBeAblePerformPresenceOperations: .success(()))
         let defaultPresence = await DefaultPresence(featureChannel: featureChannel, roomID: "basketball", clientID: "mockClientId", logger: TestLogger())
 
         // When
@@ -143,8 +143,8 @@ struct DefaultRoomPresenceTests {
         let attachError = ARTErrorInfo(domain: "SomeDomain", code: 123)
         let error = ARTErrorInfo(chatError: .roomTransitionedToInvalidStateForPresenceOperation(cause: attachError))
 
-        let channel = MockRealtimeChannel(name: "basketball::$chat::$chatMessages")
-        let featureChannel = MockFeatureChannel(channel: channel, resultOfWaitToBeAblePerformPresenceOperations: .failure(error))
+        let channel = await MockRealtimeChannel(name: "basketball::$chat::$chatMessages")
+        let featureChannel = await MockFeatureChannel(channel: channel, resultOfWaitToBeAblePerformPresenceOperations: .failure(error))
         let defaultPresence = await DefaultPresence(featureChannel: featureChannel, roomID: "basketball", clientID: "mockClientId", logger: TestLogger())
 
         // TODO: avoids compiler crash (https://github.com/ably/ably-chat-swift/issues/233), revert once Xcode 16.3 released
@@ -170,9 +170,9 @@ struct DefaultRoomPresenceTests {
     @Test
     func failToUpdatePresenceWhenRoomInInvalidState() async throws {
         // Given
-        let channel = MockRealtimeChannel(name: "basketball::$chat::$chatMessages")
+        let channel = await MockRealtimeChannel(name: "basketball::$chat::$chatMessages")
         let error = ARTErrorInfo(chatError: .presenceOperationRequiresRoomAttach(feature: .presence))
-        let featureChannel = MockFeatureChannel(channel: channel, resultOfWaitToBeAblePerformPresenceOperations: .failure(error))
+        let featureChannel = await MockFeatureChannel(channel: channel, resultOfWaitToBeAblePerformPresenceOperations: .failure(error))
         let defaultPresence = await DefaultPresence(featureChannel: featureChannel, roomID: "basketball", clientID: "mockClientId", logger: TestLogger())
 
         // Then
@@ -193,8 +193,8 @@ struct DefaultRoomPresenceTests {
     @Test
     func usersMayLeavePresence() async throws {
         // Given
-        let channel = MockRealtimeChannel(name: "basketball::$chat::$chatMessages")
-        let featureChannel = MockFeatureChannel(channel: channel, resultOfWaitToBeAblePerformPresenceOperations: .success(()))
+        let channel = await MockRealtimeChannel(name: "basketball::$chat::$chatMessages")
+        let featureChannel = await MockFeatureChannel(channel: channel, resultOfWaitToBeAblePerformPresenceOperations: .success(()))
         let defaultPresence = await DefaultPresence(featureChannel: featureChannel, roomID: "basketball", clientID: "client1", logger: TestLogger())
 
         // When
@@ -214,8 +214,8 @@ struct DefaultRoomPresenceTests {
     @Test
     func ifUserIsPresent() async throws {
         // Given
-        let channel = MockRealtimeChannel(name: "basketball::$chat::$chatMessages")
-        let featureChannel = MockFeatureChannel(channel: channel, resultOfWaitToBeAblePerformPresenceOperations: .success(())) // CHA-PR6d
+        let channel = await MockRealtimeChannel(name: "basketball::$chat::$chatMessages")
+        let featureChannel = await MockFeatureChannel(channel: channel, resultOfWaitToBeAblePerformPresenceOperations: .success(())) // CHA-PR6d
         let defaultPresence = await DefaultPresence(featureChannel: featureChannel, roomID: "basketball", clientID: "client1", logger: TestLogger())
 
         // When
@@ -236,8 +236,8 @@ struct DefaultRoomPresenceTests {
     @Test
     func retrieveAllTheMembersOfThePresenceSet() async throws {
         // Given
-        let channel = MockRealtimeChannel(name: "basketball::$chat::$chatMessages")
-        let featureChannel = MockFeatureChannel(channel: channel, resultOfWaitToBeAblePerformPresenceOperations: .success(()))
+        let channel = await MockRealtimeChannel(name: "basketball::$chat::$chatMessages")
+        let featureChannel = await MockFeatureChannel(channel: channel, resultOfWaitToBeAblePerformPresenceOperations: .success(()))
         let defaultPresence = await DefaultPresence(featureChannel: featureChannel, roomID: "basketball", clientID: "client1", logger: TestLogger())
 
         // When
@@ -256,9 +256,9 @@ struct DefaultRoomPresenceTests {
     func failToRetrieveAllTheMembersOfThePresenceSetWhenRoomInInvalidState() async throws {
         // Given
 
-        let channel = MockRealtimeChannel(name: "basketball::$chat::$chatMessages")
+        let channel = await MockRealtimeChannel(name: "basketball::$chat::$chatMessages")
         let error = ARTErrorInfo(chatError: .presenceOperationRequiresRoomAttach(feature: .presence))
-        let featureChannel = MockFeatureChannel(channel: channel, resultOfWaitToBeAblePerformPresenceOperations: .failure(error))
+        let featureChannel = await MockFeatureChannel(channel: channel, resultOfWaitToBeAblePerformPresenceOperations: .failure(error))
         let defaultPresence = await DefaultPresence(featureChannel: featureChannel, roomID: "basketball", clientID: "mockClientId", logger: TestLogger())
 
         // Then
@@ -278,8 +278,8 @@ struct DefaultRoomPresenceTests {
     func retrieveAllTheMembersOfThePresenceSetWhileAttaching() async throws {
         // Given
 
-        let channel = MockRealtimeChannel(name: "basketball::$chat::$chatMessages")
-        let featureChannel = MockFeatureChannel(channel: channel, resultOfWaitToBeAblePerformPresenceOperations: .success(()))
+        let channel = await MockRealtimeChannel(name: "basketball::$chat::$chatMessages")
+        let featureChannel = await MockFeatureChannel(channel: channel, resultOfWaitToBeAblePerformPresenceOperations: .success(()))
         let defaultPresence = await DefaultPresence(featureChannel: featureChannel, roomID: "basketball", clientID: "mockClientId", logger: TestLogger())
 
         // When
@@ -300,8 +300,8 @@ struct DefaultRoomPresenceTests {
         let attachError = ARTErrorInfo(domain: "SomeDomain", code: 123)
         let error = ARTErrorInfo(chatError: .roomTransitionedToInvalidStateForPresenceOperation(cause: attachError))
 
-        let channel = MockRealtimeChannel(name: "basketball::$chat::$chatMessages")
-        let featureChannel = MockFeatureChannel(channel: channel, resultOfWaitToBeAblePerformPresenceOperations: .failure(error))
+        let channel = await MockRealtimeChannel(name: "basketball::$chat::$chatMessages")
+        let featureChannel = await MockFeatureChannel(channel: channel, resultOfWaitToBeAblePerformPresenceOperations: .failure(error))
         let defaultPresence = await DefaultPresence(featureChannel: featureChannel, roomID: "basketball", clientID: "mockClientId", logger: TestLogger())
 
         // TODO: avoids compiler crash (https://github.com/ably/ably-chat-swift/issues/233), revert once Xcode 16.3 released
@@ -330,8 +330,8 @@ struct DefaultRoomPresenceTests {
     @Test
     func usersMaySubscribeToAllPresenceEvents() async throws {
         // Given
-        let channel = MockRealtimeChannel(name: "basketball::$chat::$chatMessages")
-        let featureChannel = MockFeatureChannel(channel: channel, resultOfWaitToBeAblePerformPresenceOperations: .success(())) // CHA-PR6d
+        let channel = await MockRealtimeChannel(name: "basketball::$chat::$chatMessages")
+        let featureChannel = await MockFeatureChannel(channel: channel, resultOfWaitToBeAblePerformPresenceOperations: .success(())) // CHA-PR6d
         let defaultPresence = await DefaultPresence(featureChannel: featureChannel, roomID: "basketball", clientID: "mockClientId", logger: TestLogger())
 
         // Given
@@ -376,8 +376,8 @@ struct DefaultRoomPresenceTests {
     @Test
     func onDiscontinuity() async throws {
         // Given
-        let channel = MockRealtimeChannel()
-        let featureChannel = MockFeatureChannel(channel: channel, resultOfWaitToBeAblePerformPresenceOperations: .success(()))
+        let channel = await MockRealtimeChannel()
+        let featureChannel = await MockFeatureChannel(channel: channel, resultOfWaitToBeAblePerformPresenceOperations: .success(()))
         let defaultPresence = await DefaultPresence(featureChannel: featureChannel, roomID: "basketball", clientID: "client1", logger: TestLogger())
 
         // When: The feature channel emits a discontinuity through `onDiscontinuity`

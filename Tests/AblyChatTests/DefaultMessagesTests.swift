@@ -2,6 +2,7 @@ import Ably
 @testable import AblyChat
 import Testing
 
+@MainActor
 struct DefaultMessagesTests {
     // MARK: CHA-M3
 
@@ -17,7 +18,7 @@ struct DefaultMessagesTests {
         let chatAPI = ChatAPI(realtime: realtime)
         let channel = MockRealtimeChannel(name: "basketball::$chat::$chatMessages")
         let featureChannel = MockFeatureChannel(channel: channel)
-        let defaultMessages = await DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
+        let defaultMessages = DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
 
         // When
         _ = try await defaultMessages.send(params: .init(text: "hey"))
@@ -40,8 +41,8 @@ struct DefaultMessagesTests {
         let chatAPI = ChatAPI(realtime: realtime)
         let channel = MockRealtimeChannel(name: "basketball::$chat::$chatMessages")
         let featureChannel = MockFeatureChannel(channel: channel)
-        let defaultMessages = await DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
-        
+        let defaultMessages = DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
+
         // Then
         // TODO: avoids compiler crash (https://github.com/ably/ably-chat-swift/issues/233), revert once Xcode 16.3 released
         let doIt = {
@@ -50,7 +51,7 @@ struct DefaultMessagesTests {
         await #expect {
             try await doIt()
         } throws: { error in
-            error as! ARTErrorInfo == ARTErrorInfo(domain: "SomeDomain", code: 123)
+            error as? ARTErrorInfo == ARTErrorInfo(domain: "SomeDomain", code: 123)
         }
     }
 
@@ -68,7 +69,7 @@ struct DefaultMessagesTests {
             initialState: .attached
         )
         let featureChannel = MockFeatureChannel(channel: channel)
-        let defaultMessages = await DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
+        let defaultMessages = DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
 
         // When: subscription is added when the underlying realtime channel is ATTACHED
         let subscription = try await defaultMessages.subscribe()
@@ -97,7 +98,7 @@ struct DefaultMessagesTests {
             stateChangeToEmitForListener: ARTChannelStateChange(current: .attached, previous: .attaching, event: .attached, reason: nil)
         )
         let featureChannel = MockFeatureChannel(channel: channel)
-        let defaultMessages = await DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
+        let defaultMessages = DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
 
         // When: subscription is added when the underlying realtime channel is ATTACHING
         let subscription = try await defaultMessages.subscribe()
@@ -126,7 +127,7 @@ struct DefaultMessagesTests {
             initialState: .attached
         )
         let featureChannel = MockFeatureChannel(channel: channel)
-        let defaultMessages = await DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
+        let defaultMessages = DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
 
         // When: subscription is added when the underlying realtime channel is ATTACHING
         let subscription = try await defaultMessages.subscribe()
@@ -138,12 +139,12 @@ struct DefaultMessagesTests {
         )
         )
 
-        await channel.callStateChangeCallbackForEvent(
+        channel.callStateChangeCallbackForEvent(
             .detached,
             stateChange: ARTChannelStateChange(current: .detached, previous: .attached, event: .detached, reason: ARTErrorInfo(domain: "Some", code: 123))
         )
 
-        await channel.callStateChangeCallbackForEvent(
+        channel.callStateChangeCallbackForEvent(
             .attached,
             stateChange: ARTChannelStateChange(current: .attached, previous: .detached, event: .attached, reason: nil, resumed: false)
         )
@@ -173,7 +174,7 @@ struct DefaultMessagesTests {
             initialState: .attached
         )
         let featureChannel = MockFeatureChannel(channel: channel)
-        let defaultMessages = await DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
+        let defaultMessages = DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
 
         // When: subscription is added when the underlying realtime channel is ATTACHING
         let subscription = try await defaultMessages.subscribe()
@@ -185,7 +186,7 @@ struct DefaultMessagesTests {
         )
         )
 
-        await channel.callStateChangeCallbackForEvent(
+        channel.callStateChangeCallbackForEvent(
             .update,
             stateChange: ARTChannelStateChange(current: .attached, previous: .attached, event: .update, reason: nil, resumed: false)
         )
@@ -216,7 +217,7 @@ struct DefaultMessagesTests {
             initialState: .attached
         )
         let featureChannel = MockFeatureChannel(channel: channel)
-        let defaultMessages = await DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
+        let defaultMessages = DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
 
         // When: subscription is added when the underlying realtime channel is ATTACHED
         let subscription = try await defaultMessages.subscribe()
@@ -255,7 +256,7 @@ struct DefaultMessagesTests {
             initialState: .attached
         )
         let featureChannel = MockFeatureChannel(channel: channel)
-        let defaultMessages = await DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
+        let defaultMessages = DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
 
         // When
         let subscription = try await defaultMessages.subscribe()
@@ -280,7 +281,7 @@ struct DefaultMessagesTests {
             initialState: .attached
         )
         let featureChannel = MockFeatureChannel(channel: channel)
-        let defaultMessages = await DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
+        let defaultMessages = DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
 
         // When
         let paginatedResult = try await defaultMessages.get(options: .init())
@@ -310,7 +311,7 @@ struct DefaultMessagesTests {
             initialState: .attached
         )
         let featureChannel = MockFeatureChannel(channel: channel)
-        let defaultMessages = await DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
+        let defaultMessages = DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
 
         // When
         // TODO: avoids compiler crash (https://github.com/ably/ably-chat-swift/issues/233), revert once Xcode 16.3 released
@@ -321,7 +322,7 @@ struct DefaultMessagesTests {
         await #expect {
             try await doIt()
         } throws: { error in
-            error as! ARTErrorInfo == artError
+            error as? ARTErrorInfo == artError
         }
     }
 
@@ -341,28 +342,32 @@ struct DefaultMessagesTests {
                 channelSerial: "001"
             ),
             initialState: .attached,
-            messageToEmitOnSubscribe: .init(
-                action: .create, // arbitrary
-                serial: "", // arbitrary
-                clientID: "", // arbitrary
-                data: [
+            messageToEmitOnSubscribe: {
+                let message = ARTMessage()
+                message.action = .create // arbitrary
+                message.serial = "" // arbitrary
+                message.clientId = "" // arbitrary
+                message.data = [
                     "text": "", // arbitrary
                     "metadata": ["numberKey": 10, "stringKey": "hello"],
-                ],
-                extras: [
+                ]
+                message.extras = [
                     "headers": ["numberKey": 10, "stringKey": "hello"],
-                ],
-                version: "0"
-            )
+                ] as ARTJsonCompatible
+                message.operation = nil
+                message.version = ""
+
+                return message
+            }()
         )
         let featureChannel = MockFeatureChannel(channel: channel)
-        let defaultMessages = await DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
+        let defaultMessages = DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
 
         // When
         let messagesSubscription = try await defaultMessages.subscribe()
 
         // Then
-        let receivedMessage = try #require(await messagesSubscription.first { _ in true })
+        let receivedMessage = try #require(await messagesSubscription.first { @Sendable _ in true })
         #expect(receivedMessage.headers == ["numberKey": .number(10), "stringKey": .string("hello")])
         #expect(receivedMessage.metadata == ["numberKey": .number(10), "stringKey": .string("hello")])
     }
@@ -382,27 +387,31 @@ struct DefaultMessagesTests {
             ),
             initialState: .attached,
             messageJSONToEmitOnSubscribe: [
-                "foo": "bar" // malformed message
+                "foo": "bar", // malformed message
             ],
-            messageToEmitOnSubscribe: .init(
-                action: .create,
-                serial: "123",
-                clientID: "",
-                data: [
-                    "text": "",
-                ],
-                extras: [:],
-                version: "0"
-            )
+            messageToEmitOnSubscribe: {
+                let message = ARTMessage()
+                message.action = .create // arbitrary
+                message.serial = "123" // arbitrary
+                message.clientId = "" // arbitrary
+                message.data = [
+                    "text": "", // arbitrary
+                ]
+                message.extras = [:] as ARTJsonCompatible
+                message.operation = nil
+                message.version = ""
+
+                return message
+            }()
         )
         let featureChannel = MockFeatureChannel(channel: channel)
-        let defaultMessages = await DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
+        let defaultMessages = DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
 
         // When
         let subscription = try await defaultMessages.subscribe()
 
         // Then: `messageJSONToEmitOnSubscribe` is processed ahead of `messageToEmitOnSubscribe` in the mock, but the first message is not the malformed one
-        let message = try #require(await subscription.first { _ in true })
+        let message = try #require(await subscription.first { @Sendable _ in true })
         #expect(message.serial == "123")
     }
 
@@ -419,15 +428,15 @@ struct DefaultMessagesTests {
             initialState: .attached
         )
         let featureChannel = MockFeatureChannel(channel: channel)
-        let defaultMessages = await DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
+        let defaultMessages = DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
 
         // When: The feature channel emits a discontinuity through `onDiscontinuity`
         let featureChannelDiscontinuity = DiscontinuityEvent(error: ARTErrorInfo.createUnknownError() /* arbitrary */ )
-        let messagesDiscontinuitySubscription = await defaultMessages.onDiscontinuity()
-        await featureChannel.emitDiscontinuity(featureChannelDiscontinuity)
+        let messagesDiscontinuitySubscription = defaultMessages.onDiscontinuity()
+        featureChannel.emitDiscontinuity(featureChannelDiscontinuity)
 
         // Then: The DefaultMessages instance emits this discontinuity through `onDiscontinuity`
-        let messagesDiscontinuity = try #require(await messagesDiscontinuitySubscription.first { _ in true })
+        let messagesDiscontinuity = try #require(await messagesDiscontinuitySubscription.first { @Sendable _ in true })
         #expect(messagesDiscontinuity == featureChannelDiscontinuity)
     }
 }

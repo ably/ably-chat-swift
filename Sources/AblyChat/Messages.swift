@@ -6,6 +6,7 @@ import Ably
  *
  * Get an instance via ``Room/messages``.
  */
+@MainActor
 public protocol Messages: AnyObject, Sendable, EmitsDiscontinuities {
     /**
      * Subscribe to new messages in this chat room.
@@ -82,7 +83,7 @@ public protocol Messages: AnyObject, Sendable, EmitsDiscontinuities {
      *
      * - Returns: The realtime channel.
      */
-    var channel: any RealtimeChannelProtocol { get }
+    nonisolated var channel: any RealtimeChannelProtocol { get }
 }
 
 public extension Messages {
@@ -304,6 +305,7 @@ public final class MessageSubscription: Sendable, AsyncSequence {
         subscription.emit(element)
     }
 
+    @MainActor
     internal func addTerminationHandler(_ onTermination: @escaping (@Sendable () -> Void)) {
         subscription.addTerminationHandler(onTermination)
     }

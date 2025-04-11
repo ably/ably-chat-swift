@@ -1,7 +1,7 @@
 import Ably
 @testable import AblyChat
 
-final actor MockRealtimeChannel: InternalRealtimeChannelProtocol {
+final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
     let presence = MockRealtimePresence()
 
     private let attachSerial: String?
@@ -18,18 +18,6 @@ final actor MockRealtimeChannel: InternalRealtimeChannelProtocol {
     var lastMessagePublishedData: JSONValue?
     var lastMessagePublishedExtras: [String: JSONValue]?
 
-    // TODO: If we tighten up the types we then we should be able to get rid of the `@unchecked Sendable` here, but I’m in a rush. Revisit in https://github.com/ably/ably-chat-swift/issues/195
-    struct MessageToEmit: @unchecked Sendable {
-        var action: ARTMessageAction
-        var serial: String
-        var clientID: String
-        var data: Any
-        var extras: NSDictionary
-        var operation: ARTMessageOperation?
-        var version: String
-        var timestamp: Date?
-    }
-
     init(
         name: String? = nil,
         properties: ARTChannelProperties = .init(),
@@ -38,7 +26,7 @@ final actor MockRealtimeChannel: InternalRealtimeChannelProtocol {
         attachBehavior: AttachOrDetachBehavior? = nil,
         detachBehavior: AttachOrDetachBehavior? = nil,
         messageJSONToEmitOnSubscribe: [String: Sendable]? = nil,
-        messageToEmitOnSubscribe: MessageToEmit? = nil,
+        messageToEmitOnSubscribe: ARTMessage? = nil,
         subscribeToStateBehavior: SubscribeToStateBehavior? = nil,
         stateChangeToEmitForListener: ARTChannelStateChange? = nil
     ) {
@@ -144,9 +132,9 @@ final actor MockRealtimeChannel: InternalRealtimeChannelProtocol {
     }
 
     let messageJSONToEmitOnSubscribe: [String: Sendable]?
-    let messageToEmitOnSubscribe: MessageToEmit?
+    let messageToEmitOnSubscribe: ARTMessage?
 
-    nonisolated func subscribe(_: String, callback: @escaping ARTMessageCallback) -> ARTEventListener? {
+    func subscribe(_: String, callback: @escaping @MainActor (ARTMessage) -> Void) -> ARTEventListener? {
         if let json = messageJSONToEmitOnSubscribe {
             let message = ARTMessage(name: nil, data: json["data"] ?? "")
             if let action = json["action"] as? UInt {
@@ -167,37 +155,29 @@ final actor MockRealtimeChannel: InternalRealtimeChannelProtocol {
             callback(message)
         }
         if let messageToEmitOnSubscribe {
-            let message = ARTMessage(name: nil, data: messageToEmitOnSubscribe.data)
-            message.action = messageToEmitOnSubscribe.action
-            message.serial = messageToEmitOnSubscribe.serial
-            message.clientId = messageToEmitOnSubscribe.clientID
-            message.extras = messageToEmitOnSubscribe.extras
-            message.operation = messageToEmitOnSubscribe.operation
-            message.version = messageToEmitOnSubscribe.version
-            message.timestamp = messageToEmitOnSubscribe.timestamp
-            callback(message)
+            callback(messageToEmitOnSubscribe)
         }
         return ARTEventListener()
     }
 
-    nonisolated func unsubscribe(_: ARTEventListener?) {
+    func unsubscribe(_: ARTEventListener?) {
         // no-op; revisit if we need to test something that depends on this method actually stopping `subscribe` from emitting more events
     }
 
     private let stateChangeLock = NSLock()
-    nonisolated(unsafe) var stateChangeCallback: ((ARTChannelStateChange) -> Void)?
-    nonisolated(unsafe) var stateChangeForEventCallbacks = [ARTChannelEvent: ((ARTChannelStateChange) -> Void)]()
+    var stateChangeCallback: ((ARTChannelStateChange) -> Void)?
+    var stateChangeForEventCallbacks = [ARTChannelEvent: (ARTChannelStateChange) -> Void]()
 
-    nonisolated func on(_ event: ARTChannelEvent, callback: @escaping (ARTChannelStateChange) -> Void) -> ARTEventListener {
+    func on(_ event: ARTChannelEvent, callback: @escaping @MainActor (ARTChannelStateChange) -> Void) -> ARTEventListener {
         stateChangeLock.lock()
-        self.stateChangeForEventCallbacks[event] = callback
+        stateChangeForEventCallbacks[event] = callback
         stateChangeLock.unlock()
         return ARTEventListener()
     }
 
-    nonisolated func on(_ callback: @escaping (ARTChannelStateChange) -> Void) -> ARTEventListener {
+    func on(_ callback: @escaping @MainActor (ARTChannelStateChange) -> Void) -> ARTEventListener {
         stateChangeLock.lock()
-        self.stateChangeCallback = callback
+        stateChangeCallback = callback
         stateChangeLock.unlock()
         if let stateChangeToEmitForListener {
             callback(stateChangeToEmitForListener)
@@ -205,7 +185,7 @@ final actor MockRealtimeChannel: InternalRealtimeChannelProtocol {
         return ARTEventListener()
     }
 
-    nonisolated func off(_: ARTEventListener) {
+    func off(_: ARTEventListener) {
         // no-op; revisit if we need to test something that depends on this method actually stopping `on` from emitting more events
     }
 
@@ -250,14 +230,14 @@ final actor MockRealtimeChannel: InternalRealtimeChannelProtocol {
     @MainActor
     func callStateChangeCallback(_ stateChange: ARTChannelStateChange) {
         stateChangeLock.lock()
-        self.stateChangeCallback?(stateChange)
+        stateChangeCallback?(stateChange)
         stateChangeLock.unlock()
     }
 
     @MainActor
     func callStateChangeCallbackForEvent(_ event: ARTChannelEvent, stateChange: ARTChannelStateChange) {
         stateChangeLock.lock()
-        self.stateChangeForEventCallbacks[event]?(stateChange)
+        stateChangeForEventCallbacks[event]?(stateChange)
         stateChangeLock.unlock()
     }
 }

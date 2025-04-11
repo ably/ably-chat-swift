@@ -1,6 +1,7 @@
 @testable import AblyChat
 import Testing
 
+@MainActor
 struct DefaultChatClientTests {
     @Test
     func init_withoutClientOptions() {
