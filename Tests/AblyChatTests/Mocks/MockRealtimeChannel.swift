@@ -166,18 +166,18 @@ final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
 
     private let stateChangeLock = NSLock()
     var stateChangeCallback: ((ARTChannelStateChange) -> Void)?
-    var stateChangeForEventCallbacks = [ARTChannelEvent: ((ARTChannelStateChange) -> Void)]()
+    var stateChangeForEventCallbacks = [ARTChannelEvent: (ARTChannelStateChange) -> Void]()
 
     func on(_ event: ARTChannelEvent, callback: @escaping @MainActor (ARTChannelStateChange) -> Void) -> ARTEventListener {
         stateChangeLock.lock()
-        self.stateChangeForEventCallbacks[event] = callback
+        stateChangeForEventCallbacks[event] = callback
         stateChangeLock.unlock()
         return ARTEventListener()
     }
 
     func on(_ callback: @escaping @MainActor (ARTChannelStateChange) -> Void) -> ARTEventListener {
         stateChangeLock.lock()
-        self.stateChangeCallback = callback
+        stateChangeCallback = callback
         stateChangeLock.unlock()
         if let stateChangeToEmitForListener {
             callback(stateChangeToEmitForListener)
@@ -230,14 +230,14 @@ final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
     @MainActor
     func callStateChangeCallback(_ stateChange: ARTChannelStateChange) {
         stateChangeLock.lock()
-        self.stateChangeCallback?(stateChange)
+        stateChangeCallback?(stateChange)
         stateChangeLock.unlock()
     }
 
     @MainActor
     func callStateChangeCallbackForEvent(_ event: ARTChannelEvent, stateChange: ARTChannelStateChange) {
         stateChangeLock.lock()
-        self.stateChangeForEventCallbacks[event]?(stateChange)
+        stateChangeForEventCallbacks[event]?(stateChange)
         stateChangeLock.unlock()
     }
 }

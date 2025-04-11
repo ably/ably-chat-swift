@@ -42,7 +42,7 @@ struct DefaultMessagesTests {
         let channel = MockRealtimeChannel(name: "basketball::$chat::$chatMessages")
         let featureChannel = MockFeatureChannel(channel: channel)
         let defaultMessages = DefaultMessages(featureChannel: featureChannel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
-        
+
         // Then
         // TODO: avoids compiler crash (https://github.com/ably/ably-chat-swift/issues/233), revert once Xcode 16.3 released
         let doIt = {
@@ -51,7 +51,7 @@ struct DefaultMessagesTests {
         await #expect {
             try await doIt()
         } throws: { error in
-            error as! ARTErrorInfo == ARTErrorInfo(domain: "SomeDomain", code: 123)
+            error as? ARTErrorInfo == ARTErrorInfo(domain: "SomeDomain", code: 123)
         }
     }
 
@@ -322,7 +322,7 @@ struct DefaultMessagesTests {
         await #expect {
             try await doIt()
         } throws: { error in
-            error as! ARTErrorInfo == artError
+            error as? ARTErrorInfo == artError
         }
     }
 
@@ -387,7 +387,7 @@ struct DefaultMessagesTests {
             ),
             initialState: .attached,
             messageJSONToEmitOnSubscribe: [
-                "foo": "bar" // malformed message
+                "foo": "bar", // malformed message
             ],
             messageToEmitOnSubscribe: {
                 let message = ARTMessage()
