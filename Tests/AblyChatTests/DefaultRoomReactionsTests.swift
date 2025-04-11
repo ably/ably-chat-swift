@@ -50,7 +50,7 @@ struct DefaultRoomReactionsTests {
                         "baz": "qux",
                     ],
                 ],
-            ] as? [String: any Sendable]
+            ]
         )
         let featureChannel = MockFeatureChannel(channel: channel)
         let defaultRoomReactions = DefaultRoomReactions(featureChannel: featureChannel, clientID: "mockClientId", roomID: "basketball", logger: TestLogger())
