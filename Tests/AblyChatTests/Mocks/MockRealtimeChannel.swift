@@ -25,7 +25,7 @@ final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
         initialErrorReason: ARTErrorInfo? = nil,
         attachBehavior: AttachOrDetachBehavior? = nil,
         detachBehavior: AttachOrDetachBehavior? = nil,
-        messageJSONToEmitOnSubscribe: [String: Sendable]? = nil,
+        messageJSONToEmitOnSubscribe: [String: JSONValue]? = nil,
         messageToEmitOnSubscribe: ARTMessage? = nil,
         subscribeToStateBehavior: SubscribeToStateBehavior? = nil,
         stateChangeToEmitForListener: ARTChannelStateChange? = nil
@@ -131,25 +131,25 @@ final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
         try result.get()
     }
 
-    let messageJSONToEmitOnSubscribe: [String: Sendable]?
+    let messageJSONToEmitOnSubscribe: [String: JSONValue]?
     let messageToEmitOnSubscribe: ARTMessage?
 
     func subscribe(_: String, callback: @escaping @MainActor (ARTMessage) -> Void) -> ARTEventListener? {
         if let json = messageJSONToEmitOnSubscribe {
-            let message = ARTMessage(name: nil, data: json["data"] ?? "")
-            if let action = json["action"] as? UInt {
+            let message = ARTMessage(name: nil, data: json["data"]?.toAblyCocoaData ?? "")
+            if let action = json["action"]?.numberValue as? UInt {
                 message.action = ARTMessageAction(rawValue: action) ?? .create
             }
-            if let serial = json["serial"] as? String {
+            if let serial = json["serial"]?.stringValue {
                 message.serial = serial
             }
-            if let clientId = json["clientId"] as? String {
+            if let clientId = json["clientId"]?.stringValue {
                 message.clientId = clientId
             }
-            if let extras = json["extras"] as? ARTJsonCompatible {
+            if let extras = json["extras"]?.objectValue?.toARTJsonCompatible {
                 message.extras = extras
             }
-            if let ts = json["timestamp"] as? String {
+            if let ts = json["timestamp"]?.stringValue {
                 message.timestamp = Date(timeIntervalSince1970: TimeInterval(ts)!)
             }
             callback(message)
