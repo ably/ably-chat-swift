@@ -30,22 +30,72 @@ struct DefaultRoomReactionsTests {
         #expect(channel.lastMessagePublishedExtras == ["headers": ["someHeadersKey": "someHeadersValue"]])
     }
 
-    // @spec CHA-ER4
+    // @spec CHA-ER4a
     @Test
-    func subscribe_returnsSubscription() async throws {
-        // all setup values here are arbitrary
+    func subscriptionCanBeRegisteredToReceiveReactionEvents() async throws {
         // Given
-        let channel = MockRealtimeChannel(name: "basketball::$chat::$reactions")
+        let channel = MockRealtimeChannel(
+            messageJSONToEmitOnSubscribe: [
+                "name": "roomReaction",
+                "clientId": "who-sent-the-message",
+                "data": [
+                    "type": ":like:",
+                    "metadata": [
+                        "foo": "bar",
+                    ],
+                ],
+                "timestamp": "1726232498871",
+                "extras": [
+                    "headers": [
+                        "baz": "qux",
+                    ],
+                ],
+            ]
+        )
         let featureChannel = MockFeatureChannel(channel: channel)
-
-        // When
         let defaultRoomReactions = DefaultRoomReactions(featureChannel: featureChannel, clientID: "mockClientId", roomID: "basketball", logger: TestLogger())
 
         // When
-        let subscription: Subscription<Reaction>? = defaultRoomReactions.subscribe()
+        let reactionSubscription = defaultRoomReactions.subscribe()
 
         // Then
-        #expect(subscription != nil)
+        let reaction = try #require(await reactionSubscription.first { @Sendable _ in true })
+        #expect(reaction.type == ":like:")
+    }
+
+    // CHA-ER4c is currently untestable due to not subscribing to those events on lower level
+    // @spec CHA-ER4d
+    @Test
+    func malformedRealtimeEventsShallNotBeEmittedToSubscribers() async throws {
+        // Given
+        let channel = MockRealtimeChannel(
+            messageJSONToEmitOnSubscribe: [
+                "foo": "bar", // malformed reaction message
+            ],
+            messageToEmitOnSubscribe: {
+                let message = ARTMessage()
+                message.action = .create // arbitrary
+                message.serial = "123" // arbitrary
+                message.clientId = "" // arbitrary
+                message.data = [
+                    "type": ":like:",
+                ]
+                message.extras = [:] as ARTJsonCompatible
+                message.operation = nil
+                message.version = ""
+                message.timestamp = Date()
+                return message
+            }()
+        )
+        let featureChannel = MockFeatureChannel(channel: channel)
+        let defaultRoomReactions = DefaultRoomReactions(featureChannel: featureChannel, clientID: "mockClientId", roomID: "basketball", logger: TestLogger())
+
+        // When
+        let subscription = defaultRoomReactions.subscribe()
+
+        // Then: `messageJSONToEmitOnSubscribe` is processed ahead of `messageToEmitOnSubscribe` in the mock, but the first message is not the malformed one
+        let reaction = try #require(await subscription.first { @Sendable _ in true })
+        #expect(reaction.type == ":like:")
     }
 
     // @spec CHA-ER5
