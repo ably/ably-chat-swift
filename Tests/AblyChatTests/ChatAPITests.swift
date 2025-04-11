@@ -2,6 +2,7 @@ import Ably
 @testable import AblyChat
 import Testing
 
+@MainActor
 struct ChatAPITests {
     // MARK: sendMessage Tests
 

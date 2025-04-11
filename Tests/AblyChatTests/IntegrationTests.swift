@@ -11,6 +11,7 @@ extension Tag {
 ///
 /// It would be nice to give this a time limit, but unfortunately the `timeLimit` trait is only available on iOS 16 etc and above. CodeRabbit suggested writing a timeout function myself and wrapping the contents of the test in it, but I didn’t have time to try understanding its suggested code, so it can wait.
 @Suite(.tags(.integration))
+@MainActor
 struct IntegrationTests {
     private class AblyCocoaLogger: ARTLog {
         private let label: String
@@ -89,14 +90,16 @@ struct IntegrationTests {
         )
 
         // (3) Subscribe to room status
-        let rxRoomStatusSubscription = await rxRoom.onStatusChange()
+        let rxRoomStatusSubscription = rxRoom.onStatusChange()
 
         // (4) Attach the room so we can receive messages on it
         try await rxRoom.attach()
 
         // (5) Check that we received an ATTACHED status change as a result of attaching the room
-        _ = try #require(await rxRoomStatusSubscription.first { $0.current == .attached })
-        #expect(await rxRoom.status == .attached)
+        _ = try #require(await rxRoomStatusSubscription.first { @Sendable statusChange in
+            statusChange.current == .attached
+        })
+        #expect(rxRoom.status == .attached)
 
         // MARK: - Send and receive messages
 
@@ -113,7 +116,7 @@ struct IntegrationTests {
         )
 
         // (4) Wait for rxRoom to see the message we just sent
-        let throwawayRxMessage = try #require(await throwawayRxMessageSubscription.first { _ in true })
+        let throwawayRxMessage = try #require(await throwawayRxMessageSubscription.first { @Sendable _ in true })
         #expect(throwawayRxMessage == txMessageBeforeRxSubscribe)
 
         // (5) Subscribe to messages
@@ -127,7 +130,7 @@ struct IntegrationTests {
                 headers: ["someHeadersKey": 456, "someOtherHeadersKey": "bar"]
             )
         )
-        let rxMessageFromSubscription = try #require(await rxMessageSubscription.first { _ in true })
+        let rxMessageFromSubscription = try #require(await rxMessageSubscription.first { @Sendable _ in true })
         #expect(rxMessageFromSubscription == txMessageAfterRxSubscribe)
 
         // (7) Fetch historical messages from before subscribing, and check we get txMessageBeforeRxSubscribe
@@ -182,7 +185,7 @@ struct IntegrationTests {
         )
 
         // (2) Check that we received the edited message on the subscription
-        let rxEditedMessageFromSubscription = try #require(await rxMessageEditDeleteSubscription.first { _ in true })
+        let rxEditedMessageFromSubscription = try #require(await rxMessageEditDeleteSubscription.first { @Sendable _ in true })
 
         // The createdAt varies by milliseconds so we can't compare the entire objects directly
         #expect(rxEditedMessageFromSubscription.roomID == txEditedMessage.roomID)
@@ -208,7 +211,7 @@ struct IntegrationTests {
         )
 
         // (4) Check that we received the deleted message on the subscription
-        let rxDeletedMessageFromSubscription = try #require(await rxMessageEditDeleteSubscription.first { _ in true })
+        let rxDeletedMessageFromSubscription = try #require(await rxMessageEditDeleteSubscription.first { @Sendable _ in true })
 
         // The createdAt varies by milliseconds so we can't compare the entire objects directly
         #expect(rxDeletedMessageFromSubscription.roomID == txDeleteMessage.roomID)
@@ -224,7 +227,7 @@ struct IntegrationTests {
         // MARK: - Reactions
 
         // (1) Subscribe to reactions
-        let rxReactionSubscription = await rxRoom.reactions.subscribe()
+        let rxReactionSubscription = rxRoom.reactions.subscribe()
 
         // (2) Now that we’re subscribed to reactions, send a reaction on the other client and check that we receive it on the subscription
         try await txRoom.reactions.send(
@@ -234,7 +237,7 @@ struct IntegrationTests {
                 headers: ["someHeadersKey": 456, "someOtherHeadersKey": "bar"]
             )
         )
-        let rxReactionFromSubscription = try #require(await rxReactionSubscription.first { _ in true })
+        let rxReactionFromSubscription = try #require(await rxReactionSubscription.first { @Sendable _ in true })
         #expect(rxReactionFromSubscription.type == "heart")
         #expect(rxReactionFromSubscription.metadata == ["someMetadataKey": .number(123), "someOtherMetadataKey": .string("foo")])
         #expect(rxReactionFromSubscription.headers == ["someHeadersKey": .number(456), "someOtherHeadersKey": .string("bar")])
@@ -250,7 +253,7 @@ struct IntegrationTests {
         #expect(currentOccupancy.presenceMembers == 0) // not yet entered presence
 
         // (2) Subscribe to occupancy
-        let rxOccupancySubscription = await rxRoom.occupancy.subscribe()
+        let rxOccupancySubscription = rxRoom.occupancy.subscribe()
 
         // (3) Attach the room so we can perform presence operations
         try await txRoom.attach()
@@ -259,7 +262,7 @@ struct IntegrationTests {
         try await txRoom.presence.enter()
 
         // (5) Check that we received an updated presence count on the subscription
-        _ = try #require(await rxOccupancySubscription.first { occupancyEvent in
+        _ = try #require(await rxOccupancySubscription.first { @Sendable occupancyEvent in
             occupancyEvent.presenceMembers == 1 // 1 for txClient entering presence
         })
 
@@ -271,7 +274,7 @@ struct IntegrationTests {
         try await txRoom.presence.leave()
 
         // (8) Check that we received an updated presence count on the subscription
-        _ = try #require(await rxOccupancySubscription.first { occupancyEvent in
+        _ = try #require(await rxOccupancySubscription.first { @Sendable occupancyEvent in
             occupancyEvent.presenceMembers == 0 // 0 for txClient leaving presence
         })
 
@@ -282,11 +285,11 @@ struct IntegrationTests {
         // MARK: - Presence
 
         // (1) Subscribe to presence
-        let rxPresenceSubscription = await rxRoom.presence.subscribe(events: [.enter, .leave, .update])
+        let rxPresenceSubscription = rxRoom.presence.subscribe(events: [.enter, .leave, .update])
 
         // (2) Send `.enter` presence event with custom data on the other client and check that we receive it on the subscription
         try await txRoom.presence.enter(data: ["randomData": "randomValue"])
-        let rxPresenceEnterTxEvent = try #require(await rxPresenceSubscription.first { _ in true })
+        let rxPresenceEnterTxEvent = try #require(await rxPresenceSubscription.first { @Sendable _ in true })
         #expect(rxPresenceEnterTxEvent.action == .enter)
         #expect(rxPresenceEnterTxEvent.data == ["randomData": "randomValue"])
 
@@ -298,38 +301,38 @@ struct IntegrationTests {
 
         // (4) Send `.update` presence event with custom data on the other client and check that we receive it on the subscription
         try await txRoom.presence.update(data: ["randomData": "randomValue"])
-        let rxPresenceUpdateTxEvent = try #require(await rxPresenceSubscription.first { _ in true })
+        let rxPresenceUpdateTxEvent = try #require(await rxPresenceSubscription.first { @Sendable _ in true })
         #expect(rxPresenceUpdateTxEvent.action == .update)
         #expect(rxPresenceUpdateTxEvent.data == ["randomData": "randomValue"])
 
         // (5) Send `.leave` presence event with custom data on the other client and check that we receive it on the subscription
         try await txRoom.presence.leave(data: ["randomData": "randomValue"])
-        let rxPresenceLeaveTxEvent = try #require(await rxPresenceSubscription.first { _ in true })
+        let rxPresenceLeaveTxEvent = try #require(await rxPresenceSubscription.first { @Sendable _ in true })
         #expect(rxPresenceLeaveTxEvent.action == .leave)
         #expect(rxPresenceLeaveTxEvent.data == ["randomData": "randomValue"])
 
         // (6) Send `.enter` presence event with custom data on our client and check that we receive it on the subscription
         try await txRoom.presence.enter(data: ["randomData": "randomValue"])
-        let rxPresenceEnterRxEvent = try #require(await rxPresenceSubscription.first { _ in true })
+        let rxPresenceEnterRxEvent = try #require(await rxPresenceSubscription.first { @Sendable _ in true })
         #expect(rxPresenceEnterRxEvent.action == .enter)
         #expect(rxPresenceEnterRxEvent.data == ["randomData": "randomValue"])
 
         // (7) Send `.update` presence event with custom data on our client and check that we receive it on the subscription
         try await txRoom.presence.update(data: ["randomData": "randomValue"])
-        let rxPresenceUpdateRxEvent = try #require(await rxPresenceSubscription.first { _ in true })
+        let rxPresenceUpdateRxEvent = try #require(await rxPresenceSubscription.first { @Sendable _ in true })
         #expect(rxPresenceUpdateRxEvent.action == .update)
         #expect(rxPresenceUpdateRxEvent.data == ["randomData": "randomValue"])
 
         // (8) Send `.leave` presence event with custom data on our client and check that we receive it on the subscription
         try await txRoom.presence.leave(data: ["randomData": "randomValue"])
-        let rxPresenceLeaveRxEvent = try #require(await rxPresenceSubscription.first { _ in true })
+        let rxPresenceLeaveRxEvent = try #require(await rxPresenceSubscription.first { @Sendable _ in true })
         #expect(rxPresenceLeaveRxEvent.action == .leave)
         #expect(rxPresenceLeaveRxEvent.data == ["randomData": "randomValue"])
 
         // MARK: - Typing Indicators
 
         // (1) Subscribe to typing indicators
-        let rxTypingSubscription = await rxRoom.typing.subscribe()
+        let rxTypingSubscription = rxRoom.typing.subscribe()
 
         // (2) Start typing on txRoom and check that we receive the typing event on the subscription
         try await txRoom.typing.start()
@@ -361,8 +364,10 @@ struct IntegrationTests {
         try await rxRoom.detach()
 
         // (2) Check that we received a DETACHED status change as a result of detaching the room
-        _ = try #require(await rxRoomStatusSubscription.first { $0.current == .detached })
-        #expect(await rxRoom.status == .detached)
+        _ = try #require(await rxRoomStatusSubscription.first { @Sendable statusChange in
+            statusChange.current == .detached
+        })
+        #expect(rxRoom.status == .detached)
 
         // MARK: - Release
 
@@ -370,8 +375,10 @@ struct IntegrationTests {
         await rxClient.rooms.release(roomID: roomID)
 
         // (2) Check that we received a RELEASED status change as a result of releasing the room
-        _ = try #require(await rxRoomStatusSubscription.first { $0.current == .released })
-        #expect(await rxRoom.status == .released)
+        _ = try #require(await rxRoomStatusSubscription.first { @Sendable statusChange in
+            statusChange.current == .released
+        })
+        #expect(rxRoom.status == .released)
 
         // (3) Fetch the room we just released and check it’s a new object
         let postReleaseRxRoom = try await rxClient.rooms.get(roomID: roomID, options: .init())

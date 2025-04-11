@@ -1,7 +1,7 @@
 import Ably
 @testable import AblyChat
 
-final class MockConnection: NSObject, InternalConnectionProtocol {
+final class MockConnection: InternalConnectionProtocol {
     let state: ARTRealtimeConnectionState
 
     let errorReason: ARTErrorInfo?
@@ -11,7 +11,7 @@ final class MockConnection: NSObject, InternalConnectionProtocol {
         self.errorReason = errorReason
     }
 
-    func on(_: @escaping (ARTConnectionStateChange) -> Void) -> ARTEventListener {
+    func on(_: @escaping @MainActor (ARTConnectionStateChange) -> Void) -> ARTEventListener {
         fatalError("Not implemented")
     }
 

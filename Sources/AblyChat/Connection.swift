@@ -3,17 +3,18 @@ import Ably
 /**
  * Represents a connection to Ably.
  */
+@MainActor
 public protocol Connection: AnyObject, Sendable {
     /**
      * The current status of the connection.
      */
-    var status: ConnectionStatus { get async }
+    var status: ConnectionStatus { get }
 
     // TODO: (https://github.com/ably-labs/ably-chat-swift/issues/12): consider how to avoid the need for an unwrap
     /**
      * The current error, if any, that caused the connection to enter the current status.
      */
-    var error: ARTErrorInfo? { get async }
+    var error: ARTErrorInfo? { get }
 
     /**
      * Subscribes a given listener to a connection status changes.

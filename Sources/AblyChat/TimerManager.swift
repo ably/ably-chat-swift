@@ -1,9 +1,10 @@
 import Foundation
 
-internal final actor TimerManager {
+@MainActor
+internal final class TimerManager {
     private var currentTask: Task<Void, Never>?
 
-    internal func setTimer(interval: TimeInterval, handler: @escaping @Sendable () -> Void) {
+    internal func setTimer(interval: TimeInterval, handler: @escaping @MainActor () -> Void) {
         cancelTimer()
 
         currentTask = Task {

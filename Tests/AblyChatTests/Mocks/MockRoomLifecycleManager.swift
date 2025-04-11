@@ -1,7 +1,7 @@
 import Ably
 @testable import AblyChat
 
-actor MockRoomLifecycleManager: RoomLifecycleManager {
+class MockRoomLifecycleManager: RoomLifecycleManager {
     private let attachResult: Result<Void, ARTErrorInfo>?
     private(set) var attachCallCount = 0
     private let detachResult: Result<Void, ARTErrorInfo>?
@@ -51,7 +51,7 @@ actor MockRoomLifecycleManager: RoomLifecycleManager {
         return roomStatus
     }
 
-    func onRoomStatusChange(bufferingPolicy: BufferingPolicy) async -> Subscription<RoomStatusChange> {
+    func onRoomStatusChange(bufferingPolicy: BufferingPolicy) -> Subscription<RoomStatusChange> {
         subscriptions.create(bufferingPolicy: bufferingPolicy)
     }
 
