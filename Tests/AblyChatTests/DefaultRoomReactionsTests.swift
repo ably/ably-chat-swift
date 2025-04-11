@@ -70,7 +70,7 @@ struct DefaultRoomReactionsTests {
         // Given
         let channel = MockRealtimeChannel(
             messageJSONToEmitOnSubscribe: [
-                "foo": "bar" // malformed reaction message
+                "foo": "bar", // malformed reaction message
             ],
             messageToEmitOnSubscribe: {
                 let message = ARTMessage()
