@@ -40,9 +40,9 @@ internal final class DefaultOccupancy: Occupancy, EmitsDiscontinuities {
             self.logger = logger
         }
 
-        // (CHA-04a) Users may register a listener that receives occupancy events in realtime.
-        // (CHA-04c) When a regular occupancy event is received on the channel (a standard PubSub occupancy event per the docs), the SDK will convert it into occupancy event format and broadcast it to subscribers.
-        // (CHA-04d) If an invalid occupancy event is received on the channel, it shall be dropped.
+        // (CHA-O4a) Users may register a listener that receives occupancy events in realtime.
+        // (CHA-O4c) When a regular occupancy event is received on the channel (a standard PubSub occupancy event per the docs), the SDK will convert it into occupancy event format and broadcast it to subscribers.
+        // (CHA-O4d) If an invalid occupancy event is received on the channel, it shall be dropped.
         internal func subscribe(bufferingPolicy: BufferingPolicy) -> Subscription<OccupancyEvent> {
             logger.log(message: "Subscribing to occupancy events", level: .debug)
 
@@ -55,7 +55,7 @@ internal final class DefaultOccupancy: Occupancy, EmitsDiscontinuities {
                 else {
                     let error = ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without data or metrics")
                     logger.log(message: "Error parsing occupancy message: \(error)", level: .error)
-                    return // (CHA-04d) implies we don't throw an error
+                    return // (CHA-O4d) implies we don't throw an error
                 }
 
                 let connections = metrics["connections"] as? Int ?? 0
