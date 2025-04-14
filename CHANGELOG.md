@@ -1,5 +1,14 @@
 # Change Log
 
+## [0.3.0](https://github.com/ably/ably-chat-swift/tree/0.3.0)
+
+## What's Changed
+
+- All of the main protocols in the SDK are now marked as `@MainActor`, to simplify the experience of using the SDK. (#261)
+- All of the errors thrown by the SDK are now explicitly typed as `ARTErrorInfo`. (#234)
+
+**Full Changelog**: https://github.com/ably/ably-chat-swift/compare/0.2.0...0.3.0
+
 ## [0.2.0](https://github.com/ably/ably-chat-swift/tree/0.2.0)
 
 ## What's Changed
