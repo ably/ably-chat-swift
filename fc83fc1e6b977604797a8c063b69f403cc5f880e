@@ -1,0 +1,4 @@
+I should have mentioned that this decision to change to @MainActor is
+also a result of our still-limited Swift concurrency knowledge, and that
+in the future we might discover a better way of addressing the concerns
+that this change intended to address.
