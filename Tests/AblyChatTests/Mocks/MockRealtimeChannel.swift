@@ -178,26 +178,26 @@ final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
 
     enum SubscribeToStateBehavior {
         case justAddSubscription
-        case addSubscriptionAndEmitStateChange(ARTChannelStateChange)
+        case addSubscriptionAndEmitEvent(ARTChannelStateChange)
     }
 
     private let subscribeToStateBehavior: SubscribeToStateBehavior
-    private let stateChangeSubscriptions = SubscriptionStorage<ARTChannelStateChange>()
+    private let stateEventSubscriptions = SubscriptionStorage<ARTChannelStateChange>()
 
     func subscribeToState() -> Subscription<ARTChannelStateChange> {
-        let subscription = stateChangeSubscriptions.create(bufferingPolicy: .unbounded)
+        let subscription = stateEventSubscriptions.create(bufferingPolicy: .unbounded)
 
         switch subscribeToStateBehavior {
         case .justAddSubscription:
             break
-        case let .addSubscriptionAndEmitStateChange(stateChange):
-            emitStateChange(stateChange)
+        case let .addSubscriptionAndEmitEvent(event):
+            emitEvent(event)
         }
 
         return subscription
     }
 
-    func emitStateChange(_ stateChange: ARTChannelStateChange) {
-        stateChangeSubscriptions.emit(stateChange)
+    func emitEvent(_ event: ARTChannelStateChange) {
+        stateEventSubscriptions.emit(event)
     }
 }
