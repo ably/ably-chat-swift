@@ -9,7 +9,7 @@ public typealias PresenceData = JSONValue
  * Get an instance via ``Room/presence``.
  */
 @MainActor
-public protocol Presence: AnyObject, Sendable, EmitsDiscontinuities {
+public protocol Presence: AnyObject, Sendable {
     /**
      * Same as ``get(params:)``, but with defaults params.
      */
@@ -72,6 +72,8 @@ public protocol Presence: AnyObject, Sendable, EmitsDiscontinuities {
     /**
      * Subscribes a given listener to a particular presence event in the chat room.
      *
+     * Note that it is a programmer error to call this method if presence events are not enabled in the room options. Make sure to set `enableEvents: true` in your room's presence options to use this feature (this is the default value).
+     *
      * - Parameters:
      *   - event: A single presence event type ``PresenceEventType`` to subscribe to.
      *   - bufferingPolicy: The ``BufferingPolicy`` for the created subscription.
@@ -82,6 +84,8 @@ public protocol Presence: AnyObject, Sendable, EmitsDiscontinuities {
 
     /**
      * Subscribes a given listener to different presence events in the chat room.
+     *
+     * Note that it is a programmer error to call this method if presence events are not enabled in the room options. Make sure to set `enableEvents: true` in your room's presence options to use this feature (this is the default value).
      *
      * - Parameters:
      *   - events: An array of presence event types ``PresenceEventType`` to subscribe to.

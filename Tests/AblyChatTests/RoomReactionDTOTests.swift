@@ -101,7 +101,8 @@ enum RoomReactionDTOTests {
         @Test
         func toJSONValue_withNilHeaders() {
             // i.e. should create an empty object for headers
-            #expect(RoomReactionDTO.Extras(headers: nil).toJSONValue == .object(["headers": .object([:])]))
+            // swiftlint:disable:next empty_collection_literal
+            #expect(RoomReactionDTO.Extras(headers: nil).toJSONValue.objectValue?["headers"] == [:])
         }
 
         @Test
@@ -113,6 +114,7 @@ enum RoomReactionDTOTests {
                     "someStringKey": "someStringValue",
                     "someNumberKey": 123,
                 ],
+                "ephemeral": true,
             ])
         }
     }

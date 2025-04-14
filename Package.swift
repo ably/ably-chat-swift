@@ -52,10 +52,6 @@ let package = Package(
                     package: "ably-cocoa"
                 ),
                 .product(
-                    name: "AsyncAlgorithms",
-                    package: "swift-async-algorithms"
-                ),
-                .product(
                     name: "Semaphore",
                     package: "Semaphore"
                 ),

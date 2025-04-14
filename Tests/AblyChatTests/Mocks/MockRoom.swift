@@ -67,4 +67,12 @@ class MockRoom: InternalRoom {
     }
 
     private let _releaseCallsAsyncSequence: (stream: AsyncStream<Void>, continuation: AsyncStream<Void>.Continuation)
+
+    func onDiscontinuity(bufferingPolicy _: BufferingPolicy) -> Subscription<DiscontinuityEvent> {
+        fatalError("Not implemented")
+    }
+
+    nonisolated var channel: any RealtimeChannelProtocol {
+        fatalError("Not implemented")
+    }
 }

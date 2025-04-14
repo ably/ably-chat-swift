@@ -7,7 +7,7 @@ import Ably
  * Get an instance via ``Room/messages``.
  */
 @MainActor
-public protocol Messages: AnyObject, Sendable, EmitsDiscontinuities {
+public protocol Messages: AnyObject, Sendable {
     /**
      * Subscribe to new messages in this chat room.
      *
@@ -77,13 +77,6 @@ public protocol Messages: AnyObject, Sendable, EmitsDiscontinuities {
      * - Note: It is possible to receive your own message via the messages subscription before this method returns.
      */
     func delete(message: Message, params: DeleteMessageParams) async throws(ARTErrorInfo) -> Message
-
-    /**
-     * Get the underlying Ably realtime channel used for the messages in this chat room.
-     *
-     * - Returns: The realtime channel.
-     */
-    nonisolated var channel: any RealtimeChannelProtocol { get }
 }
 
 public extension Messages {

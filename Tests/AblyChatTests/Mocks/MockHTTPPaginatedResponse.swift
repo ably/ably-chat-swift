@@ -86,8 +86,6 @@ extension MockHTTPPaginatedResponse {
 // MARK: ChatAPI.getMessages mocked responses
 
 extension MockHTTPPaginatedResponse {
-    private static let messagesRoomId = "basketball::$chat::$chatMessages"
-
     static let successGetMessagesWithNoItems = MockHTTPPaginatedResponse(
         items: [],
         statusCode: 200,
@@ -101,7 +99,7 @@ extension MockHTTPPaginatedResponse {
                 "serial": "3446456",
                 "action": "message.create",
                 "createdAt": 1_730_943_049_269,
-                "roomId": "basketball::$chat::$chatMessages",
+                "roomId": "basketball",
                 "text": "hello",
                 "metadata": [:],
                 "headers": [:],
@@ -112,7 +110,7 @@ extension MockHTTPPaginatedResponse {
                 "clientId": "random",
                 "serial": "3446457",
                 "action": "message.create",
-                "roomId": "basketball::$chat::$chatMessages",
+                "roomId": "basketball",
                 "text": "hello response",
                 "metadata": [:],
                 "headers": [:],
@@ -131,14 +129,14 @@ extension MockHTTPPaginatedResponse {
         items: [
             [
                 "serial": "3446450",
-                "roomId": "basketball::$chat::$chatMessages",
+                "roomId": "basketball",
                 "text": "previous message",
                 "metadata": [:],
                 "headers": [:],
             ],
             [
                 "serial": "3446451",
-                "roomId": "basketball::$chat::$chatMessages",
+                "roomId": "basketball",
                 "text": "previous response",
                 "metadata": [:],
                 "headers": [:],
