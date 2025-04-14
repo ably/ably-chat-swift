@@ -102,13 +102,14 @@ internal class DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
             }
         }
 
+        // TODO: (https://github.com/ably/ably-chat-swift/issues/267) switch this back to use `throws` once Xcode 16.3 typed throw crashes are fixed
         /// Returns the room which this room map entry corresponds to. If the room map entry represents a pending request, it will return or throw with the result of this request.
-        func waitForRoom() async throws(InternalError) -> RoomFactory.Room {
+        func waitForRoom() async -> Result<RoomFactory.Room, InternalError> {
             switch self {
             case let .requestAwaitingRelease(_, _, creationTask: creationTask, _):
-                try await creationTask.value.get()
+                await creationTask.value
             case let .created(room):
-                room
+                .success(room)
             }
         }
     }
@@ -172,7 +173,7 @@ internal class DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
                     #endif
 
                     do {
-                        let room = try await existingRoomMapEntry.waitForRoom()
+                        let room = try await existingRoomMapEntry.waitForRoom().get()
                         logger.log(message: "Completed waiting for room from existing room map entry \(existingRoomMapEntry)", level: .debug)
                         return room
                     } catch {
