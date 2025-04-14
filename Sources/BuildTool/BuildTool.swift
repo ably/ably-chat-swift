@@ -138,6 +138,9 @@ struct GenerateMatrices: ParsableCommand {
             [
                 "xcodeVersion": "16.2",
             ],
+            [
+                "xcodeVersion": "16.3",
+            ],
         ]
 
         let matrix: [String: Any] = [
