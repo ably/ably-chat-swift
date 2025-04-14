@@ -4,6 +4,6 @@ import Ably
 
 // Update this when you release a new version
 // Version information
-internal let version = "0.2.0"
+internal let version = "0.3.0"
 
 internal let agents = ["chat-swift": version]
