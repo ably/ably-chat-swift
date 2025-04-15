@@ -4,8 +4,8 @@ import Foundation
 ///
 /// Don’t overestimate the abilities of this property wrapper; it won’t allow you to, for example, increment a counter in a threadsafe manner.
 @propertyWrapper
-struct SynchronizedAccess<T> {
-    var wrappedValue: T {
+struct SynchronizedAccess<Value> {
+    var wrappedValue: Value {
         get {
             mutex.withLock {
                 _wrappedValue
@@ -19,10 +19,10 @@ struct SynchronizedAccess<T> {
         }
     }
 
-    private var _wrappedValue: T
+    private var _wrappedValue: Value
     private var mutex = NSLock()
 
-    init(wrappedValue: T) {
+    init(wrappedValue: Value) {
         _wrappedValue = wrappedValue
     }
 }

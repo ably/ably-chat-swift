@@ -2,8 +2,7 @@ import Ably
 import AblyChat
 import AsyncAlgorithms
 
-final class MockSubscription<T: Sendable>: Sendable, AsyncSequence {
-    typealias Element = T
+final class MockSubscription<Element: Sendable>: Sendable, AsyncSequence {
     typealias AsyncTimerMockSequence = AsyncMapSequence<AsyncTimerSequence<ContinuousClock>, Element>
     typealias MockMergedSequence = AsyncMerge2Sequence<AsyncStream<Element>, AsyncTimerMockSequence>
     typealias AsyncIterator = MockMergedSequence.Iterator

@@ -21,7 +21,7 @@ public final class Subscription<Element: Sendable>: @unchecked Sendable, AsyncSe
     fileprivate struct AnyNonThrowingAsyncSequence: AsyncSequence, Sendable {
         private var makeAsyncIteratorImpl: @Sendable () -> AsyncIterator
 
-        init<T: AsyncSequence & Sendable>(asyncSequence: T) where T.Element == Element {
+        init<Underlying: AsyncSequence & Sendable>(asyncSequence: Underlying) where Underlying.Element == Element {
             makeAsyncIteratorImpl = {
                 AsyncIterator(asyncIterator: asyncSequence.makeAsyncIterator())
             }
@@ -30,7 +30,7 @@ public final class Subscription<Element: Sendable>: @unchecked Sendable, AsyncSe
         fileprivate struct AsyncIterator: AsyncIteratorProtocol {
             private var nextImpl: () async -> Element?
 
-            init<T: AsyncIteratorProtocol>(asyncIterator: T) where T.Element == Element {
+            init<Underlying: AsyncIteratorProtocol>(asyncIterator: Underlying) where Underlying.Element == Element {
                 var iterator = asyncIterator
                 nextImpl = { () async -> Element? in
                     do {
@@ -60,7 +60,7 @@ public final class Subscription<Element: Sendable>: @unchecked Sendable, AsyncSe
     }
 
     // This is a workaround for the fact that, as mentioned above, `Subscription` is a struct when I would have liked it to be a protocol. It allows people mocking our SDK to create a `Subscription` so that they can return it from their mocks. The intention of this initializer is that if you use it, then the created `Subscription` will just replay the sequence that you pass it. It is a programmer error to pass a throwing AsyncSequence.
-    public init<T: AsyncSequence & Sendable>(mockAsyncSequence: T) where T.Element == Element {
+    public init<Underlying: AsyncSequence & Sendable>(mockAsyncSequence: Underlying) where Underlying.Element == Element {
         mode = .mockAsyncSequence(.init(asyncSequence: mockAsyncSequence))
     }
 
