@@ -19,13 +19,13 @@ public protocol Presence: AnyObject, Sendable, EmitsDiscontinuities {
      * Method to get list of the current online users and returns the latest presence messages associated to it.
      *
      * - Parameters:
-     *   - params: ``PresenceQuery`` that control how the presence set is retrieved.
+     *   - params: ``PresenceParams`` that control how the presence set is retrieved.
      *
      * - Returns: An array of ``PresenceMember``s.
      *
      * - Throws: An `ARTErrorInfo`.
      */
-    func get(params: PresenceQuery) async throws(ARTErrorInfo) -> [PresenceMember]
+    func get(params: PresenceParams) async throws(ARTErrorInfo) -> [PresenceMember]
 
     /**
      * Method to check if user with supplied clientId is online.
@@ -275,7 +275,7 @@ public struct PresenceEvent: Sendable {
 // Now, based on my limited understanding, you _should_ be able to send non-Sendable values from one isolation domain to another (the purpose of the "region-based isolation" and "`sending` parameters" features added in Swift 6), but to get this to work I had to mark ``Presence`` as requiring conformance to the `Actor` protocol, and since I didn’t understand _why_ I had to do that, I didn’t want to put it in the public API.
 //
 // So, for now, let’s just accept this copy (which I don’t think is a big problem anyway); we can always revisit it with more Swift concurrency knowledge in the future. Created https://github.com/ably-labs/ably-chat-swift/issues/64 to revisit.
-public struct PresenceQuery: Sendable {
+public struct PresenceParams: Sendable {
     public var clientID: String?
     public var connectionID: String?
     public var waitForSync = true

@@ -17,7 +17,7 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
         try await implementation.get()
     }
 
-    internal func get(params: PresenceQuery) async throws(ARTErrorInfo) -> [PresenceMember] {
+    internal func get(params: PresenceParams) async throws(ARTErrorInfo) -> [PresenceMember] {
         try await implementation.get(params: params)
     }
 
@@ -102,7 +102,7 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
             }
         }
 
-        internal func get(params: PresenceQuery) async throws(ARTErrorInfo) -> [PresenceMember] {
+        internal func get(params: PresenceParams) async throws(ARTErrorInfo) -> [PresenceMember] {
             do throws(InternalError) {
                 logger.log(message: "Getting presence with params: \(params)", level: .debug)
 

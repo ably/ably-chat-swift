@@ -309,7 +309,7 @@ class MockPresence: Presence {
         }
     }
 
-    func get(params _: PresenceQuery) async throws(ARTErrorInfo) -> [PresenceMember] {
+    func get(params _: PresenceParams) async throws(ARTErrorInfo) -> [PresenceMember] {
         MockStrings.names.shuffled().map { name in
             PresenceMember(
                 clientID: name,
