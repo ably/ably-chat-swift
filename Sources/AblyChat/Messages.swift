@@ -296,7 +296,7 @@ public final class MessageSubscription: Sendable, AsyncSequence {
     }
 
     // used for testing
-    public init<T: AsyncSequence & Sendable>(mockAsyncSequence: T, mockGetPreviousMessages: @escaping @Sendable (QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message>) where T.Element == Element {
+    public init<Underlying: AsyncSequence & Sendable>(mockAsyncSequence: Underlying, mockGetPreviousMessages: @escaping @Sendable (QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message>) where Underlying.Element == Element {
         subscription = .init(mockAsyncSequence: mockAsyncSequence)
         getPreviousMessages = { @Sendable params throws(InternalError) in
             do throws(ARTErrorInfo) {

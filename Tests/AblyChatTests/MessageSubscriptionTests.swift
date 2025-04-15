@@ -2,22 +2,22 @@
 import AsyncAlgorithms
 import Testing
 
-private final class MockPaginatedResult<T: Equatable>: PaginatedResult {
-    var items: [T] { fatalError("Not implemented") }
+private final class MockPaginatedResult<Item: Equatable>: PaginatedResult {
+    var items: [Item] { fatalError("Not implemented") }
 
     var hasNext: Bool { fatalError("Not implemented") }
 
     var isLast: Bool { fatalError("Not implemented") }
 
-    var next: (any AblyChat.PaginatedResult<T>)? { fatalError("Not implemented") }
+    var next: (any AblyChat.PaginatedResult<Item>)? { fatalError("Not implemented") }
 
-    var first: any AblyChat.PaginatedResult<T> { fatalError("Not implemented") }
+    var first: any AblyChat.PaginatedResult<Item> { fatalError("Not implemented") }
 
-    var current: any AblyChat.PaginatedResult<T> { fatalError("Not implemented") }
+    var current: any AblyChat.PaginatedResult<Item> { fatalError("Not implemented") }
 
     init() {}
 
-    static func == (lhs: MockPaginatedResult<T>, rhs: MockPaginatedResult<T>) -> Bool {
+    static func == (lhs: MockPaginatedResult<Item>, rhs: MockPaginatedResult<Item>) -> Bool {
         lhs.items == rhs.items &&
             lhs.hasNext == rhs.hasNext &&
             lhs.isLast == rhs.isLast

@@ -2,13 +2,13 @@ import Ably
 import AblyChat
 
 final class MockMessagesPaginatedResult: PaginatedResult {
-    typealias T = Message
+    typealias Item = Message
 
     let clientID: String
     let roomID: String
     let numberOfMockMessages: Int
 
-    var items: [T] {
+    var items: [Item] {
         Array(repeating: 0, count: numberOfMockMessages).map { _ in
             Message(
                 serial: "\(Date().timeIntervalSince1970)",
@@ -30,11 +30,11 @@ final class MockMessagesPaginatedResult: PaginatedResult {
 
     var isLast: Bool { fatalError("Not implemented") }
 
-    var next: (any PaginatedResult<T>)? { fatalError("Not implemented") }
+    var next: (any PaginatedResult<Item>)? { fatalError("Not implemented") }
 
-    var first: any PaginatedResult<T> { fatalError("Not implemented") }
+    var first: any PaginatedResult<Item> { fatalError("Not implemented") }
 
-    var current: any PaginatedResult<T> { fatalError("Not implemented") }
+    var current: any PaginatedResult<Item> { fatalError("Not implemented") }
 
     init(clientID: String, roomID: String, numberOfMockMessages: Int = 3) {
         self.clientID = clientID
