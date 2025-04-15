@@ -284,21 +284,27 @@ public final class MessageSubscription: Sendable, AsyncSequence {
     private let subscription: Subscription<Element>
 
     // can be set by either initialiser
-    private let getPreviousMessages: @Sendable (QueryOptions) async throws -> any PaginatedResult<Message>
+    private let getPreviousMessages: @Sendable (QueryOptions) async throws(InternalError) -> any PaginatedResult<Message>
 
     // used internally
     internal init(
         bufferingPolicy: BufferingPolicy,
-        getPreviousMessages: @escaping @Sendable (QueryOptions) async throws -> any PaginatedResult<Message>
+        getPreviousMessages: @escaping @Sendable (QueryOptions) async throws(InternalError) -> any PaginatedResult<Message>
     ) {
         subscription = .init(bufferingPolicy: bufferingPolicy)
         self.getPreviousMessages = getPreviousMessages
     }
 
     // used for testing
-    public init<T: AsyncSequence & Sendable>(mockAsyncSequence: T, mockGetPreviousMessages: @escaping @Sendable (QueryOptions) async throws -> any PaginatedResult<Message>) where T.Element == Element {
+    public init<T: AsyncSequence & Sendable>(mockAsyncSequence: T, mockGetPreviousMessages: @escaping @Sendable (QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message>) where T.Element == Element {
         subscription = .init(mockAsyncSequence: mockAsyncSequence)
-        getPreviousMessages = mockGetPreviousMessages
+        getPreviousMessages = { @Sendable params throws(InternalError) in
+            do throws(ARTErrorInfo) {
+                return try await mockGetPreviousMessages(params)
+            } catch {
+                throw error.toInternalError()
+            }
+        }
     }
 
     internal func emit(_ element: Element) {
@@ -310,8 +316,12 @@ public final class MessageSubscription: Sendable, AsyncSequence {
         subscription.addTerminationHandler(onTermination)
     }
 
-    public func getPreviousMessages(params: QueryOptions) async throws -> any PaginatedResult<Message> {
-        try await getPreviousMessages(params)
+    public func getPreviousMessages(params: QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message> {
+        do {
+            return try await getPreviousMessages(params)
+        } catch {
+            throw error.toARTErrorInfo()
+        }
     }
 
     public struct AsyncIterator: AsyncIteratorProtocol {

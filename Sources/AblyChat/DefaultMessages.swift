@@ -49,6 +49,10 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
         implementation.onDiscontinuity(bufferingPolicy: bufferingPolicy)
     }
 
+    internal enum MessagesError: Error {
+        case noReferenceToSelf
+    }
+
     /// This class exists to make sure that the internals of the SDK only access ably-cocoa via the `InternalRealtimeChannelProtocol` interface. It does this by removing access to the `channel` property that exists as part of the public API of the `Messages` protocol, making it unlikely that we accidentally try to call the `ARTRealtimeChannelProtocol` interface. We can remove this `Implementation` class when we remove the feature-level `channel` property in https://github.com/ably/ably-chat-swift/issues/242.
     @MainActor
     private final class Implementation: Sendable {
@@ -80,8 +84,8 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
                 let serial = try await resolveSubscriptionStart()
                 let messageSubscription = MessageSubscription(
                     bufferingPolicy: bufferingPolicy
-                ) { [weak self] queryOptions in
-                    guard let self else { throw MessagesError.noReferenceToSelf }
+                ) { [weak self] queryOptions throws(InternalError) in
+                    guard let self else { throw MessagesError.noReferenceToSelf.toInternalError() }
                     return try await getBeforeSubscriptionStart(uuid, params: queryOptions)
                 }
 
@@ -208,13 +212,14 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
             featureChannel.onDiscontinuity(bufferingPolicy: bufferingPolicy)
         }
 
-        private func getBeforeSubscriptionStart(_ uuid: UUID, params: QueryOptions) async throws -> any PaginatedResult<Message> {
+        private func getBeforeSubscriptionStart(_ uuid: UUID, params: QueryOptions) async throws(InternalError) -> any PaginatedResult<Message> {
             guard let subscriptionPoint = subscriptionPoints[uuid]?.serial else {
                 throw ARTErrorInfo.create(
                     withCode: 40000,
                     status: 400,
                     message: "cannot query history; listener has not been subscribed yet"
                 )
+                .toInternalError()
             }
 
             // (CHA-M5f) This method must accept any of the standard history query options, except for direction, which must always be backwards.
@@ -346,10 +351,6 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
                     }
                 }
             }.get()
-        }
-
-        internal enum MessagesError: Error {
-            case noReferenceToSelf
         }
     }
 }

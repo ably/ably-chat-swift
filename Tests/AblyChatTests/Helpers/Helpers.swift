@@ -47,6 +47,7 @@ extension InternalError {
         case headersValueJSONDecodingError
         case jsonValueDecodingError
         case paginatedResultError
+        case messagesError
     }
 
     var enumCase: Case {
@@ -61,6 +62,8 @@ extension InternalError {
             .jsonValueDecodingError
         case .other(.paginatedResultError):
             .paginatedResultError
+        case .other(.messagesError):
+            .messagesError
         }
     }
 }
