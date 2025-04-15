@@ -276,13 +276,11 @@ public struct PresenceEvent: Sendable {
 //
 // So, for now, let’s just accept this copy (which I don’t think is a big problem anyway); we can always revisit it with more Swift concurrency knowledge in the future. Created https://github.com/ably-labs/ably-chat-swift/issues/64 to revisit.
 public struct PresenceQuery: Sendable {
-    public var limit = 100
     public var clientID: String?
     public var connectionID: String?
     public var waitForSync = true
 
-    public init(limit: Int = 100, clientID: String? = nil, connectionID: String? = nil, waitForSync: Bool = true) {
-        self.limit = limit
+    public init(clientID: String? = nil, connectionID: String? = nil, waitForSync: Bool = true) {
         self.clientID = clientID
         self.connectionID = connectionID
         self.waitForSync = waitForSync
@@ -290,7 +288,6 @@ public struct PresenceQuery: Sendable {
 
     internal func asARTRealtimePresenceQuery() -> ARTRealtimePresenceQuery {
         let query = ARTRealtimePresenceQuery()
-        query.limit = UInt(limit)
         query.clientId = clientID
         query.connectionId = connectionID
         query.waitForSync = waitForSync
