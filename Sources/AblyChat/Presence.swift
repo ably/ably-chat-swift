@@ -281,7 +281,7 @@ public struct PresenceQuery: Sendable {
     public var connectionID: String?
     public var waitForSync = true
 
-    internal init(limit: Int = 100, clientID: String? = nil, connectionID: String? = nil, waitForSync: Bool = true) {
+    public init(limit: Int = 100, clientID: String? = nil, connectionID: String? = nil, waitForSync: Bool = true) {
         self.limit = limit
         self.clientID = clientID
         self.connectionID = connectionID
