@@ -134,14 +134,11 @@ struct GenerateMatrices: ParsableCommand {
     )
 
     mutating func run() throws {
-        let tooling = [
+        let tooling = ["16.1", "16.2", "16.3"].map { xcodeVersion in
             [
-                "xcodeVersion": "16.2",
-            ],
-            [
-                "xcodeVersion": "16.3",
-            ],
-        ]
+                "xcodeVersion": xcodeVersion,
+            ]
+        }
 
         let matrix: [String: Any] = [
             "withoutPlatform": [
