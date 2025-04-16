@@ -22,7 +22,7 @@ Get started using the [📚 documentation](https://ably.com/docs/products/chat).
 
 ## Requirements
 
-Xcode 16 or later.
+Xcode 16.1 or later.
 
 ## Installation
 
