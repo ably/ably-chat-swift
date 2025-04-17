@@ -127,7 +127,7 @@ struct DefaultRoomTests {
         let channelsList = [
             MockRealtimeChannel(name: "basketball::$chat::$chatMessages"),
             MockRealtimeChannel(name: "basketball::$chat::$reactions"),
-            MockRealtimeChannel(name: "basketball::$chat::$typingIndicators"),
+            MockRealtimeChannel(name: "basketball::$chat"),
         ]
         let channels = MockChannels(channels: channelsList)
         let realtime = MockRealtime(channels: channels)
@@ -164,7 +164,7 @@ struct DefaultRoomTests {
             roomOptions = .init(occupancy: .init())
         case .typing:
             roomOptions = .init(typing: .init())
-            namesOfChannelsToMock.append("basketball::$chat::$typingIndicators")
+            namesOfChannelsToMock.append("basketball::$chat")
         }
 
         let channelsList = namesOfChannelsToMock.map { name in
