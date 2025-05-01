@@ -1,14 +1,19 @@
 import Foundation
 
 @MainActor
-internal final class TimerManager {
+internal final class TimerManager<Clock: ClockProtocol> {
     private var currentTask: Task<Void, Never>?
+    private let clock: Clock
+
+    internal init(clock: Clock) {
+        self.clock = clock
+    }
 
     internal func setTimer(interval: TimeInterval, handler: @escaping @MainActor () -> Void) {
         cancelTimer()
 
         currentTask = Task {
-            try? await Task.sleep(nanoseconds: UInt64(interval * 1_000_000_000))
+            try? await clock.sleep(for: .seconds(interval))
             guard !Task.isCancelled else {
                 return
             }
