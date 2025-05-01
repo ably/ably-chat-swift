@@ -28,8 +28,7 @@ final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
         initialErrorReason: ARTErrorInfo? = nil,
         attachBehavior: AttachOrDetachBehavior? = nil,
         detachBehavior: AttachOrDetachBehavior? = nil,
-        messageToEmitOnSubscribe: ARTMessage? = nil,
-        subscribeToStateBehavior: SubscribeToStateBehavior? = nil
+        messageToEmitOnSubscribe: ARTMessage? = nil
     ) {
         _name = name
         _state = initialState
@@ -37,7 +36,6 @@ final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
         self.detachBehavior = detachBehavior
         errorReason = initialErrorReason
         self.messageToEmitOnSubscribe = messageToEmitOnSubscribe
-        self.subscribeToStateBehavior = subscribeToStateBehavior ?? .justAddSubscription
         attachSerial = properties.attachSerial
         channelSerial = properties.channelSerial
     }
@@ -153,12 +151,22 @@ final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
         // no-op; revisit if we need to test something that depends on this method actually stopping `subscribe` from emitting more events
     }
 
+    private var stateSubscriptionCallbacks: [@MainActor (ARTChannelStateChange) -> Void] = []
+
     func on(_: ARTChannelEvent, callback _: @escaping @MainActor (ARTChannelStateChange) -> Void) -> ARTEventListener {
         ARTEventListener()
     }
 
-    func on(_: @escaping @MainActor (ARTChannelStateChange) -> Void) -> ARTEventListener {
-        fatalError("Not implemented")
+    func on(_ callback: @escaping @MainActor (ARTChannelStateChange) -> Void) -> ARTEventListener {
+        stateSubscriptionCallbacks.append(callback)
+
+        return ARTEventListener()
+    }
+
+    func emitEvent(_ event: ARTChannelStateChange) {
+        for callback in stateSubscriptionCallbacks {
+            callback(event)
+        }
     }
 
     func off(_: ARTEventListener) {
@@ -174,30 +182,5 @@ final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
 
     func publish(_ name: String?, data: JSONValue?, extras: [String: JSONValue]?) {
         publishedMessages.append(TestMessage(name: name, data: data, extras: extras))
-    }
-
-    enum SubscribeToStateBehavior {
-        case justAddSubscription
-        case addSubscriptionAndEmitStateChange(ARTChannelStateChange)
-    }
-
-    private let subscribeToStateBehavior: SubscribeToStateBehavior
-    private var stateChangeSubscriptions = SubscriptionStorage<ARTChannelStateChange>()
-
-    func subscribeToState() -> Subscription<ARTChannelStateChange> {
-        let subscription = stateChangeSubscriptions.create(bufferingPolicy: .unbounded)
-
-        switch subscribeToStateBehavior {
-        case .justAddSubscription:
-            break
-        case let .addSubscriptionAndEmitStateChange(stateChange):
-            emitStateChange(stateChange)
-        }
-
-        return subscription
-    }
-
-    func emitStateChange(_ stateChange: ARTChannelStateChange) {
-        stateChangeSubscriptions.emit(stateChange)
     }
 }

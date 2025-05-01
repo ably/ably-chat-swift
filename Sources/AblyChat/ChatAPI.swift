@@ -3,8 +3,7 @@ import Ably
 @MainActor
 internal final class ChatAPI: Sendable {
     private let realtime: any InternalRealtimeClientProtocol
-    private let apiVersion = "/chat/v1"
-    private let apiVersionV2 = "/chat/v2" // TODO: remove v1 after full transition to v2
+    private let apiVersionV3 = "/chat/v3"
 
     public init(realtime: any InternalRealtimeClientProtocol) {
         self.realtime = realtime
@@ -12,7 +11,7 @@ internal final class ChatAPI: Sendable {
 
     // (CHA-M6) Messages should be queryable from a paginated REST API.
     internal func getMessages(roomId: String, params: QueryOptions) async throws(InternalError) -> any PaginatedResult<Message> {
-        let endpoint = "\(apiVersionV2)/rooms/\(roomId)/messages"
+        let endpoint = "\(apiVersionV3)/rooms/\(roomId)/messages"
         let result: Result<PaginatedResultWrapper<Message>, InternalError> = await makePaginatedRequest(endpoint, params: params.asQueryItems())
         return try result.get()
     }
@@ -47,7 +46,7 @@ internal final class ChatAPI: Sendable {
             throw ARTErrorInfo.create(withCode: 40000, message: "Ensure your Realtime instance is initialized with a clientId.").toInternalError()
         }
 
-        let endpoint = "\(apiVersionV2)/rooms/\(roomId)/messages"
+        let endpoint = "\(apiVersionV3)/rooms/\(roomId)/messages"
         var body: [String: JSONValue] = ["text": .string(params.text)]
 
         // (CHA-M3b) A message may be sent without metadata or headers. When these are not specified by the user, they must be omitted from the REST payload.
@@ -86,7 +85,7 @@ internal final class ChatAPI: Sendable {
             throw ARTErrorInfo.create(withCode: 40000, message: "Ensure your Realtime instance is initialized with a clientId.").toInternalError()
         }
 
-        let endpoint = "\(apiVersionV2)/rooms/\(modifiedMessage.roomID)/messages/\(modifiedMessage.serial)"
+        let endpoint = "\(apiVersionV3)/rooms/\(modifiedMessage.roomID)/messages/\(modifiedMessage.serial)"
         var body: [String: JSONValue] = [:]
         let messageObject: [String: JSONValue] = [
             "text": .string(modifiedMessage.text),
@@ -134,7 +133,7 @@ internal final class ChatAPI: Sendable {
     // (CHA-M9) A client must be able to delete a message in a room.
     // (CHA-M9a) A client may delete a message via the Chat REST API by calling the delete method.
     internal func deleteMessage(message: Message, params: DeleteMessageParams) async throws(InternalError) -> Message {
-        let endpoint = "\(apiVersionV2)/rooms/\(message.roomID)/messages/\(message.serial)/delete"
+        let endpoint = "\(apiVersionV3)/rooms/\(message.roomID)/messages/\(message.serial)/delete"
         var body: [String: JSONValue] = [:]
 
         if let description = params.description {
@@ -172,7 +171,7 @@ internal final class ChatAPI: Sendable {
     }
 
     internal func getOccupancy(roomId: String) async throws(InternalError) -> OccupancyEvent {
-        let endpoint = "\(apiVersion)/rooms/\(roomId)/occupancy"
+        let endpoint = "\(apiVersionV3)/rooms/\(roomId)/occupancy"
         return try await makeRequest(endpoint, method: "GET")
     }
 

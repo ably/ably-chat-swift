@@ -109,9 +109,9 @@ Task {
     }
 }
 
-// Get a chat room for the tutorial - using the defaults to enable all features in the chat room
+// Get a chat room for the tutorial
 let room = try await chatClient.rooms.get(
-    roomID: "readme-getting-started", options: RoomOptions.allFeaturesEnabled)
+    roomID: "readme-getting-started")
 
 // Add a listener to observe changes to the chat rooms status
 let statusSubscription = room.onStatusChange()

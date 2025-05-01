@@ -6,7 +6,7 @@ import Ably
  * Get an instance via ``Room/reactions``.
  */
 @MainActor
-public protocol RoomReactions: AnyObject, Sendable, EmitsDiscontinuities {
+public protocol RoomReactions: AnyObject, Sendable {
     /**
      * Send a reaction to the room including some metadata.
      *
@@ -16,14 +16,6 @@ public protocol RoomReactions: AnyObject, Sendable, EmitsDiscontinuities {
      * - Note: It is possible to receive your own reaction via the reactions subscription before this method returns.
      */
     func send(params: SendReactionParams) async throws(ARTErrorInfo)
-
-    /**
-     * Returns an instance of the Ably realtime channel used for room-level reactions.
-     * Avoid using this directly unless special features that cannot otherwise be implemented are needed.
-     *
-     * - Returns: The realtime channel.
-     */
-    nonisolated var channel: any RealtimeChannelProtocol { get }
 
     /**
      * Subscribes a given listener to receive room-level reactions.

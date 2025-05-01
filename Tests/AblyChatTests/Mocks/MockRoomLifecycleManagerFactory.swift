@@ -2,14 +2,14 @@
 
 class MockRoomLifecycleManagerFactory: RoomLifecycleManagerFactory {
     private let manager: MockRoomLifecycleManager
-    private(set) var createManagerArguments: [(contributors: [DefaultRoomLifecycleContributor], logger: any InternalLogger)] = []
+    private(set) var createManagerArguments: [(channel: any InternalRealtimeChannelProtocol, logger: any InternalLogger)] = []
 
     init(manager: MockRoomLifecycleManager = .init()) {
         self.manager = manager
     }
 
-    func createManager(contributors: [DefaultRoomLifecycleContributor], logger: any InternalLogger) -> MockRoomLifecycleManager {
-        createManagerArguments.append((contributors: contributors, logger: logger))
+    func createManager(channel: any InternalRealtimeChannelProtocol, logger: any InternalLogger) -> MockRoomLifecycleManager {
+        createManagerArguments.append((channel: channel, logger: logger))
         return manager
     }
 }
