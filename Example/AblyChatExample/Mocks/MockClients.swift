@@ -230,16 +230,17 @@ class MockTyping: Typing {
     let clientID: String
     let roomID: String
 
-    private let mockSubscriptions = MockSubscriptionStorage<TypingEvent>()
+    private let mockSubscriptions = MockSubscriptionStorage<TypingSetEvent>()
 
     init(clientID: String, roomID: String) {
         self.clientID = clientID
         self.roomID = roomID
     }
 
-    private func createSubscription() -> MockSubscription<TypingEvent> {
+    private func createSubscription() -> MockSubscription<TypingSetEvent> {
         mockSubscriptions.create(randomElement: {
-            TypingEvent(
+            TypingSetEvent(
+                type: .setChanged,
                 currentlyTyping: [
                     MockStrings.names.randomElement()!,
                     MockStrings.names.randomElement()!,
@@ -249,7 +250,7 @@ class MockTyping: Typing {
         }, interval: 2)
     }
 
-    func subscribe(bufferingPolicy _: BufferingPolicy) -> Subscription<TypingEvent> {
+    func subscribe(bufferingPolicy _: BufferingPolicy) -> Subscription<TypingSetEvent> {
         .init(mockAsyncSequence: createSubscription())
     }
 
@@ -258,11 +259,23 @@ class MockTyping: Typing {
     }
 
     func keystroke() async throws(ARTErrorInfo) {
-        mockSubscriptions.emit(TypingEvent(currentlyTyping: [clientID], change: .init(clientId: clientID, type: .started)))
+        mockSubscriptions.emit(
+            TypingSetEvent(
+                type: .setChanged,
+                currentlyTyping: [clientID],
+                change: .init(clientId: clientID, type: .started)
+            )
+        )
     }
 
     func stop() async throws(ARTErrorInfo) {
-        mockSubscriptions.emit(TypingEvent(currentlyTyping: [], change: .init(clientId: clientID, type: .stopped)))
+        mockSubscriptions.emit(
+            TypingSetEvent(
+                type: .setChanged,
+                currentlyTyping: [],
+                change: .init(clientId: clientID, type: .stopped)
+            )
+        )
     }
 }
 

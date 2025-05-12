@@ -8,7 +8,7 @@ internal final class DefaultTyping: Typing {
     }
 
     // (CHA-T6) Users may subscribe to typing events – updates to a set of clientIDs that are typing. This operation, like all subscription operations, has no side-effects in relation to room lifecycle.
-    internal func subscribe(bufferingPolicy: BufferingPolicy) -> Subscription<TypingEvent> {
+    internal func subscribe(bufferingPolicy: BufferingPolicy) -> Subscription<TypingSetEvent> {
         implementation.subscribe(bufferingPolicy: bufferingPolicy)
     }
 
@@ -70,11 +70,11 @@ internal final class DefaultTyping: Typing {
             )
         }
 
-        internal func subscribe(bufferingPolicy: BufferingPolicy) -> Subscription<TypingEvent> {
+        internal func subscribe(bufferingPolicy: BufferingPolicy) -> Subscription<TypingSetEvent> {
             // (CHA-T6a) Users may provide a listener to subscribe to typing event V2 in a chat room.
-            let subscription = Subscription<TypingEvent>(bufferingPolicy: bufferingPolicy)
+            let subscription = Subscription<TypingSetEvent>(bufferingPolicy: bufferingPolicy)
 
-            let startedEventListener = channel.subscribe(TypingEvents.started.rawValue) { [weak self] message in
+            let startedEventListener = channel.subscribe(TypingEventType.started.rawValue) { [weak self] message in
                 guard let self, let messageClientID = message.clientId else {
                     return
                 }
@@ -91,13 +91,18 @@ internal final class DefaultTyping: Typing {
                         }
                         // (CHA-T13b3) (2/2) If the (CHA-T13b1) timeout expires, the client shall remove the clientId from the typing set and emit a synthetic typing stop event for the given client.
                         subscription.emit(
-                            TypingEvent(currentlyTyping: typingTimerManager.currentlyTypingClientIDs(), change: .init(clientId: messageClientID, type: .stopped))
+                            TypingSetEvent(
+                                type: .setChanged,
+                                currentlyTyping: typingTimerManager.currentlyTypingClientIDs(),
+                                change: .init(clientId: messageClientID, type: .stopped)
+                            )
                         )
                     }
 
                     // (CHA-T13) When a typing event (typing.start or typing.stop) is received from the realtime client, the Chat client shall emit appropriate events to the user.
                     subscription.emit(
-                        TypingEvent(
+                        TypingSetEvent(
+                            type: .setChanged,
                             currentlyTyping: typingTimerManager.currentlyTypingClientIDs(),
                             change: .init(clientId: messageClientID, type: .started)
                         )
@@ -105,7 +110,7 @@ internal final class DefaultTyping: Typing {
                 }
             }
 
-            let stoppedEventListener = channel.subscribe(TypingEvents.stopped.rawValue) { [weak self] message in
+            let stoppedEventListener = channel.subscribe(TypingEventType.stopped.rawValue) { [weak self] message in
                 guard let self, let messageClientID = message.clientId else {
                     return
                 }
@@ -119,7 +124,8 @@ internal final class DefaultTyping: Typing {
 
                     // (CHA-T13) When a typing event (typing.start or typing.stop) is received from the realtime client, the Chat client shall emit appropriate events to the user.
                     subscription.emit(
-                        TypingEvent(
+                        TypingSetEvent(
+                            type: .setChanged,
                             currentlyTyping: typingTimerManager.currentlyTypingClientIDs(),
                             change: .init(clientId: messageClientID, type: .stopped)
                         )
@@ -171,7 +177,7 @@ internal final class DefaultTyping: Typing {
             // (CHA-T4a3) The client shall publish an ephemeral message to the channel with the name field set to typing.started, the format of which is detailed here.
             // (CHA-T4a5) The client must wait for the publish to succeed or fail before returning the result to the caller. If the publish fails, the client must throw an ErrorInfo.
             try await channel.publish(
-                TypingEvents.started.rawValue,
+                TypingEventType.started.rawValue,
                 data: nil,
                 extras: ["ephemeral": true]
             )
@@ -191,7 +197,7 @@ internal final class DefaultTyping: Typing {
                         logger.log(message: "Stopping typing indicator for client: \(clientID)", level: .debug)
                         // (CHA-T5d) The client shall publish an ephemeral message to the channel with the name field set to typing.stopped, the format of which is detailed here.
                         try await channel.publish(
-                            TypingEvents.stopped.rawValue,
+                            TypingEventType.stopped.rawValue,
                             data: nil,
                             extras: ["ephemeral": true]
                         )

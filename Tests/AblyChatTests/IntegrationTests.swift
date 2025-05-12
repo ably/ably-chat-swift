@@ -338,7 +338,7 @@ struct IntegrationTests {
         try await txRoom.typing.keystroke()
 
         // (3) Wait for the typing event to be received
-        var typingEvents: [TypingEvent] = []
+        var typingEvents: [TypingSetEvent] = []
         for await typingEvent in rxTypingSubscription {
             typingEvents.append(typingEvent)
             if typingEvents.count == 1 { break }
