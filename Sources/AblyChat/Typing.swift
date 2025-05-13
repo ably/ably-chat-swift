@@ -16,12 +16,12 @@ public protocol Typing: AnyObject, Sendable {
      *
      * - Returns: A subscription `AsyncSequence` that can be used to iterate through ``TypingEvent`` events.
      */
-    func subscribe(bufferingPolicy: BufferingPolicy) -> Subscription<TypingEvent>
+    func subscribe(bufferingPolicy: BufferingPolicy) -> Subscription<TypingSetEvent>
 
     /// Same as calling ``subscribe(bufferingPolicy:)`` with ``BufferingPolicy/unbounded``.
     ///
     /// The `Typing` protocol provides a default implementation of this method.
-    func subscribe() -> Subscription<TypingEvent>
+    func subscribe() -> Subscription<TypingSetEvent>
 
     /**
      * Get the current typers, a set of clientIds.
@@ -53,7 +53,7 @@ public protocol Typing: AnyObject, Sendable {
 }
 
 public extension Typing {
-    func subscribe() -> Subscription<TypingEvent> {
+    func subscribe() -> Subscription<TypingSetEvent> {
         subscribe(bufferingPolicy: .unbounded)
     }
 }
@@ -61,7 +61,9 @@ public extension Typing {
 /**
  * Represents a typing event.
  */
-public struct TypingEvent: Sendable {
+public struct TypingSetEvent: Sendable {
+    public var type: TypingSetEventType
+
     /**
      * Get a set of clientIds that are currently typing.
      */
@@ -72,16 +74,17 @@ public struct TypingEvent: Sendable {
       */
     public var change: Change
 
-    public init(currentlyTyping: Set<String>, change: Change) {
+    public init(type: TypingSetEventType, currentlyTyping: Set<String>, change: Change) {
+        self.type = type
         self.currentlyTyping = currentlyTyping
         self.change = change
     }
 
     public struct Change: Sendable {
         public var clientId: String
-        public var type: TypingEvents
+        public var type: TypingEventType
 
-        public init(clientId: String, type: TypingEvents) {
+        public init(clientId: String, type: TypingEventType) {
             self.clientId = clientId
             self.type = type
         }

@@ -43,7 +43,13 @@ internal enum OccupancyEvents: String {
     case meta = "[meta]occupancy"
 }
 
-public enum TypingEvents: String, Sendable {
+/// Enum representing the typing event types.
+public enum TypingEventType: String, Sendable {
     case started = "typing.started"
     case stopped = "typing.stopped"
+}
+
+/// Enum representing the typing set event types.
+public enum TypingSetEventType: String, Sendable {
+    case setChanged = "typing.set.changed"
 }
