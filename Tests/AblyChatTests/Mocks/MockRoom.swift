@@ -40,10 +40,6 @@ class MockRoom: InternalRoom {
         fatalError("Not implemented")
     }
 
-    func onStatusChange(bufferingPolicy _: BufferingPolicy) -> Subscription<RoomStatusChange> {
-        fatalError("Not implemented")
-    }
-
     func attach() async throws(ARTErrorInfo) {
         fatalError("Not implemented")
     }
@@ -68,7 +64,13 @@ class MockRoom: InternalRoom {
 
     private let _releaseCallsAsyncSequence: (stream: AsyncStream<Void>, continuation: AsyncStream<Void>.Continuation)
 
-    func onDiscontinuity(bufferingPolicy _: BufferingPolicy) -> Subscription<DiscontinuityEvent> {
+    @discardableResult
+    func onStatusChange(_: @escaping @MainActor (RoomStatusChange) -> Void) -> StatusSubscription {
+        fatalError("Not implemented")
+    }
+
+    @discardableResult
+    func onDiscontinuity(_: @escaping @MainActor (DiscontinuityEvent) -> Void) -> StatusSubscription {
         fatalError("Not implemented")
     }
 

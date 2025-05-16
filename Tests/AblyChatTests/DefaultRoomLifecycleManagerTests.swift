@@ -143,9 +143,14 @@ struct DefaultRoomLifecycleManagerTests {
         async let _ = manager.performDetachOperation(testsOnly_forcingOperationID: detachOperationID)
         _ = await detachingStatusChange
 
-        let operationWaitEventSubscription = manager.testsOnly_subscribeToOperationWaitEvents()
-        async let attachWaitingForDetachEvent = operationWaitEventSubscription.first { operationWaitEvent in
-            operationWaitEvent == .init(waitingOperationID: attachOperationID, waitedOperationID: detachOperationID)
+        var attachWaitingForDetachEvent: DefaultRoomLifecycleManager.OperationWaitEvent?
+        let operationWaitEventSubscription = manager.testsOnly_subscribeToOperationWaitEvents { operationWaitEvent in
+            if operationWaitEvent == .init(waitingOperationID: attachOperationID, waitedOperationID: detachOperationID) {
+                attachWaitingForDetachEvent = operationWaitEvent
+            }
+        }
+        defer {
+            operationWaitEventSubscription.unsubscribe()
         }
 
         // When: `performAttachOperation()` is called on the lifecycle manager
@@ -155,7 +160,11 @@ struct DefaultRoomLifecycleManagerTests {
         // - the manager informs us that the ATTACH operation is waiting for the DETACH operation to complete
         // - when the DETACH completes, the ATTACH operation proceeds (which we check here by verifying that it eventually completes) — note that (as far as I can tell) there is no way to test that the ATTACH operation would have proceeded _only if_ the DETACH had completed; the best we can do is allow the manager to tell us that that this is indeed what it’s doing (which is what we check for in the previous bullet)
 
-        _ = try #require(await attachWaitingForDetachEvent)
+        await until {
+            attachWaitingForDetachEvent != nil
+        }
+
+        _ = try #require(attachWaitingForDetachEvent)
 
         // Allow the DETACH to complete
         channelDetachOperation.complete(behavior: .success /* arbitrary */ )
@@ -345,9 +354,14 @@ struct DefaultRoomLifecycleManagerTests {
         async let _ = manager.performAttachOperation(testsOnly_forcingOperationID: attachOperationID)
         _ = await attachingStatusChange
 
-        let operationWaitEventSubscription = manager.testsOnly_subscribeToOperationWaitEvents()
-        async let detachWaitingForAttachEvent = operationWaitEventSubscription.first { operationWaitEvent in
-            operationWaitEvent == .init(waitingOperationID: detachOperationID, waitedOperationID: attachOperationID)
+        var detachWaitingForAttachEvent: DefaultRoomLifecycleManager.OperationWaitEvent?
+        let operationWaitEventSubscription = manager.testsOnly_subscribeToOperationWaitEvents { operationWaitEvent in
+            if operationWaitEvent == .init(waitingOperationID: detachOperationID, waitedOperationID: attachOperationID) {
+                detachWaitingForAttachEvent = operationWaitEvent
+            }
+        }
+        defer {
+            operationWaitEventSubscription.unsubscribe()
         }
 
         // When: `performDetachOperation()` is called on the lifecycle manager
@@ -357,7 +371,9 @@ struct DefaultRoomLifecycleManagerTests {
         // - the manager informs us that the DETACH operation is waiting for the ATTACH operation to complete
         // - when the ATTACH completes, the DETACH operation proceeds (which we check here by verifying that it eventually completes) — note that (as far as I can tell) there is no way to test that the DETACH operation would have proceeded _only if_ the ATTACH had completed; the best we can do is allow the manager to tell us that that this is indeed what it’s doing (which is what we check for in the previous bullet)
 
-        _ = try #require(await detachWaitingForAttachEvent)
+        await until {
+            detachWaitingForAttachEvent != nil
+        }
 
         // Allow the ATTACH to complete
         channelAttachOperation.complete(behavior: .success /* arbitrary */ )
@@ -520,9 +536,14 @@ struct DefaultRoomLifecycleManagerTests {
         async let _ = manager.performAttachOperation(testsOnly_forcingOperationID: attachOperationID)
         _ = await attachingStatusChange
 
-        let operationWaitEventSubscription = manager.testsOnly_subscribeToOperationWaitEvents()
-        async let releaseWaitingForAttachEvent = operationWaitEventSubscription.first { operationWaitEvent in
-            operationWaitEvent == .init(waitingOperationID: releaseOperationID, waitedOperationID: attachOperationID)
+        var releaseWaitingForAttachEvent: DefaultRoomLifecycleManager.OperationWaitEvent?
+        let operationWaitEventSubscription = manager.testsOnly_subscribeToOperationWaitEvents { operationWaitEvent in
+            if operationWaitEvent == .init(waitingOperationID: releaseOperationID, waitedOperationID: attachOperationID) {
+                releaseWaitingForAttachEvent = operationWaitEvent
+            }
+        }
+        defer {
+            operationWaitEventSubscription.unsubscribe()
         }
 
         // When: `performReleaseOperation()` is called on the lifecycle manager
@@ -532,7 +553,10 @@ struct DefaultRoomLifecycleManagerTests {
         // - the manager informs us that the RELEASE operation is waiting for the ATTACH operation to complete
         // - when the ATTACH completes, the RELEASE operation proceeds (which we check here by verifying that it eventually completes) — note that (as far as I can tell) there is no way to test that the RELEASE operation would have proceeded _only if_ the ATTACH had completed; the best we can do is allow the manager to tell us that that this is indeed what it’s doing (which is what we check for in the previous bullet)
 
-        _ = try #require(await releaseWaitingForAttachEvent)
+        await until {
+            releaseWaitingForAttachEvent != nil
+        }
+        _ = try #require(releaseWaitingForAttachEvent)
 
         // Allow the ATTACH to complete
         channelAttachOperation.complete(behavior: .success /* arbitrary */ )
@@ -912,14 +936,16 @@ struct DefaultRoomLifecycleManagerTests {
             try #require(manager.testsOnly_isExplicitlyDetached)
         }
 
-        let discontinuitiesSubscription = manager.onDiscontinuity(bufferingPolicy: .unbounded)
+        var emittedDiscontinuities = [DiscontinuityEvent]()
+        let discontinuitiesSubscription = manager.onDiscontinuity { event in
+            emittedDiscontinuities.append(event)
+        }
+        defer {
+            discontinuitiesSubscription.off()
+        }
 
         // When: The channel emits a state event
         channel.emitEvent(channelEvent)
-
-        // Then: If the state event is a potential discontinuity, and this is confirmed by our internal state, the manager emits a discontinuity
-        discontinuitiesSubscription.testsOnly_finish()
-        let emittedDiscontinuities = await Array(discontinuitiesSubscription)
 
         if expectDiscontinuity {
             try #require(emittedDiscontinuities.count == 1)
@@ -965,11 +991,23 @@ struct DefaultRoomLifecycleManagerTests {
         _ = await roomStatusSubscription.attachingElements().first { @Sendable _ in true }
 
         // When: `waitToBeAbleToPerformPresenceOperations(requestedByFeature:)` is called on the lifecycle manager
-        let statusChangeWaitSubscription = manager.testsOnly_subscribeToStatusChangeWaitEvents()
+        var statusChangeWaitEvent: DefaultRoomLifecycleManager.StatusChangeWaitEvent?
+        let statusChangeWaitSubscription = manager.testsOnly_subscribeToStatusChangeWaitEvents { event in
+            if statusChangeWaitEvent == nil {
+                statusChangeWaitEvent = event
+            }
+        }
+        defer {
+            statusChangeWaitSubscription.unsubscribe()
+        }
+
         async let waitToBeAbleToPerformPresenceOperationsResult: Void = manager.waitToBeAbleToPerformPresenceOperations(requestedByFeature: .messages /* arbitrary */ )
 
         // Then: The manager waits for its room status to change
-        _ = try #require(await statusChangeWaitSubscription.first { @Sendable _ in true })
+        await until {
+            statusChangeWaitEvent != nil
+        }
+        _ = try #require(statusChangeWaitEvent)
 
         // and When: The ATTACH operation succeeds, thus putting the room in the ATTACHED status
         channelAttachOperation.complete(behavior: .success)
@@ -1004,11 +1042,23 @@ struct DefaultRoomLifecycleManagerTests {
         _ = await roomStatusSubscription.attachingElements().first { @Sendable _ in true }
 
         // When: `waitToBeAbleToPerformPresenceOperations(requestedByFeature:)` is called on the lifecycle manager
-        let statusChangeWaitSubscription = manager.testsOnly_subscribeToStatusChangeWaitEvents()
+        var statusChangeWaitEvent: DefaultRoomLifecycleManager.StatusChangeWaitEvent?
+        let statusChangeWaitSubscription = manager.testsOnly_subscribeToStatusChangeWaitEvents { event in
+            if statusChangeWaitEvent == nil {
+                statusChangeWaitEvent = event
+            }
+        }
+        defer {
+            statusChangeWaitSubscription.unsubscribe()
+        }
+
         async let waitToBeAbleToPerformPresenceOperationsResult: Void = manager.waitToBeAbleToPerformPresenceOperations(requestedByFeature: .messages /* arbitrary */ )
 
         // Then: The manager waits for its room status to change
-        _ = try #require(await statusChangeWaitSubscription.first { @Sendable _ in true })
+        await until {
+            statusChangeWaitEvent != nil
+        }
+        _ = try #require(statusChangeWaitEvent)
 
         // and When: The ATTACH operation fails, thus putting the room in the FAILED status (i.e. a non-ATTACHED status)
         let channelAttachError = ARTErrorInfo.createUnknownError() // arbitrary

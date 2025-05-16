@@ -131,20 +131,33 @@ struct DefaultRoomsTests {
         // Wait for `release` to be called on the room so that we know that the CHA-RC1g release operation is in progress
         _ = await roomReleaseCalls.first { @Sendable _ in true }
 
-        let operationWaitSubscription = rooms.testsOnly_subscribeToOperationWaitEvents()
+        var getWaitingForReleaseEvent: DefaultRooms<MockRoomFactory>.OperationWaitEvent?
+        var secondGetWaitingForFirstGetEvent: DefaultRooms<MockRoomFactory>.OperationWaitEvent?
+
+        let operationWaitSubscription = rooms.testsOnly_subscribeToOperationWaitEvents { event in
+            if event.waitingOperationType == .get, event.waitedOperationType == .release {
+                getWaitingForReleaseEvent = event
+            } else if event.waitingOperationType == .get, event.waitedOperationType == .get {
+                secondGetWaitingForFirstGetEvent = event
+            }
+        }
+        defer {
+            operationWaitSubscription.unsubscribe()
+        }
+
         // This is the "Given"’s "previous call to get(roomID:options:)"
         async let firstRoom = try await rooms.get(roomID: roomID, options: options)
         // Wait for the `firstRoom` fetch to start waiting for the CHA-RC1g release operation, to know that we’ve fulfilled the conditions of the "Given"
-        _ = await operationWaitSubscription.first { @Sendable operationWaitEvent in
-            operationWaitEvent.waitingOperationType == .get && operationWaitEvent.waitedOperationType == .release
+        await until {
+            getWaitingForReleaseEvent != nil
         }
 
         // When: get(roomID:options:) is called with the same room ID
         async let secondRoom = try await rooms.get(roomID: roomID, options: options)
 
         // Then: The second call to `get` waits for the first call, and when the CHA-RC1g release operation completes, the second call to get(roomID:options:) does not create another room and returns the same room object as the first call
-        _ = await operationWaitSubscription.first { @Sendable operationWaitEvent in
-            operationWaitEvent.waitingOperationType == .get && operationWaitEvent.waitedOperationType == .get
+        await until {
+            secondGetWaitingForFirstGetEvent != nil
         }
 
         // Allow the CHA-RC1g release operation to complete
@@ -208,12 +221,22 @@ struct DefaultRoomsTests {
         // Wait for `release` to be called on the room so that we know that the CHA-RC1g release operation is in progress
         _ = await roomReleaseCalls.first { @Sendable _ in true }
 
-        let operationWaitSubscription = rooms.testsOnly_subscribeToOperationWaitEvents()
+        var getWaitingForReleaseEvent: DefaultRooms<MockRoomFactory>.OperationWaitEvent?
+
+        let operationWaitSubscription = rooms.testsOnly_subscribeToOperationWaitEvents { event in
+            if event.waitingOperationType == .get, event.waitedOperationType == .release {
+                getWaitingForReleaseEvent = event
+            }
+        }
+        defer {
+            operationWaitSubscription.unsubscribe()
+        }
+
         // This is the "Given"’s "previous call to get(roomID:options:)"
         async let _ = try await rooms.get(roomID: roomID, options: options)
         // Wait for the `firstRoom` fetch to start waiting for the CHA-RC1g release operation, to know that we’ve fulfilled the conditions of the "Given"
-        _ = await operationWaitSubscription.first { @Sendable operationWaitEvent in
-            operationWaitEvent.waitingOperationType == .get && operationWaitEvent.waitedOperationType == .release
+        await until {
+            getWaitingForReleaseEvent != nil
         }
 
         // When: get(roomID:options:) is called with the same ID but different options
@@ -258,12 +281,22 @@ struct DefaultRoomsTests {
         _ = await roomReleaseCalls.first { @Sendable _ in true }
 
         // When: `get(roomID:options:)` is called on the room
-        let operationWaitSubscription = rooms.testsOnly_subscribeToOperationWaitEvents()
+        var getWaitingForReleaseEvent: DefaultRooms<MockRoomFactory>.OperationWaitEvent?
+
+        let operationWaitSubscription = rooms.testsOnly_subscribeToOperationWaitEvents { event in
+            if event.waitingOperationType == .get, event.waitedOperationType == .release {
+                getWaitingForReleaseEvent = event
+            }
+        }
+        defer {
+            operationWaitSubscription.unsubscribe()
+        }
+
         async let fetchedRoom = rooms.get(roomID: roomID, options: options)
 
         // Then: The call to `get(roomID:options:)` creates a room map entry and waits for the CHA-RC1g release operation to complete
-        _ = await operationWaitSubscription.first { @Sendable operationWaitEvent in
-            operationWaitEvent.waitingOperationType == .get && operationWaitEvent.waitedOperationType == .release
+        await until {
+            getWaitingForReleaseEvent != nil
         }
         #expect(rooms.testsOnly_hasRoomMapEntryWithID(roomID))
 
@@ -318,12 +351,22 @@ struct DefaultRoomsTests {
         _ = await roomReleaseCalls.first { @Sendable _ in true }
 
         // When: `release(roomID:)` is called with this room ID
-        let operationWaitSubscription = rooms.testsOnly_subscribeToOperationWaitEvents()
+        var releaseWaitingForReleaseEvent: DefaultRooms<MockRoomFactory>.OperationWaitEvent?
+
+        let operationWaitSubscription = rooms.testsOnly_subscribeToOperationWaitEvents { event in
+            if event.waitingOperationType == .release, event.waitedOperationType == .release {
+                releaseWaitingForReleaseEvent = event
+            }
+        }
+        defer {
+            operationWaitSubscription.unsubscribe()
+        }
+
         async let secondReleaseResult: Void = rooms.release(roomID: roomID)
 
         // Then: The call to `release(roomID:)` waits for the previous release operation to complete
-        _ = await operationWaitSubscription.first { @Sendable operationWaitEvent in
-            operationWaitEvent.waitingOperationType == .release && operationWaitEvent.waitedOperationType == .release
+        await until {
+            releaseWaitingForReleaseEvent != nil
         }
 
         // and When: The previous CHA-RC1g release operation completes
@@ -359,13 +402,23 @@ struct DefaultRoomsTests {
         // Wait for `release` to be called on the room so that we know that the release operation is in progress
         _ = await roomReleaseCalls.first { @Sendable _ in true }
 
-        let operationWaitSubscription = rooms.testsOnly_subscribeToOperationWaitEvents()
+        var getWaitingForReleaseEvent: DefaultRooms<MockRoomFactory>.OperationWaitEvent?
+
+        let operationWaitSubscription = rooms.testsOnly_subscribeToOperationWaitEvents { event in
+            if event.waitingOperationType == .get, event.waitedOperationType == .release {
+                getWaitingForReleaseEvent = event
+            }
+        }
+        defer {
+            operationWaitSubscription.unsubscribe()
+        }
+
         // This is the “CHA-RC1f future” of the “Given”
         async let fetchedRoom = rooms.get(roomID: roomID, options: options)
 
         // Wait for the call to `get(roomID:options:)` to start waiting for the CHA-RC1g release operation to complete
-        _ = await operationWaitSubscription.first { @Sendable operationWaitEvent in
-            operationWaitEvent.waitingOperationType == .get && operationWaitEvent.waitedOperationType == .release
+        await until {
+            getWaitingForReleaseEvent != nil
         }
 
         // When: `release(roomID:)` is called on the room, with the same room ID

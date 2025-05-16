@@ -175,3 +175,14 @@ extension [String: Any] {
         PresenceDataDTO(userCustomData: JSONValue(ablyCocoaData: self)).toJSONValue.toAblyCocoaData
     }
 }
+
+/// Waits until closure returns `true` or timeouts (default timeout is 10 seconds).
+func until(_ closure: @MainActor @escaping () -> Bool, timeout: TimeInterval = 10.0) async {
+    let startedAt = Date()
+    while Date().timeIntervalSince(startedAt) < timeout {
+        if await closure() {
+            break
+        }
+        try? await Task.sleep(nanoseconds: UInt64(0.1 * 1_000_000_000))
+    }
+}
