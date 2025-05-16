@@ -1,12 +1,13 @@
 import Ably
 
 @MainActor
-internal protocol RoomLifecycleManager: Sendable {
+internal protocol RoomLifecycleManager: Sendable, ProvidesDiscontinuity {
     func performAttachOperation() async throws(InternalError)
     func performDetachOperation() async throws(InternalError)
     func performReleaseOperation() async
     var roomStatus: RoomStatus { get }
-    func onRoomStatusChange(bufferingPolicy: BufferingPolicy) -> Subscription<RoomStatusChange>
+    @discardableResult
+    func onRoomStatusChange(_ callback: @escaping ((RoomStatusChange) -> Void)) -> SubscriptionHandle
 
     /// Waits until we can perform presence operations on this room's channel without triggering an implicit attach.
     ///
@@ -19,8 +20,6 @@ internal protocol RoomLifecycleManager: Sendable {
     /// - Parameters:
     ///   - requester: The room feature that wishes to perform a presence operation. This is only used for customising the message of the thrown error.
     func waitToBeAbleToPerformPresenceOperations(requestedByFeature requester: RoomFeature) async throws(InternalError)
-
-    func onDiscontinuity(bufferingPolicy: BufferingPolicy) -> Subscription<DiscontinuityEvent>
 }
 
 @MainActor
@@ -102,8 +101,8 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
     }
 
     private var channelStateEventListener: ARTEventListener!
-    private let roomStatusChangeSubscriptions = SubscriptionStorage<RoomStatusChange>()
-    private let discontinuitySubscriptions = SubscriptionStorage<DiscontinuityEvent>()
+    private let roomStatusChangeSubscriptions = SubscriptionHandleStorage<RoomStatusChange>()
+    private let discontinuitySubscriptions = SubscriptionHandleStorage<DiscontinuityEvent>()
     private var operationResultContinuations = OperationResultContinuations()
 
     // MARK: - Initializers and `deinit`
@@ -175,8 +174,9 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
 
     // MARK: - Room status and its changes
 
-    internal func onRoomStatusChange(bufferingPolicy: BufferingPolicy) -> Subscription<RoomStatusChange> {
-        roomStatusChangeSubscriptions.create(bufferingPolicy: bufferingPolicy)
+    @discardableResult
+    internal func onRoomStatusChange(_ callback: @escaping ((RoomStatusChange) -> Void)) -> SubscriptionHandle {
+        roomStatusChangeSubscriptions.create(callback)
     }
 
     /// Updates ``roomStatus`` and emits a status change event.
@@ -218,8 +218,9 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
         }
     }
 
-    internal func onDiscontinuity(bufferingPolicy: BufferingPolicy) -> Subscription<DiscontinuityEvent> {
-        discontinuitySubscriptions.create(bufferingPolicy: bufferingPolicy)
+    @discardableResult
+    internal func onDiscontinuity(_ callback: @escaping @MainActor (DiscontinuityEvent) -> Void) -> SubscriptionHandle {
+        discontinuitySubscriptions.create(callback)
     }
 
     private func emitDiscontinuity(_ event: DiscontinuityEvent) {
@@ -589,19 +590,24 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
             // CHA-RL9, which is invoked by CHA-PR3d, CHA-PR10d, CHA-PR6c
 
             // CHA-RL9a
-            let subscription = onRoomStatusChange(bufferingPolicy: .unbounded)
-            logger.log(message: "waitToBeAbleToPerformPresenceOperations waiting for status change", level: .debug)
-            #if DEBUG
-                statusChangeWaitEventSubscriptions.emit(.init())
-            #endif
-            let nextRoomStatusChange = await (subscription.first { @Sendable _ in true })
-            logger.log(message: "waitToBeAbleToPerformPresenceOperations got status change \(String(describing: nextRoomStatusChange))", level: .debug)
-
+            var nextRoomStatusSubscription: SubscriptionHandle!
+            var nextRoomStatusChange: RoomStatusChange!
+            await withCheckedContinuation { (continuation: CheckedContinuation<Void, _>) in
+                self.logger.log(message: "waitToBeAbleToPerformPresenceOperations waiting for status change", level: .debug)
+                #if DEBUG
+                    self.statusChangeWaitEventSubscriptions.emit(.init())
+                #endif
+                nextRoomStatusSubscription = self.onRoomStatusChange { [weak self] statusChange in
+                    nextRoomStatusChange = statusChange
+                    self?.logger.log(message: "waitToBeAbleToPerformPresenceOperations got status change \(String(describing: nextRoomStatusChange))", level: .debug)
+                    continuation.resume()
+                }
+            }
+            nextRoomStatusSubscription.unsubscribe()
             // CHA-RL9b
-            // TODO: decide what to do if nextRoomStatusChange is nil; I believe that this will happen if the current Task is cancelled. For now, will just treat it as an invalid status change. Handle it properly in https://github.com/ably-labs/ably-chat-swift/issues/29
-            if nextRoomStatusChange?.current != .attached(error: nil) {
+            if nextRoomStatusChange.current != .attached(error: nil) {
                 // CHA-RL9c
-                throw ARTErrorInfo(chatError: .roomTransitionedToInvalidStateForPresenceOperation(cause: nextRoomStatusChange?.current.error)).toInternalError()
+                throw ARTErrorInfo(chatError: .roomTransitionedToInvalidStateForPresenceOperation(cause: nextRoomStatusChange.current.error)).toInternalError()
             }
         case .attached:
             // CHA-PR3e, CHA-PR10e, CHA-PR6d
