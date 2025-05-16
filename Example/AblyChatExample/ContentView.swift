@@ -200,16 +200,18 @@ struct ContentView: View {
             do {
                 let room = try await room()
 
+                printConnectionStatusChange(duration: 30) // stops printing after 30 seconds
+                subscribeToReactions(room: room)
+                subscribeToRoomStatus(room: room)
+                subscribeToTypingEvents(room: room)
+                subscribeToOccupancy(room: room)
+                subscribeToPresence(room: room)
+
                 try await room.attach()
+                try await showOccupancy(room: room)
                 try await room.presence.enter(data: ["status": "📱 Online"])
 
                 try await showMessages(room: room)
-                showReactions(room: room)
-                showPresence(room: room)
-                try await showOccupancy(room: room)
-                showTypings(room: room)
-                showRoomStatus(room: room)
-                printConnectionStatusChange()
             } catch {
                 print("Failed to initialize room: \(error)") // TODO: replace with logger (+ message to the user?)
             }
@@ -234,8 +236,32 @@ struct ContentView: View {
     }
 
     func showMessages(room: Room) async throws {
-        let messagesSubscription = try await room.messages.subscribe()
-        let previousMessages = try await messagesSubscription.getPreviousMessages(params: .init())
+        let subscriptionHandle = try await room.messages.subscribe { message in
+            switch message.action {
+            case .create:
+                withAnimation {
+                    listItems.insert(
+                        .message(
+                            .init(
+                                message: message,
+                                isSender: message.clientID == chatClient.realtime.clientId
+                            )
+                        ),
+                        at: 0
+                    )
+                }
+            case .update, .delete:
+                if let index = listItems.firstIndex(where: { $0.id == message.id }) {
+                    listItems[index] = .message(
+                        .init(
+                            message: message,
+                            isSender: message.clientID == chatClient.realtime.clientId
+                        )
+                    )
+                }
+            }
+        }
+        let previousMessages = try await subscriptionHandle.getPreviousMessages(.init())
 
         for message in previousMessages.items {
             switch message.action {
@@ -245,125 +271,75 @@ struct ContentView: View {
                 }
             }
         }
+    }
 
-        // Continue listening for messages on a background task so this function can return
-        Task {
-            for await message in messagesSubscription {
-                switch message.action {
-                case .create:
-                    withAnimation {
-                        listItems.insert(
-                            .message(
-                                .init(
-                                    message: message,
-                                    isSender: message.clientID == chatClient.realtime.clientId
-                                )
-                            ),
-                            at: 0
+    func subscribeToReactions(room: Room) {
+        room.reactions.subscribe { reaction in
+            withAnimation {
+                showReaction(reaction.displayedText)
+            }
+        }
+    }
+
+    func subscribeToPresence(room: Room) {
+        room.presence.subscribe(events: [.enter, .leave, .update]) { event in
+            withAnimation {
+                listItems.insert(
+                    .presence(
+                        .init(
+                            presence: event
                         )
-                    }
-                case .update, .delete:
-                    if let index = listItems.firstIndex(where: { $0.id == message.id }) {
-                        listItems[index] = .message(
-                            .init(
-                                message: message,
-                                isSender: message.clientID == chatClient.realtime.clientId
-                            )
-                        )
-                    }
-                }
+                    ),
+                    at: 0
+                )
             }
         }
     }
 
-    func showReactions(room: Room) {
-        let reactionSubscription = room.reactions.subscribe()
-
-        // Continue listening for reactions on a background task so this function can return
-        Task {
-            for await reaction in reactionSubscription {
-                withAnimation {
-                    showReaction(reaction.displayedText)
-                }
-            }
-        }
-    }
-
-    func showPresence(room: Room) {
-        // Continue listening for new presence events on a background task so this function can return
-        Task {
-            for await event in room.presence.subscribe(events: [.enter, .leave, .update]) {
-                withAnimation {
-                    listItems.insert(
-                        .presence(
-                            .init(
-                                presence: event
-                            )
-                        ),
-                        at: 0
-                    )
-                }
-            }
-        }
-    }
-
-    func showTypings(room: Room) {
-        let typingSubscription = room.typing.subscribe()
-        // Continue listening for typing events on a background task so this function can return
-        Task {
-            for await typing in typingSubscription {
-                withAnimation {
-                    // Set the typing info to the list of users currently typing
-                    typingInfo = typing.currentlyTyping.isEmpty ?
-                        "" :
-                        "Typing: \(typing.currentlyTyping.joined(separator: ", "))..."
-                }
+    func subscribeToTypingEvents(room: Room) {
+        room.typing.subscribe { typing in
+            withAnimation {
+                // Set the typing info to the list of users currently typing
+                let reset = typing.currentlyTyping.isEmpty || typing.currentlyTyping.count == 1 && typing.change.type == .stopped
+                typingInfo = reset ? "" : "Typing: \(typing.currentlyTyping.joined(separator: ", "))..."
             }
         }
     }
 
     func showOccupancy(room: Room) async throws {
-        // Continue listening for occupancy events on a background task so this function can return
-        let currentOccupancy = try await room.occupancy.get()
-        withAnimation {
-            occupancyInfo = "Connections: \(currentOccupancy.presenceMembers) (\(currentOccupancy.connections))"
-        }
+        let occupancy = try await room.occupancy.get()
+        occupancyInfo = "Connections: \(occupancy.presenceMembers) (\(occupancy.connections))"
+    }
 
-        Task {
-            for await event in room.occupancy.subscribe() {
-                withAnimation {
-                    occupancyInfo = "Connections: \(event.presenceMembers) (\(event.connections))"
-                }
+    func subscribeToOccupancy(room: Room) {
+        room.occupancy.subscribe { occupancy in
+            withAnimation {
+                occupancyInfo = "Connections: \(occupancy.presenceMembers) (\(occupancy.connections))"
             }
         }
     }
 
-    func printConnectionStatusChange() {
-        let connectionSubsciption = chatClient.connection.onStatusChange()
-
-        // Continue listening for connection status change on a background task so this function can return
-        Task {
-            for await status in connectionSubsciption {
-                print("Connection status changed to: \(status.current)")
-            }
+    func printConnectionStatusChange(duration: TimeInterval) {
+        let subscriptionHandle = chatClient.connection.onStatusChange { status in
+            print("Connection status changed to: `\(status.current)` from `\(status.previous)`")
+        }
+        after(duration) {
+            subscriptionHandle.unsubscribe()
+            print("Unsubscribed from connection status changes.")
         }
     }
 
-    func showRoomStatus(room: Room) {
-        // Continue listening for status change events on a background task so this function can return
-        Task {
-            for await status in room.onStatusChange() {
-                withAnimation {
-                    if status.current.isAttaching {
-                        statusInfo = "\(status.current)...".capitalized
-                    } else {
-                        statusInfo = "\(status.current)".capitalized
-                        if status.current.isAttached {
-                            Task {
-                                try? await Task.sleep(nanoseconds: 1 * 1_000_000_000)
-                                withAnimation {
-                                    statusInfo = ""
-                                }
+    func subscribeToRoomStatus(room: Room) {
+        room.onStatusChange { status in
+            withAnimation {
+                if status.current.isAttaching {
+                    statusInfo = "\(status.current)...".capitalized
+                } else {
+                    statusInfo = "\(status.current)".capitalized
+                    if status.current.isAttached {
+                        after(1) {
+                            withAnimation {
+                                statusInfo = ""
                             }
                         }
                     }

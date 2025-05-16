@@ -1,4 +1,5 @@
-import Foundation
+import Ably
+@testable import AblyChat
 
 // This is copied from ably-chat’s internal class `SubscriptionStorage`.
 @MainActor
@@ -32,6 +33,118 @@ class MockSubscriptionStorage<Element: Sendable> {
     func emit(_ element: Element) {
         for subscription in subscriptions.values {
             subscription.subscription?.emit(element)
+        }
+    }
+}
+
+@MainActor
+class MockSubscriptionHandleStorage<Element: Sendable> {
+    @MainActor
+    private struct Subscription {
+        let handle: SubscriptionHandle
+        let callback: (Element) -> Void
+
+        init(randomElement: @escaping @Sendable () -> Element, interval: Double, callback: @escaping @MainActor (Element) -> Void, onTerminate: @escaping () -> Void) {
+            self.callback = callback
+
+            var needNext = true
+            periodic(with: interval) {
+                if needNext {
+                    callback(randomElement())
+                }
+                return needNext
+            }
+            handle = SubscriptionHandle {
+                needNext = false
+                onTerminate()
+            }
+        }
+    }
+
+    private var subscriptions: [UUID: Subscription] = [:]
+
+    func create(
+        randomElement: @escaping @Sendable () -> Element,
+        interval: Double,
+        callback: @escaping @MainActor (Element) -> Void
+    ) -> SubscriptionHandle {
+        let id = UUID()
+        let subscription = Subscription(randomElement: randomElement, interval: interval, callback: callback) { [weak self] in
+            self?.subscriptionDidTerminate(id: id)
+        }
+        subscriptions[id] = subscription
+        return subscription.handle
+    }
+
+    private func subscriptionDidTerminate(id: UUID) {
+        _ = subscriptions.removeValue(forKey: id)
+    }
+
+    func emit(_ element: Element) {
+        for subscription in subscriptions.values {
+            subscription.callback(element)
+        }
+    }
+}
+
+@MainActor
+class MockMessageSubscriptionHandleStorage<Element: Sendable> {
+    @MainActor
+    private struct Subscription {
+        let handle: MessageSubscriptionHandle
+        let callback: (Element) -> Void
+
+        init(
+            randomElement: @escaping @Sendable () -> Element,
+            previousMessages: @escaping @Sendable (QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message>,
+            interval: Double,
+            callback: @escaping @MainActor (Element) -> Void,
+            onTerminate: @escaping () -> Void
+        ) {
+            self.callback = callback
+
+            var needNext = true
+            periodic(with: interval) {
+                if needNext {
+                    callback(randomElement())
+                }
+                return needNext
+            }
+            handle = MessageSubscriptionHandle(unsubscribe: {
+                needNext = false
+                onTerminate()
+            }, getPreviousMessages: previousMessages)
+        }
+    }
+
+    private var subscriptions: [UUID: Subscription] = [:]
+
+    func create(
+        randomElement: @escaping @Sendable () -> Element,
+        previousMessages: @escaping @Sendable (QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message>,
+        interval: Double,
+        callback: @escaping @MainActor (Element) -> Void
+    ) -> MessageSubscriptionHandle {
+        let id = UUID()
+        let subscription = Subscription(
+            randomElement: randomElement,
+            previousMessages: previousMessages,
+            interval: interval,
+            callback: callback
+        ) { [weak self] in
+            self?.subscriptionDidTerminate(id: id)
+        }
+        subscriptions[id] = subscription
+        return subscription.handle
+    }
+
+    private func subscriptionDidTerminate(id: UUID) {
+        _ = subscriptions.removeValue(forKey: id)
+    }
+
+    func emit(_ element: Element) {
+        for subscription in subscriptions.values {
+            subscription.callback(element)
         }
     }
 }
