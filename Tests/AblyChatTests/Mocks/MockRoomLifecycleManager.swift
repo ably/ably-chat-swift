@@ -8,8 +8,8 @@ class MockRoomLifecycleManager: RoomLifecycleManager {
     private(set) var detachCallCount = 0
     private(set) var releaseCallCount = 0
     private let _roomStatus: RoomStatus?
-    private let roomStatusSubscriptions = SubscriptionStorage<RoomStatusChange>()
-    private let discontinuitySubscriptions = SubscriptionStorage<DiscontinuityEvent>()
+    private let roomStatusSubscriptions = SubscriptionHandleStorage<RoomStatusChange>()
+    private let discontinuitySubscriptions = SubscriptionHandleStorage<DiscontinuityEvent>()
 
     init(attachResult: Result<Void, ARTErrorInfo>? = nil, detachResult: Result<Void, ARTErrorInfo>? = nil, roomStatus: RoomStatus? = nil) {
         self.attachResult = attachResult
@@ -52,10 +52,6 @@ class MockRoomLifecycleManager: RoomLifecycleManager {
         return roomStatus
     }
 
-    func onRoomStatusChange(bufferingPolicy: BufferingPolicy) -> Subscription<RoomStatusChange> {
-        roomStatusSubscriptions.create(bufferingPolicy: bufferingPolicy)
-    }
-
     func emitStatusChange(_ statusChange: RoomStatusChange) {
         roomStatusSubscriptions.emit(statusChange)
     }
@@ -64,8 +60,14 @@ class MockRoomLifecycleManager: RoomLifecycleManager {
         fatalError("Not implemented")
     }
 
-    func onDiscontinuity(bufferingPolicy: BufferingPolicy) -> Subscription<DiscontinuityEvent> {
-        discontinuitySubscriptions.create(bufferingPolicy: bufferingPolicy)
+    @discardableResult
+    func onRoomStatusChange(_ callback: @escaping @MainActor (RoomStatusChange) -> Void) -> SubscriptionHandle {
+        roomStatusSubscriptions.create(callback)
+    }
+
+    @discardableResult
+    func onDiscontinuity(_ callback: @escaping @MainActor (DiscontinuityEvent) -> Void) -> SubscriptionHandle {
+        discontinuitySubscriptions.create(callback)
     }
 
     func emitDiscontinuity(_ discontinuity: DiscontinuityEvent) {

@@ -1,5 +1,5 @@
 import Ably
-import AblyChat
+@testable import AblyChat
 
 /// Extensions for filtering a subscription by a given case, and then providing access to the values associated with these cases.
 ///
@@ -47,5 +47,28 @@ extension Subscription where Element == RoomStatusChange {
                 nil
             }
         }
+    }
+}
+
+/// `AsyncSequence` variant of `Room` status changes.
+extension RoomLifecycleManager {
+    func onRoomStatusChange(bufferingPolicy: BufferingPolicy) -> Subscription<RoomStatusChange> {
+        let subscription = Subscription<RoomStatusChange>(bufferingPolicy: bufferingPolicy)
+
+        let subscriptionHandle = onRoomStatusChange { statusChange in
+            subscription.emit(statusChange)
+        }
+
+        subscription.addTerminationHandler {
+            Task { @MainActor in
+                subscriptionHandle.unsubscribe()
+            }
+        }
+
+        return subscription
+    }
+
+    func onRoomStatusChange() -> Subscription<RoomStatusChange> {
+        onRoomStatusChange(bufferingPolicy: .unbounded)
     }
 }

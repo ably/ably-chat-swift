@@ -12,16 +12,11 @@ public protocol Messages: AnyObject, Sendable {
      * Subscribe to new messages in this chat room.
      *
      * - Parameters:
-     *   - bufferingPolicy: The ``BufferingPolicy`` for the created subscription.
+     *   - callback: The listener closure for capturing room ``Message`` events.
      *
-     * - Returns: A subscription ``MessageSubscription`` that can be used to iterate through new messages.
+     * - Returns: A subscription handle that can be used to unsubscribe from ``Message`` events.
      */
-    func subscribe(bufferingPolicy: BufferingPolicy) async throws(ARTErrorInfo) -> MessageSubscription
-
-    /// Same as calling ``subscribe(bufferingPolicy:)`` with ``BufferingPolicy/unbounded``.
-    ///
-    /// The `Messages` protocol provides a default implementation of this method.
-    func subscribe() async throws(ARTErrorInfo) -> MessageSubscription
+    func subscribe(_ callback: @escaping @MainActor (Message) -> Void) async throws(ARTErrorInfo) -> MessageSubscriptionHandle
 
     /**
      * Get messages that have been previously sent to the chat room, based on the provided options.
@@ -80,6 +75,38 @@ public protocol Messages: AnyObject, Sendable {
 }
 
 public extension Messages {
+    /**
+     * Subscribe to new messages in this chat room.
+     *
+     * - Parameters:
+     *   - bufferingPolicy: The ``BufferingPolicy`` for the created subscription.
+     *
+     * - Returns: A subscription ``MessageSubscription`` that can be used to iterate through new messages.
+     */
+    func subscribe(bufferingPolicy: BufferingPolicy) async throws(ARTErrorInfo) -> MessageSubscription {
+        var emitMessage: ((Message) -> Void)?
+        let subscriptionHandle = try await subscribe { message in
+            emitMessage?(message)
+        }
+
+        let subscription = MessageSubscription(
+            bufferingPolicy: bufferingPolicy,
+            getPreviousMessages: subscriptionHandle.getPreviousMessages
+        )
+        emitMessage = { [weak subscription] message in
+            subscription?.emit(message)
+        }
+
+        subscription.addTerminationHandler {
+            Task { @MainActor in
+                subscriptionHandle.unsubscribe()
+            }
+        }
+
+        return subscription
+    }
+
+    /// Same as calling ``subscribe(bufferingPolicy:)`` with ``BufferingPolicy/unbounded``.
     func subscribe() async throws(ARTErrorInfo) -> MessageSubscription {
         try await subscribe(bufferingPolicy: .unbounded)
     }
@@ -277,12 +304,12 @@ public final class MessageSubscription: Sendable, AsyncSequence {
     private let subscription: Subscription<Element>
 
     // can be set by either initialiser
-    private let getPreviousMessages: @Sendable (QueryOptions) async throws(InternalError) -> any PaginatedResult<Message>
+    private let getPreviousMessages: @Sendable (QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message>
 
     // used internally
     internal init(
         bufferingPolicy: BufferingPolicy,
-        getPreviousMessages: @escaping @Sendable (QueryOptions) async throws(InternalError) -> any PaginatedResult<Message>
+        getPreviousMessages: @escaping @Sendable (QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message>
     ) {
         subscription = .init(bufferingPolicy: bufferingPolicy)
         self.getPreviousMessages = getPreviousMessages
@@ -291,13 +318,7 @@ public final class MessageSubscription: Sendable, AsyncSequence {
     // used for testing
     public init<Underlying: AsyncSequence & Sendable>(mockAsyncSequence: Underlying, mockGetPreviousMessages: @escaping @Sendable (QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message>) where Underlying.Element == Element {
         subscription = .init(mockAsyncSequence: mockAsyncSequence)
-        getPreviousMessages = { @Sendable params throws(InternalError) in
-            do throws(ARTErrorInfo) {
-                return try await mockGetPreviousMessages(params)
-            } catch {
-                throw error.toInternalError()
-            }
-        }
+        getPreviousMessages = mockGetPreviousMessages
     }
 
     internal func emit(_ element: Element) {
@@ -310,11 +331,7 @@ public final class MessageSubscription: Sendable, AsyncSequence {
     }
 
     public func getPreviousMessages(params: QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message> {
-        do {
-            return try await getPreviousMessages(params)
-        } catch {
-            throw error.toARTErrorInfo()
-        }
+        try await getPreviousMessages(params)
     }
 
     public struct AsyncIterator: AsyncIteratorProtocol {
@@ -332,4 +349,13 @@ public final class MessageSubscription: Sendable, AsyncSequence {
     public func makeAsyncIterator() -> AsyncIterator {
         .init(subscriptionIterator: subscription.makeAsyncIterator())
     }
+}
+
+/// An object that is used to unsubscribe from message events and get previous messages.
+public struct MessageSubscriptionHandle: Sendable {
+    /// A closure to call for unsubscribing from events. Set internally.
+    public let unsubscribe: @MainActor () -> Void
+
+    /// A closure to call to get previous messages. Set internally.
+    public let getPreviousMessages: @Sendable (QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message>
 }
