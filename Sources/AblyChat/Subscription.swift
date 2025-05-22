@@ -1,5 +1,11 @@
 import Foundation
 
+/// An object that is used to unsubscribe from subscription events.
+public struct SubscriptionHandle: Sendable {
+    /// A closure to call for unsubscribing from events.
+    public let unsubscribe: @MainActor () -> Void
+}
+
 // A non-throwing `AsyncSequence` (means that we can iterate over it without a `try`).
 //
 // This should respect the `BufferingPolicy` passed to the `subscribe(bufferingPolicy:)` method.
