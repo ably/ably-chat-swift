@@ -20,11 +20,12 @@ public protocol Connection: AnyObject, Sendable {
      * Subscribes a given listener to a connection status changes.
      *
      * - Parameters:
-     *   - bufferingPolicy: The ``BufferingPolicy`` for the created subscription.
+     *   - callback: The listener closure for capturing ``ConnectionStatusChange`` events.
      *
-     * - Returns: A subscription `AsyncSequence` that can be used to iterate through ``ConnectionStatusChange`` events.
+     * - Returns: A subscription handler that can be used to unsubscribe from ``ConnectionStatusChange`` events.
      */
-    func onStatusChange(bufferingPolicy: BufferingPolicy) -> Subscription<ConnectionStatusChange>
+    @discardableResult
+    func onStatusChange(_ callback: @escaping @MainActor (ConnectionStatusChange) -> Void) -> SubscriptionHandle
 
     /// Same as calling ``onStatusChange(bufferingPolicy:)`` with ``BufferingPolicy/unbounded``.
     ///
@@ -32,7 +33,35 @@ public protocol Connection: AnyObject, Sendable {
     func onStatusChange() -> Subscription<ConnectionStatusChange>
 }
 
+/// `AsyncSequence` variant of `Connection` status changes.
 public extension Connection {
+    /**
+     * Subscribes a given listener to a connection status changes.
+     *
+     * - Parameters:
+     *   - bufferingPolicy: The ``BufferingPolicy`` for the created subscription.
+     *
+     * - Returns: A subscription `AsyncSequence` that can be used to iterate through ``ConnectionStatusChange`` events.
+     */
+    func onStatusChange(bufferingPolicy: BufferingPolicy) -> Subscription<ConnectionStatusChange> {
+        let subscription = Subscription<ConnectionStatusChange>(bufferingPolicy: bufferingPolicy)
+
+        let subscriptionHandle = onStatusChange { statusChange in
+            subscription.emit(statusChange)
+        }
+
+        subscription.addTerminationHandler {
+            Task { @MainActor in
+                subscriptionHandle.unsubscribe()
+            }
+        }
+
+        return subscription
+    }
+
+    /**
+     * Subscribes a given listener to a connection status changes with the default `unbounded` buffering policy.
+     */
     func onStatusChange() -> Subscription<ConnectionStatusChange> {
         onStatusChange(bufferingPolicy: .unbounded)
     }

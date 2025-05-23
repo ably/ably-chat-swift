@@ -134,7 +134,9 @@ final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
     // Added the ability to emit a message whenever we want instead of just on subscribe... I didn't want to dig into what the messageToEmitOnSubscribe is too much so just if/else between the two.
     func subscribe(_ name: String, callback: @escaping @MainActor (ARTMessage) -> Void) -> ARTEventListener? {
         if let messageToEmitOnSubscribe {
-            callback(messageToEmitOnSubscribe)
+            Task {
+                callback(messageToEmitOnSubscribe)
+            }
         } else {
             channelSubscriptions.append((name, callback))
         }

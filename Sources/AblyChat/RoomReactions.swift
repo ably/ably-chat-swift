@@ -18,6 +18,20 @@ public protocol RoomReactions: AnyObject, Sendable {
     func send(params: SendReactionParams) async throws(ARTErrorInfo)
 
     /**
+     * Subscribes a given listener to the room reactions.
+     *
+     * - Parameters:
+     *   - callback: The listener closure for capturing room ``Reaction``.
+     *
+     * - Returns: A subscription handle that can be used to unsubscribe from ``Reaction`` events.
+     */
+    @discardableResult
+    func subscribe(_ callback: @escaping @MainActor (Reaction) -> Void) -> SubscriptionHandle
+}
+
+/// `AsyncSequence` variant of receiving room reactions.
+public extension RoomReactions {
+    /**
      * Subscribes a given listener to receive room-level reactions.
      *
      * - Parameters:
@@ -25,15 +39,25 @@ public protocol RoomReactions: AnyObject, Sendable {
      *
      * - Returns: A subscription `AsyncSequence` that can be used to iterate through ``Reaction`` events.
      */
-    func subscribe(bufferingPolicy: BufferingPolicy) -> Subscription<Reaction>
+    func subscribe(bufferingPolicy: BufferingPolicy) -> Subscription<Reaction> {
+        let subscription = Subscription<Reaction>(bufferingPolicy: bufferingPolicy)
+
+        let subscriptionHandle = subscribe { reaction in
+            subscription.emit(reaction)
+        }
+
+        subscription.addTerminationHandler {
+            Task { @MainActor in
+                subscriptionHandle.unsubscribe()
+            }
+        }
+
+        return subscription
+    }
 
     /// Same as calling ``subscribe(bufferingPolicy:)`` with ``BufferingPolicy/unbounded``.
     ///
     /// The `RoomReactions` protocol provides a default implementation of this method.
-    func subscribe() -> Subscription<Reaction>
-}
-
-public extension RoomReactions {
     func subscribe() -> Subscription<Reaction> {
         subscribe(bufferingPolicy: .unbounded)
     }

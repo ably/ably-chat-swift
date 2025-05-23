@@ -66,16 +66,23 @@ public protocol Room: AnyObject, Sendable {
      * Subscribes a given listener to the room status changes.
      *
      * - Parameters:
-     *   - bufferingPolicy: The ``BufferingPolicy`` for the created subscription.
+     *   - callback: The listener closure for capturing ``RoomStatusChange`` events.
      *
-     * - Returns: A subscription `AsyncSequence` that can be used to iterate through ``RoomStatusChange`` events.
+     * - Returns: A subscription handle that can be used to unsubscribe from ``RoomStatusChange`` events.
      */
-    func onStatusChange(bufferingPolicy: BufferingPolicy) -> Subscription<RoomStatusChange>
+    @discardableResult
+    func onStatusChange(_ callback: @escaping @MainActor (RoomStatusChange) -> Void) -> SubscriptionHandle
 
-    /// Same as calling ``onStatusChange(bufferingPolicy:)`` with ``BufferingPolicy/unbounded``.
-    ///
-    /// The `Room` protocol provides a default implementation of this method.
-    func onStatusChange() -> Subscription<RoomStatusChange>
+    /**
+     * Subscribes a given listener to a detected discontinuity.
+     *
+     * - Parameters:
+     *   - callback: The listener closure for capturing ``DiscontinuityEvent``.
+     *
+     * - Returns: A subscription handle that can be used to unsubscribe from ``DiscontinuityEvent``.
+     */
+    @discardableResult
+    func onDiscontinuity(_ callback: @escaping @MainActor (DiscontinuityEvent) -> Void) -> SubscriptionHandle
 
     /**
      * Attaches to the room to receive events in realtime.
@@ -106,21 +113,6 @@ public protocol Room: AnyObject, Sendable {
     nonisolated var options: RoomOptions { get }
 
     /**
-     * Subscribes a given listener to a detected discontinuity.
-     *
-     * - Parameters:
-     *   - bufferingPolicy: The ``BufferingPolicy`` for the created subscription.
-     *
-     * - Returns: A subscription `AsyncSequence` that can be used to iterate through ``DiscontinuityEvent`` events.
-     */
-    func onDiscontinuity(bufferingPolicy: BufferingPolicy) -> Subscription<DiscontinuityEvent>
-
-    /// Same as calling ``onDiscontinuity(bufferingPolicy:)`` with ``BufferingPolicy/unbounded``.
-    ///
-    /// The `Room` protocol provides a default implementation of this method.
-    func onDiscontinuity() -> Subscription<DiscontinuityEvent>
-
-    /**
      * Get the underlying Ably realtime channel used for the room.
      *
      * - Returns: The realtime channel.
@@ -128,11 +120,65 @@ public protocol Room: AnyObject, Sendable {
     nonisolated var channel: any RealtimeChannelProtocol { get }
 }
 
+/// `AsyncSequence` variant of `Room` status changes.
 public extension Room {
+    /**
+     * Subscribes a given listener to the room status changes.
+     *
+     * - Parameters:
+     *   - bufferingPolicy: The ``BufferingPolicy`` for the created subscription.
+     *
+     * - Returns: A subscription `AsyncSequence` that can be used to iterate through ``RoomStatusChange`` events.
+     */
+    func onStatusChange(bufferingPolicy: BufferingPolicy) -> Subscription<RoomStatusChange> {
+        let subscription = Subscription<RoomStatusChange>(bufferingPolicy: bufferingPolicy)
+
+        let subscriptionHandle = onStatusChange { statusChange in
+            subscription.emit(statusChange)
+        }
+
+        subscription.addTerminationHandler {
+            Task { @MainActor in
+                subscriptionHandle.unsubscribe()
+            }
+        }
+
+        return subscription
+    }
+
+    /// Same as calling ``onStatusChange(bufferingPolicy:)`` with ``BufferingPolicy/unbounded``.
+    ///
+    /// The `Room` protocol provides a default implementation of this method.
     func onStatusChange() -> Subscription<RoomStatusChange> {
         onStatusChange(bufferingPolicy: .unbounded)
     }
 
+    /**
+     * Subscribes a given listener to a detected discontinuity using `AsyncSequence` subscription.
+     *
+     * - Parameters:
+     *   - bufferingPolicy: The ``BufferingPolicy`` for the created subscription.
+     *
+     * - Returns: A subscription `AsyncSequence` that can be used to iterate through ``DiscontinuityEvent`` events.
+     */
+    func onDiscontinuity(bufferingPolicy: BufferingPolicy) -> Subscription<DiscontinuityEvent> {
+        let subscription = Subscription<DiscontinuityEvent>(bufferingPolicy: bufferingPolicy)
+
+        let subscriptionHandle = onDiscontinuity { statusChange in
+            subscription.emit(statusChange)
+        }
+        subscription.addTerminationHandler {
+            Task { @MainActor in
+                subscriptionHandle.unsubscribe()
+            }
+        }
+
+        return subscription
+    }
+
+    /// Same as calling ``onDiscontinuity(bufferingPolicy:)`` with ``BufferingPolicy/unbounded``.
+    ///
+    /// The `Room` protocol provides a default implementation of this method.
     func onDiscontinuity() -> Subscription<DiscontinuityEvent> {
         onDiscontinuity(bufferingPolicy: .unbounded)
     }
@@ -322,8 +368,9 @@ internal class DefaultRoom: InternalRoom {
 
     // MARK: - Room status
 
-    internal func onStatusChange(bufferingPolicy: BufferingPolicy) -> Subscription<RoomStatusChange> {
-        lifecycleManager.onRoomStatusChange(bufferingPolicy: bufferingPolicy)
+    @discardableResult
+    internal func onStatusChange(_ callback: @escaping @MainActor (RoomStatusChange) -> Void) -> SubscriptionHandle {
+        lifecycleManager.onRoomStatusChange(callback)
     }
 
     internal var status: RoomStatus {
@@ -332,7 +379,8 @@ internal class DefaultRoom: InternalRoom {
 
     // MARK: - Discontinuities
 
-    internal func onDiscontinuity(bufferingPolicy: BufferingPolicy) -> Subscription<DiscontinuityEvent> {
-        lifecycleManager.onDiscontinuity(bufferingPolicy: bufferingPolicy)
+    @discardableResult
+    internal func onDiscontinuity(_ callback: @escaping @MainActor (DiscontinuityEvent) -> Void) -> SubscriptionHandle {
+        lifecycleManager.onDiscontinuity(callback)
     }
 }
