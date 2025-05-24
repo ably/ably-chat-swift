@@ -4,7 +4,7 @@ import Foundation
 
 // This mock isn't used much in the tests, since inside the SDK we mainly use `InternalRealtimeClientProtocol` (whose mock is ``MockRealtime``).
 final class MockSuppliedRealtime: NSObject, SuppliedRealtimeClientProtocol, @unchecked Sendable {
-    let connection = Connection()
+    let connection: Connection
     let channels = Channels()
     let createWrapperSDKProxyReturnValue: MockSuppliedRealtime?
 
@@ -21,8 +21,10 @@ final class MockSuppliedRealtime: NSObject, SuppliedRealtimeClientProtocol, @unc
     }
 
     init(
+        connection: Connection = .init(),
         createWrapperSDKProxyReturnValue: MockSuppliedRealtime? = nil
     ) {
+        self.connection = connection
         self.createWrapperSDKProxyReturnValue = createWrapperSDKProxyReturnValue
     }
 
@@ -336,7 +338,19 @@ final class MockSuppliedRealtime: NSObject, SuppliedRealtimeClientProtocol, @unc
         }
     }
 
-    final class Connection: NSObject, ConnectionProtocol {
+    final class Connection: NSObject, ConnectionProtocol, @unchecked Sendable {
+        let state: ARTRealtimeConnectionState
+
+        let errorReason: ARTErrorInfo?
+
+        private let stateCallbackLock = NSLock()
+        private var stateCallback: ((ARTConnectionStateChange) -> Void)?
+
+        init(state: ARTRealtimeConnectionState = .initialized, errorReason: ARTErrorInfo? = nil) {
+            self.state = state
+            self.errorReason = errorReason
+        }
+
         var id: String? {
             fatalError("Not implemented")
         }
@@ -346,14 +360,6 @@ final class MockSuppliedRealtime: NSObject, SuppliedRealtimeClientProtocol, @unc
         }
 
         var maxMessageSize: Int {
-            fatalError("Not implemented")
-        }
-
-        var state: ARTRealtimeConnectionState {
-            fatalError("Not implemented")
-        }
-
-        var errorReason: ARTErrorInfo? {
             fatalError("Not implemented")
         }
 
@@ -381,8 +387,11 @@ final class MockSuppliedRealtime: NSObject, SuppliedRealtimeClientProtocol, @unc
             fatalError("Not implemented")
         }
 
-        func on(_: @escaping (ARTConnectionStateChange) -> Void) -> ARTEventListener {
-            fatalError("Not implemented")
+        func on(_ callback: @escaping (ARTConnectionStateChange) -> Void) -> ARTEventListener {
+            stateCallbackLock.withLock {
+                stateCallback = callback
+            }
+            return ARTEventListener()
         }
 
         func once(_: ARTRealtimeConnectionEvent, callback _: @escaping (ARTConnectionStateChange) -> Void) -> ARTEventListener {
@@ -398,11 +407,20 @@ final class MockSuppliedRealtime: NSObject, SuppliedRealtimeClientProtocol, @unc
         }
 
         func off(_: ARTEventListener) {
-            fatalError("Not implemented")
+            stateCallbackLock.withLock {
+                stateCallback = nil
+            }
         }
 
         func off() {
             fatalError("Not implemented")
+        }
+        
+        func emit(_ state: ARTRealtimeConnectionState, event: ARTRealtimeConnectionEvent, error: ARTErrorInfo? = nil) {
+            let stateChange = ARTConnectionStateChange(current: state, previous: self.state, event: event, reason: error)
+            stateCallbackLock.withLock {
+                stateCallback?(stateChange)
+            }
         }
     }
 }
