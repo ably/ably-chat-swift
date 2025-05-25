@@ -76,7 +76,7 @@ public class DefaultChatClient: ChatClient {
         self.init(realtime: suppliedRealtime, clientOptions: clientOptions, internalRealtimeClientFactory: DefaultInternalRealtimeClientFactory())
     }
 
-    internal init(realtime suppliedRealtime: any SuppliedRealtimeClientProtocol, clientOptions: ChatClientOptions?, internalRealtimeClientFactory: any InternalRealtimeClientFactory) {
+    internal init(realtime suppliedRealtime: any SuppliedRealtimeClientProtocol, clientOptions: ChatClientOptions?, internalRealtimeClientFactory: any InternalRealtimeClientFactory, timerManager: TimerManagerProtocol = TimerManager(clock: SystemClock())) {
         self.realtime = suppliedRealtime
         self.clientOptions = clientOptions ?? .init()
 
@@ -86,7 +86,7 @@ public class DefaultChatClient: ChatClient {
         logger = DefaultInternalLogger(logHandler: self.clientOptions.logHandler, logLevel: self.clientOptions.logLevel)
         let roomFactory = DefaultRoomFactory()
         rooms = DefaultRooms(realtime: internalRealtime, clientOptions: self.clientOptions, logger: logger, roomFactory: roomFactory)
-        connection = DefaultConnection(realtime: internalRealtime)
+        connection = DefaultConnection(realtime: internalRealtime, timerManager: timerManager)
     }
 
     public nonisolated var clientID: String {

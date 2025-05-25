@@ -1,7 +1,13 @@
 import Foundation
 
 @MainActor
-internal final class TimerManager<Clock: ClockProtocol> {
+public protocol TimerManagerProtocol {
+    func setTimer(interval: TimeInterval, handler: @escaping @MainActor () -> Void)
+    func cancelTimer()
+    func hasRunningTask() -> Bool
+}
+
+internal final class TimerManager<Clock: ClockProtocol>: TimerManagerProtocol {
     private var currentTask: Task<Void, Never>?
     private let clock: Clock
 

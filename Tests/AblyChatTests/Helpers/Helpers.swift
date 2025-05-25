@@ -101,6 +101,8 @@ func compareAny(_ any1: Any?, with any2: Any?) -> Bool {
     }
     if let any1 = any1 as? Int, let any2 = any2 as? Int {
         return any1 == any2
+    } else if let any1 = any1 as? Double, let any2 = any2 as? Double {
+        return any1 == any2
     } else if let any1 = any1 as? Bool, let any2 = any2 as? Bool {
         return any1 == any2
     } else if let any1 = any1 as? String, let any2 = any2 as? String {
@@ -161,6 +163,16 @@ class MockMethodCallRecorder: @unchecked Sendable {
         }
         mutex.unlock()
         return result
+    }
+
+    func waitUntil(hasMatching signature: String, arguments: [String: Any], forMaxTimeout timeout: TimeInterval = 1.0) -> Bool {
+        let startedAt = Date()
+        while !hasRecord(matching: signature, arguments: arguments) {
+            if startedAt.distance(to: Date()) > timeout {
+                return false
+            }
+        }
+        return true
     }
 }
 

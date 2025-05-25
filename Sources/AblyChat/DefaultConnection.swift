@@ -2,16 +2,17 @@ import Ably
 
 internal final class DefaultConnection: Connection {
     private let realtime: any InternalRealtimeClientProtocol
-    private let timerManager = TimerManager(clock: SystemClock())
+    private let timerManager: TimerManagerProtocol
 
     // (CHA-CS2a) The chat client must expose its current connection status.
     internal private(set) var status: ConnectionStatus
     // (CHA-CS2b) The chat client must expose the latest error, if any, associated with its current status.
     internal private(set) var error: ARTErrorInfo?
 
-    internal init(realtime: any InternalRealtimeClientProtocol) {
+    internal init(realtime: any InternalRealtimeClientProtocol, timerManager: TimerManagerProtocol) {
         // (CHA-CS3) The initial status and error of the connection will be whatever status the realtime client returns whilst the connection status object is constructed.
         self.realtime = realtime
+        self.timerManager = timerManager
         status = .init(from: realtime.connection.state)
         error = realtime.connection.errorReason
     }
@@ -73,7 +74,7 @@ internal final class DefaultConnection: Connection {
             }
 
             // (CHA-CS5b) Not withstanding CHA-CS5a. If a connection state event is observed from the underlying realtime library, the client must emit a status change event. The current status of that event shall reflect the status change in the underlying realtime library, along with the accompanying error.
-            callback(statusChange)
+//            callback(statusChange) // this call shouldn't be here - "Not withstanding CHA-CS5a" means just that I guess.
             // update local state and error
             error = stateChange.reason
             status = currentState
