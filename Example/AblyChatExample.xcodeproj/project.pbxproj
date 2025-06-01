@@ -7,9 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		21971DFF2C60D89C0074B8AE /* AblyChat in Frameworks */ = {isa = PBXBuildFile; productRef = 21971DFE2C60D89C0074B8AE /* AblyChat */; };
 		8436FC692CA0723C0013EDE5 /* AsyncAlgorithms in Frameworks */ = {isa = PBXBuildFile; productRef = 8436FC682CA0723C0013EDE5 /* AsyncAlgorithms */; };
-		845E7FF92DF2431A001F39FA /* AblyChat in Frameworks */ = {isa = PBXBuildFile; productRef = 845E7FF82DF2431A001F39FA /* AblyChat */; };
+		845DB6E02DFDD90300E2A8E3 /* AblyChat in Frameworks */ = {isa = PBXBuildFile; productRef = 845DB6DF2DFDD90300E2A8E3 /* AblyChat */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -25,8 +24,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				845E7FF92DF2431A001F39FA /* AblyChat in Frameworks */,
-				21971DFF2C60D89C0074B8AE /* AblyChat in Frameworks */,
+				845DB6E02DFDD90300E2A8E3 /* AblyChat in Frameworks */,
 				8436FC692CA0723C0013EDE5 /* AsyncAlgorithms in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -78,9 +76,8 @@
 			);
 			name = AblyChatExample;
 			packageProductDependencies = (
-				21971DFE2C60D89C0074B8AE /* AblyChat */,
 				8436FC682CA0723C0013EDE5 /* AsyncAlgorithms */,
-				845E7FF82DF2431A001F39FA /* AblyChat */,
+				845DB6DF2DFDD90300E2A8E3 /* AblyChat */,
 			);
 			productName = AblyChatExample;
 			productReference = 21F09A9C2C60CAF00025AF73 /* AblyChatExample.app */;
@@ -390,17 +387,14 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		21971DFE2C60D89C0074B8AE /* AblyChat */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = AblyChat;
-		};
 		8436FC682CA0723C0013EDE5 /* AsyncAlgorithms */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 8436FC672CA0723C0013EDE5 /* XCRemoteSwiftPackageReference "swift-async-algorithms" */;
 			productName = AsyncAlgorithms;
 		};
-		845E7FF82DF2431A001F39FA /* AblyChat */ = {
+		845DB6DF2DFDD90300E2A8E3 /* AblyChat */ = {
 			isa = XCSwiftPackageProductDependency;
+			package = 845E7FF72DF2431A001F39FA /* XCLocalSwiftPackageReference "../../ably-chat-swift" */;
 			productName = AblyChat;
 		};
 /* End XCSwiftPackageProductDependency section */

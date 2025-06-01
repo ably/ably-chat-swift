@@ -283,6 +283,7 @@ internal class DefaultRoom: InternalRoom {
             channel: internalChannel,
             chatAPI: chatAPI,
             roomID: roomID,
+            options: options.messages,
             clientID: clientId,
             logger: logger
         )
@@ -337,6 +338,13 @@ internal class DefaultRoom: InternalRoom {
             var params: [String: String] = channelOptions.params ?? [:]
             params["occupancy"] = "metrics"
             channelOptions.params = params
+        }
+        if roomOptions.messages.rawMessageReactions {
+            // CHA-MR9a
+            if channelOptions.modes.isEmpty {
+                channelOptions.modes = [.publish, .subscribe, .presence, .presenceSubscribe]
+            }
+            channelOptions.modes.formUnion([.annotationSubscribe])
         }
 
         // CHA-RC3c
