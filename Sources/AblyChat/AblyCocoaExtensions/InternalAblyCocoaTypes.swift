@@ -43,6 +43,7 @@ internal protocol InternalRealtimeChannelsProtocol: AnyObject, Sendable {
 @MainActor
 internal protocol InternalRealtimeChannelProtocol: AnyObject, Sendable {
     associatedtype Presence: InternalRealtimePresenceProtocol
+    associatedtype Annotations: InternalRealtimeAnnotationsProtocol
 
     /// The ably-cocoa realtime channel that this channel wraps.
     ///
@@ -50,6 +51,8 @@ internal protocol InternalRealtimeChannelProtocol: AnyObject, Sendable {
     nonisolated var underlying: any RealtimeChannelProtocol { get }
 
     nonisolated var presence: Presence { get }
+
+    nonisolated var annotations: Annotations { get }
 
     func attach() async throws(InternalError)
     func detach() async throws(InternalError)
@@ -60,6 +63,7 @@ internal protocol InternalRealtimeChannelProtocol: AnyObject, Sendable {
     func on(_ event: ARTChannelEvent, callback cb: @escaping @MainActor (ARTChannelStateChange) -> Void) -> ARTEventListener
     func unsubscribe(_: ARTEventListener?)
     func publish(_ name: String?, data: JSONValue?, extras: [String: JSONValue]?) async throws(InternalError)
+    func subscribe(_ callback: @escaping @MainActor (ARTMessage) -> Void) -> ARTEventListener?
     func subscribe(_ name: String, callback: @escaping @MainActor (ARTMessage) -> Void) -> ARTEventListener?
     var properties: ARTChannelProperties { get }
     func off(_ listener: ARTEventListener)
@@ -77,6 +81,16 @@ internal protocol InternalRealtimePresenceProtocol: AnyObject, Sendable {
     func subscribe(_ action: ARTPresenceAction, callback: @escaping @MainActor (ARTPresenceMessage) -> Void) -> ARTEventListener?
     func unsubscribe(_ listener: ARTEventListener)
     func leaveClient(_ clientId: String, data: JSONValue?) async throws(InternalError)
+}
+
+/// Expresses the requirements of the object returned by ``InternalRealtimeChannelProtocol/annotations``.
+@MainActor
+internal protocol InternalRealtimeAnnotationsProtocol: AnyObject, Sendable {
+    func getForMessage(_ message: Message, query: ARTAnnotationsQuery) async throws(InternalError) -> any PaginatedResult<Annotation>
+    func getForMessageSerial(_ messageSerial: String, query: ARTAnnotationsQuery) async throws(InternalError) -> any PaginatedResult<Annotation>
+    func subscribe(_ callback: @escaping @MainActor (ARTAnnotation) -> Void) -> ARTEventListener?
+    func subscribe(_ type: String, callback: @escaping @MainActor (ARTAnnotation) -> Void) -> ARTEventListener?
+    func unsubscribe(_ listener: ARTEventListener)
 }
 
 /// Expresses the requirements of the object returned by ``InternalRealtimeClientProtocol/connection``.
@@ -175,10 +189,12 @@ internal final class InternalRealtimeClientAdapter: InternalRealtimeClientProtoc
     internal final class Channel: InternalRealtimeChannelProtocol {
         internal let underlying: any RealtimeChannelProtocol
         internal let presence: InternalRealtimeClientAdapter.Presence
+        internal let annotations: InternalRealtimeClientAdapter.Annotations
 
         internal init(underlying: any RealtimeChannelProtocol) {
             self.underlying = underlying
             presence = .init(underlying: underlying.presence)
+            annotations = .init(underlying: underlying.annotations)
         }
 
         internal var name: String {
@@ -259,6 +275,10 @@ internal final class InternalRealtimeClientAdapter: InternalRealtimeClientProtoc
 
         internal func subscribe(_ name: String, callback: @escaping @MainActor (ARTMessage) -> Void) -> ARTEventListener? {
             underlying.subscribe(name, callback: callback)
+        }
+
+        internal func subscribe(_ callback: @escaping @MainActor (ARTMessage) -> Void) -> ARTEventListener? {
+            underlying.subscribe(callback)
         }
 
         internal func off(_ listener: ARTEventListener) {
@@ -386,6 +406,49 @@ internal final class InternalRealtimeClientAdapter: InternalRealtimeClientProtoc
         }
     }
 
+    internal final class Annotations: InternalRealtimeAnnotationsProtocol {
+        private let underlying: any RealtimeAnnotationsProtocol
+
+        internal init(underlying: any RealtimeAnnotationsProtocol) {
+            self.underlying = underlying
+        }
+
+        internal func getForMessage(_ message: Message, query: ARTAnnotationsQuery) async throws(InternalError) -> any PaginatedResult<Annotation> {
+            try await getForMessageSerial(message.serial, query: query)
+        }
+
+        internal func getForMessageSerial(_: String, query _: ARTAnnotationsQuery) async throws(InternalError) -> any PaginatedResult<Annotation> {
+//            do {
+//                return try await withCheckedContinuation { (continuation: CheckedContinuation<Result<[Annotation], ARTErrorInfo>, _>) in
+//                    underlying.getForMessageSerial(messageSerial, query: query) { members, error in
+//                        if let error {
+//                            continuation.resume(returning: .failure(error))
+//                        } else if let members {
+//                            continuation.resume(returning: .success(members.map { .init(ablyCocoaAnnotation: $0) }))
+//                        } else {
+//                            preconditionFailure("There is no error, so expected members")
+//                        }
+//                    }
+//                }.get()
+//            } catch {
+//                throw error.toInternalError()
+//            }
+            fatalError("Not implemented")
+        }
+
+        internal func subscribe(_ callback: @escaping @MainActor @Sendable (ARTAnnotation) -> Void) -> ARTEventListener? {
+            underlying.subscribe(toAblyCocoaCallback(callback))
+        }
+
+        internal func subscribe(_ type: String, callback: @escaping @MainActor @Sendable (ARTAnnotation) -> Void) -> ARTEventListener? {
+            underlying.subscribe(type, callback: toAblyCocoaCallback(callback))
+        }
+
+        internal func unsubscribe(_ listener: ARTEventListener) {
+            underlying.unsubscribe(listener)
+        }
+    }
+
     internal final class Connection: InternalConnectionProtocol {
         private let underlying: any ConnectionProtocol
 
@@ -429,6 +492,33 @@ internal extension PresenceMessage {
             data = .init(ablyCocoaData: ablyCocoaData)
         }
         if let ablyCocoaExtras = ablyCocoaPresenceMessage.extras {
+            extras = JSONValue.objectFromAblyCocoaExtras(ablyCocoaExtras)
+        }
+    }
+}
+
+/// A version of `ARTAnnotation` that uses strongly-typed `data` and `extras` properties. Only contains the properties that the Chat SDK is currently using; add as needed.
+internal struct Annotation {
+    internal var type: String?
+    internal var count: Int?
+    internal var clientId: String?
+    internal var timestamp: Date?
+    internal var action: ARTAnnotationAction
+    internal var data: JSONValue?
+    internal var extras: [String: JSONValue]?
+}
+
+internal extension Annotation {
+    init(ablyCocoaAnnotation: ARTAnnotation) {
+        type = ablyCocoaAnnotation.type
+        count = ablyCocoaAnnotation.count?.intValue
+        clientId = ablyCocoaAnnotation.clientId
+        timestamp = ablyCocoaAnnotation.timestamp
+        action = ablyCocoaAnnotation.action
+        if let ablyCocoaData = ablyCocoaAnnotation.data {
+            data = .init(ablyCocoaData: ablyCocoaData)
+        }
+        if let ablyCocoaExtras = ablyCocoaAnnotation.extras {
             extras = JSONValue.objectFromAblyCocoaExtras(ablyCocoaExtras)
         }
     }

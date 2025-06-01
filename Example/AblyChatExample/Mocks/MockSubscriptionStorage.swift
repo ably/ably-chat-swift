@@ -44,13 +44,20 @@ class MockSubscriptionHandleStorage<Element: Sendable> {
         let handle: SubscriptionHandle
         let callback: (Element) -> Void
 
-        init(randomElement: @escaping @Sendable () -> Element, interval: Double, callback: @escaping @MainActor (Element) -> Void, onTerminate: @escaping () -> Void) {
+        init(
+            randomElement: @escaping @MainActor @Sendable () -> Element?,
+            interval: @escaping @MainActor @Sendable () -> Double,
+            callback: @escaping @MainActor (Element) -> Void,
+            onTerminate: @escaping @MainActor () -> Void
+        ) {
             self.callback = callback
 
             var needNext = true
             periodic(with: interval) {
                 if needNext {
-                    callback(randomElement())
+                    if let randomElement = randomElement() {
+                        callback(randomElement)
+                    }
                 }
                 return needNext
             }
@@ -64,8 +71,8 @@ class MockSubscriptionHandleStorage<Element: Sendable> {
     private var subscriptions: [UUID: Subscription] = [:]
 
     func create(
-        randomElement: @escaping @Sendable () -> Element,
-        interval: Double,
+        randomElement: @escaping @MainActor @Sendable () -> Element?,
+        interval: @autoclosure @escaping @MainActor @Sendable () -> Double,
         callback: @escaping @MainActor (Element) -> Void
     ) -> SubscriptionHandle {
         let id = UUID()
@@ -95,9 +102,9 @@ class MockMessageSubscriptionHandleStorage<Element: Sendable> {
         let callback: (Element) -> Void
 
         init(
-            randomElement: @escaping @Sendable () -> Element,
-            previousMessages: @escaping @Sendable (QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message>,
-            interval: Double,
+            randomElement: @escaping @MainActor @Sendable () -> Element,
+            previousMessages: @escaping @MainActor @Sendable (QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message>,
+            interval: @escaping @MainActor @Sendable () -> Double,
             callback: @escaping @MainActor (Element) -> Void,
             onTerminate: @escaping () -> Void
         ) {
@@ -120,9 +127,9 @@ class MockMessageSubscriptionHandleStorage<Element: Sendable> {
     private var subscriptions: [UUID: Subscription] = [:]
 
     func create(
-        randomElement: @escaping @Sendable () -> Element,
-        previousMessages: @escaping @Sendable (QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message>,
-        interval: Double,
+        randomElement: @escaping @MainActor @Sendable () -> Element,
+        previousMessages: @escaping @MainActor @Sendable (QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message>,
+        interval: @autoclosure @escaping @MainActor @Sendable () -> Double,
         callback: @escaping @MainActor (Element) -> Void
     ) -> MessageSubscriptionHandle {
         let id = UUID()

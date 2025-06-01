@@ -92,6 +92,7 @@ final class MockSuppliedRealtime: NSObject, SuppliedRealtimeClientProtocol, @unc
 
     final class Channel: RealtimeChannelProtocol {
         let presence = MockSuppliedRealtime.Presence()
+        let annotations = MockSuppliedRealtime.Annotations()
 
         var state: ARTRealtimeChannelState {
             fatalError("Not implemented")
@@ -332,6 +333,44 @@ final class MockSuppliedRealtime: NSObject, SuppliedRealtimeClientProtocol, @unc
         }
 
         func history(_: ARTRealtimeHistoryQuery?, callback _: @escaping ARTPaginatedPresenceCallback) throws {
+            fatalError("Not implemented")
+        }
+    }
+
+    final class Annotations: RealtimeAnnotationsProtocol {
+        func publish(_: ARTAnnotation, callback _: ARTAnnotationErrorCallback? = nil) {
+            fatalError("Not implemented")
+        }
+
+        func unpublish(_: ARTAnnotation, callback _: ARTAnnotationErrorCallback? = nil) {
+            fatalError("Not implemented")
+        }
+
+        func getFor(_: ARTMessage, query _: ARTAnnotationsQuery, callback _: @escaping ARTPaginatedAnnotationsCallback) {
+            fatalError("Not implemented")
+        }
+
+        func getForMessageSerial(_: String, query _: ARTAnnotationsQuery, callback _: @escaping ARTPaginatedAnnotationsCallback) {
+            fatalError("Not implemented")
+        }
+
+        func subscribe(_: @escaping ARTAnnotationCallback) -> ARTEventListener? {
+            fatalError("Not implemented")
+        }
+
+        func subscribe(_: String, callback _: @escaping ARTAnnotationCallback) -> ARTEventListener? {
+            fatalError("Not implemented")
+        }
+
+        func unsubscribe() {
+            fatalError("Not implemented")
+        }
+
+        func unsubscribe(_: ARTEventListener) {
+            fatalError("Not implemented")
+        }
+
+        func unsubscribe(_: String, listener _: ARTEventListener) {
             fatalError("Not implemented")
         }
     }

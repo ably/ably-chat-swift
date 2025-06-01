@@ -63,3 +63,60 @@ extension ARTRealtimePresenceQuery {
         "clientId=\(clientId!)"
     }
 }
+
+final class MockRealtimeAnnotations: InternalRealtimeAnnotationsProtocol {
+    let annotationJSONToEmitOnSubscribe: [String: JSONValue]?
+
+    init(annotationJSONToEmitOnSubscribe: [String: JSONValue]? = nil) {
+        self.annotationJSONToEmitOnSubscribe = annotationJSONToEmitOnSubscribe
+    }
+
+    func getForMessage(_: AblyChat.Message, query _: ARTAnnotationsQuery) async throws(AblyChat.InternalError) -> any AblyChat.PaginatedResult<AblyChat.Annotation> {
+        fatalError("Not implemented")
+    }
+
+    func getForMessageSerial(_: String, query _: ARTAnnotationsQuery) async throws(AblyChat.InternalError) -> any AblyChat.PaginatedResult<AblyChat.Annotation> {
+        fatalError("Not implemented")
+    }
+
+    func subscribe(_ callback: @escaping @MainActor @Sendable (ARTAnnotation) -> Void) -> ARTEventListener? {
+        subscribe("all", callback: callback)
+    }
+
+    func subscribe(_: String, callback: @escaping @MainActor @Sendable (ARTAnnotation) -> Void) -> ARTEventListener? {
+        if let json = annotationJSONToEmitOnSubscribe {
+            let annotation = ARTAnnotation()
+            annotation.action = ARTAnnotationAction(rawValue: UInt(json["action"]?.numberValue ?? 0)) ?? .create
+            if let serial = json["serial"]?.stringValue {
+                annotation.serial = serial
+            }
+            if let messageSerial = json["messageSerial"]?.stringValue {
+                annotation.messageSerial = messageSerial
+            }
+            if let clientId = json["clientId"]?.stringValue {
+                annotation.clientId = clientId
+            }
+            if let type = json["type"]?.stringValue {
+                annotation.type = type
+            }
+            if let name = json["name"]?.stringValue {
+                annotation.name = name
+            }
+            if let count = json["count"]?.intValue {
+                annotation.count = NSNumber(value: count)
+            }
+            if let extras = json["extras"]?.objectValue?.toARTJsonCompatible {
+                annotation.extras = extras
+            }
+            if let ts = json["timestamp"]?.stringValue {
+                annotation.timestamp = Date(timeIntervalSince1970: TimeInterval(ts)!)
+            }
+            callback(annotation)
+        }
+        return ARTEventListener()
+    }
+
+    func unsubscribe(_: ARTEventListener) {
+        fatalError("Not implemented")
+    }
+}
