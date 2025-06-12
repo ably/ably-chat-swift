@@ -5,20 +5,17 @@ final class MockHTTPPaginatedResponse: ARTHTTPPaginatedResponse, @unchecked Send
     private let _statusCode: Int
     private let _headers: [String: String]
     private let _hasNext: Bool
-    private let _isLast: Bool
 
     init(
         items: [NSDictionary],
         statusCode: Int = 200,
         headers: [String: String] = [:],
-        hasNext: Bool = false,
-        isLast: Bool = true
+        hasNext: Bool = false
     ) {
         _items = items
         _statusCode = statusCode
         _headers = headers
         _hasNext = hasNext
-        _isLast = isLast
         super.init()
     }
 
@@ -43,7 +40,7 @@ final class MockHTTPPaginatedResponse: ARTHTTPPaginatedResponse, @unchecked Send
     }
 
     override var isLast: Bool {
-        _isLast
+        !_hasNext
     }
 
     override func next(_ callback: @escaping ARTHTTPPaginatedCallback) {
@@ -118,7 +115,8 @@ extension MockHTTPPaginatedResponse {
             ],
         ],
         statusCode: 200,
-        headers: [:]
+        headers: [:],
+        hasNext: true
     )
 }
 
@@ -128,21 +126,29 @@ extension MockHTTPPaginatedResponse {
     static let nextPage = MockHTTPPaginatedResponse(
         items: [
             [
-                "serial": "3446450",
+                "clientId": "random",
+                "serial": "3446458",
+                "action": "message.create",
+                "createdAt": 1_730_943_049_269,
                 "roomId": "basketball",
-                "text": "previous message",
+                "text": "next hello",
                 "metadata": [:],
                 "headers": [:],
+                "version": "3446458",
             ],
             [
-                "serial": "3446451",
+                "clientId": "random",
+                "serial": "3446459",
+                "action": "message.create",
                 "roomId": "basketball",
-                "text": "previous response",
+                "text": "next hello response",
                 "metadata": [:],
                 "headers": [:],
+                "version": "3446459",
             ],
         ],
         statusCode: 200,
-        headers: [:]
+        headers: [:],
+        hasNext: false
     )
 }

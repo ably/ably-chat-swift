@@ -485,6 +485,4 @@ struct DefaultPresenceTests {
         #expect(leaveEvent.action == .leave)
         #expect(leaveEvent.clientID == "client1")
     }
-
-    // @specNotApplicable CHA-PR7c - Untestable due to `AsyncSequence` subscription used which is removed once the object is removed from memory.
 }
