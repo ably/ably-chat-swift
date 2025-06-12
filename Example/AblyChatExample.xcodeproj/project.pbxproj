@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		21971DFF2C60D89C0074B8AE /* AblyChat in Frameworks */ = {isa = PBXBuildFile; productRef = 21971DFE2C60D89C0074B8AE /* AblyChat */; };
 		8436FC692CA0723C0013EDE5 /* AsyncAlgorithms in Frameworks */ = {isa = PBXBuildFile; productRef = 8436FC682CA0723C0013EDE5 /* AsyncAlgorithms */; };
+		845E7FF92DF2431A001F39FA /* AblyChat in Frameworks */ = {isa = PBXBuildFile; productRef = 845E7FF82DF2431A001F39FA /* AblyChat */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -24,6 +25,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				845E7FF92DF2431A001F39FA /* AblyChat in Frameworks */,
 				21971DFF2C60D89C0074B8AE /* AblyChat in Frameworks */,
 				8436FC692CA0723C0013EDE5 /* AsyncAlgorithms in Frameworks */,
 			);
@@ -78,6 +80,7 @@
 			packageProductDependencies = (
 				21971DFE2C60D89C0074B8AE /* AblyChat */,
 				8436FC682CA0723C0013EDE5 /* AsyncAlgorithms */,
+				845E7FF82DF2431A001F39FA /* AblyChat */,
 			);
 			productName = AblyChatExample;
 			productReference = 21F09A9C2C60CAF00025AF73 /* AblyChatExample.app */;
@@ -109,6 +112,7 @@
 			mainGroup = 21F09A932C60CAF00025AF73;
 			packageReferences = (
 				8436FC672CA0723C0013EDE5 /* XCRemoteSwiftPackageReference "swift-async-algorithms" */,
+				845E7FF72DF2431A001F39FA /* XCLocalSwiftPackageReference "../../ably-chat-swift" */,
 			);
 			productRefGroup = 21F09A9D2C60CAF00025AF73 /* Products */;
 			projectDirPath = "";
@@ -367,6 +371,13 @@
 		};
 /* End XCConfigurationList section */
 
+/* Begin XCLocalSwiftPackageReference section */
+		845E7FF72DF2431A001F39FA /* XCLocalSwiftPackageReference "../../ably-chat-swift" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = "../../ably-chat-swift";
+		};
+/* End XCLocalSwiftPackageReference section */
+
 /* Begin XCRemoteSwiftPackageReference section */
 		8436FC672CA0723C0013EDE5 /* XCRemoteSwiftPackageReference "swift-async-algorithms" */ = {
 			isa = XCRemoteSwiftPackageReference;
@@ -387,6 +398,10 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 8436FC672CA0723C0013EDE5 /* XCRemoteSwiftPackageReference "swift-async-algorithms" */;
 			productName = AsyncAlgorithms;
+		};
+		845E7FF82DF2431A001F39FA /* AblyChat */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = AblyChat;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
