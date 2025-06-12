@@ -2,6 +2,7 @@ import Ably
 @testable import AblyChat
 
 class MockRoomLifecycleManager: RoomLifecycleManager {
+    let callRecorder = MockMethodCallRecorder()
     private let attachResult: Result<Void, ARTErrorInfo>?
     private(set) var attachCallCount = 0
     private let detachResult: Result<Void, ARTErrorInfo>?
@@ -10,10 +11,12 @@ class MockRoomLifecycleManager: RoomLifecycleManager {
     private let _roomStatus: RoomStatus?
     private let roomStatusSubscriptions = SubscriptionStorage<RoomStatusChange>()
     private let discontinuitySubscriptions = SubscriptionStorage<DiscontinuityEvent>()
+    private let resultOfWaitToBeAbleToPerformPresenceOperations: Result<Void, ARTErrorInfo>?
 
-    init(attachResult: Result<Void, ARTErrorInfo>? = nil, detachResult: Result<Void, ARTErrorInfo>? = nil, roomStatus: RoomStatus? = nil) {
+    init(attachResult: Result<Void, ARTErrorInfo>? = nil, detachResult: Result<Void, ARTErrorInfo>? = nil, roomStatus: RoomStatus? = nil, resultOfWaitToBeAbleToPerformPresenceOperations: Result<Void, ARTErrorInfo> = .success(())) {
         self.attachResult = attachResult
         self.detachResult = detachResult
+        self.resultOfWaitToBeAbleToPerformPresenceOperations = resultOfWaitToBeAbleToPerformPresenceOperations
         _roomStatus = roomStatus
     }
 
@@ -60,8 +63,19 @@ class MockRoomLifecycleManager: RoomLifecycleManager {
         roomStatusSubscriptions.emit(statusChange)
     }
 
-    func waitToBeAbleToPerformPresenceOperations(requestedByFeature _: RoomFeature) async throws(InternalError) {
-        fatalError("Not implemented")
+    func waitToBeAbleToPerformPresenceOperations(requestedByFeature: RoomFeature) async throws(InternalError) {
+        guard let resultOfWaitToBeAbleToPerformPresenceOperations else {
+            fatalError("resultOfWaitToBeAblePerformPresenceOperations must be set before waitToBeAbleToPerformPresenceOperations is called")
+        }
+        callRecorder.addRecord(
+            signature: "waitToBeAbleToPerformPresenceOperations(requestedByFeature:)",
+            arguments: ["requestedByFeature": "\(requestedByFeature)"]
+        )
+        do {
+            try resultOfWaitToBeAbleToPerformPresenceOperations.get()
+        } catch {
+            throw error.toInternalError()
+        }
     }
 
     func onDiscontinuity(bufferingPolicy: BufferingPolicy) -> Subscription<DiscontinuityEvent> {
