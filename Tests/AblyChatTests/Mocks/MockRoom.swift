@@ -1,7 +1,7 @@
 import Ably
 @testable import AblyChat
 
-actor MockRoom: InternalRoom {
+class MockRoom: InternalRoom {
     let options: RoomOptions
     private(set) var releaseCallCount = 0
     let releaseImplementation: (@Sendable () async -> Void)?
@@ -40,7 +40,7 @@ actor MockRoom: InternalRoom {
         fatalError("Not implemented")
     }
 
-    func onStatusChange(bufferingPolicy _: BufferingPolicy) async -> Subscription<RoomStatusChange> {
+    func onStatusChange(bufferingPolicy _: BufferingPolicy) -> Subscription<RoomStatusChange> {
         fatalError("Not implemented")
     }
 
@@ -67,4 +67,12 @@ actor MockRoom: InternalRoom {
     }
 
     private let _releaseCallsAsyncSequence: (stream: AsyncStream<Void>, continuation: AsyncStream<Void>.Continuation)
+
+    func onDiscontinuity(bufferingPolicy _: BufferingPolicy) -> Subscription<DiscontinuityEvent> {
+        fatalError("Not implemented")
+    }
+
+    nonisolated var channel: any RealtimeChannelProtocol {
+        fatalError("Not implemented")
+    }
 }

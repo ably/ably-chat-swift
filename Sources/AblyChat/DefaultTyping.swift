@@ -1,260 +1,220 @@
 import Ably
 
 internal final class DefaultTyping: Typing {
-    private let featureChannel: FeatureChannel
     private let implementation: Implementation
 
-    internal init(featureChannel: FeatureChannel, roomID: String, clientID: String, logger: InternalLogger, timeout: TimeInterval) {
-        self.featureChannel = featureChannel
-        implementation = .init(featureChannel: featureChannel, roomID: roomID, clientID: clientID, logger: logger, timeout: timeout)
+    internal init(channel: any InternalRealtimeChannelProtocol, roomID: String, clientID: String, logger: InternalLogger, heartbeatThrottle: TimeInterval, clock: some ClockProtocol) {
+        implementation = .init(channel: channel, roomID: roomID, clientID: clientID, logger: logger, heartbeatThrottle: heartbeatThrottle, clock: clock)
     }
 
-    internal nonisolated var channel: any RealtimeChannelProtocol {
-        featureChannel.channel.underlying
+    // (CHA-T6) Users may subscribe to typing events – updates to a set of clientIDs that are typing. This operation, like all subscription operations, has no side-effects in relation to room lifecycle.
+    internal func subscribe(bufferingPolicy: BufferingPolicy) -> Subscription<TypingSetEvent> {
+        implementation.subscribe(bufferingPolicy: bufferingPolicy)
     }
 
-    internal func subscribe(bufferingPolicy: BufferingPolicy) async -> Subscription<TypingEvent> {
-        await implementation.subscribe(bufferingPolicy: bufferingPolicy)
-    }
-
+    // (CHA-T9) Users may retrieve a list of the currently typing client IDs.
     internal func get() async throws(ARTErrorInfo) -> Set<String> {
         try await implementation.get()
     }
 
-    internal func start() async throws(ARTErrorInfo) {
-        try await implementation.start()
+    // (CHA-T4) Users may indicate that they have started typing using the keystroke method.
+    internal func keystroke() async throws(ARTErrorInfo) {
+        do {
+            try await implementation.keystroke()
+        } catch {
+            throw error
+        }
     }
 
+    // (CHA-T5) Users may explicitly indicate that they have stopped typing using stop method.
     internal func stop() async throws(ARTErrorInfo) {
-        try await implementation.stop()
-    }
-
-    internal func onDiscontinuity(bufferingPolicy: BufferingPolicy) async -> Subscription<DiscontinuityEvent> {
-        await implementation.onDiscontinuity(bufferingPolicy: bufferingPolicy)
+        do {
+            try await implementation.stop()
+        } catch {
+            throw error
+        }
     }
 
     /// This class exists to make sure that the internals of the SDK only access ably-cocoa via the `InternalRealtimeChannelProtocol` interface. It does this by removing access to the `channel` property that exists as part of the public API of the `Typing` protocol, making it unlikely that we accidentally try to call the `ARTRealtimeChannelProtocol` interface. We can remove this `Implementation` class when we remove the feature-level `channel` property in https://github.com/ably/ably-chat-swift/issues/242.
-    private final class Implementation: Sendable {
-        private let featureChannel: FeatureChannel
+    @MainActor
+    private final class Implementation {
+        private let channel: any InternalRealtimeChannelProtocol
         private let roomID: String
         private let clientID: String
         private let logger: InternalLogger
-        private let timeout: TimeInterval
-        private let timerManager = TimerManager()
+        private let heartbeatThrottle: TimeInterval
 
-        internal init(featureChannel: FeatureChannel, roomID: String, clientID: String, logger: InternalLogger, timeout: TimeInterval) {
+        // (CHA-T10a) A grace period shall be set by the client (the grace period on the CHA-T10 heartbeat interval when receiving events). The default value shall be set to 2000ms.
+        private let gracePeriod: TimeInterval = 2
+
+        private let typingTimerManager: TypingTimerManagerProtocol
+
+        // (CHA-T14) Multiple asynchronous calls to keystroke/stop typing must eventually converge to a consistent state.
+        // (CHA-TM14a) When a call to keystroke or stop is made, it should attempt to acquire a mutex lock.
+        // (CHA-TM14b) Once the lock is acquired, if another call is made to either function, the second call shall be queued and wait until it can acquire the lock before executing.
+        // (CHA-TM14b1) During this time, each new subsequent call to either function shall abort the previously queued call. In doing so, there shall only ever be one pending call and while the mutex is held, thus the most recent call shall "win" and execute once the mutex is released.
+        private let keyboardOperationQueue = TypingOperationQueue<InternalError>()
+
+        internal init(channel: any InternalRealtimeChannelProtocol, roomID: String, clientID: String, logger: InternalLogger, heartbeatThrottle: TimeInterval, clock: some ClockProtocol) {
             self.roomID = roomID
-            self.featureChannel = featureChannel
+            self.channel = channel
             self.clientID = clientID
             self.logger = logger
-            self.timeout = timeout
+            self.heartbeatThrottle = heartbeatThrottle
+
+            typingTimerManager = TypingTimerManager(
+                heartbeatThrottle: heartbeatThrottle,
+                gracePeriod: gracePeriod,
+                logger: logger,
+                clock: clock
+            )
         }
 
-        // (CHA-T6) Users may subscribe to typing events – updates to a set of clientIDs that are typing. This operation, like all subscription operations, has no side-effects in relation to room lifecycle.
-        internal func subscribe(bufferingPolicy: BufferingPolicy) async -> Subscription<TypingEvent> {
-            let subscription = Subscription<TypingEvent>(bufferingPolicy: bufferingPolicy)
-            let eventTracker = EventTracker()
+        internal func subscribe(bufferingPolicy: BufferingPolicy) -> Subscription<TypingSetEvent> {
+            // (CHA-T6a) Users may provide a listener to subscribe to typing event V2 in a chat room.
+            let subscription = Subscription<TypingSetEvent>(bufferingPolicy: bufferingPolicy)
 
-            let eventListener = featureChannel.channel.presence.subscribe { [weak self] message in
-                guard let self else {
+            let startedEventListener = channel.subscribe(TypingEventType.started.rawValue) { [weak self] message in
+                guard let self, let messageClientID = message.clientId else {
                     return
                 }
-                logger.log(message: "Received presence message: \(message)", level: .debug)
-                Task {
-                    let currentEventID = await eventTracker.updateEventID()
-                    let maxRetryDuration: TimeInterval = 30.0 // Max duration as specified in CHA-T6c1
-                    let baseDelay: TimeInterval = 1.0 // Initial retry delay
-                    let maxDelay: TimeInterval = 5.0 // Maximum delay between retries
 
-                    var totalElapsedTime: TimeInterval = 0
-                    var delay: TimeInterval = baseDelay
+                logger.log(message: "Received started typing message: \(message)", level: .debug)
 
-                    while totalElapsedTime < maxRetryDuration {
-                        do {
-                            // (CHA-T6c) When a presence event is received from the realtime client, the Chat client will perform a presence.get() operation to get the current presence set. This guarantees that we get a fully synced presence set. This is then used to emit the typing clients to the subscriber.
-                            let latestTypingMembers = try await get()
-                            // (CHA-T6c2) If multiple presence events are received resulting in concurrent presence.get() calls, then we guarantee that only the “latest” event is emitted. That is to say, if presence event A and B occur in that order, then only the typing event generated by B’s call to presence.get() will be emitted to typing subscribers.
-                            let isLatestEvent = await eventTracker.isLatestEvent(currentEventID)
-                            guard isLatestEvent else {
-                                logger.log(message: "Discarding outdated presence.get() result.", level: .debug)
-                                return
-                            }
-
-                            let typingEvent = TypingEvent(currentlyTyping: latestTypingMembers)
-                            subscription.emit(typingEvent)
-                            logger.log(message: "Successfully emitted typing event: \(typingEvent)", level: .debug)
+                if !typingTimerManager.isCurrentlyTyping(clientID: messageClientID) {
+                    // (CHA-T13b1) If the event represents a new client typing, then the chat client shall add the typer to the typing set and a emit the updated set to any subscribers. It shall also begin a timeout that is the sum of the CHA-T10 heartbeat interval and the CHA-T10a graсe period.
+                    typingTimerManager.startTypingTimer(
+                        for: messageClientID
+                    ) { [weak self] in
+                        guard let self else {
                             return
-                        } catch {
-                            // (CHA-T6c1) [Testable] If the presence.get() operation fails, then it shall be retried using a backoff with jitter, up to a timeout of 30 seconds.
-                            logger.log(message: "Failed to fetch presence set: \(error). Retrying...", level: .error)
-                            // Apply jitter to the delay
-                            let jitter = Double.random(in: 0 ... (delay / 2))
-                            let backoffDelay = min(delay + jitter, maxDelay)
-
-                            try? await Task.sleep(nanoseconds: UInt64(backoffDelay * 1_000_000_000))
-                            totalElapsedTime += backoffDelay
-
-                            // Exponential backoff (double the delay)
-                            delay = min(delay * 2, maxDelay)
                         }
+                        // (CHA-T13b3) (2/2) If the (CHA-T13b1) timeout expires, the client shall remove the clientId from the typing set and emit a synthetic typing stop event for the given client.
+                        subscription.emit(
+                            TypingSetEvent(
+                                type: .setChanged,
+                                currentlyTyping: typingTimerManager.currentlyTypingClientIDs(),
+                                change: .init(clientId: messageClientID, type: .stopped)
+                            )
+                        )
                     }
-                    logger.log(message: "Failed to fetch presence set after \(maxRetryDuration) seconds. Giving up.", level: .error)
+
+                    // (CHA-T13) When a typing event (typing.start or typing.stop) is received from the realtime client, the Chat client shall emit appropriate events to the user.
+                    subscription.emit(
+                        TypingSetEvent(
+                            type: .setChanged,
+                            currentlyTyping: typingTimerManager.currentlyTypingClientIDs(),
+                            change: .init(clientId: messageClientID, type: .started)
+                        )
+                    )
                 }
             }
 
+            let stoppedEventListener = channel.subscribe(TypingEventType.stopped.rawValue) { [weak self] message in
+                guard let self, let messageClientID = message.clientId else {
+                    return
+                }
+
+                logger.log(message: "Received stopped typing message: \(message)", level: .debug)
+
+                // (CHA-T13b5) If the event represents that a client has stopped typing, but the clientId for that client is not present in the typing set, then the event is ignored.
+                if typingTimerManager.isCurrentlyTyping(clientID: messageClientID) {
+                    // (CHA-T13b4) If the event represents a client that has stopped typing, then the chat client shall remove the clientId from the typing set and emit the updated set to any subscribers. It shall also cancel the (CHA-T13b1) timeout for the typing client.
+                    typingTimerManager.cancelTypingTimer(for: messageClientID)
+
+                    // (CHA-T13) When a typing event (typing.start or typing.stop) is received from the realtime client, the Chat client shall emit appropriate events to the user.
+                    subscription.emit(
+                        TypingSetEvent(
+                            type: .setChanged,
+                            currentlyTyping: typingTimerManager.currentlyTypingClientIDs(),
+                            change: .init(clientId: messageClientID, type: .stopped)
+                        )
+                    )
+                }
+            }
+
+            // (CHA-T6b) A subscription to typing may be removed, after which it shall receive no further events.
             subscription.addTerminationHandler { [weak self] in
-                if let eventListener {
-                    self?.featureChannel.channel.presence.unsubscribe(eventListener)
+                Task { @MainActor in
+                    if let startedEventListener {
+                        self?.channel.unsubscribe(startedEventListener)
+                    }
+                    if let stoppedEventListener {
+                        self?.channel.unsubscribe(stoppedEventListener)
+                    }
                 }
             }
-
             return subscription
         }
 
-        // (CHA-T2) Users may retrieve a list of the currently typing client IDs. The behaviour depends on the current room status, as presence operations in a Realtime Client cause implicit attaches.
         internal func get() async throws(ARTErrorInfo) -> Set<String> {
-            do throws(InternalError) {
-                logger.log(message: "Getting presence", level: .debug)
-
-                // CHA-T2c to CHA-T2f
-                do {
-                    try await featureChannel.waitToBeAbleToPerformPresenceOperations(requestedByFeature: RoomFeature.presence)
-                } catch {
-                    logger.log(message: "Error waiting to be able to perform presence get operation: \(error)", level: .error)
-                    throw error
-                }
-
-                let members: [PresenceMessage]
-                do {
-                    members = try await featureChannel.channel.presence.get()
-                } catch {
-                    logger.log(message: error.message, level: .error)
-                    throw error
-                }
-                return try processPresenceGet(members: members)
-            } catch {
-                throw error.toARTErrorInfo()
-            }
+            typingTimerManager.currentlyTypingClientIDs()
         }
 
-        // (CHA-T4) Users may indicate that they have started typing.
-        internal func start() async throws(ARTErrorInfo) {
-            do throws(InternalError) {
-                logger.log(message: "Starting typing indicator for client: \(clientID)", level: .debug)
-
-                do {
-                    try await featureChannel.waitToBeAbleToPerformPresenceOperations(requestedByFeature: RoomFeature.presence)
-                } catch {
-                    logger.log(message: "Error waiting to be able to perform presence enter operation: \(error)", level: .error)
-                    throw error
-                }
-
-                return try await withCheckedContinuation { (continuation: CheckedContinuation<Result<Void, InternalError>, Never>) in
-                    Task {
-                        let isUserTyping = await timerManager.hasRunningTask()
-
-                        // (CHA-T4b) If typing is already in progress, the CHA-T3 timeout is extended to be timeoutMs from now.
-                        if isUserTyping {
-                            logger.log(message: "User is already typing. Extending timeout.", level: .debug)
-                            await timerManager.setTimer(interval: timeout) { [stop] in
-                                Task {
-                                    try await stop()
-                                }
-                            }
-                            continuation.resume(returning: .success(()))
-                        } else {
-                            // (CHA-T4a) If typing is not already in progress, per explicit cancellation or the timeout interval in (CHA-T3), then a new typing session is started.
-                            logger.log(message: "User is not typing. Starting typing.", level: .debug)
-                            do throws(InternalError) {
-                                try startTyping()
-                                continuation.resume(returning: .success(()))
-                            } catch {
-                                continuation.resume(returning: .failure(error))
-                            }
-                        }
+        internal func keystroke() async throws(ARTErrorInfo) {
+            do {
+                try await keyboardOperationQueue.enqueue { [weak self] () throws(InternalError) in
+                    guard let self else {
+                        return
                     }
-                }.get()
+
+                    guard !typingTimerManager.isHeartbeatTimerActive else {
+                        // (CHA-T4c) If typing is already in progress (i.e. a heartbeat timer set according to CHA-T4a4 exists and has not expired):
+                        // (CHA-T4c1) The client must not send a typing.started event.
+                        logger.log(message: "Throttle time hasn't passed, skipping typing event.", level: .debug)
+                        return
+                    }
+
+                    try await publishStartedEvent()
+                }
             } catch {
                 throw error.toARTErrorInfo()
             }
         }
 
-        // (CHA-T5) Users may indicate that they have stopped typing.
+        private func publishStartedEvent() async throws(InternalError) {
+            logger.log(message: "Starting typing indicator for client: \(clientID)", level: .debug)
+            // (CHA-T4a3) The client shall publish an ephemeral message to the channel with the name field set to typing.started, the format of which is detailed here.
+            // (CHA-T4a5) The client must wait for the publish to succeed or fail before returning the result to the caller. If the publish fails, the client must throw an ErrorInfo.
+            try await channel.publish(
+                TypingEventType.started.rawValue,
+                data: nil,
+                extras: ["ephemeral": true]
+            )
+
+            // (CHA-T4a4) Upon successful publish, a heartbeat timer shall be set according to the CHA-T10 timeout interval.
+            typingTimerManager.startHeartbeatTimer()
+        }
+
         internal func stop() async throws(ARTErrorInfo) {
             do throws(InternalError) {
-                do {
-                    try await featureChannel.waitToBeAbleToPerformPresenceOperations(requestedByFeature: RoomFeature.presence)
-                } catch {
-                    logger.log(message: "Error waiting to be able to perform presence leave operation: \(error)", level: .error)
-                    throw error
-                }
+                try await keyboardOperationQueue.enqueue { [weak self] () throws(InternalError) in
+                    guard let self else {
+                        return
+                    }
 
-                let isUserTyping = await timerManager.hasRunningTask()
-                if isUserTyping {
-                    logger.log(message: "Stopping typing indicator for client: \(clientID)", level: .debug)
-                    // (CHA-T5b) If typing is in progress, he CHA-T3 timeout is cancelled. The client then leaves presence.
-                    await timerManager.cancelTimer()
-                    try await featureChannel.channel.presence.leaveClient(clientID, data: nil)
-                } else {
-                    // (CHA-T5a) If typing is not in progress, this operation is no-op.
-                    logger.log(message: "User is not typing. No need to leave presence.", level: .debug)
+                    if typingTimerManager.isHeartbeatTimerActive {
+                        logger.log(message: "Stopping typing indicator for client: \(clientID)", level: .debug)
+                        // (CHA-T5d) The client shall publish an ephemeral message to the channel with the name field set to typing.stopped, the format of which is detailed here.
+                        try await channel.publish(
+                            TypingEventType.stopped.rawValue,
+                            data: nil,
+                            extras: ["ephemeral": true]
+                        )
+
+                        // (CHA-T5e) On successfully publishing the message in (CHA-T5d), the CHA-T10 timer shall be unset.
+                        typingTimerManager.cancelHeartbeatTimer()
+                    } else {
+                        // (CHA-T5a) If typing is not in progress (i.e. a @CHA-T10@ heartbeat timer does not exist or is expired), this operation is a no-op.
+                        logger.log(message: "User is not typing. No need to stop timer.", level: .debug)
+                        return
+                    }
                 }
             } catch {
+                // (CHA-T5d1) The client must wait for the publish to succeed or fail before returning the result to the caller. If the publish fails, the client must throw an ErrorInfo.
+                logger.log(message: "Error publishing typing.stopped event: \(error)", level: .error)
                 throw error.toARTErrorInfo()
             }
         }
-
-        // (CHA-T7) Users may subscribe to discontinuity events to know when there’s been a break in typing indicators. Their listener will be called when a discontinuity event is triggered from the room lifecycle. For typing, there shouldn’t need to be user action as the underlying core SDK will heal the presence set.
-        internal func onDiscontinuity(bufferingPolicy: BufferingPolicy) async -> Subscription<DiscontinuityEvent> {
-            await featureChannel.onDiscontinuity(bufferingPolicy: bufferingPolicy)
-        }
-
-        private func processPresenceGet(members: [PresenceMessage]) throws(InternalError) -> Set<String> {
-            let clientIDs = try Set<String>(members.map { member throws(InternalError) in
-                guard let clientID = member.clientId else {
-                    let error = ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without clientId").toInternalError()
-                    logger.log(message: error.message, level: .error)
-                    throw error
-                }
-
-                return clientID
-            })
-
-            return clientIDs
-        }
-
-        private func startTyping() throws(InternalError) {
-            // (CHA-T4a1) When a typing session is started, the client is entered into presence on the typing channel.
-            Task {
-                do {
-                    try await featureChannel.channel.presence.enterClient(clientID, data: nil)
-                } catch {
-                    logger.log(message: "Error entering presence: \(error)", level: .error)
-                    throw error
-                }
-
-                logger.log(message: "Entered presence - starting timer", level: .debug)
-                // (CHA-T4a2)  When a typing session is started, a timeout is set according to the CHA-T3 timeout interval. When this timeout expires, the typing session is automatically ended by leaving presence.
-                await timerManager.setTimer(interval: timeout) { [stop] in
-                    Task {
-                        try await stop()
-                    }
-                }
-            }
-        }
-    }
-}
-
-private final actor EventTracker {
-    private var latestEventID: UUID = .init()
-
-    func updateEventID() -> UUID {
-        let newID = UUID()
-        latestEventID = newID
-        return newID
-    }
-
-    func isLatestEvent(_ eventID: UUID) -> Bool {
-        latestEventID == eventID
     }
 }

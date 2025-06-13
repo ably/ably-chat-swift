@@ -1,5 +1,26 @@
 # Change Log
 
+## [0.4.0](https://github.com/ably/ably-chat-swift/tree/0.4.0)
+
+## What's Changed
+
+- All Chat features now use a single underlying channel. This greatly simplifies the SDK whilst improving performance.
+
+The following features have also been added in this release:
+
+- Ephemeral typing indicators
+
+**Full Changelog**: https://github.com/ably/ably-chat-swift/compare/0.3.0...0.4.0
+
+## [0.3.0](https://github.com/ably/ably-chat-swift/tree/0.3.0)
+
+## What's Changed
+
+- All of the main protocols in the SDK are now marked as `@MainActor`, to simplify the experience of using the SDK. (#261)
+- All of the errors thrown by the SDK are now explicitly typed as `ARTErrorInfo`. (#234)
+
+**Full Changelog**: https://github.com/ably/ably-chat-swift/compare/0.2.0...0.3.0
+
 ## [0.2.0](https://github.com/ably/ably-chat-swift/tree/0.2.0)
 
 ## What's Changed

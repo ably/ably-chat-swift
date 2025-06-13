@@ -15,56 +15,6 @@ public enum ErrorCode: Int {
     case badRequest = 40000
 
     /**
-     * The messages feature failed to attach.
-     */
-    case messagesAttachmentFailed = 102_001
-
-    /**
-     * The presence feature failed to attach.
-     */
-    case presenceAttachmentFailed = 102_002
-
-    /**
-     * The reactions feature failed to attach.
-     */
-    case reactionsAttachmentFailed = 102_003
-
-    /**
-     * The occupancy feature failed to attach.
-     */
-    case occupancyAttachmentFailed = 102_004
-
-    /**
-     * The typing feature failed to attach.
-     */
-    case typingAttachmentFailed = 102_005
-
-    /**
-     * The messages feature failed to detach.
-     */
-    case messagesDetachmentFailed = 102_050
-
-    /**
-     * The presence feature failed to detach.
-     */
-    case presenceDetachmentFailed = 102_051
-
-    /**
-     * The reactions feature failed to detach.
-     */
-    case reactionsDetachmentFailed = 102_052
-
-    /**
-     * The occupancy feature failed to detach.
-     */
-    case occupancyDetachmentFailed = 102_053
-
-    /**
-     * The typing feature failed to detach.
-     */
-    case typingDetachmentFailed = 102_054
-
-    /**
      * Cannot perform operation because the room is in a failed state.
      */
     case roomInFailedState = 102_101
@@ -86,48 +36,24 @@ public enum ErrorCode: Int {
 
     case roomInInvalidState = 102_107
 
+    /**
+     * The room has experienced a discontinuity.
+     */
+    case roomDiscontinuity = 102_100
+
     /// Has a case for each of the ``ErrorCode`` cases that imply a fixed status code.
     internal enum CaseThatImpliesFixedStatusCode {
         case badRequest
-        case messagesAttachmentFailed
-        case presenceAttachmentFailed
-        case reactionsAttachmentFailed
-        case occupancyAttachmentFailed
-        case typingAttachmentFailed
-        case messagesDetachmentFailed
-        case presenceDetachmentFailed
-        case reactionsDetachmentFailed
-        case occupancyDetachmentFailed
-        case typingDetachmentFailed
         case roomInFailedState
         case roomIsReleasing
         case roomIsReleased
         case roomReleasedBeforeOperationCompleted
+        case roomDiscontinuity
 
         internal var toNumericErrorCode: ErrorCode {
             switch self {
             case .badRequest:
                 .badRequest
-            case .messagesAttachmentFailed:
-                .messagesAttachmentFailed
-            case .presenceAttachmentFailed:
-                .presenceAttachmentFailed
-            case .reactionsAttachmentFailed:
-                .reactionsAttachmentFailed
-            case .occupancyAttachmentFailed:
-                .occupancyAttachmentFailed
-            case .typingAttachmentFailed:
-                .typingAttachmentFailed
-            case .messagesDetachmentFailed:
-                .messagesDetachmentFailed
-            case .presenceDetachmentFailed:
-                .presenceDetachmentFailed
-            case .reactionsDetachmentFailed:
-                .reactionsDetachmentFailed
-            case .occupancyDetachmentFailed:
-                .occupancyDetachmentFailed
-            case .typingDetachmentFailed:
-                .typingDetachmentFailed
             case .roomInFailedState:
                 .roomInFailedState
             case .roomIsReleasing:
@@ -136,6 +62,8 @@ public enum ErrorCode: Int {
                 .roomIsReleased
             case .roomReleasedBeforeOperationCompleted:
                 .roomReleasedBeforeOperationCompleted
+            case .roomDiscontinuity:
+                .roomDiscontinuity
             }
         }
 
@@ -149,17 +77,7 @@ public enum ErrorCode: Int {
                  .roomIsReleased,
                  .roomReleasedBeforeOperationCompleted:
                 400
-            case
-                .messagesAttachmentFailed,
-                .presenceAttachmentFailed,
-                .reactionsAttachmentFailed,
-                .occupancyAttachmentFailed,
-                .typingAttachmentFailed,
-                .messagesDetachmentFailed,
-                .presenceDetachmentFailed,
-                .reactionsDetachmentFailed,
-                .occupancyDetachmentFailed,
-                .typingDetachmentFailed:
+            case .roomDiscontinuity:
                 500
             }
         }
@@ -214,14 +132,13 @@ internal enum ErrorCodeAndStatusCode {
 internal enum ChatError {
     case nonErrorInfoInternalError(InternalError.Other)
     case inconsistentRoomOptions(requested: RoomOptions, existing: RoomOptions)
-    case attachmentFailed(feature: RoomFeature, underlyingError: ARTErrorInfo)
-    case detachmentFailed(feature: RoomFeature, underlyingError: ARTErrorInfo)
     case roomInFailedState
     case roomIsReleasing
     case roomIsReleased
     case roomReleasedBeforeOperationCompleted
     case presenceOperationRequiresRoomAttach(feature: RoomFeature)
     case roomTransitionedToInvalidStateForPresenceOperation(cause: ARTErrorInfo?)
+    case roomDiscontinuity(cause: ARTErrorInfo?)
 
     internal var codeAndStatusCode: ErrorCodeAndStatusCode {
         switch self {
@@ -230,32 +147,6 @@ internal enum ChatError {
             .fixedStatusCode(.badRequest)
         case .inconsistentRoomOptions:
             .fixedStatusCode(.badRequest)
-        case let .attachmentFailed(feature, _):
-            switch feature {
-            case .messages:
-                .fixedStatusCode(.messagesAttachmentFailed)
-            case .occupancy:
-                .fixedStatusCode(.occupancyAttachmentFailed)
-            case .presence:
-                .fixedStatusCode(.presenceAttachmentFailed)
-            case .reactions:
-                .fixedStatusCode(.reactionsAttachmentFailed)
-            case .typing:
-                .fixedStatusCode(.typingAttachmentFailed)
-            }
-        case let .detachmentFailed(feature, _):
-            switch feature {
-            case .messages:
-                .fixedStatusCode(.messagesDetachmentFailed)
-            case .occupancy:
-                .fixedStatusCode(.occupancyDetachmentFailed)
-            case .presence:
-                .fixedStatusCode(.presenceDetachmentFailed)
-            case .reactions:
-                .fixedStatusCode(.reactionsDetachmentFailed)
-            case .typing:
-                .fixedStatusCode(.typingDetachmentFailed)
-            }
         case .roomInFailedState:
             .fixedStatusCode(.roomInFailedState)
         case .roomIsReleasing:
@@ -268,8 +159,10 @@ internal enum ChatError {
             // CHA-RL9c
             .variableStatusCode(.roomInInvalidState, statusCode: 500)
         case .presenceOperationRequiresRoomAttach:
-            // CHA-PR3h, CHA-PR10h, CHA-PR6h, CHA-T2g
+            // CHA-PR3h, CHA-PR10h, CHA-PR6h
             .variableStatusCode(.roomInInvalidState, statusCode: 400)
+        case .roomDiscontinuity:
+            .fixedStatusCode(.roomDiscontinuity)
         }
     }
 
@@ -294,20 +187,6 @@ internal enum ChatError {
         case detach
     }
 
-    private static func localizedDescription(
-        forFailureOfOperation operation: AttachOrDetach,
-        feature: RoomFeature
-    ) -> String {
-        let operationDescription = switch operation {
-        case .attach:
-            "attach"
-        case .detach:
-            "detach"
-        }
-
-        return "The \(descriptionOfFeature(feature)) feature failed to \(operationDescription)."
-    }
-
     /// The ``ARTErrorInfo/localizedDescription`` that should be returned for this error.
     internal var localizedDescription: String {
         switch self {
@@ -316,10 +195,6 @@ internal enum ChatError {
             "\(otherInternalError)"
         case let .inconsistentRoomOptions(requested, existing):
             "Rooms.get(roomID:options:) was called with a different set of room options than was used on a previous call. You must first release the existing room instance using Rooms.release(roomID:). Requested options: \(requested), existing options: \(existing)"
-        case let .attachmentFailed(feature, _):
-            Self.localizedDescription(forFailureOfOperation: .attach, feature: feature)
-        case let .detachmentFailed(feature, _):
-            Self.localizedDescription(forFailureOfOperation: .detach, feature: feature)
         case .roomInFailedState:
             "Cannot perform operation because the room is in a failed state."
         case .roomIsReleasing:
@@ -332,17 +207,17 @@ internal enum ChatError {
             "To perform this \(Self.descriptionOfFeature(feature)) operation, you must first attach the room."
         case .roomTransitionedToInvalidStateForPresenceOperation:
             "The room operation failed because the room was in an invalid state."
+        case .roomDiscontinuity:
+            "The room has experienced a discontinuity."
         }
     }
 
     /// The ``ARTErrorInfo/cause`` that should be returned for this error.
     internal var cause: ARTErrorInfo? {
         switch self {
-        case let .attachmentFailed(_, underlyingError):
-            underlyingError
-        case let .detachmentFailed(_, underlyingError):
-            underlyingError
         case let .roomTransitionedToInvalidStateForPresenceOperation(cause):
+            cause
+        case let .roomDiscontinuity(cause):
             cause
         case .nonErrorInfoInternalError,
              .inconsistentRoomOptions,

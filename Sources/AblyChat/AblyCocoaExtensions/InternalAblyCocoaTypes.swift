@@ -7,16 +7,15 @@ import Ably
 /// - `async` methods instead of callbacks
 /// - typed throws
 /// - `JSONValue` instead of `Any`
-/// - `Sendable` types where helpful
-/// - `AsyncSequence` where helpful
-///
-/// Note that the API of this protocol is not currently consistent; for example there are some places in the codebase where we subscribe to Realtime channel state using callbacks, and other places where we subscribe using `AsyncSequence`. We should aim to make this consistent; see https://github.com/ably/ably-chat-swift/issues/245.
 ///
 /// Hopefully we will eventually be able to remove this interface once we've improved the experience of using ably-cocoa from Swift (https://github.com/ably/ably-cocoa/issues/1967).
 ///
 /// This protocol only contains the functionality from ably-cocoa that we're actually currently using in the Chat SDK, so you might need to add new properties and methods to it over time.
 ///
 /// The default implementation of this protocol is ``InternalRealtimeClientAdapter``, which uses an underlying ably-cocoa `ARTRealtimeProtocol` object.
+///
+/// All of the types here are @MainActor to make it easy to write mocks for them (the SDK code that uses them, as well as the tests that would use their mocks, is all @MainActor).
+@MainActor
 internal protocol InternalRealtimeClientProtocol: AnyObject, Sendable {
     associatedtype Channels: InternalRealtimeChannelsProtocol
     associatedtype Connection: InternalConnectionProtocol
@@ -24,11 +23,12 @@ internal protocol InternalRealtimeClientProtocol: AnyObject, Sendable {
     var clientId: String? { get }
     func request(_ method: String, path: String, params: [String: String]?, body: Any?, headers: [String: String]?) async throws(InternalError) -> ARTHTTPPaginatedResponse
 
-    var channels: Channels { get }
-    var connection: Connection { get }
+    nonisolated var channels: Channels { get }
+    nonisolated var connection: Connection { get }
 }
 
 /// Expresses the requirements of the object returned by ``InternalRealtimeClientProtocol/channels``.
+@MainActor
 internal protocol InternalRealtimeChannelsProtocol: AnyObject, Sendable {
     associatedtype Channel: InternalRealtimeChannelProtocol
 
@@ -39,56 +39,82 @@ internal protocol InternalRealtimeChannelsProtocol: AnyObject, Sendable {
 
 /// Expresses the requirements of the object returned by ``InternalRealtimeChannelsProtocol/get(_:options:)``.
 ///
-/// We choose to mark the channel’s mutable state as `async`. This is a way of highlighting at the call site of accessing this state that, since `ARTRealtimeChannel` mutates this state on a separate thread, it’s possible for this state to have changed since the last time you checked it, or since the last time you performed an operation that might have mutated it, or since the last time you recieved an event informing you that it changed. To be clear, marking these as `async` doesn’t _solve_ these issues; it just makes them a bit more visible. We’ll decide how to address them in https://github.com/ably-labs/ably-chat-swift/issues/49. It also allows us to use an actor as a mock.
+/// We choose to mark the channel’s mutable state as `async`. This is a way of highlighting at the call site of accessing this state that, since `ARTRealtimeChannel` mutates this state on a separate thread, it’s possible for this state to have changed since the last time you checked it, or since the last time you performed an operation that might have mutated it, or since the last time you recieved an event informing you that it changed. To be clear, marking these as `async` doesn’t _solve_ these issues; it just makes them a bit more visible. We’ll decide how to address them in https://github.com/ably-labs/ably-chat-swift/issues/49.
+@MainActor
 internal protocol InternalRealtimeChannelProtocol: AnyObject, Sendable {
     associatedtype Presence: InternalRealtimePresenceProtocol
 
     /// The ably-cocoa realtime channel that this channel wraps.
     ///
     /// We need to be able to access this so that we can return it from the `channel` methods in the SDK's public API, which allow users of the SDK to access the realtime channels that the SDK uses.
-    var underlying: any RealtimeChannelProtocol { get }
+    nonisolated var underlying: any RealtimeChannelProtocol { get }
 
-    var presence: Presence { get }
+    nonisolated var presence: Presence { get }
 
     func attach() async throws(InternalError)
     func detach() async throws(InternalError)
     var name: String { get }
     var state: ARTRealtimeChannelState { get async }
     var errorReason: ARTErrorInfo? { get async }
-    func on(_ cb: @escaping (ARTChannelStateChange) -> Void) -> ARTEventListener
-    func on(_ event: ARTChannelEvent, callback cb: @escaping (ARTChannelStateChange) -> Void) -> ARTEventListener
+    func on(_ cb: @escaping @MainActor (ARTChannelStateChange) -> Void) -> ARTEventListener
+    func on(_ event: ARTChannelEvent, callback cb: @escaping @MainActor (ARTChannelStateChange) -> Void) -> ARTEventListener
     func unsubscribe(_: ARTEventListener?)
     func publish(_ name: String?, data: JSONValue?, extras: [String: JSONValue]?) async throws(InternalError)
-    func subscribe(_ name: String, callback: @escaping ARTMessageCallback) -> ARTEventListener?
+    func subscribe(_ name: String, callback: @escaping @MainActor (ARTMessage) -> Void) -> ARTEventListener?
     var properties: ARTChannelProperties { get }
     func off(_ listener: ARTEventListener)
-
-    /// Equivalent to subscribing to a `RealtimeChannelProtocol` object’s state changes via its `on(_:)` method. The subscription should use the ``BufferingPolicy/unbounded`` buffering policy.
-    ///
-    /// It is marked as `async` purely to make it easier to write mocks for this method (i.e. to use an actor as a mock).
-    func subscribeToState() async -> Subscription<ARTChannelStateChange>
 }
 
 /// Expresses the requirements of the object returned by ``InternalRealtimeChannelProtocol/presence``.
+@MainActor
 internal protocol InternalRealtimePresenceProtocol: AnyObject, Sendable {
     func get() async throws(InternalError) -> [PresenceMessage]
     func get(_ query: ARTRealtimePresenceQuery) async throws(InternalError) -> [PresenceMessage]
     func leave(_ data: JSONValue?) async throws(InternalError)
     func enterClient(_ clientID: String, data: JSONValue?) async throws(InternalError)
     func update(_ data: JSONValue?) async throws(InternalError)
-    func subscribe(_ callback: @escaping ARTPresenceMessageCallback) -> ARTEventListener?
-    func subscribe(_ action: ARTPresenceAction, callback: @escaping ARTPresenceMessageCallback) -> ARTEventListener?
+    func subscribe(_ callback: @escaping @MainActor (ARTPresenceMessage) -> Void) -> ARTEventListener?
+    func subscribe(_ action: ARTPresenceAction, callback: @escaping @MainActor (ARTPresenceMessage) -> Void) -> ARTEventListener?
     func unsubscribe(_ listener: ARTEventListener)
     func leaveClient(_ clientId: String, data: JSONValue?) async throws(InternalError)
 }
 
 /// Expresses the requirements of the object returned by ``InternalRealtimeClientProtocol/connection``.
+@MainActor
 internal protocol InternalConnectionProtocol: AnyObject, Sendable {
     var state: ARTRealtimeConnectionState { get }
     var errorReason: ARTErrorInfo? { get }
 
-    func on(_ cb: @escaping (ARTConnectionStateChange) -> Void) -> ARTEventListener
+    func on(_ cb: @escaping @MainActor (ARTConnectionStateChange) -> Void) -> ARTEventListener
     func off(_ listener: ARTEventListener)
+}
+
+/// Converts a `@MainActor` callback into one that can be passed as a callback to ably-cocoa.
+///
+/// The returned callback asserts that it is called on the main thread and then synchronously calls the passed callback. It also allows non-`Sendable` values to be passed from ably-cocoa to the passed callback.
+///
+/// The main thread assertion is our way of asserting the requirement, documented in the `DefaultChatClient` initializer, that the ably-cocoa client must be using the main queue as its `dispatchQueue`. (This is the only way we can do it without accessing private ably-cocoa API, since we don't publicly expose the options that a client is using.)
+///
+/// - Warning: You must be sure that after ably-cocoa calls the returned callback, it will not modify any of the mutable state contained inside the argument that it passes to the callback. This is true of the two non-`Sendable` types with which we're currently using it; namely `ARTMessage` and `ARTPresenceMessage`. Ideally, we would instead annotate these callback arguments in ably-cocoa with `NS_SWIFT_SENDING`, to allow us to then mark the corresponding argument in these callbacks as `sending` and not have to circumvent compiler sendability checking, but as of Xcode 16.1 this annotation does yet not seem to have any effect; see [ably-cocoa#1967](https://github.com/ably/ably-cocoa/issues/1967).
+private func toAblyCocoaCallback<Arg>(_ callback: @escaping @MainActor (Arg) -> Void) -> (Arg) -> Void {
+    { arg in
+        let sendingBox = UnsafeSendingBox(value: arg)
+
+        // We use `preconditionIsolated` in addition to `assumeIsolated` because only the former accepts a message.
+        MainActor.preconditionIsolated("The Ably Chat SDK requires that your ARTRealtime instance be using the main queue as its dispatchQueue.")
+        MainActor.assumeIsolated {
+            callback(sendingBox.value)
+        }
+    }
+}
+
+/// A box that makes the compiler ignore that a non-Sendable value is crossing an isolation boundary. Used by `toAblyCocoaCallback`; don't use it elsewhere unless you know what you're doing.
+private final class UnsafeSendingBox<T>: @unchecked Sendable {
+    var value: T
+
+    init(value: T) {
+        self.value = value
+    }
 }
 
 internal final class InternalRealtimeClientAdapter: InternalRealtimeClientProtocol {
@@ -219,37 +245,24 @@ internal final class InternalRealtimeClientAdapter: InternalRealtimeClientProtoc
             }
         }
 
-        internal func on(_ cb: @escaping (ARTChannelStateChange) -> Void) -> ARTEventListener {
-            underlying.on(cb)
+        internal func on(_ cb: @escaping @MainActor (ARTChannelStateChange) -> Void) -> ARTEventListener {
+            underlying.on(toAblyCocoaCallback(cb))
         }
 
-        internal func on(_ event: ARTChannelEvent, callback cb: @escaping (ARTChannelStateChange) -> Void) -> ARTEventListener {
-            underlying.on(event, callback: cb)
+        internal func on(_ event: ARTChannelEvent, callback cb: @escaping @MainActor (ARTChannelStateChange) -> Void) -> ARTEventListener {
+            underlying.on(event, callback: toAblyCocoaCallback(cb))
         }
 
         internal func unsubscribe(_ listener: ARTEventListener?) {
             underlying.unsubscribe(listener)
         }
 
-        internal func publish(_ name: String?, data: JSONValue?, extras: [String: JSONValue]?) {
-            underlying.publish(name, data: data?.toAblyCocoaData, extras: extras?.toARTJsonCompatible)
-        }
-
-        internal func subscribe(_ name: String, callback: @escaping ARTMessageCallback) -> ARTEventListener? {
+        internal func subscribe(_ name: String, callback: @escaping @MainActor (ARTMessage) -> Void) -> ARTEventListener? {
             underlying.subscribe(name, callback: callback)
         }
 
         internal func off(_ listener: ARTEventListener) {
             underlying.off(listener)
-        }
-
-        internal func subscribeToState() async -> Subscription<ARTChannelStateChange> {
-            let subscription = Subscription<ARTChannelStateChange>(bufferingPolicy: .unbounded)
-            let eventListener = underlying.on { subscription.emit($0) }
-            subscription.addTerminationHandler { [weak underlying] in
-                underlying?.unsubscribe(eventListener)
-            }
-            return subscription
         }
     }
 
@@ -344,12 +357,12 @@ internal final class InternalRealtimeClientAdapter: InternalRealtimeClientProtoc
             }
         }
 
-        internal func subscribe(_ callback: @escaping ARTPresenceMessageCallback) -> ARTEventListener? {
-            underlying.subscribe(callback)
+        internal func subscribe(_ callback: @escaping @MainActor (ARTPresenceMessage) -> Void) -> ARTEventListener? {
+            underlying.subscribe(toAblyCocoaCallback(callback))
         }
 
-        internal func subscribe(_ action: ARTPresenceAction, callback: @escaping ARTPresenceMessageCallback) -> ARTEventListener? {
-            underlying.subscribe(action, callback: callback)
+        internal func subscribe(_ action: ARTPresenceAction, callback: @escaping @MainActor (ARTPresenceMessage) -> Void) -> ARTEventListener? {
+            underlying.subscribe(action, callback: toAblyCocoaCallback(callback))
         }
 
         internal func unsubscribe(_ listener: ARTEventListener) {
@@ -388,8 +401,8 @@ internal final class InternalRealtimeClientAdapter: InternalRealtimeClientProtoc
             underlying.errorReason
         }
 
-        internal func on(_ cb: @escaping (ARTConnectionStateChange) -> Void) -> ARTEventListener {
-            underlying.on(cb)
+        internal func on(_ cb: @escaping @MainActor (ARTConnectionStateChange) -> Void) -> ARTEventListener {
+            underlying.on(toAblyCocoaCallback(cb))
         }
 
         internal func off(_ listener: ARTEventListener) {
@@ -398,7 +411,7 @@ internal final class InternalRealtimeClientAdapter: InternalRealtimeClientProtoc
     }
 }
 
-/// A `Sendable` version of `ARTPresenceMessage`. Only contains the properties that the Chat SDK is currently using; add as needed.
+/// A version of `ARTPresenceMessage` that uses strongly-typed `data` and `extras` properties. Only contains the properties that the Chat SDK is currently using; add as needed.
 internal struct PresenceMessage {
     internal var clientId: String?
     internal var timestamp: Date?

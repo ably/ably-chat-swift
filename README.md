@@ -22,14 +22,14 @@ Get started using the [📚 documentation](https://ably.com/docs/products/chat).
 
 ## Requirements
 
-Xcode 16 or later.
+Xcode 16.1 or later.
 
 ## Installation
 
 The SDK is distributed as a Swift package and can hence be installed using Xcode (search for `github.com/ably/ably-chat-swift` package) or by adding it as a dependency in your package’s `Package.swift`:
 
 ```swift
-.package(url: "https://github.com/ably/ably-chat-swift", from: "0.1.0")
+.package(url: "https://github.com/ably/ably-chat-swift", from: "0.4.0")
 ```
 
 ## Supported chat features
@@ -109,12 +109,12 @@ Task {
     }
 }
 
-// Get a chat room for the tutorial - using the defaults to enable all features in the chat room
+// Get a chat room for the tutorial
 let room = try await chatClient.rooms.get(
-    roomID: "readme-getting-started", options: RoomOptions.allFeaturesEnabled)
+    roomID: "readme-getting-started")
 
 // Add a listener to observe changes to the chat rooms status
-let statusSubscription = await room.onStatusChange()
+let statusSubscription = room.onStatusChange()
 Task {
     for await status in statusSubscription {
         print("Room status changed: \(status.current)")

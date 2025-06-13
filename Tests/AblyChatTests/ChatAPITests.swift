@@ -2,6 +2,7 @@ import Ably
 @testable import AblyChat
 import Testing
 
+@MainActor
 struct ChatAPITests {
     // MARK: sendMessage Tests
 
@@ -12,7 +13,7 @@ struct ChatAPITests {
             MockHTTPPaginatedResponse.successSendMessageWithNoItems
         }
         let chatAPI = ChatAPI(realtime: realtime)
-        let roomId = "basketball::$chat::$chatMessages"
+        let roomId = "basketball"
 
         await #expect(
             performing: {
@@ -37,7 +38,7 @@ struct ChatAPITests {
             MockHTTPPaginatedResponse.successSendMessage
         }
         let chatAPI = ChatAPI(realtime: realtime)
-        let roomId = "basketball::$chat::$chatMessages"
+        let roomId = "basketball"
 
         // When
         let message = try await chatAPI.sendMessage(roomId: roomId, params: .init(text: "hello", headers: [:]))
@@ -115,7 +116,7 @@ struct ChatAPITests {
             paginatedResponse
         }
         let chatAPI = ChatAPI(realtime: realtime)
-        let roomId = "basketball::$chat::$chatMessages"
+        let roomId = "basketball"
         let expectedPaginatedResult = PaginatedResultWrapper<Message>(
             paginatedResponse: paginatedResponse,
             items: []
@@ -137,7 +138,7 @@ struct ChatAPITests {
             paginatedResponse
         }
         let chatAPI = ChatAPI(realtime: realtime)
-        let roomId = "basketball::$chat::$chatMessages"
+        let roomId = "basketball"
         let expectedPaginatedResult = PaginatedResultWrapper<Message>(
             paginatedResponse: paginatedResponse,
             items: [
@@ -184,7 +185,7 @@ struct ChatAPITests {
             throw artError
         }
         let chatAPI = ChatAPI(realtime: realtime)
-        let roomId = "basketball::$chat::$chatMessages"
+        let roomId = "basketball"
 
         await #expect(
             performing: {

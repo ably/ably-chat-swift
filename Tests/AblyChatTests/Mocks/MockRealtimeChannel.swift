@@ -1,7 +1,7 @@
 import Ably
 @testable import AblyChat
 
-final actor MockRealtimeChannel: InternalRealtimeChannelProtocol {
+final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
     let presence = MockRealtimePresence()
 
     private let attachSerial: String?
@@ -13,19 +13,12 @@ final actor MockRealtimeChannel: InternalRealtimeChannelProtocol {
     private var _state: ARTRealtimeChannelState?
     var errorReason: ARTErrorInfo?
 
-    var lastMessagePublishedName: String?
-    var lastMessagePublishedData: JSONValue?
-    var lastMessagePublishedExtras: [String: JSONValue]?
+    var publishedMessages: [TestMessage] = []
 
-    // TODO: If we tighten up the types we then we should be able to get rid of the `@unchecked Sendable` here, but I’m in a rush. Revisit in https://github.com/ably/ably-chat-swift/issues/195
-    struct MessageToEmit: @unchecked Sendable {
-        var action: ARTMessageAction
-        var serial: String
-        var clientID: String
-        var data: Any
-        var extras: NSDictionary
-        var operation: ARTMessageOperation?
-        var version: String
+    struct TestMessage {
+        let name: String?
+        let data: JSONValue?
+        let extras: [String: JSONValue]?
     }
 
     init(
@@ -35,8 +28,7 @@ final actor MockRealtimeChannel: InternalRealtimeChannelProtocol {
         initialErrorReason: ARTErrorInfo? = nil,
         attachBehavior: AttachOrDetachBehavior? = nil,
         detachBehavior: AttachOrDetachBehavior? = nil,
-        messageToEmitOnSubscribe: MessageToEmit? = nil,
-        subscribeToStateBehavior: SubscribeToStateBehavior? = nil
+        messageToEmitOnSubscribe: ARTMessage? = nil
     ) {
         _name = name
         _state = initialState
@@ -44,7 +36,6 @@ final actor MockRealtimeChannel: InternalRealtimeChannelProtocol {
         self.detachBehavior = detachBehavior
         errorReason = initialErrorReason
         self.messageToEmitOnSubscribe = messageToEmitOnSubscribe
-        self.subscribeToStateBehavior = subscribeToStateBehavior ?? .justAddSubscription
         attachSerial = properties.attachSerial
         channelSerial = properties.channelSerial
     }
@@ -137,35 +128,48 @@ final actor MockRealtimeChannel: InternalRealtimeChannelProtocol {
         try result.get()
     }
 
-    let messageToEmitOnSubscribe: MessageToEmit?
+    let messageToEmitOnSubscribe: ARTMessage?
+    private var channelSubscriptions: [(String, (ARTMessage) -> Void)] = []
 
-    nonisolated func subscribe(_: String, callback: @escaping ARTMessageCallback) -> ARTEventListener? {
+    // Added the ability to emit a message whenever we want instead of just on subscribe... I didn't want to dig into what the messageToEmitOnSubscribe is too much so just if/else between the two.
+    func subscribe(_ name: String, callback: @escaping @MainActor (ARTMessage) -> Void) -> ARTEventListener? {
         if let messageToEmitOnSubscribe {
-            let message = ARTMessage(name: nil, data: messageToEmitOnSubscribe.data)
-            message.action = messageToEmitOnSubscribe.action
-            message.serial = messageToEmitOnSubscribe.serial
-            message.clientId = messageToEmitOnSubscribe.clientID
-            message.extras = messageToEmitOnSubscribe.extras
-            message.operation = messageToEmitOnSubscribe.operation
-            message.version = messageToEmitOnSubscribe.version
-            callback(message)
+            callback(messageToEmitOnSubscribe)
+        } else {
+            channelSubscriptions.append((name, callback))
         }
         return ARTEventListener()
     }
 
-    nonisolated func unsubscribe(_: ARTEventListener?) {
+    func simulateIncomingMessage(_ with: ARTMessage, for name: String) {
+        for (messageName, callback) in channelSubscriptions where messageName == name {
+            callback(with)
+        }
+    }
+
+    func unsubscribe(_: ARTEventListener?) {
         // no-op; revisit if we need to test something that depends on this method actually stopping `subscribe` from emitting more events
     }
 
-    nonisolated func on(_: ARTChannelEvent, callback _: @escaping (ARTChannelStateChange) -> Void) -> ARTEventListener {
+    private var stateSubscriptionCallbacks: [@MainActor (ARTChannelStateChange) -> Void] = []
+
+    func on(_: ARTChannelEvent, callback _: @escaping @MainActor (ARTChannelStateChange) -> Void) -> ARTEventListener {
         ARTEventListener()
     }
 
-    nonisolated func on(_: @escaping (ARTChannelStateChange) -> Void) -> ARTEventListener {
-        fatalError("Not implemented")
+    func on(_ callback: @escaping @MainActor (ARTChannelStateChange) -> Void) -> ARTEventListener {
+        stateSubscriptionCallbacks.append(callback)
+
+        return ARTEventListener()
     }
 
-    nonisolated func off(_: ARTEventListener) {
+    func emitEvent(_ event: ARTChannelStateChange) {
+        for callback in stateSubscriptionCallbacks {
+            callback(event)
+        }
+    }
+
+    func off(_: ARTEventListener) {
         // no-op; revisit if we need to test something that depends on this method actually stopping `on` from emitting more events
     }
 
@@ -177,33 +181,6 @@ final actor MockRealtimeChannel: InternalRealtimeChannelProtocol {
     }
 
     func publish(_ name: String?, data: JSONValue?, extras: [String: JSONValue]?) {
-        lastMessagePublishedName = name
-        lastMessagePublishedExtras = extras
-        lastMessagePublishedData = data
-    }
-
-    enum SubscribeToStateBehavior {
-        case justAddSubscription
-        case addSubscriptionAndEmitStateChange(ARTChannelStateChange)
-    }
-
-    private let subscribeToStateBehavior: SubscribeToStateBehavior
-    private var subscriptions = SubscriptionStorage<ARTChannelStateChange>()
-
-    func subscribeToState() -> Subscription<ARTChannelStateChange> {
-        let subscription = subscriptions.create(bufferingPolicy: .unbounded)
-
-        switch subscribeToStateBehavior {
-        case .justAddSubscription:
-            break
-        case let .addSubscriptionAndEmitStateChange(stateChange):
-            emitStateChange(stateChange)
-        }
-
-        return subscription
-    }
-
-    func emitStateChange(_ stateChange: ARTChannelStateChange) {
-        subscriptions.emit(stateChange)
+        publishedMessages.append(TestMessage(name: name, data: data, extras: extras))
     }
 }

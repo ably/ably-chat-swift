@@ -5,7 +5,8 @@ import Ably
  *
  * Get an instance via ``Room/reactions``.
  */
-public protocol RoomReactions: AnyObject, Sendable, EmitsDiscontinuities {
+@MainActor
+public protocol RoomReactions: AnyObject, Sendable {
     /**
      * Send a reaction to the room including some metadata.
      *
@@ -17,14 +18,6 @@ public protocol RoomReactions: AnyObject, Sendable, EmitsDiscontinuities {
     func send(params: SendReactionParams) async throws(ARTErrorInfo)
 
     /**
-     * Returns an instance of the Ably realtime channel used for room-level reactions.
-     * Avoid using this directly unless special features that cannot otherwise be implemented are needed.
-     *
-     * - Returns: The realtime channel.
-     */
-    var channel: any RealtimeChannelProtocol { get }
-
-    /**
      * Subscribes a given listener to receive room-level reactions.
      *
      * - Parameters:
@@ -32,17 +25,17 @@ public protocol RoomReactions: AnyObject, Sendable, EmitsDiscontinuities {
      *
      * - Returns: A subscription `AsyncSequence` that can be used to iterate through ``Reaction`` events.
      */
-    func subscribe(bufferingPolicy: BufferingPolicy) async -> Subscription<Reaction>
+    func subscribe(bufferingPolicy: BufferingPolicy) -> Subscription<Reaction>
 
     /// Same as calling ``subscribe(bufferingPolicy:)`` with ``BufferingPolicy/unbounded``.
     ///
     /// The `RoomReactions` protocol provides a default implementation of this method.
-    func subscribe() async -> Subscription<Reaction>
+    func subscribe() -> Subscription<Reaction>
 }
 
 public extension RoomReactions {
-    func subscribe() async -> Subscription<Reaction> {
-        await subscribe(bufferingPolicy: .unbounded)
+    func subscribe() -> Subscription<Reaction> {
+        subscribe(bufferingPolicy: .unbounded)
     }
 }
 

@@ -12,6 +12,7 @@ private enum Environment: Equatable {
     ///   - clientId: A string that identifies this client.
     case live(key: String, clientId: String)
 
+    @MainActor
     func createChatClient() -> ChatClient {
         switch self {
         case .mock:
@@ -30,7 +31,6 @@ private enum Environment: Equatable {
     }
 }
 
-@MainActor
 struct ContentView: View {
     #if os(macOS)
         let screenWidth = NSScreen.main?.frame.width ?? 500
@@ -45,7 +45,6 @@ struct ContentView: View {
 
     @State private var chatClient = Environment.current.createChatClient()
 
-    @State private var title = "Room"
     @State private var reactions: [Reaction] = []
     @State private var newMessage = ""
     @State private var typingInfo = ""
@@ -70,10 +69,7 @@ struct ContentView: View {
     }
 
     private func room() async throws -> Room {
-        try await chatClient.rooms.get(
-            roomID: roomID,
-            options: .allFeaturesEnabled
-        )
+        try await chatClient.rooms.get(roomID: roomID)
     }
 
     private var sendTitle: String {
@@ -89,7 +85,7 @@ struct ContentView: View {
     var body: some View {
         ZStack {
             VStack {
-                Text(title)
+                Text(roomID)
                     .font(.headline)
                     .padding(5)
                 HStack {
@@ -200,16 +196,23 @@ struct ContentView: View {
                     }
             }
         }
-        .tryTask {
-            try await setDefaultTitle()
-            try await attachRoom()
-            try await showMessages()
-            try await showReactions()
-            try await showPresence()
-            try await showOccupancy()
-            try await showTypings()
-            try await showRoomStatus()
-            await printConnectionStatusChange()
+        .task {
+            do {
+                let room = try await room()
+
+                try await room.attach()
+                try await room.presence.enter(data: ["status": "📱 Online"])
+
+                try await showMessages(room: room)
+                showReactions(room: room)
+                showPresence(room: room)
+                try await showOccupancy(room: room)
+                showTypings(room: room)
+                showRoomStatus(room: room)
+                printConnectionStatusChange()
+            } catch {
+                print("Failed to initialize room: \(error)") // TODO: replace with logger (+ message to the user?)
+            }
         }
     }
 
@@ -230,16 +233,8 @@ struct ContentView: View {
         }
     }
 
-    func setDefaultTitle() async throws {
-        title = try await "\(room().roomID)"
-    }
-
-    func attachRoom() async throws {
-        try await room().attach()
-    }
-
-    func showMessages() async throws {
-        let messagesSubscription = try await room().messages.subscribe()
+    func showMessages(room: Room) async throws {
+        let messagesSubscription = try await room.messages.subscribe()
         let previousMessages = try await messagesSubscription.getPreviousMessages(params: .init())
 
         for message in previousMessages.items {
@@ -281,8 +276,8 @@ struct ContentView: View {
         }
     }
 
-    func showReactions() async throws {
-        let reactionSubscription = try await room().reactions.subscribe()
+    func showReactions(room: Room) {
+        let reactionSubscription = room.reactions.subscribe()
 
         // Continue listening for reactions on a background task so this function can return
         Task {
@@ -294,12 +289,10 @@ struct ContentView: View {
         }
     }
 
-    func showPresence() async throws {
-        try await room().presence.enter(data: ["status": "📱 Online"])
-
+    func showPresence(room: Room) {
         // Continue listening for new presence events on a background task so this function can return
         Task {
-            for await event in try await room().presence.subscribe(events: [.enter, .leave, .update]) {
+            for await event in room.presence.subscribe(events: [.enter, .leave, .update]) {
                 withAnimation {
                     listItems.insert(
                         .presence(
@@ -314,8 +307,8 @@ struct ContentView: View {
         }
     }
 
-    func showTypings() async throws {
-        let typingSubscription = try await room().typing.subscribe()
+    func showTypings(room: Room) {
+        let typingSubscription = room.typing.subscribe()
         // Continue listening for typing events on a background task so this function can return
         Task {
             for await typing in typingSubscription {
@@ -329,15 +322,15 @@ struct ContentView: View {
         }
     }
 
-    func showOccupancy() async throws {
+    func showOccupancy(room: Room) async throws {
         // Continue listening for occupancy events on a background task so this function can return
-        let currentOccupancy = try await room().occupancy.get()
+        let currentOccupancy = try await room.occupancy.get()
         withAnimation {
             occupancyInfo = "Connections: \(currentOccupancy.presenceMembers) (\(currentOccupancy.connections))"
         }
 
         Task {
-            for await event in try await room().occupancy.subscribe() {
+            for await event in room.occupancy.subscribe() {
                 withAnimation {
                     occupancyInfo = "Connections: \(event.presenceMembers) (\(event.connections))"
                 }
@@ -345,7 +338,7 @@ struct ContentView: View {
         }
     }
 
-    func printConnectionStatusChange() async {
+    func printConnectionStatusChange() {
         let connectionSubsciption = chatClient.connection.onStatusChange()
 
         // Continue listening for connection status change on a background task so this function can return
@@ -356,16 +349,16 @@ struct ContentView: View {
         }
     }
 
-    func showRoomStatus() async throws {
+    func showRoomStatus(room: Room) {
         // Continue listening for status change events on a background task so this function can return
         Task {
-            for await status in try await room().onStatusChange() {
+            for await status in room.onStatusChange() {
                 withAnimation {
                     if status.current.isAttaching {
                         statusInfo = "\(status.current)...".capitalized
                     } else {
                         statusInfo = "\(status.current)".capitalized
-                        if status.current == .attached {
+                        if status.current.isAttached {
                             Task {
                                 try? await Task.sleep(nanoseconds: 1 * 1_000_000_000)
                                 withAnimation {
@@ -417,7 +410,7 @@ struct ContentView: View {
         if newMessage.isEmpty {
             try await room().typing.stop()
         } else {
-            try await room().typing.start()
+            try await room().typing.keystroke()
         }
     }
 }
@@ -502,16 +495,6 @@ extension PresenceEventType {
 }
 
 extension View {
-    nonisolated func tryTask(priority: TaskPriority = .userInitiated, _ action: @escaping @Sendable () async throws -> Void) -> some View {
-        task(priority: priority) {
-            do {
-                try await action()
-            } catch {
-                print("Action can't be performed: \(error)") // TODO: replace with logger (+ message to the user?)
-            }
-        }
-    }
-
     func flip() -> some View {
         rotationEffect(.radians(.pi))
             .scaleEffect(x: -1, y: 1, anchor: .center)

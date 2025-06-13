@@ -1,24 +1,17 @@
 import Ably
 
-@MainActor
-internal final class DefaultPresence: Presence, EmitsDiscontinuities {
-    private let featureChannel: FeatureChannel
+internal final class DefaultPresence: Presence {
     private let implementation: Implementation
 
-    internal init(featureChannel: FeatureChannel, roomID: String, clientID: String, logger: InternalLogger) {
-        self.featureChannel = featureChannel
-        implementation = .init(featureChannel: featureChannel, roomID: roomID, clientID: clientID, logger: logger)
-    }
-
-    internal nonisolated var channel: any RealtimeChannelProtocol {
-        featureChannel.channel.underlying
+    internal init(channel: any InternalRealtimeChannelProtocol, roomLifecycleManager: any RoomLifecycleManager, roomID: String, clientID: String, logger: InternalLogger, options: PresenceOptions) {
+        implementation = .init(channel: channel, roomLifecycleManager: roomLifecycleManager, roomID: roomID, clientID: clientID, logger: logger, options: options)
     }
 
     internal func get() async throws(ARTErrorInfo) -> [PresenceMember] {
         try await implementation.get()
     }
 
-    internal func get(params: PresenceQuery) async throws(ARTErrorInfo) -> [PresenceMember] {
+    internal func get(params: PresenceParams) async throws(ARTErrorInfo) -> [PresenceMember] {
         try await implementation.get(params: params)
     }
 
@@ -50,31 +43,31 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
         try await implementation.leave()
     }
 
-    internal func subscribe(event: PresenceEventType, bufferingPolicy: BufferingPolicy) async -> Subscription<PresenceEvent> {
-        await implementation.subscribe(event: event, bufferingPolicy: bufferingPolicy)
+    internal func subscribe(event: PresenceEventType, bufferingPolicy: BufferingPolicy) -> Subscription<PresenceEvent> {
+        implementation.subscribe(event: event, bufferingPolicy: bufferingPolicy)
     }
 
-    internal func subscribe(events: [PresenceEventType], bufferingPolicy: BufferingPolicy) async -> Subscription<PresenceEvent> {
-        await implementation.subscribe(events: events, bufferingPolicy: bufferingPolicy)
-    }
-
-    internal func onDiscontinuity(bufferingPolicy: BufferingPolicy) async -> Subscription<DiscontinuityEvent> {
-        await implementation.onDiscontinuity(bufferingPolicy: bufferingPolicy)
+    internal func subscribe(events: [PresenceEventType], bufferingPolicy: BufferingPolicy) -> Subscription<PresenceEvent> {
+        implementation.subscribe(events: events, bufferingPolicy: bufferingPolicy)
     }
 
     /// This class exists to make sure that the internals of the SDK only access ably-cocoa via the `InternalRealtimeChannelProtocol` interface. It does this by removing access to the `channel` property that exists as part of the public API of the `Presence` protocol, making it unlikely that we accidentally try to call the `ARTRealtimeChannelProtocol` interface. We can remove this `Implementation` class when we remove the feature-level `channel` property in https://github.com/ably/ably-chat-swift/issues/242.
     @MainActor
     private final class Implementation: Sendable {
-        private let featureChannel: FeatureChannel
+        private let channel: any InternalRealtimeChannelProtocol
+        private let roomLifecycleManager: any RoomLifecycleManager
         private let roomID: String
         private let clientID: String
         private let logger: InternalLogger
+        private let options: PresenceOptions
 
-        internal init(featureChannel: FeatureChannel, roomID: String, clientID: String, logger: InternalLogger) {
+        internal init(channel: any InternalRealtimeChannelProtocol, roomLifecycleManager: any RoomLifecycleManager, roomID: String, clientID: String, logger: InternalLogger, options: PresenceOptions) {
             self.roomID = roomID
-            self.featureChannel = featureChannel
+            self.channel = channel
+            self.roomLifecycleManager = roomLifecycleManager
             self.clientID = clientID
             self.logger = logger
+            self.options = options
         }
 
         // (CHA-PR6) It must be possible to retrieve all the @Members of the presence set. The behaviour depends on the current room status, as presence operations in a Realtime Client cause implicit attaches.
@@ -84,7 +77,7 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
 
                 // CHA-PR6b to CHA-PR6f
                 do {
-                    try await featureChannel.waitToBeAbleToPerformPresenceOperations(requestedByFeature: RoomFeature.presence)
+                    try await roomLifecycleManager.waitToBeAbleToPerformPresenceOperations(requestedByFeature: .presence)
                 } catch {
                     logger.log(message: "Error waiting to be able to perform presence get operation: \(error)", level: .error)
                     throw error
@@ -92,7 +85,7 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
 
                 let members: [PresenceMessage]
                 do {
-                    members = try await featureChannel.channel.presence.get()
+                    members = try await channel.presence.get()
                 } catch {
                     logger.log(message: error.message, level: .error)
                     throw error
@@ -103,13 +96,13 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
             }
         }
 
-        internal func get(params: PresenceQuery) async throws(ARTErrorInfo) -> [PresenceMember] {
+        internal func get(params: PresenceParams) async throws(ARTErrorInfo) -> [PresenceMember] {
             do throws(InternalError) {
                 logger.log(message: "Getting presence with params: \(params)", level: .debug)
 
                 // CHA-PR6b to CHA-PR6f
                 do {
-                    try await featureChannel.waitToBeAbleToPerformPresenceOperations(requestedByFeature: RoomFeature.presence)
+                    try await roomLifecycleManager.waitToBeAbleToPerformPresenceOperations(requestedByFeature: .presence)
                 } catch {
                     logger.log(message: "Error waiting to be able to perform presence get operation: \(error)", level: .error)
                     throw error
@@ -117,7 +110,7 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
 
                 let members: [PresenceMessage]
                 do {
-                    members = try await featureChannel.channel.presence.get(params.asARTRealtimePresenceQuery())
+                    members = try await channel.presence.get(params.asARTRealtimePresenceQuery())
                 } catch {
                     logger.log(message: error.message, level: .error)
                     throw error
@@ -135,7 +128,7 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
 
                 // CHA-PR6b to CHA-PR6f
                 do {
-                    try await featureChannel.waitToBeAbleToPerformPresenceOperations(requestedByFeature: RoomFeature.presence)
+                    try await roomLifecycleManager.waitToBeAbleToPerformPresenceOperations(requestedByFeature: .presence)
                 } catch {
                     logger.log(message: "Error waiting to be able to perform presence get operation: \(error)", level: .error)
                     throw error
@@ -143,7 +136,7 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
 
                 let members: [PresenceMessage]
                 do {
-                    members = try await featureChannel.channel.presence.get(ARTRealtimePresenceQuery(clientId: clientID, connectionId: nil))
+                    members = try await channel.presence.get(ARTRealtimePresenceQuery(clientId: clientID, connectionId: nil))
                 } catch {
                     logger.log(message: error.message, level: .error)
                     throw error
@@ -170,7 +163,7 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
 
                 // CHA-PR3c to CHA-PR3g
                 do {
-                    try await featureChannel.waitToBeAbleToPerformPresenceOperations(requestedByFeature: RoomFeature.presence)
+                    try await roomLifecycleManager.waitToBeAbleToPerformPresenceOperations(requestedByFeature: .presence)
                 } catch {
                     logger.log(message: "Error waiting to be able to perform presence enter operation: \(error)", level: .error)
                     throw error
@@ -179,7 +172,7 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
                 let dto = PresenceDataDTO(userCustomData: data)
 
                 do {
-                    try await featureChannel.channel.presence.enterClient(clientID, data: dto.toJSONValue)
+                    try await channel.presence.enterClient(clientID, data: dto.toJSONValue)
                 } catch {
                     logger.log(message: "Error entering presence: \(error)", level: .error)
                     throw error
@@ -204,7 +197,7 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
 
                 // CHA-PR10c to CHA-PR10g
                 do {
-                    try await featureChannel.waitToBeAbleToPerformPresenceOperations(requestedByFeature: RoomFeature.presence)
+                    try await roomLifecycleManager.waitToBeAbleToPerformPresenceOperations(requestedByFeature: .presence)
                 } catch {
                     logger.log(message: "Error waiting to be able to perform presence update operation: \(error)", level: .error)
                     throw error
@@ -213,7 +206,7 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
                 let dto = PresenceDataDTO(userCustomData: data)
 
                 do {
-                    try await featureChannel.channel.presence.update(dto.toJSONValue)
+                    try await channel.presence.update(dto.toJSONValue)
                 } catch {
                     logger.log(message: "Error updating presence: \(error)", level: .error)
                     throw error
@@ -238,7 +231,7 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
 
                 // CHA-PR6b to CHA-PR6f
                 do {
-                    try await featureChannel.waitToBeAbleToPerformPresenceOperations(requestedByFeature: RoomFeature.presence)
+                    try await roomLifecycleManager.waitToBeAbleToPerformPresenceOperations(requestedByFeature: .presence)
                 } catch {
                     logger.log(message: "Error waiting to be able to perform presence leave operation: \(error)", level: .error)
                     throw error
@@ -247,7 +240,7 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
                 let dto = PresenceDataDTO(userCustomData: data)
 
                 do {
-                    try await featureChannel.channel.presence.leave(dto.toJSONValue)
+                    try await channel.presence.leave(dto.toJSONValue)
                 } catch {
                     logger.log(message: "Error leaving presence: \(error)", level: .error)
                     throw error
@@ -257,55 +250,69 @@ internal final class DefaultPresence: Presence, EmitsDiscontinuities {
             }
         }
 
+        private func fatalErrorIfEnableEventsDisabled() {
+            // CHA-PR7d (we use a fatalError for this programmer error, which is the idiomatic thing to do for Swift)
+            guard options.enableEvents else {
+                fatalError("In order to be able to subscribe to presence events, please set enableEvents to true in the room's presence options.")
+            }
+        }
+
         // (CHA-PR7a) Users may provide a listener to subscribe to all presence events in a room.
         // (CHA-PR7b) Users may provide a listener and a list of selected presence events, to subscribe to just those events in a room.
-        internal func subscribe(event: PresenceEventType, bufferingPolicy: BufferingPolicy) async -> Subscription<PresenceEvent> {
+        internal func subscribe(event: PresenceEventType, bufferingPolicy: BufferingPolicy) -> Subscription<PresenceEvent> {
+            fatalErrorIfEnableEventsDisabled()
+
             logger.log(message: "Subscribing to presence events", level: .debug)
             let subscription = Subscription<PresenceEvent>(bufferingPolicy: bufferingPolicy)
-            let eventListener = featureChannel.channel.presence.subscribe(event.toARTPresenceAction()) { [processPresenceSubscribe, logger] message in
+            let eventListener = channel.presence.subscribe(event.toARTPresenceAction()) { [processPresenceSubscribe, logger] message in
                 logger.log(message: "Received presence message: \(message)", level: .debug)
-                Task {
+                do {
                     // processPresenceSubscribe is logging so we don't need to log here
                     let presenceEvent = try processPresenceSubscribe(PresenceMessage(ablyCocoaPresenceMessage: message), event)
                     subscription.emit(presenceEvent)
+                } catch {
+                    // note: this replaces some existing code that also didn't handle the processPresenceSubscribe error; I suspect not intentional, will leave whoever writes the tests for this class to see what's going on
                 }
             }
             subscription.addTerminationHandler { [weak self] in
                 if let eventListener {
-                    self?.featureChannel.channel.presence.unsubscribe(eventListener)
+                    Task { @MainActor in
+                        self?.channel.presence.unsubscribe(eventListener)
+                    }
                 }
             }
             return subscription
         }
 
-        internal func subscribe(events: [PresenceEventType], bufferingPolicy: BufferingPolicy) async -> Subscription<PresenceEvent> {
+        internal func subscribe(events: [PresenceEventType], bufferingPolicy: BufferingPolicy) -> Subscription<PresenceEvent> {
+            fatalErrorIfEnableEventsDisabled()
+
             logger.log(message: "Subscribing to presence events", level: .debug)
             let subscription = Subscription<PresenceEvent>(bufferingPolicy: bufferingPolicy)
 
             let eventListeners = events.map { event in
-                featureChannel.channel.presence.subscribe(event.toARTPresenceAction()) { [processPresenceSubscribe, logger] message in
+                channel.presence.subscribe(event.toARTPresenceAction()) { [processPresenceSubscribe, logger] message in
                     logger.log(message: "Received presence message: \(message)", level: .debug)
-                    Task {
+                    do {
                         let presenceEvent = try processPresenceSubscribe(PresenceMessage(ablyCocoaPresenceMessage: message), event)
                         subscription.emit(presenceEvent)
+                    } catch {
+                        // note: this replaces some existing code that also didn't handle the processPresenceSubscribe error; I suspect not intentional, will leave whoever writes the tests for this class to see what's going on
                     }
                 }
             }
 
             subscription.addTerminationHandler { [weak self] in
-                for eventListener in eventListeners {
-                    if let eventListener {
-                        self?.featureChannel.channel.presence.unsubscribe(eventListener)
+                Task { @MainActor in
+                    for eventListener in eventListeners {
+                        if let eventListener {
+                            self?.channel.presence.unsubscribe(eventListener)
+                        }
                     }
                 }
             }
 
             return subscription
-        }
-
-        // (CHA-PR8) Users may subscribe to discontinuity events to know when there’s been a break in presence. Their listener will be called when a discontinuity event is triggered from the room lifecycle. For presence, there shouldn’t need to be user action as the underlying core SDK will heal the presence set.
-        internal func onDiscontinuity(bufferingPolicy: BufferingPolicy) async -> Subscription<DiscontinuityEvent> {
-            await featureChannel.onDiscontinuity(bufferingPolicy: bufferingPolicy)
         }
 
         private func decodePresenceDataDTO(from presenceData: JSONValue?) throws(InternalError) -> PresenceDataDTO {

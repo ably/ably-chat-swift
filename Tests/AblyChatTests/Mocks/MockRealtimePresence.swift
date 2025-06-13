@@ -2,16 +2,18 @@ import Ably
 @testable import AblyChat
 
 final class MockRealtimePresence: InternalRealtimePresenceProtocol {
-    func subscribe(_: @escaping ARTPresenceMessageCallback) -> ARTEventListener? {
-        fatalError("Not implemented")
+    let callRecorder = MockMethodCallRecorder()
+
+    func subscribe(_: @escaping @MainActor (ARTPresenceMessage) -> Void) -> ARTEventListener? {
+        ARTEventListener()
     }
 
-    func subscribe(_: ARTPresenceAction, callback _: @escaping ARTPresenceMessageCallback) -> ARTEventListener? {
-        fatalError("Not implemented")
+    func subscribe(_: ARTPresenceAction, callback _: @escaping @MainActor (ARTPresenceMessage) -> Void) -> ARTEventListener? {
+        ARTEventListener()
     }
 
     func unsubscribe(_: ARTEventListener) {
-        fatalError("Not implemented")
+        // no-op since it's called automatically
     }
 
     func leaveClient(_: String, data _: JSONValue?) {
@@ -19,22 +21,45 @@ final class MockRealtimePresence: InternalRealtimePresenceProtocol {
     }
 
     func get() async throws(InternalError) -> [PresenceMessage] {
-        fatalError("Not implemented")
+        callRecorder.addRecord(
+            signature: "get()",
+            arguments: [:]
+        )
+        return []
     }
 
-    func get(_: ARTRealtimePresenceQuery) async throws(InternalError) -> [PresenceMessage] {
-        fatalError("Not implemented")
+    func get(_ query: ARTRealtimePresenceQuery) async throws(InternalError) -> [PresenceMessage] {
+        callRecorder.addRecord(
+            signature: "get(_:)",
+            arguments: ["query": "\(query.callRecorderDescription)"]
+        )
+        return []
     }
 
-    func leave(_: JSONValue?) async throws(InternalError) {
-        fatalError("Not implemented")
+    func leave(_ data: JSONValue?) async throws(InternalError) {
+        callRecorder.addRecord(
+            signature: "leave(_:)",
+            arguments: ["data": data]
+        )
     }
 
-    func enterClient(_: String, data _: JSONValue?) async throws(InternalError) {
-        fatalError("Not implemented")
+    func enterClient(_ name: String, data: JSONValue?) async throws(InternalError) {
+        callRecorder.addRecord(
+            signature: "enterClient(_:data:)",
+            arguments: ["name": name, "data": data]
+        )
     }
 
-    func update(_: JSONValue?) async throws(InternalError) {
-        fatalError("Not implemented")
+    func update(_ data: JSONValue?) async throws(InternalError) {
+        callRecorder.addRecord(
+            signature: "update(_:)",
+            arguments: ["data": data]
+        )
+    }
+}
+
+extension ARTRealtimePresenceQuery {
+    var callRecorderDescription: String {
+        "clientId=\(clientId!)"
     }
 }

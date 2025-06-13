@@ -6,7 +6,8 @@ import Ably
  *
  * Get an instance via ``Room/messages``.
  */
-public protocol Messages: AnyObject, Sendable, EmitsDiscontinuities {
+@MainActor
+public protocol Messages: AnyObject, Sendable {
     /**
      * Subscribe to new messages in this chat room.
      *
@@ -76,13 +77,6 @@ public protocol Messages: AnyObject, Sendable, EmitsDiscontinuities {
      * - Note: It is possible to receive your own message via the messages subscription before this method returns.
      */
     func delete(message: Message, params: DeleteMessageParams) async throws(ARTErrorInfo) -> Message
-
-    /**
-     * Get the underlying Ably realtime channel used for the messages in this chat room.
-     *
-     * - Returns: The realtime channel.
-     */
-    var channel: any RealtimeChannelProtocol { get }
 }
 
 public extension Messages {
@@ -283,33 +277,44 @@ public final class MessageSubscription: Sendable, AsyncSequence {
     private let subscription: Subscription<Element>
 
     // can be set by either initialiser
-    private let getPreviousMessages: @Sendable (QueryOptions) async throws -> any PaginatedResult<Message>
+    private let getPreviousMessages: @Sendable (QueryOptions) async throws(InternalError) -> any PaginatedResult<Message>
 
     // used internally
     internal init(
         bufferingPolicy: BufferingPolicy,
-        getPreviousMessages: @escaping @Sendable (QueryOptions) async throws -> any PaginatedResult<Message>
+        getPreviousMessages: @escaping @Sendable (QueryOptions) async throws(InternalError) -> any PaginatedResult<Message>
     ) {
         subscription = .init(bufferingPolicy: bufferingPolicy)
         self.getPreviousMessages = getPreviousMessages
     }
 
     // used for testing
-    public init<T: AsyncSequence & Sendable>(mockAsyncSequence: T, mockGetPreviousMessages: @escaping @Sendable (QueryOptions) async throws -> any PaginatedResult<Message>) where T.Element == Element {
+    public init<Underlying: AsyncSequence & Sendable>(mockAsyncSequence: Underlying, mockGetPreviousMessages: @escaping @Sendable (QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message>) where Underlying.Element == Element {
         subscription = .init(mockAsyncSequence: mockAsyncSequence)
-        getPreviousMessages = mockGetPreviousMessages
+        getPreviousMessages = { @Sendable params throws(InternalError) in
+            do throws(ARTErrorInfo) {
+                return try await mockGetPreviousMessages(params)
+            } catch {
+                throw error.toInternalError()
+            }
+        }
     }
 
     internal func emit(_ element: Element) {
         subscription.emit(element)
     }
 
+    @MainActor
     internal func addTerminationHandler(_ onTermination: @escaping (@Sendable () -> Void)) {
         subscription.addTerminationHandler(onTermination)
     }
 
-    public func getPreviousMessages(params: QueryOptions) async throws -> any PaginatedResult<Message> {
-        try await getPreviousMessages(params)
+    public func getPreviousMessages(params: QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message> {
+        do {
+            return try await getPreviousMessages(params)
+        } catch {
+            throw error.toARTErrorInfo()
+        }
     }
 
     public struct AsyncIterator: AsyncIteratorProtocol {

@@ -1,18 +1,22 @@
 import Ably
 @testable import AblyChat
 
-actor MockRoomLifecycleManager: RoomLifecycleManager {
+class MockRoomLifecycleManager: RoomLifecycleManager {
+    let callRecorder = MockMethodCallRecorder()
     private let attachResult: Result<Void, ARTErrorInfo>?
     private(set) var attachCallCount = 0
     private let detachResult: Result<Void, ARTErrorInfo>?
     private(set) var detachCallCount = 0
     private(set) var releaseCallCount = 0
     private let _roomStatus: RoomStatus?
-    private var subscriptions = SubscriptionStorage<RoomStatusChange>()
+    private let roomStatusSubscriptions = SubscriptionStorage<RoomStatusChange>()
+    private let discontinuitySubscriptions = SubscriptionStorage<DiscontinuityEvent>()
+    private let resultOfWaitToBeAbleToPerformPresenceOperations: Result<Void, ARTErrorInfo>?
 
-    init(attachResult: Result<Void, ARTErrorInfo>? = nil, detachResult: Result<Void, ARTErrorInfo>? = nil, roomStatus: RoomStatus? = nil) {
+    init(attachResult: Result<Void, ARTErrorInfo>? = nil, detachResult: Result<Void, ARTErrorInfo>? = nil, roomStatus: RoomStatus? = nil, resultOfWaitToBeAbleToPerformPresenceOperations: Result<Void, ARTErrorInfo> = .success(())) {
         self.attachResult = attachResult
         self.detachResult = detachResult
+        self.resultOfWaitToBeAbleToPerformPresenceOperations = resultOfWaitToBeAbleToPerformPresenceOperations
         _roomStatus = roomStatus
     }
 
@@ -51,15 +55,34 @@ actor MockRoomLifecycleManager: RoomLifecycleManager {
         return roomStatus
     }
 
-    func onRoomStatusChange(bufferingPolicy: BufferingPolicy) async -> Subscription<RoomStatusChange> {
-        subscriptions.create(bufferingPolicy: bufferingPolicy)
+    func onRoomStatusChange(bufferingPolicy: BufferingPolicy) -> Subscription<RoomStatusChange> {
+        roomStatusSubscriptions.create(bufferingPolicy: bufferingPolicy)
     }
 
     func emitStatusChange(_ statusChange: RoomStatusChange) {
-        subscriptions.emit(statusChange)
+        roomStatusSubscriptions.emit(statusChange)
     }
 
-    func waitToBeAbleToPerformPresenceOperations(requestedByFeature _: RoomFeature) async throws(InternalError) {
-        fatalError("Not implemented")
+    func waitToBeAbleToPerformPresenceOperations(requestedByFeature: RoomFeature) async throws(InternalError) {
+        guard let resultOfWaitToBeAbleToPerformPresenceOperations else {
+            fatalError("resultOfWaitToBeAblePerformPresenceOperations must be set before waitToBeAbleToPerformPresenceOperations is called")
+        }
+        callRecorder.addRecord(
+            signature: "waitToBeAbleToPerformPresenceOperations(requestedByFeature:)",
+            arguments: ["requestedByFeature": "\(requestedByFeature)"]
+        )
+        do {
+            try resultOfWaitToBeAbleToPerformPresenceOperations.get()
+        } catch {
+            throw error.toInternalError()
+        }
+    }
+
+    func onDiscontinuity(bufferingPolicy: BufferingPolicy) -> Subscription<DiscontinuityEvent> {
+        discontinuitySubscriptions.create(bufferingPolicy: bufferingPolicy)
+    }
+
+    func emitDiscontinuity(_ discontinuity: DiscontinuityEvent) {
+        discontinuitySubscriptions.emit(discontinuity)
     }
 }

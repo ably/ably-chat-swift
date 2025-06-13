@@ -8,7 +8,8 @@ public typealias PresenceData = JSONValue
  *
  * Get an instance via ``Room/presence``.
  */
-public protocol Presence: AnyObject, Sendable, EmitsDiscontinuities {
+@MainActor
+public protocol Presence: AnyObject, Sendable {
     /**
      * Same as ``get(params:)``, but with defaults params.
      */
@@ -18,13 +19,13 @@ public protocol Presence: AnyObject, Sendable, EmitsDiscontinuities {
      * Method to get list of the current online users and returns the latest presence messages associated to it.
      *
      * - Parameters:
-     *   - params: ``PresenceQuery`` that control how the presence set is retrieved.
+     *   - params: ``PresenceParams`` that control how the presence set is retrieved.
      *
      * - Returns: An array of ``PresenceMember``s.
      *
      * - Throws: An `ARTErrorInfo`.
      */
-    func get(params: PresenceQuery) async throws(ARTErrorInfo) -> [PresenceMember]
+    func get(params: PresenceParams) async throws(ARTErrorInfo) -> [PresenceMember]
 
     /**
      * Method to check if user with supplied clientId is online.
@@ -71,16 +72,20 @@ public protocol Presence: AnyObject, Sendable, EmitsDiscontinuities {
     /**
      * Subscribes a given listener to a particular presence event in the chat room.
      *
+     * Note that it is a programmer error to call this method if presence events are not enabled in the room options. Make sure to set `enableEvents: true` in your room's presence options to use this feature (this is the default value).
+     *
      * - Parameters:
      *   - event: A single presence event type ``PresenceEventType`` to subscribe to.
      *   - bufferingPolicy: The ``BufferingPolicy`` for the created subscription.
      *
      * - Returns: A subscription `AsyncSequence` that can be used to iterate through ``PresenceEvent`` events.
      */
-    func subscribe(event: PresenceEventType, bufferingPolicy: BufferingPolicy) async -> Subscription<PresenceEvent>
+    func subscribe(event: PresenceEventType, bufferingPolicy: BufferingPolicy) -> Subscription<PresenceEvent>
 
     /**
      * Subscribes a given listener to different presence events in the chat room.
+     *
+     * Note that it is a programmer error to call this method if presence events are not enabled in the room options. Make sure to set `enableEvents: true` in your room's presence options to use this feature (this is the default value).
      *
      * - Parameters:
      *   - events: An array of presence event types ``PresenceEventType`` to subscribe to.
@@ -88,7 +93,7 @@ public protocol Presence: AnyObject, Sendable, EmitsDiscontinuities {
      *
      * - Returns: A subscription `AsyncSequence` that can be used to iterate through ``PresenceEvent`` events.
      */
-    func subscribe(events: [PresenceEventType], bufferingPolicy: BufferingPolicy) async -> Subscription<PresenceEvent>
+    func subscribe(events: [PresenceEventType], bufferingPolicy: BufferingPolicy) -> Subscription<PresenceEvent>
 
     /**
      * Method to join room presence, will emit an enter event to all subscribers. Repeat calls will trigger more enter events.
@@ -117,21 +122,21 @@ public protocol Presence: AnyObject, Sendable, EmitsDiscontinuities {
     /// Same as calling ``subscribe(event:bufferingPolicy:)`` with ``BufferingPolicy/unbounded``.
     ///
     /// The `Presence` protocol provides a default implementation of this method.
-    func subscribe(event: PresenceEventType) async -> Subscription<PresenceEvent>
+    func subscribe(event: PresenceEventType) -> Subscription<PresenceEvent>
 
     /// Same as calling ``subscribe(events:bufferingPolicy:)`` with ``BufferingPolicy/unbounded``.
     ///
     /// The `Presence` protocol provides a default implementation of this method.
-    func subscribe(events: [PresenceEventType]) async -> Subscription<PresenceEvent>
+    func subscribe(events: [PresenceEventType]) -> Subscription<PresenceEvent>
 }
 
 public extension Presence {
-    func subscribe(event: PresenceEventType) async -> Subscription<PresenceEvent> {
-        await subscribe(event: event, bufferingPolicy: .unbounded)
+    func subscribe(event: PresenceEventType) -> Subscription<PresenceEvent> {
+        subscribe(event: event, bufferingPolicy: .unbounded)
     }
 
-    func subscribe(events: [PresenceEventType]) async -> Subscription<PresenceEvent> {
-        await subscribe(events: events, bufferingPolicy: .unbounded)
+    func subscribe(events: [PresenceEventType]) -> Subscription<PresenceEvent> {
+        subscribe(events: events, bufferingPolicy: .unbounded)
     }
 }
 
@@ -267,21 +272,18 @@ public struct PresenceEvent: Sendable {
     }
 }
 
-// This is a Sendable equivalent of ably-cocoa’s ARTRealtimePresenceQuery type.
-//
-// Originally, ``Presence/get(params:)`` accepted an ARTRealtimePresenceQuery object, but I’ve changed it to accept this type, because else when you try and write an actor that implements ``Presence``, you get a compiler error like "Non-sendable type 'ARTRealtimePresenceQuery' in parameter of the protocol requirement satisfied by actor-isolated instance method 'get(params:)' cannot cross actor boundary; this is an error in the Swift 6 language mode".
-//
-// Now, based on my limited understanding, you _should_ be able to send non-Sendable values from one isolation domain to another (the purpose of the "region-based isolation" and "`sending` parameters" features added in Swift 6), but to get this to work I had to mark ``Presence`` as requiring conformance to the `Actor` protocol, and since I didn’t understand _why_ I had to do that, I didn’t want to put it in the public API.
-//
-// So, for now, let’s just accept this copy (which I don’t think is a big problem anyway); we can always revisit it with more Swift concurrency knowledge in the future. Created https://github.com/ably-labs/ably-chat-swift/issues/64 to revisit.
-public struct PresenceQuery: Sendable {
-    public var limit = 100
+/// Describes the parameters accepted by ``Presence/get(params:)``.
+public struct PresenceParams: Sendable {
+    /// Filters the array of returned presence members by a specific client using its ID.
     public var clientID: String?
+
+    /// Filters the array of returned presence members by a specific connection using its ID.
     public var connectionID: String?
+
+    /// Sets whether to wait for a full presence set synchronization between Ably and the clients on the room to complete before returning the results. Synchronization begins as soon as the room is ``RoomStatus/attached``. When set to `true` the results will be returned as soon as the sync is complete. When set to `false` the current list of members will be returned without the sync completing. The default is `true`.
     public var waitForSync = true
 
-    internal init(limit: Int = 100, clientID: String? = nil, connectionID: String? = nil, waitForSync: Bool = true) {
-        self.limit = limit
+    public init(clientID: String? = nil, connectionID: String? = nil, waitForSync: Bool = true) {
         self.clientID = clientID
         self.connectionID = connectionID
         self.waitForSync = waitForSync
@@ -289,7 +291,6 @@ public struct PresenceQuery: Sendable {
 
     internal func asARTRealtimePresenceQuery() -> ARTRealtimePresenceQuery {
         let query = ARTRealtimePresenceQuery()
-        query.limit = UInt(limit)
         query.clientId = clientID
         query.connectionId = connectionID
         query.waitForSync = waitForSync

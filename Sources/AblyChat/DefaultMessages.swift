@@ -1,25 +1,13 @@
 import Ably
 
-// TODO: Don't have a strong understanding of why @MainActor is needed here. Revisit as part of https://github.com/ably-labs/ably-chat-swift/issues/83
-@MainActor
-internal final class DefaultMessages: Messages, EmitsDiscontinuities {
-    public nonisolated let featureChannel: FeatureChannel
+internal final class DefaultMessages: Messages {
+    private let channel: any InternalRealtimeChannelProtocol
     private let implementation: Implementation
 
-    internal nonisolated init(featureChannel: FeatureChannel, chatAPI: ChatAPI, roomID: String, clientID: String, logger: InternalLogger) async {
-        self.featureChannel = featureChannel
-        implementation = await .init(featureChannel: featureChannel, chatAPI: chatAPI, roomID: roomID, clientID: clientID, logger: logger)
+    internal init(channel: any InternalRealtimeChannelProtocol, chatAPI: ChatAPI, roomID: String, clientID: String, logger: InternalLogger) {
+        self.channel = channel
+        implementation = .init(channel: channel, chatAPI: chatAPI, roomID: roomID, clientID: clientID, logger: logger)
     }
-
-    internal nonisolated var channel: any RealtimeChannelProtocol {
-        featureChannel.channel.underlying
-    }
-
-    #if DEBUG
-        internal nonisolated var testsOnly_internalChannel: any InternalRealtimeChannelProtocol {
-            featureChannel.channel
-        }
-    #endif
 
     internal func subscribe(bufferingPolicy: BufferingPolicy) async throws(ARTErrorInfo) -> MessageSubscription {
         try await implementation.subscribe(bufferingPolicy: bufferingPolicy)
@@ -41,31 +29,30 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
         try await implementation.delete(message: message, params: params)
     }
 
-    internal func onDiscontinuity(bufferingPolicy: BufferingPolicy) async -> Subscription<DiscontinuityEvent> {
-        await implementation.onDiscontinuity(bufferingPolicy: bufferingPolicy)
+    internal enum MessagesError: Error {
+        case noReferenceToSelf
     }
 
     /// This class exists to make sure that the internals of the SDK only access ably-cocoa via the `InternalRealtimeChannelProtocol` interface. It does this by removing access to the `channel` property that exists as part of the public API of the `Messages` protocol, making it unlikely that we accidentally try to call the `ARTRealtimeChannelProtocol` interface. We can remove this `Implementation` class when we remove the feature-level `channel` property in https://github.com/ably/ably-chat-swift/issues/242.
     @MainActor
     private final class Implementation: Sendable {
         private let roomID: String
-        public nonisolated let featureChannel: FeatureChannel
+        private let channel: any InternalRealtimeChannelProtocol
         private let chatAPI: ChatAPI
         private let clientID: String
         private let logger: InternalLogger
 
         private let subscriptionStore = SubscriptionStore()
 
-        internal nonisolated init(featureChannel: FeatureChannel, chatAPI: ChatAPI, roomID: String, clientID: String, logger: InternalLogger) async {
-            self.featureChannel = featureChannel
+        internal init(channel: any InternalRealtimeChannelProtocol, chatAPI: ChatAPI, roomID: String, clientID: String, logger: InternalLogger) {
+            self.channel = channel
             self.chatAPI = chatAPI
             self.roomID = roomID
             self.clientID = clientID
             self.logger = logger
 
             // Implicitly handles channel events and therefore listners within this class. Alternative is to explicitly call something like `DefaultMessages.start()` which makes the SDK more cumbersome to interact with. This class is useless without kicking off this flow so I think leaving it here is suitable.
-            // "Calls to instance method 'handleChannelEvents(roomId:)' from outside of its actor context are implicitly asynchronous" hence the `await` here.
-            await handleChannelEvents(roomId: roomID)
+            handleChannelEvents(roomId: roomID)
         }
 
         // (CHA-M4) Messages can be received via a subscription in realtime.
@@ -75,8 +62,8 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
                 let uuid = UUID()
                 let messageSubscription = MessageSubscription(
                     bufferingPolicy: bufferingPolicy
-                ) { [weak self] queryOptions in
-                    guard let self else { throw MessagesError.noReferenceToSelf }
+                ) { [weak self] queryOptions throws(InternalError) in
+                    guard let self else { throw MessagesError.noReferenceToSelf.toInternalError() }
                     return try await getBeforeSubscriptionStart(uuid, params: queryOptions)
                 }
 
@@ -86,8 +73,8 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
                 // (CHA-M4c) When a realtime message with name set to message.created is received, it is translated into a message event, which contains a type field with the event type as well as a message field containing the Message Struct. This event is then broadcast to all subscribers.
                 // (CHA-M4d) If a realtime message with an unknown name is received, the SDK shall silently discard the message, though it may log at DEBUG or TRACE level.
                 // (CHA-M5k) Incoming realtime events that are malformed (unknown field should be ignored) shall not be emitted to subscribers.
-                let eventListener = featureChannel.channel.subscribe(RealtimeMessageName.chatMessage.rawValue) { message in
-                    Task {
+                let eventListener = channel.subscribe(RealtimeMessageName.chatMessage.rawValue) { message in
+                    do {
                         // TODO: Revisit errors thrown as part of https://github.com/ably-labs/ably-chat-swift/issues/32
                         guard let ablyCocoaData = message.data,
                               let data = JSONValue(ablyCocoaData: ablyCocoaData).objectValue,
@@ -142,6 +129,8 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
                         )
 
                         messageSubscription.emit(message)
+                    } catch {
+                        // note: this replaces some existing code that also didn't handle any thrown error; I suspect not intentional, will leave whoever writes the tests for this class to see what's going on
                     }
                 }
 
@@ -151,7 +140,7 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
                             guard let self else {
                                 return
                             }
-                            featureChannel.channel.unsubscribe(eventListener)
+                            channel.unsubscribe(eventListener)
                             Task {
                                 await subscriptionStore.removeSubscription(uuid: uuid)
                             }
@@ -198,18 +187,14 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
             }
         }
 
-        // (CHA-M7) Users may subscribe to discontinuity events to know when there’s been a break in messages that they need to resolve. Their listener will be called when a discontinuity event is triggered from the room lifecycle.
-        internal func onDiscontinuity(bufferingPolicy: BufferingPolicy) async -> Subscription<DiscontinuityEvent> {
-            await featureChannel.onDiscontinuity(bufferingPolicy: bufferingPolicy)
-        }
-
-        private func getBeforeSubscriptionStart(_ uuid: UUID, params: QueryOptions) async throws -> any PaginatedResult<Message> {
+        private func getBeforeSubscriptionStart(_ uuid: UUID, params: QueryOptions) async throws(InternalError) -> any PaginatedResult<Message> {
             guard let subscriptionPoint = await subscriptionStore.getSubscription(uuid: uuid)?.serial else {
                 throw ARTErrorInfo.create(
                     withCode: 40000,
                     status: 400,
                     message: "cannot query history; listener has not been subscribed yet"
                 )
+                .toInternalError()
             }
 
             // (CHA-M5f) This method must accept any of the standard history query options, except for direction, which must always be backwards.
@@ -224,7 +209,7 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
 
         private func handleChannelEvents(roomId _: String) {
             // (CHA-M5c) If a channel leaves the ATTACHED state and then re-enters ATTACHED with resumed=false, then it must be assumed that messages have been missed. The subscription point of any subscribers must be reset to the attachSerial.
-            _ = featureChannel.channel.on(.attached) { [weak self] stateChange in
+            _ = channel.on(.attached) { [weak self] stateChange in
                 Task {
                     do {
                         try await self?.handleAttach(fromResume: stateChange.resumed)
@@ -235,7 +220,7 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
             }
 
             // (CHA-M4d) If a channel UPDATE event is received and resumed=false, then it must be assumed that messages have been missed. The subscription point of any subscribers must be reset to the attachSerial.
-            _ = featureChannel.channel.on(.update) { [weak self] stateChange in
+            _ = channel.on(.update) { [weak self] stateChange in
                 Task {
                     do {
                         try await self?.handleAttach(fromResume: stateChange.resumed)
@@ -270,8 +255,8 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
         private func resolveSubscriptionStart(for uuid: UUID) async throws(InternalError) {
             logger.log(message: "Resolving subscription start", level: .debug)
             // (CHA-M5a) If a subscription is added when the underlying realtime channel is ATTACHED, then the subscription point is the current channelSerial of the realtime channel.
-            if await featureChannel.channel.state == .attached {
-                if let channelSerial = featureChannel.channel.properties.channelSerial {
+            if await channel.state == .attached {
+                if let channelSerial = channel.properties.channelSerial {
                     logger.log(message: "Channel is attached, returning channelSerial: \(channelSerial)", level: .debug)
                     await subscriptionStore.setSerial(uuid: uuid, serial: channelSerial)
                     return
@@ -292,8 +277,8 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
         private func serialOnChannelAttach() async throws(InternalError) -> String {
             logger.log(message: "Resolving serial on channel attach", level: .debug)
             // If the state is already 'attached', return the attachSerial immediately
-            if await featureChannel.channel.state == .attached {
-                if let attachSerial = featureChannel.channel.properties.attachSerial {
+            if await channel.state == .attached {
+                if let attachSerial = channel.properties.attachSerial {
                     logger.log(message: "Channel is attached, returning attachSerial: \(attachSerial)", level: .debug)
                     return attachSerial
                 } else {
@@ -308,7 +293,7 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
                 // avoids multiple invocations of the continuation
                 var nillableContinuation: CheckedContinuation<Result<String, InternalError>, Never>? = continuation
 
-                _ = featureChannel.channel.on { [weak self] stateChange in
+                _ = channel.on { [weak self] stateChange in
                     guard let self else {
                         return
                     }
@@ -316,7 +301,7 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
                     switch stateChange.current {
                     case .attached:
                         // Handle successful attachment
-                        if let attachSerial = featureChannel.channel.properties.attachSerial {
+                        if let attachSerial = channel.properties.attachSerial {
                             logger.log(message: "Channel is attached, returning attachSerial: \(attachSerial)", level: .debug)
                             nillableContinuation?.resume(returning: .success(attachSerial))
                         } else {
@@ -327,7 +312,7 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
                     case .failed, .suspended:
                         // TODO: Revisit as part of https://github.com/ably-labs/ably-chat-swift/issues/32
                         logger.log(message: "Channel failed to attach", level: .error)
-                        let errorCodeCase = ErrorCode.CaseThatImpliesFixedStatusCode.messagesAttachmentFailed
+                        let errorCodeCase = ErrorCode.CaseThatImpliesFixedStatusCode.badRequest
                         nillableContinuation?.resume(
                             returning: .failure(
                                 ARTErrorInfo.create(
@@ -344,10 +329,6 @@ internal final class DefaultMessages: Messages, EmitsDiscontinuities {
                     }
                 }
             }.get()
-        }
-
-        internal enum MessagesError: Error {
-            case noReferenceToSelf
         }
     }
 }
