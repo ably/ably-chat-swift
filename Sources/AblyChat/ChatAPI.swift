@@ -10,8 +10,8 @@ internal final class ChatAPI: Sendable {
     }
 
     // (CHA-M6) Messages should be queryable from a paginated REST API.
-    internal func getMessages(roomId: String, params: QueryOptions) async throws(InternalError) -> any PaginatedResult<Message> {
-        let endpoint = "\(apiVersionV3)/rooms/\(roomId)/messages"
+    internal func getMessages(roomID: String, params: QueryOptions) async throws(InternalError) -> any PaginatedResult<Message> {
+        let endpoint = "\(apiVersionV3)/rooms/\(roomID)/messages"
         let result: Result<PaginatedResultWrapper<Message>, InternalError> = await makePaginatedRequest(endpoint, params: params.asQueryItems())
         return try result.get()
     }
@@ -36,17 +36,25 @@ internal final class ChatAPI: Sendable {
         }
     }
 
+    internal struct MessageReactionResponse: JSONObjectDecodable {
+        internal let serial: String
+
+        internal init(jsonObject: [String: JSONValue]) throws(InternalError) {
+            serial = try jsonObject.stringValueForKey("serial")
+        }
+    }
+
     internal typealias UpdateMessageResponse = MessageOperationResponse
     internal typealias DeleteMessageResponse = MessageOperationResponse
 
     // (CHA-M3) Messages are sent to Ably via the Chat REST API, using the send method.
     // (CHA-M3a) When a message is sent successfully, the caller shall receive a struct representing the Message in response (as if it were received via Realtime event).
-    internal func sendMessage(roomId: String, params: SendMessageParams) async throws(InternalError) -> Message {
+    internal func sendMessage(roomID: String, params: SendMessageParams) async throws(InternalError) -> Message {
         guard let clientId = realtime.clientId else {
             throw ARTErrorInfo.create(withCode: 40000, message: "Ensure your Realtime instance is initialized with a clientId.").toInternalError()
         }
 
-        let endpoint = "\(apiVersionV3)/rooms/\(roomId)/messages"
+        let endpoint = "\(apiVersionV3)/rooms/\(roomID)/messages"
         var body: [String: JSONValue] = ["text": .string(params.text)]
 
         // (CHA-M3b) A message may be sent without metadata or headers. When these are not specified by the user, they must be omitted from the REST payload.
@@ -67,7 +75,7 @@ internal final class ChatAPI: Sendable {
             serial: response.serial,
             action: .create,
             clientID: clientId,
-            roomID: roomId,
+            roomID: roomID,
             text: params.text,
             createdAt: createdAtDate,
             metadata: params.metadata ?? [:],
@@ -170,12 +178,49 @@ internal final class ChatAPI: Sendable {
         return message
     }
 
-    internal func getOccupancy(roomId: String) async throws(InternalError) -> OccupancyEvent {
-        let endpoint = "\(apiVersionV3)/rooms/\(roomId)/occupancy"
+    internal func getOccupancy(roomID: String) async throws(InternalError) -> OccupancyEvent {
+        let endpoint = "\(apiVersionV3)/rooms/\(roomID)/occupancy"
         return try await makeRequest(endpoint, method: "GET")
     }
 
-    private func makeRequest<Response: JSONDecodable>(_ url: String, method: String, body: [String: JSONValue]? = nil) async throws(InternalError) -> Response {
+    internal func addReactionForMessage(_ messageSerial: String, roomID: String, params: AddMessageReactionParams) async throws(InternalError) -> MessageReactionResponse {
+        let endpoint = "\(apiVersionV3)/rooms/\(roomID)/messages/\(messageSerial)/reactions"
+
+        guard let reactionType = params.type else {
+            throw ChatError.messageReactionTypeRequired.toInternalError()
+        }
+
+        let body: [String: JSONValue] = [
+            "type": .string(reactionType.rawValue),
+            "name": .string(params.reaction),
+            "count": .integer(params.count ?? 1),
+        ]
+
+        return try await makeRequest(endpoint, method: "POST", body: body)
+    }
+
+    internal func deleteReactionForMessage(_ messageSerial: String, roomID: String, params: DeleteMessageReactionParams) async throws(InternalError) -> MessageReactionResponse {
+        let endpoint = "\(apiVersionV3)/rooms/\(roomID)/messages/\(messageSerial)/reactions"
+
+        guard let reactionType = params.type else {
+            throw ChatError.messageReactionTypeRequired.toInternalError()
+        }
+
+        var httpParams: [String: String] = [
+            "type": reactionType.rawValue,
+        ]
+
+        if reactionType != .unique {
+            guard let reaction = params.reaction else {
+                throw ChatError.messageReactionNameRequired.toInternalError()
+            }
+            httpParams["name"] = reaction
+        }
+
+        return try await makeRequest(endpoint, method: "DELETE", params: httpParams)
+    }
+
+    private func makeRequest<Response: JSONDecodable>(_ url: String, method: String, params: [String: String]? = nil, body: [String: JSONValue]? = nil) async throws(InternalError) -> Response {
         let ablyCocoaBody: Any? = if let body {
             JSONValue.object(body).toAblyCocoaData
         } else {
@@ -183,7 +228,7 @@ internal final class ChatAPI: Sendable {
         }
 
         // (CHA-M3e & CHA-M8d & CHA-M9c) If an error is returned from the REST API, its ErrorInfo representation shall be thrown as the result of the send call.
-        let paginatedResponse = try await realtime.request(method, path: url, params: [:], body: ablyCocoaBody, headers: [:])
+        let paginatedResponse = try await realtime.request(method, path: url, params: params, body: ablyCocoaBody, headers: [:])
 
         guard let firstItem = paginatedResponse.items.first else {
             throw ChatError.noItemInResponse.toInternalError()
@@ -212,5 +257,7 @@ internal final class ChatAPI: Sendable {
 
     internal enum ChatError: Error {
         case noItemInResponse
+        case messageReactionTypeRequired
+        case messageReactionNameRequired
     }
 }

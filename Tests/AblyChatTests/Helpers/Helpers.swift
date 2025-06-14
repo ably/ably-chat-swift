@@ -176,3 +176,11 @@ extension [String: Any] {
         PresenceDataDTO(userCustomData: JSONValue(ablyCocoaData: self)).toJSONValue.toAblyCocoaData
     }
 }
+
+func sleep(seconds delay: TimeInterval) async {
+    do {
+        try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+    } catch {
+        fatalError("Can't fall asleep!")
+    }
+}

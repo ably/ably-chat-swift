@@ -3,6 +3,7 @@ import Ably
 
 final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
     let presence = MockRealtimePresence()
+    let annotations: MockRealtimeAnnotations
 
     private let attachSerial: String?
     private let channelSerial: String?
@@ -30,6 +31,7 @@ final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
         attachBehavior: AttachOrDetachBehavior? = nil,
         detachBehavior: AttachOrDetachBehavior? = nil,
         messageJSONToEmitOnSubscribe: [String: JSONValue]? = nil,
+        annotationJSONToEmitOnSubscribe: [String: JSONValue]? = nil,
         messageToEmitOnSubscribe: ARTMessage? = nil,
         stateChangeToEmitForListener: ARTChannelStateChange? = nil
     ) {
@@ -43,6 +45,7 @@ final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
         attachSerial = properties.attachSerial
         channelSerial = properties.channelSerial
         self.stateChangeToEmitForListener = stateChangeToEmitForListener
+        annotations = MockRealtimeAnnotations(annotationJSONToEmitOnSubscribe: annotationJSONToEmitOnSubscribe)
     }
 
     var state: ARTRealtimeChannelState {
@@ -139,12 +142,14 @@ final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
     // Added the ability to emit a message whenever we want instead of just on subscribe... I didn't want to dig into what the messageToEmitOnSubscribe is too much so just if/else between the two.
     private var channelSubscriptions: [(String, (ARTMessage) -> Void)] = []
 
+    func subscribe(_ callback: @escaping @MainActor @Sendable (ARTMessage) -> Void) -> ARTEventListener? {
+        subscribe("all", callback: callback)
+    }
+
     func subscribe(_ name: String, callback: @escaping @MainActor (ARTMessage) -> Void) -> ARTEventListener? {
         if let json = messageJSONToEmitOnSubscribe {
             let message = ARTMessage(name: nil, data: json["data"]?.toAblyCocoaData ?? "")
-            if let action = json["action"]?.numberValue as? UInt {
-                message.action = ARTMessageAction(rawValue: action) ?? .create
-            }
+            message.action = ARTMessageAction(rawValue: UInt(json["action"]?.numberValue ?? 0)) ?? .create
             if let serial = json["serial"]?.stringValue {
                 message.serial = serial
             }
@@ -156,6 +161,9 @@ final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
             }
             if let ts = json["timestamp"]?.stringValue {
                 message.timestamp = Date(timeIntervalSince1970: TimeInterval(ts)!)
+            }
+            if let summary = json["summary"]?.objectValue?.toAblyCocoaDataDictionary {
+                message.summary = summary
             }
             callback(message)
         }

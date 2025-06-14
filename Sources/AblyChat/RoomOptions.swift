@@ -24,7 +24,13 @@ public struct RoomOptions: Sendable, Equatable {
      */
     public var occupancy = OccupancyOptions()
 
-    public init(presence: PresenceOptions = PresenceOptions(), typing: TypingOptions = TypingOptions(), reactions: RoomReactionsOptions = RoomReactionsOptions(), occupancy: OccupancyOptions = OccupancyOptions()) {
+    /**
+     * The message options for the room. Messages are always enabled, this object is for additional configuration.
+     */
+    public var messages = MessagesOptions()
+
+    public init(messages: MessagesOptions = MessagesOptions(), presence: PresenceOptions = PresenceOptions(), typing: TypingOptions = TypingOptions(), reactions: RoomReactionsOptions = RoomReactionsOptions(), occupancy: OccupancyOptions = OccupancyOptions()) {
+        self.messages = messages
         self.presence = presence
         self.typing = typing
         self.reactions = reactions
@@ -47,6 +53,36 @@ public struct PresenceOptions: Sendable, Equatable {
 
     public init(enableEvents: Bool = true) {
         self.enableEvents = enableEvents
+    }
+}
+
+/**
+ * Represents the messages options for a chat room.
+ */
+public struct MessagesOptions: Sendable, Equatable {
+    /**
+     * Whether to enable receiving raw individual message reactions from the
+     * realtime channel. Set to true if subscribing to raw message reactions.
+     *
+     * Note reaction summaries (aggregates) are always available regardless of
+     * this setting.
+     *
+     * Defaults to false.
+     */
+    public var rawMessageReactions = false
+
+    /**
+     * The default message reaction type to use for sending message reactions.
+     *
+     * Any message reaction type can be sent regardless of this setting by specifying the `type` parameter in the ``MessageReactions/add(for:params:)`` method.
+     *
+     * Defaults to ``MessageReactionType/distinct``
+     */
+    public var defaultMessageReactionType = MessageReactionType.distinct
+
+    public init(rawMessageReactions: Bool = false, defaultMessageReactionType: MessageReactionType = .distinct) {
+        self.rawMessageReactions = rawMessageReactions
+        self.defaultMessageReactionType = defaultMessageReactionType
     }
 }
 

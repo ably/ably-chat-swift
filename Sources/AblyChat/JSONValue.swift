@@ -30,6 +30,7 @@ public indirect enum JSONValue: Sendable, Equatable {
     case array([JSONValue])
     case string(String)
     case number(Double)
+    case integer(Int)
     case bool(Bool)
     case null
 
@@ -62,10 +63,23 @@ public indirect enum JSONValue: Sendable, Equatable {
         }
     }
 
-    /// If this `JSONValue` has case `number`, this returns the associated value. Else, it returns `nil`.
+    /// If this `JSONValue` has case `number` or `integer` , this returns the associated value as double. Else, it returns `nil`.
     public var numberValue: Double? {
         if case let .number(numberValue) = self {
             numberValue
+        } else if case let .integer(numberValue) = self {
+            Double(numberValue)
+        } else {
+            nil
+        }
+    }
+
+    /// If this `JSONValue` has case `integer` or `number`, this returns the associated value as integer. Else, it returns `nil`.
+    public var intValue: Int? {
+        if case let .integer(numberValue) = self {
+            numberValue
+        } else if case let .number(numberValue) = self {
+            Int(numberValue)
         } else {
             nil
         }
@@ -189,6 +203,8 @@ internal extension JSONValue {
         case let .string(underlying):
             underlying
         case let .number(underlying):
+            underlying
+        case let .integer(underlying):
             underlying
         case let .bool(underlying):
             underlying
