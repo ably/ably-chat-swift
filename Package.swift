@@ -20,7 +20,7 @@ let package = Package(
     dependencies: [
         .package(
             url: "https://github.com/ably/ably-cocoa",
-            from: "1.2.40"
+            branch: "ECO-5323-annotations"
         ),
         .package(
             url: "https://github.com/apple/swift-argument-parser",

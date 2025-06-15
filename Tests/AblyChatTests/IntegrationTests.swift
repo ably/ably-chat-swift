@@ -82,6 +82,7 @@ struct IntegrationTests {
         let rxRoom = try await rxClient.rooms.get(
             roomID: roomID,
             options: .init(
+                messages: .init(rawMessageReactions: true),
                 presence: .init(),
                 typing: .init(heartbeatThrottle: 2),
                 reactions: .init(),
@@ -224,7 +225,87 @@ struct IntegrationTests {
         #expect(rxDeletedMessageFromSubscription.headers == txDeleteMessage.headers)
         #expect(rxDeletedMessageFromSubscription.metadata == txDeleteMessage.metadata)
 
-        // MARK: - Reactions
+        // MARK: - Message Reactions (Summary)
+
+        let messageToReact = rxMessageFromSubscription
+
+        var reactionSummaryEvents = [MessageReactionSummaryEvent]()
+
+        rxRoom.messages.reactions.subscribe { event in
+            reactionSummaryEvents.append(event)
+        }
+        try await txRoom.messages.reactions.add(for: messageToReact.serial, params: .init(reaction: "👍"))
+        try await txRoom.messages.reactions.add(for: messageToReact.serial, params: .init(reaction: "🎉"))
+        try await txRoom.messages.reactions.delete(for: messageToReact.serial, params: .init(reaction: "👍"))
+        try await txRoom.messages.reactions.delete(for: messageToReact.serial, params: .init(reaction: "🎉"))
+
+        while reactionSummaryEvents.count < 4 {
+            try? await Task.sleep(nanoseconds: UInt64(0.5 * 1_000_000_000))
+        }
+
+        #expect(reactionSummaryEvents[0].summary.messageSerial == messageToReact.serial)
+        #expect(reactionSummaryEvents[0].summary.unique.isEmpty)
+        #expect(reactionSummaryEvents[0].summary.multiple.isEmpty)
+        #expect(reactionSummaryEvents[0].summary.distinct.count == 1)
+        _ = reactionSummaryEvents[0].summary.distinct.map { key, value in
+            #expect(key == "👍")
+            #expect(value.total == 1)
+            #expect(value.clientIds == [messageToReact.clientID])
+        }
+
+        #expect(reactionSummaryEvents[1].summary.messageSerial == messageToReact.serial)
+        #expect(reactionSummaryEvents[1].summary.unique.isEmpty)
+        #expect(reactionSummaryEvents[1].summary.multiple.isEmpty)
+        #expect(reactionSummaryEvents[1].summary.distinct.count == 2)
+
+        #expect(reactionSummaryEvents[2].summary.messageSerial == messageToReact.serial)
+        #expect(reactionSummaryEvents[2].summary.unique.isEmpty)
+        #expect(reactionSummaryEvents[2].summary.multiple.isEmpty)
+        #expect(reactionSummaryEvents[2].summary.distinct.count == 1)
+        _ = reactionSummaryEvents[2].summary.distinct.map { key, value in
+            #expect(key == "🎉")
+            #expect(value.total == 1)
+            #expect(value.clientIds == [messageToReact.clientID])
+        }
+
+        #expect(reactionSummaryEvents[3].summary.messageSerial == messageToReact.serial)
+        #expect(reactionSummaryEvents[3].summary.unique.isEmpty)
+        #expect(reactionSummaryEvents[3].summary.multiple.isEmpty)
+        #expect(reactionSummaryEvents[3].summary.distinct.isEmpty)
+
+        // MARK: - Message Reactions (Raw)
+
+        var reactionRawEvents = [MessageReactionRawEvent]()
+
+        rxRoom.messages.reactions.subscribeRaw { event in
+            reactionRawEvents.append(event)
+        }
+        try await txRoom.messages.reactions.add(for: messageToReact.serial, params: .init(reaction: "🔥"))
+        try await txRoom.messages.reactions.add(for: messageToReact.serial, params: .init(reaction: "😆"))
+        try await txRoom.messages.reactions.delete(for: messageToReact.serial, params: .init(reaction: "🔥"))
+        try await txRoom.messages.reactions.delete(for: messageToReact.serial, params: .init(reaction: "😆"))
+
+        while reactionRawEvents.count < 4 {
+            try? await Task.sleep(nanoseconds: UInt64(0.5 * 1_000_000_000))
+        }
+
+        #expect(reactionRawEvents[0].type == .create)
+        #expect(reactionRawEvents[0].reaction.name == "🔥")
+        #expect(reactionRawEvents[0].reaction.messageSerial == messageToReact.serial)
+
+        #expect(reactionRawEvents[1].type == .create)
+        #expect(reactionRawEvents[1].reaction.name == "😆")
+        #expect(reactionRawEvents[1].reaction.messageSerial == messageToReact.serial)
+
+        #expect(reactionRawEvents[2].type == .delete)
+        #expect(reactionRawEvents[2].reaction.name == "🔥")
+        #expect(reactionRawEvents[2].reaction.messageSerial == messageToReact.serial)
+
+        #expect(reactionRawEvents[3].type == .delete)
+        #expect(reactionRawEvents[3].reaction.name == "😆")
+        #expect(reactionRawEvents[3].reaction.messageSerial == messageToReact.serial)
+
+        // MARK: - Room Reactions
 
         // (1) Subscribe to reactions
         let rxReactionSubscription = rxRoom.reactions.subscribe()
