@@ -2,6 +2,7 @@ import Ably
 @testable import AblyChat
 import Testing
 
+@Suite(.timeLimit(.minutes(2)))
 @MainActor
 struct DefaultRoomReactionsTests {
     // @spec CHA-ER3a

@@ -6,8 +6,8 @@ let package = Package(
     name: "AblyChat",
     platforms: [
         .macOS(.v11),
-        .iOS(.v14),
-        .tvOS(.v14),
+        .iOS(.v16),
+        .tvOS(.v16),
     ],
     products: [
         .library(

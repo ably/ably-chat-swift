@@ -34,7 +34,7 @@ struct DefaultRoomsTests {
 
     // @spec CHA-RC1f
     // @spec CHA-RC1f3
-    @Test
+    @Test(.timeLimit(.minutes(2)))
     func get_returnsRoomWithGivenIDAndOptions() async throws {
         // Given: an instance of DefaultRooms
         let realtime = MockRealtime(channels: .init(channels: [
@@ -62,7 +62,7 @@ struct DefaultRoomsTests {
     }
 
     // @specOneOf(1/2) CHA-RC1f2 - Tests the case where there is already a room in the room map
-    @Test
+    @Test(.timeLimit(.minutes(2)))
     func get_whenRoomExistsInRoomMap_returnsExistingRoomWithGivenID() async throws {
         // Given: an instance of DefaultRooms, which has, per CHA-RC1f3, a room in the room map with a given ID
         let realtime = MockRealtime(channels: .init(channels: [
@@ -85,7 +85,7 @@ struct DefaultRoomsTests {
     }
 
     // @specOneOf(2/2) CHA-RC1f2 - Tests the case where, per CHA-RC1f4, there is, in the spec’s language, a _future_ in the room map
-    @Test
+    @Test(.timeLimit(.minutes(2)))
     func get_whenFutureExistsInRoomMap_returnsExistingRoomWithGivenID() async throws {
         // Given: an instance of DefaultRooms, for which, per CHA-RC1f4, a previous call to get(roomID:options:) with a given ID is waiting for a CHA-RC1g release operation to complete
         let realtime = MockRealtime(channels: .init(channels: [
@@ -133,7 +133,7 @@ struct DefaultRoomsTests {
     }
 
     // @specOneOf(1/2) CHA-RC1f1 - Tests the case where there is already a room in the room map
-    @Test
+    @Test(.timeLimit(.minutes(2)))
     func get_whenRoomExistsInRoomMap_throwsErrorWhenOptionsDoNotMatch() async throws {
         // Given: an instance of DefaultRooms, which has, per CHA-RC1f3, a room in the room map with a given ID and options
         let realtime = MockRealtime(channels: .init(channels: [
@@ -163,7 +163,7 @@ struct DefaultRoomsTests {
     }
 
     // @specOneOf(2/2) CHA-RC1f1 - Tests the case where, per CHA-RC1f4, there is, in the spec’s language, a _future_ in the room map
-    @Test
+    @Test(.timeLimit(.minutes(2)))
     func get_whenFutureExistsInRoomMap_throwsErrorWhenOptionsDoNotMatch() async throws {
         // Given: an instance of DefaultRooms, for which, per CHA-RC1f4, a previous call to get(roomID:options:) with a given ID and options is waiting for a CHA-RC1g release operation to complete
         let realtime = MockRealtime(channels: .init(channels: [
@@ -212,7 +212,7 @@ struct DefaultRoomsTests {
     }
 
     // @spec CHA-RC1f4
-    @Test
+    @Test(.timeLimit(.minutes(2)))
     func get_whenReleaseInProgress() async throws {
         // Given: an instance of DefaultRooms, for which a CHA-RC1g release operation is in progrss
         let realtime = MockRealtime(channels: .init(channels: [
@@ -256,7 +256,7 @@ struct DefaultRoomsTests {
     // MARK: - Release a room
 
     // @spec CHA-RC1g2
-    @Test
+    @Test(.timeLimit(.minutes(2)))
     func release_withNoRoomMapEntry_andNoReleaseInProgress() async throws {
         // Given: An instance of DefaultRooms, with neither a room map entry nor a release operation in progress for a given room ID
         let realtime = MockRealtime(channels: .init(channels: [
@@ -272,7 +272,7 @@ struct DefaultRoomsTests {
     }
 
     // @spec CHA-RC1g3
-    @Test
+    @Test(.timeLimit(.minutes(2)))
     func release_withNoRoomMapEntry_andReleaseInProgress() async throws {
         // Given: an instance of DefaultRooms, for which a release operation is in progress
         let realtime = MockRealtime(channels: .init(channels: [
@@ -314,7 +314,7 @@ struct DefaultRoomsTests {
     }
 
     // @spec CHA-RC1g4
-    @Test
+    @Test(.timeLimit(.minutes(2)))
     func release_withReleaseInProgress_failsPendingGetOperations() async throws {
         // Given: an instance of DefaultRooms, for which there is a release operation already in progress, and a CHA-RC1f4 future in the room map awaiting the completion of this release operation
         let realtime = MockRealtime(channels: .init(channels: [
@@ -370,7 +370,7 @@ struct DefaultRoomsTests {
     }
 
     // @spec CHA-RC1g5
-    @Test
+    @Test(.timeLimit(.minutes(2)))
     func release() async throws {
         // Given: an instance of DefaultRooms, which has a room map entry for a given room ID and has no release operation in progress for that room ID
         let realtime = MockRealtime(channels: .init(channels: [

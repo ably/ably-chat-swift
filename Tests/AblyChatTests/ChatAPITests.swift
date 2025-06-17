@@ -2,6 +2,7 @@ import Ably
 @testable import AblyChat
 import Testing
 
+@Suite(.timeLimit(.minutes(2)))
 @MainActor
 struct ChatAPITests {
     // MARK: sendMessage Tests
