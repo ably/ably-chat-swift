@@ -1,6 +1,7 @@
 import Ably
 @testable import AblyChat
 
+@MainActor
 class MockChatClient: ChatClient {
     let realtime: RealtimeClient
     nonisolated let clientOptions: ChatClientOptions
@@ -19,6 +20,7 @@ class MockChatClient: ChatClient {
     }
 }
 
+@MainActor
 class MockRooms: Rooms {
     let clientOptions: ChatClientOptions
     private var rooms = [String: MockRoom]()
@@ -41,6 +43,7 @@ class MockRooms: Rooms {
     }
 }
 
+@MainActor
 class MockRoom: Room {
     private let clientID = "AblyTest"
 
@@ -66,7 +69,7 @@ class MockRoom: Room {
 
     var status: RoomStatus = .initialized
 
-    private let randomStatusInterval = 8.0
+    private func randomStatusInterval() -> Double { 8.0 }
 
     private let randomStatusChange = { @Sendable in
         RoomStatusChange(current: [.attached(error: nil), .attached(error: nil), .attached(error: nil), .attached(error: nil), .attaching(error: nil), .attaching(error: nil), .suspended(error: .createUnknownError())].randomElement()!, previous: .attaching(error: nil))
@@ -103,21 +106,30 @@ class MockRoom: Room {
     }
 }
 
+@MainActor
 class MockMessages: Messages {
     let clientID: String
     let roomID: String
+
+    var reactions: any MessageReactions
+
+    var mockReactions: MockMessageReactions {
+        // swiftlint:disable:next force_cast
+        reactions as! MockMessageReactions
+    }
 
     private let mockSubscriptions = MockMessageSubscriptionHandleStorage<Message>()
 
     init(clientID: String, roomID: String) {
         self.clientID = clientID
         self.roomID = roomID
+        reactions = MockMessageReactions(clientID: clientID, roomID: roomID)
     }
 
     func subscribe(_ callback: @escaping @MainActor (Message) -> Void) async throws(ARTErrorInfo) -> MessageSubscriptionHandle {
         mockSubscriptions.create(
             randomElement: {
-                Message(
+                let message = Message(
                     serial: "\(Date().timeIntervalSince1970)",
                     action: .create,
                     clientID: MockStrings.names.randomElement()!,
@@ -130,11 +142,16 @@ class MockMessages: Messages {
                     timestamp: Date(),
                     operation: nil
                 )
+                if byChance(30) { /* 30% of the messages will get the reaction */
+                    self.mockReactions.messageSerials.append(message.serial)
+                }
+                self.mockReactions.clientIDs.insert(message.clientID)
+                return message
             },
             previousMessages: { _ in
                 MockMessagesPaginatedResult(clientID: self.clientID, roomID: self.roomID)
             },
-            interval: 3,
+            interval: 3.0,
             callback: callback
         )
     }
@@ -198,6 +215,105 @@ class MockMessages: Messages {
     }
 }
 
+@MainActor
+class MockMessageReactions: MessageReactions {
+    let clientID: String
+    let roomID: String
+
+    var clientIDs: Set<String> = []
+    var messageSerials: [String] = []
+
+    private var reactions: [MessageReaction] = []
+
+    private let mockSubscriptions = MockSubscriptionHandleStorage<MessageReactionSummaryEvent>()
+
+    private func getUniqueReactionsSummaryForMessage(_ messageSerial: String) -> MessageReactionSummary {
+        MessageReactionSummary(
+            messageSerial: messageSerial,
+            unique: [:],
+            distinct: reactions.filter { $0.messageSerial == messageSerial }.reduce(into: [String: MessageReactionSummary.ClientIdList]()) { dict, newItem in
+                if var oldItem = dict[newItem.name] {
+                    if !oldItem.clientIds.contains(newItem.clientID) {
+                        oldItem.clientIds.append(newItem.clientID)
+                        oldItem.total += 1
+                    }
+                    dict[newItem.name] = oldItem
+                } else {
+                    dict[newItem.name] = MessageReactionSummary.ClientIdList(total: 1, clientIds: [newItem.clientID])
+                }
+            },
+            multiple: [:]
+        )
+    }
+
+    init(clientID: String, roomID: String) {
+        self.clientID = clientID
+        self.roomID = roomID
+    }
+
+    func add(for messageSerial: String, params: AddMessageReactionParams) async throws(ARTErrorInfo) {
+        reactions.append(
+            MessageReaction(
+                type: .distinct,
+                name: params.reaction,
+                messageSerial: messageSerial,
+                count: params.count,
+                clientID: clientID,
+                isSelf: true
+            )
+        )
+        mockSubscriptions.emit(
+            MessageReactionSummaryEvent(
+                type: MessageReactionEvent.summary,
+                summary: getUniqueReactionsSummaryForMessage(messageSerial)
+            )
+        )
+    }
+
+    func delete(for messageSerial: String, params: DeleteMessageReactionParams) async throws(ARTErrorInfo) {
+        reactions.removeAll { reaction in
+            reaction.messageSerial == messageSerial && reaction.name == params.reaction && reaction.clientID == clientID
+        }
+        mockSubscriptions.emit(
+            MessageReactionSummaryEvent(
+                type: MessageReactionEvent.summary,
+                summary: getUniqueReactionsSummaryForMessage(messageSerial)
+            )
+        )
+    }
+
+    func subscribe(_ callback: @escaping @MainActor @Sendable (MessageReactionSummaryEvent) -> Void) -> SubscriptionHandle {
+        mockSubscriptions.create(
+            randomElement: {
+                guard let senderClientID = self.clientIDs.randomElement(), let messageSerial = self.messageSerials.randomElement() else {
+                    return nil
+                }
+                self.reactions.append(
+                    MessageReaction(
+                        type: .distinct,
+                        name: Emoji.random(),
+                        messageSerial: messageSerial,
+                        count: 1,
+                        clientID: senderClientID,
+                        isSelf: senderClientID == self.clientID
+                    )
+                )
+                return MessageReactionSummaryEvent(
+                    type: MessageReactionEvent.summary,
+                    summary: self.getUniqueReactionsSummaryForMessage(messageSerial)
+                )
+            },
+            interval: Double([Int](1 ... 10).randomElement()!) / 10.0,
+            callback: callback
+        )
+    }
+
+    func subscribeRaw(_: @escaping @MainActor @Sendable (MessageReactionRawEvent) -> Void) -> SubscriptionHandle {
+        fatalError("Not implemented")
+    }
+}
+
+@MainActor
 class MockRoomReactions: RoomReactions {
     let clientID: String
     let roomID: String

@@ -13,12 +13,12 @@ struct ChatAPITests {
             MockHTTPPaginatedResponse.successSendMessageWithNoItems
         }
         let chatAPI = ChatAPI(realtime: realtime)
-        let roomId = "basketball"
+        let roomID = "basketball"
 
         await #expect(
             performing: {
                 // When
-                try await chatAPI.sendMessage(roomId: roomId, params: .init(text: "hello", headers: [:]))
+                try await chatAPI.sendMessage(roomID: roomID, params: .init(text: "hello", headers: [:]))
             }, throws: { error in
                 // Then
                 if let internalError = error as? InternalError, case .other(.chatAPIChatError(.noItemInResponse)) = internalError {
@@ -38,17 +38,17 @@ struct ChatAPITests {
             MockHTTPPaginatedResponse.successSendMessage
         }
         let chatAPI = ChatAPI(realtime: realtime)
-        let roomId = "basketball"
+        let roomID = "basketball"
 
         // When
-        let message = try await chatAPI.sendMessage(roomId: roomId, params: .init(text: "hello", headers: [:]))
+        let message = try await chatAPI.sendMessage(roomID: roomID, params: .init(text: "hello", headers: [:]))
 
         // Then
         let expectedMessage = Message(
             serial: "3446456",
             action: .create,
             clientID: "mockClientId",
-            roomID: roomId,
+            roomID: roomID,
             text: "hello",
             createdAt: Date(timeIntervalSince1970: 1_631_840_000),
             metadata: [:],
@@ -69,7 +69,7 @@ struct ChatAPITests {
 
         // When
         _ = try await chatAPI.sendMessage(
-            roomId: "", // arbitrary
+            roomID: "", // arbitrary
             params: .init(
                 text: "", // arbitrary
                 // The exact value here is arbitrary, just want to check it gets serialized
@@ -92,7 +92,7 @@ struct ChatAPITests {
 
         // When
         _ = try await chatAPI.sendMessage(
-            roomId: "", // arbitrary
+            roomID: "", // arbitrary
             params: .init(
                 text: "", // arbitrary
                 // The exact value here is arbitrary, just want to check it gets serialized
@@ -116,14 +116,14 @@ struct ChatAPITests {
             paginatedResponse
         }
         let chatAPI = ChatAPI(realtime: realtime)
-        let roomId = "basketball"
+        let roomID = "basketball"
         let expectedPaginatedResult = PaginatedResultWrapper<Message>(
             paginatedResponse: paginatedResponse,
             items: []
         )
 
         // When
-        let getMessages = try? await chatAPI.getMessages(roomId: roomId, params: .init()) as? PaginatedResultWrapper<Message>
+        let getMessages = try? await chatAPI.getMessages(roomID: roomID, params: .init()) as? PaginatedResultWrapper<Message>
 
         // Then
         #expect(getMessages == expectedPaginatedResult)
@@ -138,7 +138,7 @@ struct ChatAPITests {
             paginatedResponse
         }
         let chatAPI = ChatAPI(realtime: realtime)
-        let roomId = "basketball"
+        let roomID = "basketball"
         let expectedPaginatedResult = PaginatedResultWrapper<Message>(
             paginatedResponse: paginatedResponse,
             items: [
@@ -146,7 +146,7 @@ struct ChatAPITests {
                     serial: "3446456",
                     action: .create,
                     clientID: "random",
-                    roomID: roomId,
+                    roomID: roomID,
                     text: "hello",
                     createdAt: .init(timeIntervalSince1970: 1_730_943_049.269),
                     metadata: [:],
@@ -158,7 +158,7 @@ struct ChatAPITests {
                     serial: "3446457",
                     action: .create,
                     clientID: "random",
-                    roomID: roomId,
+                    roomID: roomID,
                     text: "hello response",
                     createdAt: nil,
                     metadata: [:],
@@ -170,7 +170,7 @@ struct ChatAPITests {
         )
 
         // When
-        let getMessagesResult = try? await chatAPI.getMessages(roomId: roomId, params: .init()) as? PaginatedResultWrapper<Message>
+        let getMessagesResult = try? await chatAPI.getMessages(roomID: roomID, params: .init()) as? PaginatedResultWrapper<Message>
 
         // Then
         #expect(getMessagesResult == expectedPaginatedResult)
@@ -185,12 +185,12 @@ struct ChatAPITests {
             throw artError
         }
         let chatAPI = ChatAPI(realtime: realtime)
-        let roomId = "basketball"
+        let roomID = "basketball"
 
         await #expect(
             performing: {
                 // When
-                try await chatAPI.getMessages(roomId: roomId, params: .init()) as? PaginatedResultWrapper<Message>
+                try await chatAPI.getMessages(roomID: roomID, params: .init()) as? PaginatedResultWrapper<Message>
             }, throws: { error in
                 // Then
                 isInternalErrorWrappingErrorInfo(error, artError)
