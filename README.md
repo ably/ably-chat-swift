@@ -41,41 +41,6 @@ This SDK supports the following platforms:
 
 ---
 
-## Usage
-
-You will need the following prerequisites:
-
-- An Ably account
-
-  - You can [sign up](https://ably.com/signup) to the generous free tier.
-
-- An Ably API key
-  - Use the default or create a new API key in an app within
-    your [Ably account dashboard](https://ably.com/dashboard).
-  - Make sure your API key has the
-    following [capabilities](https://ably.com/docs/auth/capabilities): `publish`, `subscribe`, `presence`, `history` and
-    `channel-metadata`.
-
-To instantiate the Chat SDK, create an [Ably client](https://ably.com/docs/getting-started/setup) and pass it into the Chat constructor:
-
-```swift
-import Ably
-import AblyChat
-
-let realtimeOptions = ARTClientOptions()
-realtimeOptions.key = "<API_KEY>"
-realtimeOptions.clientId = "<clientId>"
-let realtime = ARTRealtime(options: realtimeOptions)
-let chatClient = DefaultChatClient(realtime: realtime, clientOptions: nil)
-```
-
-You can use [basic authentication](https://ably.com/docs/auth/basic) i.e. the API Key directly for testing purposes,
-however it is strongly recommended that you use [token authentication](https://ably.com/docs/auth/token) in production
-environments.
-
-To use Chat you must also set a [`clientId`](https://ably.com/docs/auth/identified-clients) so that users are
-identifiable.
-
 ## Example app
 
 This repository contains an example app, written using SwiftUI, which demonstrates how to use the SDK. The code for this app is in the [`Example`](Example) directory.
