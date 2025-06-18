@@ -41,10 +41,6 @@ This SDK supports the following platforms:
 
 ---
 
-## Requirements
-
-Xcode 16.1 or later.
-
 ## Installation
 
 The SDK is distributed as a Swift package and can hence be installed using Xcode (search for `github.com/ably/ably-chat-swift` package) or by adding it as a dependency in your package’s `Package.swift`:
