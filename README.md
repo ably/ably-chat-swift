@@ -41,18 +41,6 @@ This SDK supports the following platforms:
 
 ---
 
-## Example app
-
-This repository contains an example app, written using SwiftUI, which demonstrates how to use the SDK. The code for this app is in the [`Example`](Example) directory.
-
-In order to allow the app to use modern SwiftUI features, it supports the following OS versions:
-
-- macOS 14 and above
-- iOS 17 and above
-- tvOS 17 and above
-
-To run the app, open the `AblyChat.xcworkspace` workspace in Xcode and run the `AblyChatExample` target. If you wish to run it on an iOS or tvOS device, you’ll need to set up code signing.
-
 ## Contributing
 
 For guidance on how to contribute to this project, see the [contributing guidelines](CONTRIBUTING.md).
