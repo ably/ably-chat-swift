@@ -9,6 +9,8 @@
 
 Ably Chat is a set of purpose-built APIs for a host of chat features enabling you to create 1:1, 1:Many, Many:1 and Many:Many chat rooms for any scale. It is designed to meet a wide range of chat use cases, such as livestreams, in-game communication, customer support, or social interactions in SaaS products. Built on [Ably's](https://ably.com/) core service, it abstracts complex details to enable efficient chat architectures.
 
+---
+
 ## Getting started
 
 Everything you need to get started with Ably:
@@ -21,9 +23,23 @@ Everything you need to get started with Ably:
 
 ## Supported Platforms
 
-- macOS 11 and above
-- iOS 14 and above
-- tvOS 14 and above
+Ably aims to support a wide range of platforms. If you experience any compatibility issues, open an issue in the repository or contact [Ably support](https://ably.com/support).
+
+This SDK supports the following platforms:
+
+| Platform | Support      |
+|----------|--------------|
+| iOS      | >= 14.0      |
+| macOS    | >= 11.0      |
+| tvOS     | >= 14.0      |
+
+> [!NOTE]
+> Xcode v16.1 or later is required.
+
+> [!IMPORTANT]
+> SDK versions <  1.2.24 will be [deprecated](https://ably.com/docs/platform/deprecate/protocol-v1) from November 1, 2025.
+
+---
 
 ## Requirements
 
