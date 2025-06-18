@@ -1,9 +1,9 @@
-# Ably Chat SDK for Swift
+![Ably Chat Swift Header](images/SwiftChatSDK-github.png)
+![CocoaPods](https://img.shields.io/cocoapods/v/Ably.svg)
+![SPM Swift Compatibility](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fably%2Fably-cocoa%2Fbadge%3Ftype%3Dswift-versions)
+![License](https://badgen.net/github/license/3scale/saas-operator)
 
-<p style="text-align: left">
-    <img src="https://badgen.net/github/license/3scale/saas-operator" alt="License" />
-    <img alt="GitHub Release" src="https://img.shields.io/github/v/release/ably/ably-chat-swift">
-</p>
+---
 
 Ably Chat is a set of purpose-built APIs for a host of chat features enabling you to create 1:1, 1:Many, Many:1 and Many:Many chat rooms for
 any scale. It is designed to meet a wide range of chat use cases, such as livestreams, in-game communication, customer support, or social
