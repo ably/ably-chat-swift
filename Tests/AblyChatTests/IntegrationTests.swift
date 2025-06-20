@@ -10,7 +10,7 @@ extension Tag {
 /// Some very basic integration tests, just to check that things are kind of working.
 ///
 /// It would be nice to give this a time limit, but unfortunately the `timeLimit` trait is only available on iOS 16 etc and above. CodeRabbit suggested writing a timeout function myself and wrapping the contents of the test in it, but I didn’t have time to try understanding its suggested code, so it can wait.
-@Suite(.tags(.integration))
+@Suite(.tags(.integration), .timeLimit(.minutes(10)))
 @MainActor
 struct IntegrationTests {
     private class AblyCocoaLogger: ARTLog {
