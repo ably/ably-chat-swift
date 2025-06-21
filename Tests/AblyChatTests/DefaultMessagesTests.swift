@@ -108,10 +108,19 @@ struct DefaultMessagesTests {
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
 
         // When
-        let messagesSubscription = try await defaultMessages.subscribe()
+        var receivedMessage: Message!
+        let subscription = try await defaultMessages.subscribe { message in
+            receivedMessage = message
+        }
+        defer {
+            subscription.unsubscribe()
+        }
+
+        await until {
+            receivedMessage != nil
+        }
 
         // Then
-        let receivedMessage = try #require(await messagesSubscription.first { @Sendable _ in true })
         #expect(receivedMessage.headers == ["numberKey": .number(10), "stringKey": .string("hello")])
     }
 
@@ -146,10 +155,19 @@ struct DefaultMessagesTests {
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
 
         // When
-        let messagesSubscription = try await defaultMessages.subscribe()
+        var receivedMessage: Message!
+        let subscription = try await defaultMessages.subscribe { message in
+            receivedMessage = message
+        }
+        defer {
+            subscription.unsubscribe()
+        }
+
+        await until {
+            receivedMessage != nil
+        }
 
         // Then
-        let receivedMessage = try #require(await messagesSubscription.first { @Sendable _ in true })
         #expect(receivedMessage.metadata == ["numberKey": .number(10), "stringKey": .string("hello")])
     }
 }

@@ -40,7 +40,7 @@ struct DefaultRoomReactionsTests {
         let defaultRoomReactions = DefaultRoomReactions(channel: channel, clientID: "mockClientId", roomID: "basketball", logger: TestLogger())
 
         // When
-        let subscription: Subscription<Reaction>? = defaultRoomReactions.subscribe()
+        let subscription: SubscriptionAsyncSequence<Reaction>? = defaultRoomReactions.subscribe()
 
         // Then
         #expect(subscription != nil)
