@@ -160,7 +160,7 @@ internal final class DefaultMessages: Messages {
         // (CHA-M6a) A method must be exposed that accepts the standard Ably REST API query parameters. It shall call the “REST API”#rest-fetching-messages and return a PaginatedResult containing messages, which can then be paginated through.
         internal func get(options: QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message> {
             do {
-                return try await chatAPI.getMessages(roomId: roomID, params: options)
+                return try await chatAPI.getMessages(roomID: roomID, params: options)
             } catch {
                 throw error.toARTErrorInfo()
             }
@@ -168,7 +168,7 @@ internal final class DefaultMessages: Messages {
 
         internal func send(params: SendMessageParams) async throws(ARTErrorInfo) -> Message {
             do {
-                return try await chatAPI.sendMessage(roomId: roomID, params: params)
+                return try await chatAPI.sendMessage(roomID: roomID, params: params)
             } catch {
                 throw error.toARTErrorInfo()
             }
@@ -207,7 +207,7 @@ internal final class DefaultMessages: Messages {
             // (CHA-M5g) The subscribers subscription point must be additionally specified (internally, by us) in the fromSerial query parameter.
             queryOptions.fromSerial = subscriptionPoint
 
-            return try await chatAPI.getMessages(roomId: roomID, params: queryOptions)
+            return try await chatAPI.getMessages(roomID: roomID, params: queryOptions)
         }
 
         private func handleChannelEvents(roomId _: String) {
