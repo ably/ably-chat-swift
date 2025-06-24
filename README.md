@@ -1,7 +1,7 @@
-![Ably Chat Swift Header](images/SwiftChatSDK-github.png)
-![CocoaPods](https://img.shields.io/cocoapods/v/Ably.svg)
-![SPM Swift Compatibility](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fably%2Fably-cocoa%2Fbadge%3Ftype%3Dswift-versions)
-![License](https://badgen.net/github/license/3scale/saas-operator)
+![Ably Chat Swift Header](Images/SwiftChatSDK-github.png)
+[![SPM Swift Compatibility](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fably%2Fably-cocoa%2Fbadge%3Ftype%3Dswift-versions)](https://swiftpackageindex.com/ably/ably-cocoa)
+[![License](https://badgen.net/github/license/3scale/saas-operator)](https://github.com/3scale/saas-operator/blob/master/LICENSE)
+
 
 ---
 
@@ -15,7 +15,7 @@ Ably Chat is a set of purpose-built APIs for a host of chat features enabling yo
 
 Everything you need to get started with Ably:
 
-* [About Ably Chat.](https://ably.com/docs/chat)
+* Learn [about Ably Chat.](https://ably.com/docs/chat)
 * [Getting started with Ably Chat in Swift.](https://ably.com/docs/chat/getting-started/swift)
 * Play with the [livestream chat demo.](https://ably-livestream-chat-demo.vercel.app/)
 
@@ -34,10 +34,7 @@ This SDK supports the following platforms:
 | tvOS     | >= 14.0      |
 
 > [!NOTE]
-> Xcode v16.1 or later is required.
-
-> [!IMPORTANT]
-> SDK versions <  1.2.24 will be [deprecated](https://ably.com/docs/platform/deprecate/protocol-v1) from November 1, 2025.
+> Xcode 16.1 or later is required.
 
 ---
 
