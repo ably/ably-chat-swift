@@ -1,5 +1,5 @@
 ![Ably Chat Swift Header](Images/SwiftChatSDK-github.png)
-[![SPM Swift Compatibility](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fably%2Fably-cocoa%2Fbadge%3Ftype%3Dswift-versions)](https://swiftpackageindex.com/ably/ably-cocoa)
+[![SPM Swift Compatibility](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fably%2Fably-cocoa%2Fbadge%3Ftype%3Dswift-versions)](https://swiftpackageindex.com/ably/ably-chat-swift)
 [![License](https://badgen.net/github/license/3scale/saas-operator)](https://github.com/3scale/saas-operator/blob/master/LICENSE)
 
 
@@ -16,12 +16,12 @@ Ably Chat is a set of purpose-built APIs for a host of chat features enabling yo
 Everything you need to get started with Ably:
 
 * Learn [about Ably Chat.](https://ably.com/docs/chat)
-* [Getting started with Ably Chat in Swift.](https://ably.com/docs/chat/getting-started/swift)
+* [SDK setup for Swift.](https://ably.com/docs/chat/setup?lang=swift)
 * Play with the [livestream chat demo.](https://ably-livestream-chat-demo.vercel.app/)
 
 ---
 
-## Supported Platforms
+## Supported platforms
 
 Ably aims to support a wide range of platforms. If you experience any compatibility issues, open an issue in the repository or contact [Ably support](https://ably.com/support).
 
@@ -46,10 +46,8 @@ The [CHANGELOG.md](/ably/ably-chat-swift/blob/main/CHANGELOG.md) contains detail
 
 ## Contribute
 
-Read the [CONTRIBUTING.md](./CONTRIBUTING.md) guidelines to contribute to Ably or [Share feedback or request](https://forms.gle/mBw9M53NYuCBLFpMA) a new feature.
+Read the [CONTRIBUTING.md](./CONTRIBUTING.md) guidelines to contribute to Ably or [share feedback or request a new feature](https://forms.gle/mBw9M53NYuCBLFpMA).
 
 ## Support, feedback and troubleshooting
 
 For help or technical support, visit Ably's [support page](https://ably.com/support). You can also view the [community reported Github issues](https://github.com/ably/ably-chat-swift/issues) or raise one yourself.
-
-[Share feedback or request](https://forms.gle/mBw9M53NYuCBLFpMA) a new feature.
