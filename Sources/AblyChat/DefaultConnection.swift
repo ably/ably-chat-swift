@@ -17,9 +17,8 @@ internal final class DefaultConnection: Connection {
     }
 
     // (CHA-CS4d) Clients must be able to register a listener for connection status events and receive such events.
-    internal func onStatusChange(bufferingPolicy: BufferingPolicy) -> Subscription<ConnectionStatusChange> {
-        let subscription = Subscription<ConnectionStatusChange>(bufferingPolicy: bufferingPolicy)
-
+    @discardableResult
+    internal func onStatusChange(_ callback: @escaping @MainActor (ConnectionStatusChange) -> Void) -> StatusSubscriptionProtocol {
         // (CHA-CS5) The chat client must monitor the underlying realtime connection for connection status changes.
         let eventListener = realtime.connection.on { [weak self] stateChange in
             guard let self else {
@@ -49,7 +48,7 @@ internal final class DefaultConnection: Connection {
             // (CHA-CS5a3) If a transient disconnect timer is active and the realtime connections status changes to `CONNECTED`, `SUSPENDED` or `FAILED`, the library shall cancel the transient disconnect timer. The superseding status change shall be emitted.
             if isTimerRunning, currentState == .connected || currentState == .suspended || currentState == .failed {
                 timerManager.cancelTimer()
-                subscription.emit(statusChange)
+                callback(statusChange)
                 // update local state and error
                 error = stateChange.reason
                 status = currentState
@@ -60,7 +59,7 @@ internal final class DefaultConnection: Connection {
                 timerManager.setTimer(interval: 5.0) { [timerManager] in
                     // (CHA-CS5a4) If a transient disconnect timer expires the library shall emit a connection status change event. This event must contain the current status of of timer expiry, along with the original error that initiated the transient disconnect timer.
                     timerManager.cancelTimer()
-                    subscription.emit(statusChange)
+                    callback(statusChange)
 
                     // update local state and error
                     self.error = stateChange.reason
@@ -74,18 +73,18 @@ internal final class DefaultConnection: Connection {
             }
 
             // (CHA-CS5b) Not withstanding CHA-CS5a. If a connection state event is observed from the underlying realtime library, the client must emit a status change event. The current status of that event shall reflect the status change in the underlying realtime library, along with the accompanying error.
-            subscription.emit(statusChange)
+            callback(statusChange)
             // update local state and error
             error = stateChange.reason
             status = currentState
         }
 
-        subscription.addTerminationHandler { [weak self] in
-            Task { @MainActor in
-                self?.realtime.connection.off(eventListener)
+        return StatusSubscription { [weak self] in
+            guard let self else {
+                return
             }
+            timerManager.cancelTimer()
+            realtime.connection.off(eventListener)
         }
-
-        return subscription
     }
 }

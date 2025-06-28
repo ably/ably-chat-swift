@@ -43,12 +43,14 @@ internal final class DefaultPresence: Presence {
         try await implementation.leave()
     }
 
-    internal func subscribe(event: PresenceEventType, bufferingPolicy: BufferingPolicy) -> Subscription<PresenceEvent> {
-        implementation.subscribe(event: event, bufferingPolicy: bufferingPolicy)
+    @discardableResult
+    internal func subscribe(event: PresenceEventType, _ callback: @escaping @MainActor (PresenceEvent) -> Void) -> SubscriptionProtocol {
+        implementation.subscribe(event: event, callback)
     }
 
-    internal func subscribe(events: [PresenceEventType], bufferingPolicy: BufferingPolicy) -> Subscription<PresenceEvent> {
-        implementation.subscribe(events: events, bufferingPolicy: bufferingPolicy)
+    @discardableResult
+    internal func subscribe(events: [PresenceEventType], _ callback: @escaping @MainActor (PresenceEvent) -> Void) -> SubscriptionProtocol {
+        implementation.subscribe(events: events, callback)
     }
 
     /// This class exists to make sure that the internals of the SDK only access ably-cocoa via the `InternalRealtimeChannelProtocol` interface. It does this by removing access to the `channel` property that exists as part of the public API of the `Presence` protocol, making it unlikely that we accidentally try to call the `ARTRealtimeChannelProtocol` interface. We can remove this `Implementation` class when we remove the feature-level `channel` property in https://github.com/ably/ably-chat-swift/issues/242.
@@ -259,60 +261,53 @@ internal final class DefaultPresence: Presence {
 
         // (CHA-PR7a) Users may provide a listener to subscribe to all presence events in a room.
         // (CHA-PR7b) Users may provide a listener and a list of selected presence events, to subscribe to just those events in a room.
-        internal func subscribe(event: PresenceEventType, bufferingPolicy: BufferingPolicy) -> Subscription<PresenceEvent> {
+        internal func subscribe(event: PresenceEventType, _ callback: @escaping @MainActor (PresenceEvent) -> Void) -> SubscriptionProtocol {
             fatalErrorIfEnableEventsDisabled()
 
             logger.log(message: "Subscribing to presence events", level: .debug)
-            let subscription = Subscription<PresenceEvent>(bufferingPolicy: bufferingPolicy)
+
             let eventListener = channel.presence.subscribe(event.toARTPresenceAction()) { [processPresenceSubscribe, logger] message in
                 logger.log(message: "Received presence message: \(message)", level: .debug)
                 do {
                     // processPresenceSubscribe is logging so we don't need to log here
                     let presenceEvent = try processPresenceSubscribe(PresenceMessage(ablyCocoaPresenceMessage: message), event)
-                    subscription.emit(presenceEvent)
+                    callback(presenceEvent)
                 } catch {
                     // note: this replaces some existing code that also didn't handle the processPresenceSubscribe error; I suspect not intentional, will leave whoever writes the tests for this class to see what's going on
                 }
             }
-            subscription.addTerminationHandler { [weak self] in
+
+            return Subscription { [weak self] in
                 if let eventListener {
-                    Task { @MainActor in
-                        self?.channel.presence.unsubscribe(eventListener)
-                    }
+                    self?.channel.presence.unsubscribe(eventListener)
                 }
             }
-            return subscription
         }
 
-        internal func subscribe(events: [PresenceEventType], bufferingPolicy: BufferingPolicy) -> Subscription<PresenceEvent> {
+        internal func subscribe(events: [PresenceEventType], _ callback: @escaping @MainActor (PresenceEvent) -> Void) -> SubscriptionProtocol {
             fatalErrorIfEnableEventsDisabled()
 
             logger.log(message: "Subscribing to presence events", level: .debug)
-            let subscription = Subscription<PresenceEvent>(bufferingPolicy: bufferingPolicy)
 
             let eventListeners = events.map { event in
                 channel.presence.subscribe(event.toARTPresenceAction()) { [processPresenceSubscribe, logger] message in
                     logger.log(message: "Received presence message: \(message)", level: .debug)
                     do {
                         let presenceEvent = try processPresenceSubscribe(PresenceMessage(ablyCocoaPresenceMessage: message), event)
-                        subscription.emit(presenceEvent)
+                        callback(presenceEvent)
                     } catch {
                         // note: this replaces some existing code that also didn't handle the processPresenceSubscribe error; I suspect not intentional, will leave whoever writes the tests for this class to see what's going on
                     }
                 }
             }
 
-            subscription.addTerminationHandler { [weak self] in
-                Task { @MainActor in
-                    for eventListener in eventListeners {
-                        if let eventListener {
-                            self?.channel.presence.unsubscribe(eventListener)
-                        }
+            return Subscription { [weak self] in
+                for eventListener in eventListeners {
+                    if let eventListener {
+                        self?.channel.presence.unsubscribe(eventListener)
                     }
                 }
             }
-
-            return subscription
         }
 
         private func decodePresenceDataDTO(from presenceData: JSONValue?) throws(InternalError) -> PresenceDataDTO {

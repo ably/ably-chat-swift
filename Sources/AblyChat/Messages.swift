@@ -12,16 +12,11 @@ public protocol Messages: AnyObject, Sendable {
      * Subscribe to new messages in this chat room.
      *
      * - Parameters:
-     *   - bufferingPolicy: The ``BufferingPolicy`` for the created subscription.
+     *   - callback: The listener closure for capturing room ``Message`` events.
      *
-     * - Returns: A subscription ``MessageSubscription`` that can be used to iterate through new messages.
+     * - Returns: A subscription that can be used to unsubscribe from ``Message`` events.
      */
-    func subscribe(bufferingPolicy: BufferingPolicy) async throws(ARTErrorInfo) -> MessageSubscription
-
-    /// Same as calling ``subscribe(bufferingPolicy:)`` with ``BufferingPolicy/unbounded``.
-    ///
-    /// The `Messages` protocol provides a default implementation of this method.
-    func subscribe() async throws(ARTErrorInfo) -> MessageSubscription
+    func subscribe(_ callback: @escaping @MainActor (Message) -> Void) async throws(ARTErrorInfo) -> MessageSubscriptionResponseProtocol
 
     /**
      * Get messages that have been previously sent to the chat room, based on the provided options.
@@ -80,7 +75,39 @@ public protocol Messages: AnyObject, Sendable {
 }
 
 public extension Messages {
-    func subscribe() async throws(ARTErrorInfo) -> MessageSubscription {
+    /**
+     * Subscribe to new messages in this chat room.
+     *
+     * - Parameters:
+     *   - bufferingPolicy: The ``BufferingPolicy`` for the created subscription.
+     *
+     * - Returns: A subscription ``MessageSubscription`` that can be used to iterate through new messages.
+     */
+    func subscribe(bufferingPolicy: BufferingPolicy) async throws(ARTErrorInfo) -> MessageSubscriptionAsyncSequence {
+        var emitMessage: ((Message) -> Void)?
+        let subscription = try await subscribe { message in
+            emitMessage?(message)
+        }
+
+        let subscriptionAsyncSequence = MessageSubscriptionAsyncSequence(
+            bufferingPolicy: bufferingPolicy,
+            getPreviousMessages: subscription.historyBeforeSubscribe
+        )
+        emitMessage = { [weak subscriptionAsyncSequence] message in
+            subscriptionAsyncSequence?.emit(message)
+        }
+
+        subscriptionAsyncSequence.addTerminationHandler {
+            Task { @MainActor in
+                subscription.unsubscribe()
+            }
+        }
+
+        return subscriptionAsyncSequence
+    }
+
+    /// Same as calling ``subscribe(bufferingPolicy:)`` with ``BufferingPolicy/unbounded``.
+    func subscribe() async throws(ARTErrorInfo) -> MessageSubscriptionAsyncSequence {
         try await subscribe(bufferingPolicy: .unbounded)
     }
 }
@@ -268,21 +295,21 @@ internal extension QueryOptions {
 
 // Currently a copy-and-paste of `Subscription`; see notes on that one. For `MessageSubscription`, my intention is that the `BufferingPolicy` passed to `subscribe(bufferingPolicy:)` will also define what the `MessageSubscription` does with messages that are received _before_ the user starts iterating over the sequence (this buffering will allow us to implement the requirement that there be no discontinuity between the the last message returned by `getPreviousMessages` and the first element you get when you iterate).
 
-/// A non-throwing `AsyncSequence` whose element is ``Message``. The Chat SDK uses this type as the return value of the ``Messages`` methods that allow you to find out about received chat messages.
+/// A non-throwing `AsyncSequence` whose element is ``Message``. The Chat SDK uses this type as the return value of the `AsyncSequence` convenience variants of the ``Messages`` methods that allow you to find out about received chat messages.
 ///
-/// You should only iterate over a given `MessageSubscription` once; the results of iterating more than once are undefined.
-public final class MessageSubscription: Sendable, AsyncSequence {
+/// You should only iterate over a given `MessageSubscriptionAsyncSequence` once; the results of iterating more than once are undefined.
+public final class MessageSubscriptionAsyncSequence: Sendable, AsyncSequence {
     public typealias Element = Message
 
-    private let subscription: Subscription<Element>
+    private let subscription: SubscriptionAsyncSequence<Element>
 
     // can be set by either initialiser
-    private let getPreviousMessages: @Sendable (QueryOptions) async throws(InternalError) -> any PaginatedResult<Message>
+    private let getPreviousMessages: @Sendable (QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message>
 
     // used internally
     internal init(
         bufferingPolicy: BufferingPolicy,
-        getPreviousMessages: @escaping @Sendable (QueryOptions) async throws(InternalError) -> any PaginatedResult<Message>
+        getPreviousMessages: @escaping @Sendable (QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message>
     ) {
         subscription = .init(bufferingPolicy: bufferingPolicy)
         self.getPreviousMessages = getPreviousMessages
@@ -291,13 +318,7 @@ public final class MessageSubscription: Sendable, AsyncSequence {
     // used for testing
     public init<Underlying: AsyncSequence & Sendable>(mockAsyncSequence: Underlying, mockGetPreviousMessages: @escaping @Sendable (QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message>) where Underlying.Element == Element {
         subscription = .init(mockAsyncSequence: mockAsyncSequence)
-        getPreviousMessages = { @Sendable params throws(InternalError) in
-            do throws(ARTErrorInfo) {
-                return try await mockGetPreviousMessages(params)
-            } catch {
-                throw error.toInternalError()
-            }
-        }
+        getPreviousMessages = mockGetPreviousMessages
     }
 
     internal func emit(_ element: Element) {
@@ -310,17 +331,13 @@ public final class MessageSubscription: Sendable, AsyncSequence {
     }
 
     public func getPreviousMessages(params: QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message> {
-        do {
-            return try await getPreviousMessages(params)
-        } catch {
-            throw error.toARTErrorInfo()
-        }
+        try await getPreviousMessages(params)
     }
 
     public struct AsyncIterator: AsyncIteratorProtocol {
-        private var subscriptionIterator: Subscription<Element>.AsyncIterator
+        private var subscriptionIterator: SubscriptionAsyncSequence<Element>.AsyncIterator
 
-        fileprivate init(subscriptionIterator: Subscription<Element>.AsyncIterator) {
+        fileprivate init(subscriptionIterator: SubscriptionAsyncSequence<Element>.AsyncIterator) {
             self.subscriptionIterator = subscriptionIterator
         }
 

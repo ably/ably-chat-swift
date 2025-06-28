@@ -2,7 +2,7 @@ import Ably
 
 // Wraps the MessageSubscription with the message serial of when the subscription was attached or resumed.
 private struct MessageSubscriptionWrapper {
-    let subscription: MessageSubscription
+    let subscription: MessageSubscriptionResponse
     var serial: String
 }
 
@@ -15,8 +15,8 @@ internal final class DefaultMessages: Messages {
         implementation = .init(channel: channel, chatAPI: chatAPI, roomID: roomID, clientID: clientID, logger: logger)
     }
 
-    internal func subscribe(bufferingPolicy: BufferingPolicy) async throws(ARTErrorInfo) -> MessageSubscription {
-        try await implementation.subscribe(bufferingPolicy: bufferingPolicy)
+    internal func subscribe(_ callback: @escaping @MainActor (Message) -> Void) async throws(ARTErrorInfo) -> MessageSubscriptionResponseProtocol {
+        try await implementation.subscribe(callback)
     }
 
     internal func get(options: QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message> {
@@ -63,20 +63,9 @@ internal final class DefaultMessages: Messages {
         }
 
         // (CHA-M4) Messages can be received via a subscription in realtime.
-        internal func subscribe(bufferingPolicy: BufferingPolicy) async throws(ARTErrorInfo) -> MessageSubscription {
+        internal func subscribe(_ callback: @escaping @MainActor (Message) -> Void) async throws(ARTErrorInfo) -> MessageSubscriptionResponseProtocol {
             do {
                 logger.log(message: "Subscribing to messages", level: .debug)
-                let uuid = UUID()
-                let serial = try await resolveSubscriptionStart()
-                let messageSubscription = MessageSubscription(
-                    bufferingPolicy: bufferingPolicy
-                ) { [weak self] queryOptions throws(InternalError) in
-                    guard let self else { throw MessagesError.noReferenceToSelf.toInternalError() }
-                    return try await getBeforeSubscriptionStart(uuid, params: queryOptions)
-                }
-
-                // (CHA-M4a) A subscription can be registered to receive incoming messages. Adding a subscription has no side effects on the status of the room or the underlying realtime channel.
-                subscriptionPoints[uuid] = .init(subscription: messageSubscription, serial: serial)
 
                 // (CHA-M4c) When a realtime message with name set to message.created is received, it is translated into a message event, which contains a type field with the event type as well as a message field containing the Message Struct. This event is then broadcast to all subscribers.
                 // (CHA-M4d) If a realtime message with an unknown name is received, the SDK shall silently discard the message, though it may log at DEBUG or TRACE level.
@@ -136,25 +125,33 @@ internal final class DefaultMessages: Messages {
                             operation: message.operation?.toChatOperation()
                         )
 
-                        messageSubscription.emit(message)
+                        callback(message)
                     } catch {
                         // note: this replaces some existing code that also didn't handle any thrown error; I suspect not intentional, will leave whoever writes the tests for this class to see what's going on
                     }
                 }
 
-                messageSubscription.addTerminationHandler {
-                    Task {
-                        await MainActor.run { [weak self] () in
-                            guard let self else {
-                                return
-                            }
-                            channel.unsubscribe(eventListener)
-                            subscriptionPoints.removeValue(forKey: uuid)
-                        }
+                let uuid = UUID()
+                let serial = try await resolveSubscriptionStart()
+
+                // coderabbitai suggestion (remove "guard let self" and hold ref to channel):
+                // > If DefaultMessages is deallocated before the client calls unsubscribe(), the listener remains registered because the closure early-returns. Store the eventListener and always call channel.unsubscribe regardless of self
+                let messageSubscriptionResponse = MessageSubscriptionResponse { [weak self, channel] in
+                    channel.unsubscribe(eventListener)
+                    self?.subscriptionPoints.removeValue(forKey: uuid)
+                } historyBeforeSubscribe: { [weak self] queryOptions throws(ARTErrorInfo) in
+                    guard let self else { throw MessagesError.noReferenceToSelf.toInternalError().toARTErrorInfo() }
+                    do throws(InternalError) {
+                        return try await getBeforeSubscriptionStart(uuid, params: queryOptions)
+                    } catch {
+                        throw error.toARTErrorInfo()
                     }
                 }
 
-                return messageSubscription
+                // (CHA-M4a) A subscription can be registered to receive incoming messages. Adding a subscription has no side effects on the status of the room or the underlying realtime channel.
+                subscriptionPoints[uuid] = .init(subscription: messageSubscriptionResponse, serial: serial)
+
+                return messageSubscriptionResponse
             } catch {
                 throw error.toARTErrorInfo()
             }

@@ -74,7 +74,7 @@ struct DefaultTypingTests {
         let typing = createTyping()
 
         // When
-        let subscription: Subscription<TypingSetEvent>? = typing.subscribe()
+        let subscription: SubscriptionAsyncSequence<TypingSetEvent>? = typing.subscribe()
 
         // Then
         #expect(subscription != nil)

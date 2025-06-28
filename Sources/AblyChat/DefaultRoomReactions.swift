@@ -11,8 +11,8 @@ internal final class DefaultRoomReactions: RoomReactions {
         try await implementation.send(params: params)
     }
 
-    internal func subscribe(bufferingPolicy: BufferingPolicy) -> Subscription<Reaction> {
-        implementation.subscribe(bufferingPolicy: bufferingPolicy)
+    internal func subscribe(_ callback: @escaping @MainActor (Reaction) -> Void) -> SubscriptionProtocol {
+        implementation.subscribe(callback)
     }
 
     /// This class exists to make sure that the internals of the SDK only access ably-cocoa via the `InternalRealtimeChannelProtocol` interface. It does this by removing access to the `channel` property that exists as part of the public API of the `RoomReactions` protocol, making it unlikely that we accidentally try to call the `ARTRealtimeChannelProtocol` interface. We can remove this `Implementation` class when we remove the feature-level `channel` property in https://github.com/ably/ably-chat-swift/issues/242.
@@ -50,9 +50,9 @@ internal final class DefaultRoomReactions: RoomReactions {
 
         // (CHA-ER4) A user may subscribe to reaction events in Realtime.
         // (CHA-ER4a) A user may provide a listener to subscribe to reaction events. This operation must have no side-effects in relation to room or underlying status. When a realtime message with name roomReaction is received, this message is converted into a reaction object and emitted to subscribers.
-        internal func subscribe(bufferingPolicy: BufferingPolicy) -> Subscription<Reaction> {
+        @discardableResult
+        internal func subscribe(_ callback: @escaping @MainActor (Reaction) -> Void) -> SubscriptionProtocol {
             logger.log(message: "Subscribing to reaction events", level: .debug)
-            let subscription = Subscription<Reaction>(bufferingPolicy: bufferingPolicy)
 
             // (CHA-ER4c) Realtime events with an unknown name shall be silently discarded.
             let eventListener = channel.subscribe(RoomReactionEvents.reaction.rawValue) { [clientID, logger] message in
@@ -89,19 +89,15 @@ internal final class DefaultRoomReactions: RoomReactions {
                         isSelf: messageClientID == clientID
                     )
                     logger.log(message: "Emitting reaction: \(reaction)", level: .debug)
-                    subscription.emit(reaction)
+                    callback(reaction)
                 } catch {
                     logger.log(message: "Error processing incoming reaction message: \(error)", level: .error)
                 }
             }
 
-            subscription.addTerminationHandler { [weak self] in
-                Task { @MainActor in
-                    self?.channel.unsubscribe(eventListener)
-                }
+            return Subscription { [weak self] in
+                self?.channel.unsubscribe(eventListener)
             }
-
-            return subscription
         }
 
         private enum RoomReactionsError: Error {

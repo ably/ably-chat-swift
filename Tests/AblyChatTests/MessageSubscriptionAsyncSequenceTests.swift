@@ -24,21 +24,21 @@ private final class MockPaginatedResult<Item: Equatable>: PaginatedResult {
     }
 }
 
-struct MessageSubscriptionTests {
+struct MessageSubscriptionAsyncSequenceTests {
     let messages = ["First", "Second"].map { text in
         Message(serial: "", action: .create, clientID: "", roomID: "", text: text, createdAt: .init(), metadata: [:], headers: [:], version: "", timestamp: nil)
     }
 
     @Test
     func withMockAsyncSequence() async {
-        let subscription = MessageSubscription(mockAsyncSequence: messages.async) { _ in fatalError("Not implemented") }
+        let subscription = MessageSubscriptionAsyncSequence(mockAsyncSequence: messages.async) { _ in fatalError("Not implemented") }
 
         #expect(await Array(subscription.prefix(2)).map(\.text) == ["First", "Second"])
     }
 
     @Test
     func emit() async {
-        let subscription = MessageSubscription(bufferingPolicy: .unbounded) { _ in fatalError("Not implemented") }
+        let subscription = MessageSubscriptionAsyncSequence(bufferingPolicy: .unbounded) { _ in fatalError("Not implemented") }
 
         async let emittedElements = Array(subscription.prefix(2))
 
@@ -51,7 +51,7 @@ struct MessageSubscriptionTests {
     @Test
     func mockGetPreviousMessages() async throws {
         let mockPaginatedResult = MockPaginatedResult<Message>()
-        let subscription = MessageSubscription(mockAsyncSequence: [].async) { _ in mockPaginatedResult }
+        let subscription = MessageSubscriptionAsyncSequence(mockAsyncSequence: [].async) { _ in mockPaginatedResult }
 
         let result = try await subscription.getPreviousMessages(params: .init())
         // This dance is to avoid the compiler error "Runtime support for parameterized protocol types is only available in iOS 16.0.0 or newer" — casting back to a concrete type seems to avoid this
