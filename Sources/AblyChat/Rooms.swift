@@ -155,8 +155,8 @@ internal class DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
         private let operationWaitEventSubscriptions = SubscriptionStorage<OperationWaitEvent>()
 
         /// Returns a subscription which emits an event each time one operation is going to wait for another to complete.
-        internal func testsOnly_subscribeToOperationWaitEvents() -> Subscription<OperationWaitEvent> {
-            operationWaitEventSubscriptions.create(bufferingPolicy: .unbounded)
+        internal func testsOnly_subscribeToOperationWaitEvents(_ callback: @escaping @MainActor (OperationWaitEvent) -> Void) -> SubscriptionProtocol {
+            operationWaitEventSubscriptions.create(callback)
         }
 
         private func emitOperationWaitEvent(waitingOperationType: OperationType, waitedOperationType: OperationType) {

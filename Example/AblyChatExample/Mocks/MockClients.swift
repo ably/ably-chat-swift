@@ -1,5 +1,5 @@
 import Ably
-import AblyChat
+@testable import AblyChat
 
 class MockChatClient: ChatClient {
     let realtime: RealtimeClient
@@ -66,7 +66,11 @@ class MockRoom: Room {
 
     var status: RoomStatus = .initialized
 
-    private let mockSubscriptions = MockSubscriptionStorage<RoomStatusChange>()
+    private let randomStatusInterval = 8.0
+
+    private let randomStatusChange = { @Sendable in
+        RoomStatusChange(current: [.attached(error: nil), .attached(error: nil), .attached(error: nil), .attached(error: nil), .attaching(error: nil), .attaching(error: nil), .suspended(error: .createUnknownError())].randomElement()!, previous: .attaching(error: nil))
+    }
 
     func attach() async throws(ARTErrorInfo) {
         print("Mock client attached to room with roomID: \(roomID)")
@@ -76,17 +80,25 @@ class MockRoom: Room {
         fatalError("Not yet implemented")
     }
 
-    private func createSubscription() -> MockSubscription<RoomStatusChange> {
-        mockSubscriptions.create(randomElement: {
-            RoomStatusChange(current: [.attached(error: nil), .attached(error: nil), .attached(error: nil), .attached(error: nil), .attaching(error: nil), .attaching(error: nil), .suspended(error: .createUnknownError())].randomElement()!, previous: .attaching(error: nil))
-        }, interval: 8)
+    @discardableResult
+    func onStatusChange(_ callback: @escaping @MainActor (RoomStatusChange) -> Void) -> StatusSubscriptionProtocol {
+        var needNext = true
+        periodic(with: randomStatusInterval) { [weak self] in
+            guard let self else {
+                return false
+            }
+            if needNext {
+                callback(randomStatusChange())
+            }
+            return needNext
+        }
+        return StatusSubscription {
+            needNext = false
+        }
     }
 
-    func onStatusChange(bufferingPolicy _: BufferingPolicy) -> Subscription<RoomStatusChange> {
-        .init(mockAsyncSequence: createSubscription())
-    }
-
-    func onDiscontinuity(bufferingPolicy _: BufferingPolicy) -> Subscription<DiscontinuityEvent> {
+    @discardableResult
+    func onDiscontinuity(_: @escaping @MainActor (DiscontinuityEvent) -> Void) -> StatusSubscriptionProtocol {
         fatalError("Not yet implemented")
     }
 }
@@ -95,35 +107,36 @@ class MockMessages: Messages {
     let clientID: String
     let roomID: String
 
-    private let mockSubscriptions = MockSubscriptionStorage<Message>()
+    private let mockSubscriptions = MockMessageSubscriptionStorage<Message>()
 
     init(clientID: String, roomID: String) {
         self.clientID = clientID
         self.roomID = roomID
     }
 
-    private func createSubscription() -> MockSubscription<Message> {
-        mockSubscriptions.create(randomElement: {
-            Message(
-                serial: "\(Date().timeIntervalSince1970)",
-                action: .create,
-                clientID: MockStrings.names.randomElement()!,
-                roomID: self.roomID,
-                text: MockStrings.randomPhrase(),
-                createdAt: Date(),
-                metadata: [:],
-                headers: [:],
-                version: "",
-                timestamp: Date(),
-                operation: nil
-            )
-        }, interval: 3)
-    }
-
-    func subscribe(bufferingPolicy _: BufferingPolicy) -> MessageSubscription {
-        MessageSubscription(mockAsyncSequence: createSubscription()) { _ in
-            MockMessagesPaginatedResult(clientID: self.clientID, roomID: self.roomID)
-        }
+    func subscribe(_ callback: @escaping @MainActor (Message) -> Void) async throws(ARTErrorInfo) -> MessageSubscriptionResponseProtocol {
+        mockSubscriptions.create(
+            randomElement: {
+                Message(
+                    serial: "\(Date().timeIntervalSince1970)",
+                    action: .create,
+                    clientID: MockStrings.names.randomElement()!,
+                    roomID: self.roomID,
+                    text: MockStrings.randomPhrase(),
+                    createdAt: Date(),
+                    metadata: [:],
+                    headers: [:],
+                    version: "",
+                    timestamp: Date(),
+                    operation: nil
+                )
+            },
+            previousMessages: { _ in
+                MockMessagesPaginatedResult(clientID: self.clientID, roomID: self.roomID)
+            },
+            interval: 3,
+            callback: callback
+        )
     }
 
     func get(options _: QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message> {
@@ -196,19 +209,6 @@ class MockRoomReactions: RoomReactions {
         self.roomID = roomID
     }
 
-    private func createSubscription() -> MockSubscription<Reaction> {
-        mockSubscriptions.create(randomElement: {
-            Reaction(
-                type: ReactionType.allCases.randomElement()!.emoji,
-                metadata: [:],
-                headers: [:],
-                createdAt: Date(),
-                clientID: self.clientID,
-                isSelf: false
-            )
-        }, interval: Double.random(in: 0.3 ... 0.6))
-    }
-
     func send(params: SendReactionParams) async throws(ARTErrorInfo) {
         let reaction = Reaction(
             type: params.type,
@@ -221,8 +221,22 @@ class MockRoomReactions: RoomReactions {
         mockSubscriptions.emit(reaction)
     }
 
-    func subscribe(bufferingPolicy _: BufferingPolicy) -> Subscription<Reaction> {
-        .init(mockAsyncSequence: createSubscription())
+    @discardableResult
+    func subscribe(_ callback: @escaping @MainActor (Reaction) -> Void) -> SubscriptionProtocol {
+        mockSubscriptions.create(
+            randomElement: {
+                Reaction(
+                    type: ReactionType.allCases.randomElement()!.emoji,
+                    metadata: [:],
+                    headers: [:],
+                    createdAt: Date(),
+                    clientID: self.clientID,
+                    isSelf: false
+                )
+            },
+            interval: 0.5,
+            callback: callback
+        )
     }
 }
 
@@ -237,21 +251,22 @@ class MockTyping: Typing {
         self.roomID = roomID
     }
 
-    private func createSubscription() -> MockSubscription<TypingSetEvent> {
-        mockSubscriptions.create(randomElement: {
-            TypingSetEvent(
-                type: .setChanged,
-                currentlyTyping: [
-                    MockStrings.names.randomElement()!,
-                    MockStrings.names.randomElement()!,
-                ],
-                change: .init(clientId: MockStrings.names.randomElement()!, type: .started)
-            )
-        }, interval: 2)
-    }
-
-    func subscribe(bufferingPolicy _: BufferingPolicy) -> Subscription<TypingSetEvent> {
-        .init(mockAsyncSequence: createSubscription())
+    @discardableResult
+    func subscribe(_ callback: @escaping @MainActor (TypingSetEvent) -> Void) -> SubscriptionProtocol {
+        mockSubscriptions.create(
+            randomElement: {
+                TypingSetEvent(
+                    type: .setChanged,
+                    currentlyTyping: [
+                        MockStrings.names.randomElement()!,
+                        MockStrings.names.randomElement()!,
+                    ],
+                    change: .init(clientId: MockStrings.names.randomElement()!, type: .started)
+                )
+            },
+            interval: 2,
+            callback: callback
+        )
     }
 
     func get() async throws(ARTErrorInfo) -> Set<String> {
@@ -290,15 +305,19 @@ class MockPresence: Presence {
         self.roomID = roomID
     }
 
-    private func createSubscription() -> MockSubscription<PresenceEvent> {
-        mockSubscriptions.create(randomElement: {
-            PresenceEvent(
-                action: [.enter, .leave].randomElement()!,
-                clientID: MockStrings.names.randomElement()!,
-                timestamp: Date(),
-                data: nil
-            )
-        }, interval: 5)
+    private func createSubscription(callback: @escaping @MainActor (PresenceEvent) -> Void) -> SubscriptionProtocol {
+        mockSubscriptions.create(
+            randomElement: {
+                PresenceEvent(
+                    action: [.enter, .leave].randomElement()!,
+                    clientID: MockStrings.names.randomElement()!,
+                    timestamp: Date(),
+                    data: nil
+                )
+            },
+            interval: 5,
+            callback: callback
+        )
     }
 
     func get() async throws(ARTErrorInfo) -> [PresenceMember] {
@@ -386,12 +405,12 @@ class MockPresence: Presence {
         )
     }
 
-    func subscribe(event _: PresenceEventType, bufferingPolicy _: BufferingPolicy) -> Subscription<PresenceEvent> {
-        .init(mockAsyncSequence: createSubscription())
+    func subscribe(event _: PresenceEventType, _ callback: @escaping @MainActor (PresenceEvent) -> Void) -> SubscriptionProtocol {
+        createSubscription(callback: callback)
     }
 
-    func subscribe(events _: [PresenceEventType], bufferingPolicy _: BufferingPolicy) -> Subscription<PresenceEvent> {
-        .init(mockAsyncSequence: createSubscription())
+    func subscribe(events _: [PresenceEventType], _ callback: @escaping @MainActor (PresenceEvent) -> Void) -> SubscriptionProtocol {
+        createSubscription(callback: callback)
     }
 }
 
@@ -406,15 +425,16 @@ class MockOccupancy: Occupancy {
         self.roomID = roomID
     }
 
-    private func createSubscription() -> MockSubscription<OccupancyEvent> {
-        mockSubscriptions.create(randomElement: {
-            let random = Int.random(in: 1 ... 10)
-            return OccupancyEvent(connections: random, presenceMembers: Int.random(in: 0 ... random))
-        }, interval: 1)
-    }
-
-    func subscribe(bufferingPolicy _: BufferingPolicy) -> Subscription<OccupancyEvent> {
-        .init(mockAsyncSequence: createSubscription())
+    @discardableResult
+    func subscribe(_ callback: @escaping @MainActor (OccupancyEvent) -> Void) -> SubscriptionProtocol {
+        mockSubscriptions.create(
+            randomElement: {
+                let random = Int.random(in: 1 ... 10)
+                return OccupancyEvent(connections: random, presenceMembers: Int.random(in: 0 ... random))
+            },
+            interval: 2,
+            callback: callback
+        )
     }
 
     func get() async throws(ARTErrorInfo) -> OccupancyEvent {
@@ -423,19 +443,28 @@ class MockOccupancy: Occupancy {
 }
 
 class MockConnection: Connection {
-    let status: AblyChat.ConnectionStatus
+    let status: ConnectionStatus
     let error: ARTErrorInfo?
 
-    nonisolated func onStatusChange(bufferingPolicy _: BufferingPolicy) -> Subscription<ConnectionStatusChange> {
-        let mockSub = MockSubscription<ConnectionStatusChange>(randomElement: {
-            ConnectionStatusChange(current: .connecting, previous: .connected, retryIn: 1)
-        }, interval: 5)
+    private let mockSubscriptions = MockStatusSubscriptionStorage<ConnectionStatusChange>()
 
-        return Subscription(mockAsyncSequence: mockSub)
-    }
-
-    init(status: AblyChat.ConnectionStatus, error: ARTErrorInfo?) {
+    init(status: ConnectionStatus, error: ARTErrorInfo?) {
         self.status = status
         self.error = error
+    }
+
+    @discardableResult
+    func onStatusChange(_ callback: @escaping @MainActor (ConnectionStatusChange) -> Void) -> StatusSubscriptionProtocol {
+        mockSubscriptions.create(
+            randomElement: {
+                ConnectionStatusChange(
+                    current: [.connected, .connecting].randomElement()!,
+                    previous: [.suspended, .disconnected].randomElement()!,
+                    retryIn: 1
+                )
+            },
+            interval: 5,
+            callback: callback
+        )
     }
 }

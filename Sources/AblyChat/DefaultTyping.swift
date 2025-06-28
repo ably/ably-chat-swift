@@ -8,8 +8,9 @@ internal final class DefaultTyping: Typing {
     }
 
     // (CHA-T6) Users may subscribe to typing events – updates to a set of clientIDs that are typing. This operation, like all subscription operations, has no side-effects in relation to room lifecycle.
-    internal func subscribe(bufferingPolicy: BufferingPolicy) -> Subscription<TypingSetEvent> {
-        implementation.subscribe(bufferingPolicy: bufferingPolicy)
+    @discardableResult
+    internal func subscribe(_ callback: @escaping @MainActor (TypingSetEvent) -> Void) -> SubscriptionProtocol {
+        implementation.subscribe(callback)
     }
 
     // (CHA-T9) Users may retrieve a list of the currently typing client IDs.
@@ -70,10 +71,9 @@ internal final class DefaultTyping: Typing {
             )
         }
 
-        internal func subscribe(bufferingPolicy: BufferingPolicy) -> Subscription<TypingSetEvent> {
+        @discardableResult
+        internal func subscribe(_ callback: @escaping @MainActor (TypingSetEvent) -> Void) -> SubscriptionProtocol {
             // (CHA-T6a) Users may provide a listener to subscribe to typing event V2 in a chat room.
-            let subscription = Subscription<TypingSetEvent>(bufferingPolicy: bufferingPolicy)
-
             let startedEventListener = channel.subscribe(TypingEventType.started.rawValue) { [weak self] message in
                 guard let self, let messageClientID = message.clientId else {
                     return
@@ -90,7 +90,7 @@ internal final class DefaultTyping: Typing {
                             return
                         }
                         // (CHA-T13b3) (2/2) If the (CHA-T13b1) timeout expires, the client shall remove the clientId from the typing set and emit a synthetic typing stop event for the given client.
-                        subscription.emit(
+                        callback(
                             TypingSetEvent(
                                 type: .setChanged,
                                 currentlyTyping: typingTimerManager.currentlyTypingClientIDs(),
@@ -100,7 +100,7 @@ internal final class DefaultTyping: Typing {
                     }
 
                     // (CHA-T13) When a typing event (typing.start or typing.stop) is received from the realtime client, the Chat client shall emit appropriate events to the user.
-                    subscription.emit(
+                    callback(
                         TypingSetEvent(
                             type: .setChanged,
                             currentlyTyping: typingTimerManager.currentlyTypingClientIDs(),
@@ -123,7 +123,7 @@ internal final class DefaultTyping: Typing {
                     typingTimerManager.cancelTypingTimer(for: messageClientID)
 
                     // (CHA-T13) When a typing event (typing.start or typing.stop) is received from the realtime client, the Chat client shall emit appropriate events to the user.
-                    subscription.emit(
+                    callback(
                         TypingSetEvent(
                             type: .setChanged,
                             currentlyTyping: typingTimerManager.currentlyTypingClientIDs(),
@@ -134,17 +134,14 @@ internal final class DefaultTyping: Typing {
             }
 
             // (CHA-T6b) A subscription to typing may be removed, after which it shall receive no further events.
-            subscription.addTerminationHandler { [weak self] in
-                Task { @MainActor in
-                    if let startedEventListener {
-                        self?.channel.unsubscribe(startedEventListener)
-                    }
-                    if let stoppedEventListener {
-                        self?.channel.unsubscribe(stoppedEventListener)
-                    }
+            return Subscription {
+                if let startedEventListener {
+                    self.channel.unsubscribe(startedEventListener)
+                }
+                if let stoppedEventListener {
+                    self.channel.unsubscribe(stoppedEventListener)
                 }
             }
-            return subscription
         }
 
         internal func get() async throws(ARTErrorInfo) -> Set<String> {

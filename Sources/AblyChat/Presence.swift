@@ -76,11 +76,12 @@ public protocol Presence: AnyObject, Sendable {
      *
      * - Parameters:
      *   - event: A single presence event type ``PresenceEventType`` to subscribe to.
-     *   - bufferingPolicy: The ``BufferingPolicy`` for the created subscription.
+     *   - callback: The listener closure for capturing room ``PresenceEvent`` events.
      *
-     * - Returns: A subscription `AsyncSequence` that can be used to iterate through ``PresenceEvent`` events.
+     * - Returns: A subscription that can be used to unsubscribe from ``PresenceEvent`` events.
      */
-    func subscribe(event: PresenceEventType, bufferingPolicy: BufferingPolicy) -> Subscription<PresenceEvent>
+    @discardableResult
+    func subscribe(event: PresenceEventType, _ callback: @escaping @MainActor (PresenceEvent) -> Void) -> SubscriptionProtocol
 
     /**
      * Subscribes a given listener to different presence events in the chat room.
@@ -89,11 +90,12 @@ public protocol Presence: AnyObject, Sendable {
      *
      * - Parameters:
      *   - events: An array of presence event types ``PresenceEventType`` to subscribe to.
-     *   - bufferingPolicy: The ``BufferingPolicy`` for the created subscription.
+     *   - callback: The listener closure for capturing room ``PresenceEvent`` events.
      *
-     * - Returns: A subscription `AsyncSequence` that can be used to iterate through ``PresenceEvent`` events.
+     * - Returns: A subscription that can be used to unsubscribe from ``PresenceEvent`` events.
      */
-    func subscribe(events: [PresenceEventType], bufferingPolicy: BufferingPolicy) -> Subscription<PresenceEvent>
+    @discardableResult
+    func subscribe(events: [PresenceEventType], _ callback: @escaping @MainActor (PresenceEvent) -> Void) -> SubscriptionProtocol
 
     /**
      * Method to join room presence, will emit an enter event to all subscribers. Repeat calls will trigger more enter events.
@@ -118,24 +120,70 @@ public protocol Presence: AnyObject, Sendable {
      * - Throws: An `ARTErrorInfo`.
      */
     func leave() async throws(ARTErrorInfo)
-
-    /// Same as calling ``subscribe(event:bufferingPolicy:)`` with ``BufferingPolicy/unbounded``.
-    ///
-    /// The `Presence` protocol provides a default implementation of this method.
-    func subscribe(event: PresenceEventType) -> Subscription<PresenceEvent>
-
-    /// Same as calling ``subscribe(events:bufferingPolicy:)`` with ``BufferingPolicy/unbounded``.
-    ///
-    /// The `Presence` protocol provides a default implementation of this method.
-    func subscribe(events: [PresenceEventType]) -> Subscription<PresenceEvent>
 }
 
 public extension Presence {
-    func subscribe(event: PresenceEventType) -> Subscription<PresenceEvent> {
+    /**
+     * Subscribes a given listener to a particular presence event in the chat room.
+     *
+     * Note that it is a programmer error to call this method if presence events are not enabled in the room options. Make sure to set `enableEvents: true` in your room's presence options to use this feature (this is the default value).
+     *
+     * - Parameters:
+     *   - event: A single presence event type ``PresenceEventType`` to subscribe to.
+     *   - bufferingPolicy: The ``BufferingPolicy`` for the created subscription.
+     *
+     * - Returns: A subscription `AsyncSequence` that can be used to iterate through ``PresenceEvent`` events.
+     */
+    func subscribe(event: PresenceEventType, bufferingPolicy: BufferingPolicy) -> SubscriptionAsyncSequence<PresenceEvent> {
+        let subscriptionAsyncSequence = SubscriptionAsyncSequence<PresenceEvent>(bufferingPolicy: bufferingPolicy)
+
+        let subscription = subscribe(event: event) { presence in
+            subscriptionAsyncSequence.emit(presence)
+        }
+
+        subscriptionAsyncSequence.addTerminationHandler {
+            Task { @MainActor in
+                subscription.unsubscribe()
+            }
+        }
+
+        return subscriptionAsyncSequence
+    }
+
+    /**
+     * Subscribes a given listener to different presence events in the chat room.
+     *
+     * Note that it is a programmer error to call this method if presence events are not enabled in the room options. Make sure to set `enableEvents: true` in your room's presence options to use this feature (this is the default value).
+     *
+     * - Parameters:
+     *   - events: An array of presence event types ``PresenceEventType`` to subscribe to.
+     *   - bufferingPolicy: The ``BufferingPolicy`` for the created subscription.
+     *
+     * - Returns: A subscription `AsyncSequence` that can be used to iterate through ``PresenceEvent`` events.
+     */
+    func subscribe(events: [PresenceEventType], bufferingPolicy: BufferingPolicy) -> SubscriptionAsyncSequence<PresenceEvent> {
+        let subscriptionAsyncSequence = SubscriptionAsyncSequence<PresenceEvent>(bufferingPolicy: bufferingPolicy)
+
+        let subscription = subscribe(events: events) { presence in
+            subscriptionAsyncSequence.emit(presence)
+        }
+
+        subscriptionAsyncSequence.addTerminationHandler {
+            Task { @MainActor in
+                subscription.unsubscribe()
+            }
+        }
+
+        return subscriptionAsyncSequence
+    }
+
+    /// Same as calling ``subscribe(event:bufferingPolicy:)`` with ``BufferingPolicy/unbounded``.
+    func subscribe(event: PresenceEventType) -> SubscriptionAsyncSequence<PresenceEvent> {
         subscribe(event: event, bufferingPolicy: .unbounded)
     }
 
-    func subscribe(events: [PresenceEventType]) -> Subscription<PresenceEvent> {
+    /// Same as calling ``subscribe(events:bufferingPolicy:)`` with ``BufferingPolicy/unbounded``.
+    func subscribe(events: [PresenceEventType]) -> SubscriptionAsyncSequence<PresenceEvent> {
         subscribe(events: events, bufferingPolicy: .unbounded)
     }
 }

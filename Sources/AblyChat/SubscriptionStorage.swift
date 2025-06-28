@@ -1,31 +1,25 @@
 import Foundation
 
-/// Maintains a list of `Subscription` objects, from which it removes a subscription once the subscription is no longer in use.
+/// Maintains a list of `Subscription` objects, which can be used to unsubscribe from subscription events.
 ///
-/// Offers the ability to create a new subscription (using ``create(bufferingPolicy:)``) or to emit a value on all subscriptions (using ``emit(_:)``).
+/// Offers the ability to create a new subscription (using ``create(_:)``) or to emit a value on all subscriptions (using ``emit(_:)``).
 @MainActor
 internal class SubscriptionStorage<Element: Sendable> {
-    // We hold a weak reference to the subscriptions that we create, so that the subscriptions’ termination handlers get called when the user releases their final reference to the subscription.
-    private struct WeaklyHeldSubscription {
-        internal weak var subscription: Subscription<Element>?
+    private struct SubscriptionItem {
+        let callback: (Element) -> Void
+        let subscription: Subscription
     }
 
-    private var subscriptions: [UUID: WeaklyHeldSubscription] = [:]
+    private var subscriptions: [UUID: SubscriptionItem] = [:]
 
     /// Creates a subscription and adds it to the list managed by this `SubscriptionStorage` instance.
-    ///
-    /// The `SubscriptionStorage` instance will remove this subscription from its list once the subscription “terminates” (meaning that there are no longer any references to it, or the task in which it was being iterated was cancelled).
-    internal func create(bufferingPolicy: BufferingPolicy) -> Subscription<Element> {
-        let subscription = Subscription<Element>(bufferingPolicy: bufferingPolicy)
+    internal func create(_ callback: @escaping @MainActor (Element) -> Void) -> SubscriptionProtocol {
         let id = UUID()
-        subscriptions[id] = .init(subscription: subscription)
-
-        subscription.addTerminationHandler { [weak self] in
-            Task { @MainActor in
-                self?.subscriptionDidTerminate(id: id)
-            }
+        let subscription = Subscription { [weak self] in
+            self?.subscriptionDidTerminate(id: id)
         }
-
+        let subscriptionItem = SubscriptionItem(callback: callback, subscription: subscription)
+        subscriptions[id] = subscriptionItem
         return subscription
     }
 
@@ -41,8 +35,49 @@ internal class SubscriptionStorage<Element: Sendable> {
 
     /// Emits an element on all of the subscriptions in the reciever’s managed list.
     internal func emit(_ element: Element) {
-        for subscription in subscriptions.values {
-            subscription.subscription?.emit(element)
+        for subscriptionItem in subscriptions.values {
+            subscriptionItem.callback(element)
+        }
+    }
+}
+
+/// Maintains a list of `StatusSubscription` objects, which can be used to unsubscribe from subscription events.
+///
+/// Offers the ability to create a new subscription (using ``create(_:)``) or to emit a value on all subscriptions (using ``emit(_:)``).
+@MainActor
+internal class StatusSubscriptionStorage<Element: Sendable> {
+    private struct SubscriptionItem {
+        let callback: (Element) -> Void
+        let subscription: StatusSubscription
+    }
+
+    private var subscriptions: [UUID: SubscriptionItem] = [:]
+
+    /// Creates a subscription and adds it to the list managed by this `SubscriptionStorage` instance.
+    internal func create(_ callback: @escaping @MainActor (Element) -> Void) -> StatusSubscriptionProtocol {
+        let id = UUID()
+        let statusSubscription = StatusSubscription { [weak self] in
+            self?.subscriptionDidTerminate(id: id)
+        }
+        let element = SubscriptionItem(callback: callback, subscription: statusSubscription)
+        subscriptions[id] = element
+        return statusSubscription
+    }
+
+    #if DEBUG
+        internal var testsOnly_subscriptionCount: Int {
+            subscriptions.count
+        }
+    #endif
+
+    private func subscriptionDidTerminate(id: UUID) {
+        _ = subscriptions.removeValue(forKey: id)
+    }
+
+    /// Emits an element on all of the subscriptions in the reciever’s managed list.
+    internal func emit(_ element: Element) {
+        for subscriptionItem in subscriptions.values {
+            subscriptionItem.callback(element)
         }
     }
 }

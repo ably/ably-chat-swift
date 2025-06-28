@@ -2,17 +2,17 @@
 import AsyncAlgorithms
 import Testing
 
-struct SubscriptionTests {
+struct SubscriptionAsyncSequenceTests {
     @Test
     func withMockAsyncSequence() async {
-        let subscription = Subscription(mockAsyncSequence: ["First", "Second"].async)
+        let subscription = SubscriptionAsyncSequence(mockAsyncSequence: ["First", "Second"].async)
 
         #expect(await Array(subscription.prefix(2)) == ["First", "Second"])
     }
 
     @Test
     func emit() async {
-        let subscription = Subscription<String>(bufferingPolicy: .unbounded)
+        let subscription = SubscriptionAsyncSequence<String>(bufferingPolicy: .unbounded)
 
         async let emittedElements = Array(subscription.prefix(2))
 
@@ -28,7 +28,7 @@ struct SubscriptionTests {
         let onTerminationCalled = AsyncStream<Void>.makeStream()
 
         ({
-            let subscription = Subscription<Void>(bufferingPolicy: .unbounded)
+            let subscription = SubscriptionAsyncSequence<Void>(bufferingPolicy: .unbounded)
             subscription.addTerminationHandler {
                 onTerminationCalled.continuation.yield()
             }
@@ -43,7 +43,7 @@ struct SubscriptionTests {
     func addTerminationHandler_terminationHandlerCalledWhenIterationTaskCancelled() async throws {
         let onTerminationCalled = AsyncStream<Void>.makeStream()
 
-        let subscription = Subscription<Void>(bufferingPolicy: .unbounded)
+        let subscription = SubscriptionAsyncSequence<Void>(bufferingPolicy: .unbounded)
         subscription.addTerminationHandler {
             onTerminationCalled.continuation.yield()
         }

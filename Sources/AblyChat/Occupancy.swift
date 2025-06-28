@@ -14,16 +14,12 @@ public protocol Occupancy: AnyObject, Sendable {
      * Note that it is a programmer error to call this method if occupancy events are not enabled in the room options. Make sure to set `enableEvents: true` in your room's occupancy options to use this feature.
      *
      * - Parameters:
-     *   - bufferingPolicy: The ``BufferingPolicy`` for the created subscription.
+     *   - callback: The listener closure for capturing room ``OccupancyEvent`` events.
      *
-     * - Returns: A subscription `AsyncSequence` that can be used to iterate through ``OccupancyEvent`` events.
+     * - Returns: A subscription that can be used to unsubscribe from ``OccupancyEvent`` events.
      */
-    func subscribe(bufferingPolicy: BufferingPolicy) -> Subscription<OccupancyEvent>
-
-    /// Same as calling ``subscribe(bufferingPolicy:)`` with ``BufferingPolicy/unbounded``.
-    ///
-    /// The `Occupancy` protocol provides a default implementation of this method.
-    func subscribe() -> Subscription<OccupancyEvent>
+    @discardableResult
+    func subscribe(_ callback: @escaping @MainActor (OccupancyEvent) -> Void) -> SubscriptionProtocol
 
     /**
      * Get the current occupancy of the chat room.
@@ -33,8 +29,36 @@ public protocol Occupancy: AnyObject, Sendable {
     func get() async throws(ARTErrorInfo) -> OccupancyEvent
 }
 
+/// `AsyncSequence` variant of receiving room occupancy events.
 public extension Occupancy {
-    func subscribe() -> Subscription<OccupancyEvent> {
+    /**
+     * Subscribes a given listener to occupancy updates of the chat room.
+     *
+     * Note that it is a programmer error to call this method if occupancy events are not enabled in the room options. Make sure to set `enableEvents: true` in your room's occupancy options to use this feature.
+     *
+     * - Parameters:
+     *   - bufferingPolicy: The ``BufferingPolicy`` for the created subscription.
+     *
+     * - Returns: A subscription `AsyncSequence` that can be used to iterate through ``OccupancyEvent`` events.
+     */
+    func subscribe(bufferingPolicy: BufferingPolicy) -> SubscriptionAsyncSequence<OccupancyEvent> {
+        let subscriptionAsyncSequence = SubscriptionAsyncSequence<OccupancyEvent>(bufferingPolicy: bufferingPolicy)
+
+        let subscription = subscribe { occupancy in
+            subscriptionAsyncSequence.emit(occupancy)
+        }
+
+        subscriptionAsyncSequence.addTerminationHandler {
+            Task { @MainActor in
+                subscription.unsubscribe()
+            }
+        }
+
+        return subscriptionAsyncSequence
+    }
+
+    /// Same as calling ``subscribe(bufferingPolicy:)`` with ``BufferingPolicy/unbounded``.
+    func subscribe() -> SubscriptionAsyncSequence<OccupancyEvent> {
         subscribe(bufferingPolicy: .unbounded)
     }
 }

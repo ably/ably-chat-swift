@@ -9,8 +9,8 @@ class MockRoomLifecycleManager: RoomLifecycleManager {
     private(set) var detachCallCount = 0
     private(set) var releaseCallCount = 0
     private let _roomStatus: RoomStatus?
-    private let roomStatusSubscriptions = SubscriptionStorage<RoomStatusChange>()
-    private let discontinuitySubscriptions = SubscriptionStorage<DiscontinuityEvent>()
+    private let roomStatusSubscriptions = StatusSubscriptionStorage<RoomStatusChange>()
+    private let discontinuitySubscriptions = StatusSubscriptionStorage<DiscontinuityEvent>()
     private let resultOfWaitToBeAbleToPerformPresenceOperations: Result<Void, ARTErrorInfo>?
 
     init(attachResult: Result<Void, ARTErrorInfo>? = nil, detachResult: Result<Void, ARTErrorInfo>? = nil, roomStatus: RoomStatus? = nil, resultOfWaitToBeAbleToPerformPresenceOperations: Result<Void, ARTErrorInfo> = .success(())) {
@@ -55,10 +55,6 @@ class MockRoomLifecycleManager: RoomLifecycleManager {
         return roomStatus
     }
 
-    func onRoomStatusChange(bufferingPolicy: BufferingPolicy) -> Subscription<RoomStatusChange> {
-        roomStatusSubscriptions.create(bufferingPolicy: bufferingPolicy)
-    }
-
     func emitStatusChange(_ statusChange: RoomStatusChange) {
         roomStatusSubscriptions.emit(statusChange)
     }
@@ -78,8 +74,14 @@ class MockRoomLifecycleManager: RoomLifecycleManager {
         }
     }
 
-    func onDiscontinuity(bufferingPolicy: BufferingPolicy) -> Subscription<DiscontinuityEvent> {
-        discontinuitySubscriptions.create(bufferingPolicy: bufferingPolicy)
+    @discardableResult
+    func onRoomStatusChange(_ callback: @escaping @MainActor (RoomStatusChange) -> Void) -> StatusSubscriptionProtocol {
+        roomStatusSubscriptions.create(callback)
+    }
+
+    @discardableResult
+    func onDiscontinuity(_ callback: @escaping @MainActor (DiscontinuityEvent) -> Void) -> StatusSubscriptionProtocol {
+        discontinuitySubscriptions.create(callback)
     }
 
     func emitDiscontinuity(_ discontinuity: DiscontinuityEvent) {

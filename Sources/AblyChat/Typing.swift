@@ -12,16 +12,12 @@ public protocol Typing: AnyObject, Sendable {
      * Subscribes a given listener to all typing events from users in the chat room.
      *
      * - Parameters:
-     *   - bufferingPolicy: The ``BufferingPolicy`` for the created subscription.
+     *   - callback: The listener closure for capturing room ``TypingEvent`` events.
      *
-     * - Returns: A subscription `AsyncSequence` that can be used to iterate through ``TypingEvent`` events.
+     * - Returns: A subscription that can be used to unsubscribe from ``TypingEvent`` events.
      */
-    func subscribe(bufferingPolicy: BufferingPolicy) -> Subscription<TypingSetEvent>
-
-    /// Same as calling ``subscribe(bufferingPolicy:)`` with ``BufferingPolicy/unbounded``.
-    ///
-    /// The `Typing` protocol provides a default implementation of this method.
-    func subscribe() -> Subscription<TypingSetEvent>
+    @discardableResult
+    func subscribe(_ callback: @escaping @MainActor (TypingSetEvent) -> Void) -> SubscriptionProtocol
 
     /**
      * Get the current typers, a set of clientIds.
@@ -52,8 +48,34 @@ public protocol Typing: AnyObject, Sendable {
     func stop() async throws(ARTErrorInfo)
 }
 
+/// `AsyncSequence` variant of receiving room typing events.
 public extension Typing {
-    func subscribe() -> Subscription<TypingSetEvent> {
+    /**
+     * Subscribes a given listener to all typing events from users in the chat room.
+     *
+     * - Parameters:
+     *   - bufferingPolicy: The ``BufferingPolicy`` for the created subscription.
+     *
+     * - Returns: A subscription `AsyncSequence` that can be used to iterate through ``TypingSetEvent`` events.
+     */
+    func subscribe(bufferingPolicy: BufferingPolicy) -> SubscriptionAsyncSequence<TypingSetEvent> {
+        let subscriptionAsyncSequence = SubscriptionAsyncSequence<TypingSetEvent>(bufferingPolicy: bufferingPolicy)
+
+        let subscription = subscribe { typingEvent in
+            subscriptionAsyncSequence.emit(typingEvent)
+        }
+
+        subscriptionAsyncSequence.addTerminationHandler {
+            Task { @MainActor in
+                subscription.unsubscribe()
+            }
+        }
+
+        return subscriptionAsyncSequence
+    }
+
+    /// Same as calling ``subscribe(bufferingPolicy:)`` with ``BufferingPolicy/unbounded``.
+    func subscribe() -> SubscriptionAsyncSequence<TypingSetEvent> {
         subscribe(bufferingPolicy: .unbounded)
     }
 }

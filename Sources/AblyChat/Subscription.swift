@@ -1,154 +1,100 @@
-import Foundation
+import Ably
 
-// A non-throwing `AsyncSequence` (means that we can iterate over it without a `try`).
-//
-// This should respect the `BufferingPolicy` passed to the `subscribe(bufferingPolicy:)` method.
-//
-// At some point we should define how this thing behaves when you iterate over it from multiple loops, or when you pass it around. I’m not yet sufficiently experienced with `AsyncSequence` to know what’s idiomatic. I tried the same thing out with `AsyncStream` (two tasks iterating over a single stream) and it appears that each element is delivered to precisely one consumer. But we can leave that for later. On a similar note consider whether it makes a difference whether this is a struct or a class.
-//
-// I wanted to implement this as a protocol (from which `MessageSubscription` would then inherit) but struggled to do so (see https://forums.swift.org/t/struggling-to-create-a-protocol-that-inherits-from-asyncsequence-with-primary-associated-type/73950 where someone suggested it’s a compiler bug), hence the struct. I was also hoping that upon switching to Swift 6 we could use AsyncSequence’s `Failure` associated type to simplify the way in which we show that the subscription is non-throwing, but it turns out this can only be done in macOS 15 etc. So I think that for now we’re stuck with things the way they are.
-
-/// A non-throwing `AsyncSequence`. The Chat SDK uses this type as the return value of the methods that allow you to find out about events such as typing events, connection status changes, discontinuity events etc.
-///
-/// You should only iterate over a given `Subscription` once; the results of iterating more than once are undefined.
-public final class Subscription<Element: Sendable>: @unchecked Sendable, AsyncSequence {
-    private enum Mode: Sendable {
-        case `default`(stream: AsyncStream<Element>, continuation: AsyncStream<Element>.Continuation)
-        case mockAsyncSequence(AnyNonThrowingAsyncSequence)
-    }
-
-    /// A type-erased AsyncSequence that doesn’t throw any errors.
-    fileprivate struct AnyNonThrowingAsyncSequence: AsyncSequence, Sendable {
-        private var makeAsyncIteratorImpl: @Sendable () -> AsyncIterator
-
-        init<Underlying: AsyncSequence & Sendable>(asyncSequence: Underlying) where Underlying.Element == Element {
-            makeAsyncIteratorImpl = {
-                AsyncIterator(asyncIterator: asyncSequence.makeAsyncIterator())
-            }
-        }
-
-        fileprivate struct AsyncIterator: AsyncIteratorProtocol {
-            private var nextImpl: () async -> Element?
-
-            init<Underlying: AsyncIteratorProtocol>(asyncIterator: Underlying) where Underlying.Element == Element {
-                var iterator = asyncIterator
-                nextImpl = { () async -> Element? in
-                    do {
-                        return try await iterator.next()
-                    } catch {
-                        fatalError("The AsyncSequence passed to Subscription.init(mockAsyncSequence:) threw an error: \(error). This is not supported.")
-                    }
-                }
-            }
-
-            mutating func next() async -> Element? {
-                await nextImpl()
-            }
-        }
-
-        func makeAsyncIterator() -> AsyncIterator {
-            makeAsyncIteratorImpl()
-        }
-    }
-
-    @MainActor private var terminationHandlers: [@Sendable () -> Void] = []
-    private let mode: Mode
-
-    internal init(bufferingPolicy: BufferingPolicy) {
-        let (stream, continuation) = AsyncStream.makeStream(of: Element.self, bufferingPolicy: bufferingPolicy.asAsyncStreamBufferingPolicy())
-        mode = .default(stream: stream, continuation: continuation)
-    }
-
-    // This is a workaround for the fact that, as mentioned above, `Subscription` is a struct when I would have liked it to be a protocol. It allows people mocking our SDK to create a `Subscription` so that they can return it from their mocks. The intention of this initializer is that if you use it, then the created `Subscription` will just replay the sequence that you pass it. It is a programmer error to pass a throwing AsyncSequence.
-    public init<Underlying: AsyncSequence & Sendable>(mockAsyncSequence: Underlying) where Underlying.Element == Element {
-        mode = .mockAsyncSequence(.init(asyncSequence: mockAsyncSequence))
-    }
-
+/**
+ * Represents a subscription that can be unsubscribed from.
+ * This interface provides a way to clean up and remove subscriptions when they
+ * are no longer needed.
+ */
+@MainActor
+public protocol SubscriptionProtocol: Sendable {
     /**
-     Causes the subscription to make a new element available on its `AsyncSequence` interface.
-
-     It is a programmer error to call this when the receiver was created using ``init(mockAsyncSequence:)``.
+     * This method should be called when the subscription is no longer needed,
+     * it will make sure no further events will be sent to the subscriber and
+     * that references to the subscriber are cleaned up.
      */
-    internal func emit(_ element: Element) {
-        switch mode {
-        case let .default(_, continuation):
-            continuation.yield(element)
-        case .mockAsyncSequence:
-            fatalError("`emit` cannot be called on a Subscription that was created using init(mockAsyncSequence:)")
-        }
+    func unsubscribe()
+}
+
+/**
+ * Represents a subscription to status change events that can be unsubscribed from. This
+ * interface provides a way to clean up and remove subscriptions when they are no longer needed.
+ */
+@MainActor
+public protocol StatusSubscriptionProtocol: Sendable {
+    /**
+     * Unsubscribes from the status change events. It will ensure that no
+     * further status change events will be sent to the subscriber and
+     * that references to the subscriber are cleaned up.
+     */
+    func off()
+}
+
+/**
+ * A response object that allows you to control a message subscription.
+ */
+@MainActor
+public protocol MessageSubscriptionResponseProtocol: SubscriptionProtocol, Sendable {
+    /**
+     * Get the previous messages that were sent to the room before the listener was subscribed.
+     *
+     * If the client experiences a discontinuity event (i.e. the connection was lost and could not be resumed), the starting point of
+     * historyBeforeSubscribe will be reset.
+     *
+     * Calls to historyBeforeSubscribe will wait for continuity to be restored before resolving.
+     *
+     * Once continuity is restored, the subscription point will be set to the beginning of this new period of continuity. To
+     * ensure that no messages are missed, you should call historyBeforeSubscribe after any period of discontinuity to
+     * fill any gaps in the message history.
+     *
+     * - Parameters:
+     *    - params: Options for the history query.
+     *
+     * - Returns: A paginated result of messages, in newest-to-oldest order.
+     */
+    func historyBeforeSubscribe(_ params: QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message>
+}
+
+public struct Subscription: SubscriptionProtocol, Sendable {
+    private let _unsubscribe: () -> Void
+
+    public func unsubscribe() {
+        _unsubscribe()
     }
 
-    #if DEBUG
-        /**
-         Signal that there are no more elements for the iteration to receive.
+    public init(unsubscribe: @MainActor @Sendable @escaping () -> Void) {
+        _unsubscribe = unsubscribe
+    }
+}
 
-         It is a programmer error to call this when the receiver was created using ``init(mockAsyncSequence:)``.
-         */
-        internal func testsOnly_finish() {
-            switch mode {
-            case let .default(_, continuation):
-                continuation.finish()
-            case .mockAsyncSequence:
-                fatalError("`finish` cannot be called on a Subscription that was created using init(mockAsyncSequence:)")
-            }
-        }
-    #endif
+public struct StatusSubscription: StatusSubscriptionProtocol, Sendable {
+    private let _off: () -> Void
 
-    @MainActor
-    internal func addTerminationHandler(_ terminationHandler: @escaping (@Sendable () -> Void)) {
-        terminationHandlers.append(terminationHandler)
-
-        switch mode {
-        case let .default(_, continuation):
-            let constantTerminationHandlers = terminationHandlers
-            continuation.onTermination = { _ in
-                for terminationHandler in constantTerminationHandlers {
-                    terminationHandler()
-                }
-            }
-        case .mockAsyncSequence:
-            fatalError("`addTerminationHandler(_:)` cannot be called on a Subscription that was created using init(mockAsyncSequence:)")
-        }
+    public func off() {
+        _off()
     }
 
-    public struct AsyncIterator: AsyncIteratorProtocol {
-        fileprivate enum Mode {
-            case `default`(iterator: AsyncStream<Element>.AsyncIterator)
-            case mockAsyncSequence(iterator: AnyNonThrowingAsyncSequence.AsyncIterator)
+    public init(off: @MainActor @Sendable @escaping () -> Void) {
+        _off = off
+    }
+}
 
-            mutating func next() async -> Element? {
-                switch self {
-                case var .default(iterator: iterator):
-                    let next = await iterator.next()
-                    self = .default(iterator: iterator)
-                    return next
-                case var .mockAsyncSequence(iterator: iterator):
-                    let next = await iterator.next()
-                    self = .mockAsyncSequence(iterator: iterator)
-                    return next
-                }
-            }
-        }
+public struct MessageSubscriptionResponse: MessageSubscriptionResponseProtocol, Sendable {
+    private let _unsubscribe: () -> Void
+    private let _historyBeforeSubscribe: @Sendable (QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message>
 
-        private var mode: Mode
-
-        fileprivate init(mode: Mode) {
-            self.mode = mode
-        }
-
-        public mutating func next() async -> Element? {
-            await mode.next()
-        }
+    public func unsubscribe() {
+        _unsubscribe()
     }
 
-    public func makeAsyncIterator() -> AsyncIterator {
-        let iteratorMode: AsyncIterator.Mode = switch mode {
-        case let .default(stream: stream, continuation: _):
-            .default(iterator: stream.makeAsyncIterator())
-        case let .mockAsyncSequence(asyncSequence):
-            .mockAsyncSequence(iterator: asyncSequence.makeAsyncIterator())
-        }
+    public func historyBeforeSubscribe(_ params: QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message> {
+        try await _historyBeforeSubscribe(params)
+    }
 
-        return .init(mode: iteratorMode)
+    public init(
+        unsubscribe: @MainActor @Sendable @escaping () -> Void,
+        historyBeforeSubscribe: @MainActor @Sendable @escaping (QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message>
+    ) {
+        _unsubscribe = unsubscribe
+        _historyBeforeSubscribe = historyBeforeSubscribe
     }
 }
