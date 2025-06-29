@@ -41,7 +41,7 @@ struct ContentView: View {
     #endif
 
     // Can be replaced with your own room ID
-    private let roomID = "DemoRoomID"
+    private let roomID = "DemoRoom"
 
     @State private var chatClient = Environment.current.createChatClient()
 
@@ -68,8 +68,17 @@ struct ContentView: View {
         }
     }
 
+    func listItemWithMessageSerial(_ serial: String) -> MessageListItem? {
+        listItems.compactMap { listItem -> MessageListItem? in
+            if case let .message(messageItem) = listItem, messageItem.message.serial == serial {
+                return messageItem
+            }
+            return nil
+        }.first
+    }
+
     private func room() async throws -> Room {
-        try await chatClient.rooms.get(roomID: roomID)
+        try await chatClient.rooms.get(roomID: roomID, options: .init(occupancy: .init(enableEvents: true)))
     }
 
     private var sendTitle: String {
@@ -82,10 +91,17 @@ struct ContentView: View {
         }
     }
 
+    private var currentClientID: String {
+        guard let clientID = chatClient.realtime.clientId else {
+            fatalError("realtime.clientId should be set.")
+        }
+        return clientID
+    }
+
     var body: some View {
         ZStack {
             VStack {
-                Text(roomID)
+                Text("In \(roomID) as \(currentClientID)")
                     .font(.headline)
                     .padding(5)
                 HStack {
@@ -104,18 +120,24 @@ struct ContentView: View {
                                 .flip()
                         } else {
                             MessageView(
+                                currentClientID: currentClientID,
                                 item: messageItem,
                                 isEditing: Binding(get: {
                                     editingItemID == messageItem.message.id
                                 }, set: { editing in
                                     editingItemID = editing ? messageItem.message.id : nil
                                     newMessage = editing ? messageItem.message.text : ""
-                                })
-                            ) {
-                                Task {
-                                    try await onMessageDelete(message: messageItem.message)
+                                }),
+                                onDeleteMessage: {
+                                    deleteMessage(messageItem.message)
+                                },
+                                onAddReaction: { reaction in
+                                    addMessageReaction(reaction, messageSerial: messageItem.message.serial)
+                                },
+                                onDeleteReaction: { reaction in
+                                    deleteMessageReaction(reaction, messageSerial: messageItem.message.serial)
                                 }
-                            }.id(item.id)
+                            ).id(item.id)
                                 .flip()
                         }
                     case let .presence(item):
@@ -132,19 +154,15 @@ struct ContentView: View {
                             if let index = listItems.firstIndex(where: { $0.id == editingItemID }) {
                                 if case let .message(messageItem) = listItems[index] {
                                     if newMessage != messageItem.message.text {
-                                        Task {
-                                            try await startTyping()
-                                        }
+                                        startTyping()
                                     }
                                 }
                             } else {
-                                Task {
-                                    try await startTyping()
-                                }
+                                startTyping()
                             }
                         }
                     #if !os(tvOS)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .textFieldStyle(.roundedBorder)
                     #endif
                     Button(action: sendButtonAction) {
                         #if os(iOS)
@@ -206,6 +224,7 @@ struct ContentView: View {
                 subscribeToTypingEvents(room: room)
                 subscribeToOccupancy(room: room)
                 subscribeToPresence(room: room)
+                subscribeToMessageReactions(room: room)
 
                 try await room.attach()
                 try await showOccupancy(room: room)
@@ -220,9 +239,7 @@ struct ContentView: View {
 
     func sendButtonAction() {
         if newMessage.isEmpty {
-            Task {
-                try await sendReaction(type: ReactionType.like.emoji)
-            }
+            sendRoomReaction(ReactionType.like.emoji)
         } else if editingItemID != nil {
             Task {
                 try await sendEditedMessage()
@@ -244,7 +261,7 @@ struct ContentView: View {
                         .message(
                             .init(
                                 message: message,
-                                isSender: message.clientID == chatClient.realtime.clientId
+                                isSender: message.clientID == currentClientID
                             )
                         ),
                         at: 0
@@ -255,7 +272,7 @@ struct ContentView: View {
                     listItems[index] = .message(
                         .init(
                             message: message,
-                            isSender: message.clientID == chatClient.realtime.clientId
+                            isSender: message.clientID == currentClientID
                         )
                     )
                 }
@@ -267,7 +284,7 @@ struct ContentView: View {
             switch message.action {
             case .create, .update, .delete:
                 withAnimation {
-                    listItems.append(.message(.init(message: message, isSender: message.clientID == chatClient.realtime.clientId)))
+                    listItems.append(.message(.init(message: message, isSender: message.clientID == currentClientID)))
                 }
             }
         }
@@ -277,6 +294,27 @@ struct ContentView: View {
         room.reactions.subscribe { reaction in
             withAnimation {
                 showReaction(reaction.displayedText)
+            }
+        }
+    }
+
+    func subscribeToMessageReactions(room: Room) {
+        room.messages.reactions.subscribe { summaryEvent in
+            do {
+                try withAnimation {
+                    if let reactedMessageItem = listItemWithMessageSerial(summaryEvent.summary.messageSerial) {
+                        if let index = listItems.firstIndex(where: { $0.id == reactedMessageItem.message.id }) {
+                            listItems[index] = try .message(
+                                .init(
+                                    message: reactedMessageItem.message.with(summaryEvent: summaryEvent),
+                                    isSender: reactedMessageItem.message.clientID == currentClientID
+                                )
+                            )
+                        }
+                    }
+                }
+            } catch {
+                print("Can't update message with reaction: \(error)")
             }
         }
     }
@@ -374,19 +412,37 @@ struct ContentView: View {
         newMessage = ""
     }
 
-    func onMessageDelete(message: Message) async throws {
-        _ = try await room().messages.delete(message: message, params: .init())
+    func deleteMessage(_ message: Message) {
+        Task {
+            _ = try await room().messages.delete(message: message, params: .init())
+        }
     }
 
-    func sendReaction(type: String) async throws {
-        try await room().reactions.send(params: .init(type: type))
+    func sendRoomReaction(_ reaction: String) {
+        Task {
+            try await room().reactions.send(params: .init(type: reaction))
+        }
     }
 
-    func startTyping() async throws {
-        if newMessage.isEmpty {
-            try await room().typing.stop()
-        } else {
-            try await room().typing.keystroke()
+    func addMessageReaction(_ reaction: String, messageSerial: String) {
+        Task {
+            try await room().messages.reactions.send(to: messageSerial, params: .init(reaction: reaction, type: .distinct))
+        }
+    }
+
+    func deleteMessageReaction(_ reaction: String, messageSerial: String) {
+        Task {
+            try await room().messages.reactions.delete(from: messageSerial, params: .init(reaction: reaction, type: .distinct))
+        }
+    }
+
+    func startTyping() {
+        Task {
+            if newMessage.isEmpty {
+                try await room().typing.stop()
+            } else {
+                try await room().typing.keystroke()
+            }
         }
     }
 }

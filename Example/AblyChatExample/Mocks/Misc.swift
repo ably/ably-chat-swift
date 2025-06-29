@@ -95,3 +95,22 @@ extension Reaction {
         type
     }
 }
+
+enum Emoji {
+    static func random() -> String {
+        let emojiRange = 0x1F600 ... 0x1F64F // All Emoticons
+//        let emojiRange = 0x1F600...0x1F607 // Smiles
+        let randomScalar = UnicodeScalar(Int.random(in: emojiRange))!
+        return String(randomScalar)
+    }
+
+    static func all() -> [String] {
+        let emojiRange = 0x1F600 ... 0x1F64F // All emoticons
+        return emojiRange.map { String(UnicodeScalar($0)!) }
+    }
+
+    static func smiles() -> [String] {
+        let emojiRange = 0x1F600 ... 0x1F607 // Smiles
+        return emojiRange.map { String(UnicodeScalar($0)!) }
+    }
+}

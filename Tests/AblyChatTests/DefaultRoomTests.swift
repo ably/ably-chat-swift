@@ -56,7 +56,7 @@ struct DefaultRoomTests {
 
         let chatMessagesChannelGetOptions = try #require(channelsGetArguments.first { $0.name == "basketball::$chat" }?.options)
         #expect(chatMessagesChannelGetOptions.params?["occupancy"] == "metrics")
-        #expect(chatMessagesChannelGetOptions.modes == [.publish, .subscribe, .presence])
+        #expect(chatMessagesChannelGetOptions.modes == [.publish, .subscribe, .presence, .annotationPublish])
     }
 
     // @spec CHA-O6a
@@ -94,11 +94,11 @@ struct DefaultRoomTests {
             (
                 enableEvents: true,
                 // i.e. it doesn't explicitly set any modes (so that Realtime will use the default modes)
-                expectedChannelModes: [] as ARTChannelMode
+                expectedChannelModes: [.publish, .subscribe, .presence, .annotationPublish, .presenceSubscribe] as ARTChannelMode
             ),
             (
                 enableEvents: false,
-                expectedChannelModes: [.publish, .subscribe, .presence] as ARTChannelMode
+                expectedChannelModes: [.publish, .subscribe, .presence, .annotationPublish] as ARTChannelMode
             ),
         ]
     )
