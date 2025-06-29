@@ -72,6 +72,11 @@ public protocol Messages: AnyObject, Sendable {
      * - Note: It is possible to receive your own message via the messages subscription before this method returns.
      */
     func delete(message: Message, params: DeleteMessageParams) async throws(ARTErrorInfo) -> Message
+
+    /**
+     * Add, delete, and subscribe to message reactions.
+     */
+    var reactions: MessageReactions { get }
 }
 
 public extension Messages {
