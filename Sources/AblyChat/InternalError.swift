@@ -13,6 +13,8 @@ internal enum InternalError: Error {
         case jsonValueDecodingError(JSONValueDecodingError)
         case paginatedResultError(PaginatedResultError)
         case messagesError(DefaultMessages.MessagesError)
+        case messageReactionsError(DefaultMessageReactions.ReactionsError)
+        case messageError(Message.MessageError)
     }
 
     /// Returns the error that this should be converted to when exposed via the SDK's public API.
@@ -70,5 +72,17 @@ internal extension PaginatedResultError {
 internal extension DefaultMessages.MessagesError {
     func toInternalError() -> InternalError {
         .other(.messagesError(self))
+    }
+}
+
+internal extension DefaultMessageReactions.ReactionsError {
+    func toInternalError() -> InternalError {
+        .other(.messageReactionsError(self))
+    }
+}
+
+internal extension Message.MessageError {
+    func toInternalError() -> InternalError {
+        .other(.messageError(self))
     }
 }

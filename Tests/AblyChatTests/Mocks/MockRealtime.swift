@@ -38,7 +38,13 @@ final class MockRealtime: InternalRealtimeClientProtocol {
         do {
             callRecorder.addRecord(
                 signature: "request(_:path:params:body:headers:)",
-                arguments: ["method": method, "path": path, "params": params, "body": body == nil ? [:] : body as? [String: Any], "headers": headers]
+                arguments: [
+                    "method": method,
+                    "path": path,
+                    "params": params ?? [:],
+                    "body": body == nil ? [:] : body as? [String: Any],
+                    "headers": headers ?? [:],
+                ]
             )
             return try paginatedCallback()
         } catch {

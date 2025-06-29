@@ -7,11 +7,14 @@ private struct MessageSubscriptionWrapper {
 }
 
 internal final class DefaultMessages: Messages {
+    internal let reactions: any MessageReactions
+
     private let channel: any InternalRealtimeChannelProtocol
     private let implementation: Implementation
 
-    internal init(channel: any InternalRealtimeChannelProtocol, chatAPI: ChatAPI, roomID: String, clientID: String, logger: InternalLogger) {
+    internal init(channel: any InternalRealtimeChannelProtocol, chatAPI: ChatAPI, roomID: String, options: MessagesOptions = .init(), clientID: String, logger: InternalLogger) {
         self.channel = channel
+        reactions = DefaultMessageReactions(channel: channel, chatAPI: chatAPI, roomID: roomID, options: options, clientID: clientID, logger: logger)
         implementation = .init(channel: channel, chatAPI: chatAPI, roomID: roomID, clientID: clientID, logger: logger)
     }
 

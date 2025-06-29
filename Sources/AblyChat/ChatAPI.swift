@@ -2,6 +2,12 @@ import Ably
 
 @MainActor
 internal final class ChatAPI: Sendable {
+    internal enum RequestBody {
+        case jsonObject([String: JSONValue])
+        /// Contains an object that can be used the same way as a value returned from `JSONValue.object(…).toAblyCocoaData`. Workaround for JSONValue not being able to indicate to ably-cocoa that a property should be serialized as a MessagePack integer type; TODO revisit in (create an issue for this)
+        case ablyCocoaData(Any)
+    }
+
     private let realtime: any InternalRealtimeClientProtocol
     private let apiVersionV3 = "/chat/v3"
 
@@ -36,6 +42,25 @@ internal final class ChatAPI: Sendable {
         }
     }
 
+    internal struct SendMessageReactionParams: Sendable {
+        internal let type: MessageReactionType
+        internal let reaction: String
+        internal let count: Int?
+    }
+
+    internal struct DeleteMessageReactionParams: Sendable {
+        internal let type: MessageReactionType
+        internal let reaction: String?
+    }
+
+    internal struct MessageReactionResponse: JSONObjectDecodable {
+        internal let serial: String
+
+        internal init(jsonObject: [String: JSONValue]) throws(InternalError) {
+            serial = try jsonObject.stringValueForKey("serial")
+        }
+    }
+
     internal typealias UpdateMessageResponse = MessageOperationResponse
     internal typealias DeleteMessageResponse = MessageOperationResponse
 
@@ -58,7 +83,7 @@ internal final class ChatAPI: Sendable {
             body["headers"] = .object(headers.mapValues(\.toJSONValue))
         }
 
-        let response: SendMessageResponse = try await makeRequest(endpoint, method: "POST", body: body)
+        let response: SendMessageResponse = try await makeRequest(endpoint, method: "POST", body: .jsonObject(body))
 
         // response.createdAt is in milliseconds, convert it to seconds
         let createdAtInSeconds = TimeInterval(Double(response.createdAt) / 1000)
@@ -104,7 +129,7 @@ internal final class ChatAPI: Sendable {
         }
 
         // (CHA-M8c) An update operation has PUT semantics. If a field is not specified in the update, it is assumed to be removed.
-        let response: UpdateMessageResponse = try await makeRequest(endpoint, method: "PUT", body: body)
+        let response: UpdateMessageResponse = try await makeRequest(endpoint, method: "PUT", body: .jsonObject(body))
 
         // response.timestamp is in milliseconds, convert it to seconds
         let timestampInSeconds = TimeInterval(Double(response.timestamp) / 1000)
@@ -144,7 +169,7 @@ internal final class ChatAPI: Sendable {
             body["metadata"] = .object(metadata)
         }
 
-        let response: DeleteMessageResponse = try await makeRequest(endpoint, method: "POST", body: body)
+        let response: DeleteMessageResponse = try await makeRequest(endpoint, method: "POST", body: .jsonObject(body))
 
         // response.timestamp is in milliseconds, convert it to seconds
         let timestampInSeconds = TimeInterval(Double(response.timestamp) / 1000)
@@ -175,15 +200,55 @@ internal final class ChatAPI: Sendable {
         return try await makeRequest(endpoint, method: "GET")
     }
 
-    private func makeRequest<Response: JSONDecodable>(_ url: String, method: String, body: [String: JSONValue]? = nil) async throws(InternalError) -> Response {
+    // (CHA-MR4) Users should be able to send a reaction to a message via the `send` method of the `MessagesReactions` object
+    internal func sendReactionToMessage(_ messageSerial: String, roomID: String, params: SendMessageReactionParams) async throws(InternalError) -> MessageReactionResponse {
+        // (CHA-MR11a1) If the serial passed to this method is invalid: undefined, null, empty string, an error with code 40000 must be thrown.
+        guard !messageSerial.isEmpty else {
+            throw ChatError.messageReactionInvalidMessageSerial.toInternalError()
+        }
+
+        let endpoint = "\(apiVersionV3)/rooms/\(roomID)/messages/\(messageSerial)/reactions"
+
+        let ablyCocoaBody: [String: Any] = [
+            "type": params.type.rawValue,
+            "name": params.reaction,
+            "count": params.count ?? 1,
+        ]
+
+        return try await makeRequest(endpoint, method: "POST", body: .ablyCocoaData(ablyCocoaBody))
+    }
+
+    // (CHA-MR11) Users should be able to delete a reaction from a message via the `delete` method of the `MessagesReactions` object
+    internal func deleteReactionFromMessage(_ messageSerial: String, roomID: String, params: DeleteMessageReactionParams) async throws(InternalError) -> MessageReactionResponse {
+        // (CHA-MR11a1) If the serial passed to this method is invalid: undefined, null, empty string, an error with code 40000 must be thrown.
+        guard !messageSerial.isEmpty else {
+            throw ChatError.messageReactionInvalidMessageSerial.toInternalError()
+        }
+
+        let endpoint = "\(apiVersionV3)/rooms/\(roomID)/messages/\(messageSerial)/reactions"
+
+        var httpParams: [String: String] = [
+            "type": params.type.rawValue,
+        ]
+        httpParams["name"] = params.reaction
+
+        return try await makeRequest(endpoint, method: "DELETE", params: httpParams)
+    }
+
+    private func makeRequest<Response: JSONDecodable>(_ url: String, method: String, params: [String: String]? = nil, body: RequestBody? = nil) async throws(InternalError) -> Response {
         let ablyCocoaBody: Any? = if let body {
-            JSONValue.object(body).toAblyCocoaData
+            switch body {
+            case let .jsonObject(jsonObject):
+                jsonObject.toAblyCocoaDataDictionary
+            case let .ablyCocoaData(ablyCocoaData):
+                ablyCocoaData
+            }
         } else {
             nil
         }
 
         // (CHA-M3e & CHA-M8d & CHA-M9c) If an error is returned from the REST API, its ErrorInfo representation shall be thrown as the result of the send call.
-        let paginatedResponse = try await realtime.request(method, path: url, params: [:], body: ablyCocoaBody, headers: [:])
+        let paginatedResponse = try await realtime.request(method, path: url, params: params, body: ablyCocoaBody, headers: [:])
 
         guard let firstItem = paginatedResponse.items.first else {
             throw ChatError.noItemInResponse.toInternalError()
@@ -212,5 +277,8 @@ internal final class ChatAPI: Sendable {
 
     internal enum ChatError: Error {
         case noItemInResponse
+        case messageReactionInvalidMessageSerial
+        case messageReactionTypeRequired
+        case messageReactionNameRequired
     }
 }
