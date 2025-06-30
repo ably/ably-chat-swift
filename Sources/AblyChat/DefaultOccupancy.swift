@@ -75,7 +75,7 @@ internal final class DefaultOccupancy: Occupancy {
         internal func get() async throws(ARTErrorInfo) -> OccupancyEvent {
             do {
                 logger.log(message: "Getting occupancy for room: \(roomID)", level: .debug)
-                return try await chatAPI.getOccupancy(roomId: roomID)
+                return try await chatAPI.getOccupancy(roomID: roomID)
             } catch {
                 throw error.toARTErrorInfo()
             }

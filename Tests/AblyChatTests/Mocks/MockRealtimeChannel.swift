@@ -3,6 +3,7 @@ import Ably
 
 final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
     let presence = MockRealtimePresence()
+    let annotations: MockRealtimeAnnotations
 
     private let attachSerial: String?
     private let channelSerial: String?
@@ -30,6 +31,7 @@ final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
         attachBehavior: AttachOrDetachBehavior? = nil,
         detachBehavior: AttachOrDetachBehavior? = nil,
         messageToEmitOnSubscribe: ARTMessage? = nil,
+        annotationToEmitOnSubscribe: ARTAnnotation? = nil,
         stateChangeToEmitForListener: ARTChannelStateChange? = nil
     ) {
         _name = name
@@ -41,6 +43,7 @@ final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
         attachSerial = properties.attachSerial
         channelSerial = properties.channelSerial
         self.stateChangeToEmitForListener = stateChangeToEmitForListener
+        annotations = MockRealtimeAnnotations(annotationToEmitOnSubscribe: annotationToEmitOnSubscribe)
     }
 
     var state: ARTRealtimeChannelState {
@@ -133,6 +136,10 @@ final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
 
     let messageToEmitOnSubscribe: ARTMessage?
     private var channelSubscriptions: [(String, (ARTMessage) -> Void)] = []
+
+    func subscribe(_ callback: @escaping @MainActor @Sendable (ARTMessage) -> Void) -> ARTEventListener? {
+        subscribe("all", callback: callback) // "all" is arbitrary here, could be "". Due to `name` is not optional.
+    }
 
     // Added the ability to emit a message whenever we want instead of just on subscribe... I didn't want to dig into what the messageToEmitOnSubscribe is too much so just if/else between the two.
     func subscribe(_ name: String, callback: @escaping @MainActor (ARTMessage) -> Void) -> ARTEventListener? {

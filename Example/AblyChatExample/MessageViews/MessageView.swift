@@ -2,10 +2,16 @@ import AblyChat
 import SwiftUI
 
 struct MessageView: View {
+    let currentClientID: String
     var item: MessageListItem
     @Binding var isEditing: Bool
-    var onDelete: () -> Void
-    @State private var isPresentingConfirm = false
+    var onDeleteMessage: () -> Void
+    let onAddReaction: (String) -> Void
+    let onDeleteReaction: (String) -> Void
+
+    @State private var isDeleteConfirmationPresented = false
+    @State private var showAllReactionsSheet = false
+    @State private var showReactionPicker = false
 
     var body: some View {
         HStack(alignment: .firstTextBaseline) {
@@ -16,10 +22,27 @@ struct MessageView: View {
             }
             VStack(alignment: .leading) {
                 Text(item.message.text)
-                    .foregroundStyle(.black)
                     .background(isEditing ? .orange.opacity(0.12) : .clear)
+                    .onLongPressGesture {
+                        showReactionPicker = true
+                    }
+                    .padding(left: 2)
                 if item.message.action == .update {
-                    Text("Edited").foregroundStyle(.gray).font(.footnote)
+                    Text("Edited")
+                        .foregroundStyle(.gray)
+                        .font(.footnote)
+                }
+                if let reactionsSummary = item.message.reactions {
+                    MessageReactionSummaryView(
+                        summary: reactionsSummary,
+                        currentClientID: currentClientID,
+                        onPickReaction: {
+                            showReactionPicker = true
+                        },
+                        onAddReaction: onAddReaction,
+                        onDeleteReaction: onDeleteReaction
+                    )
+                    .padding(left: 2)
                 }
             }
             Spacer()
@@ -28,20 +51,26 @@ struct MessageView: View {
                     onEdit: {
                         isEditing = true
                     }, onDelete: {
-                        isPresentingConfirm = true
+                        isDeleteConfirmationPresented = true
                     }
                 )
                 .confirmationDialog(
                     "Are you sure?",
-                    isPresented: $isPresentingConfirm
+                    isPresented: $isDeleteConfirmationPresented
                 ) {
                     Button("Delete message", role: .destructive) {
-                        onDelete()
-                        isPresentingConfirm = false
+                        onDeleteMessage()
+                        isDeleteConfirmationPresented = false
                     }
                 } message: {
                     Text("You cannot undo this action")
                 }
+            }
+        }
+        .sheet(isPresented: $showReactionPicker) {
+            MessageReactionsPicker { emoji in
+                showReactionPicker = false
+                onAddReaction(emoji)
             }
         }
         #if !os(tvOS)

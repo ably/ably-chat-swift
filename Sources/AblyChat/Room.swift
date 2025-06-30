@@ -279,6 +279,7 @@ internal class DefaultRoom: InternalRoom {
             channel: internalChannel,
             chatAPI: chatAPI,
             roomID: roomID,
+            options: options.messages,
             clientID: clientId,
             logger: logger
         )
@@ -323,16 +324,23 @@ internal class DefaultRoom: InternalRoom {
         // CHA-GP2a
         channelOptions.attachOnSubscribe = false
 
+        // Initial modes (CHA-RC3d)
+        channelOptions.modes = [.publish, .subscribe, .presence, .annotationPublish]
+
         // CHA-RC3a (Multiple features share a realtime channel. We fetch the channel exactly once, merging the channel options for the various features.)
-        if !roomOptions.presence.enableEvents {
-            // CHA-PR9c2
-            channelOptions.modes = [.publish, .subscribe, .presence]
+        if roomOptions.presence.enableEvents {
+            // CHA-RC3d1
+            channelOptions.modes.insert(.presenceSubscribe)
         }
         if roomOptions.occupancy.enableEvents {
             // CHA-O6a, CHA-O6b
             var params: [String: String] = channelOptions.params ?? [:]
             params["occupancy"] = "metrics"
             channelOptions.params = params
+        }
+        if roomOptions.messages.rawMessageReactions {
+            // CHA-RC3d2
+            channelOptions.modes.insert(.annotationSubscribe)
         }
 
         // CHA-RC3c

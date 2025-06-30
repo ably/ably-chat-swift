@@ -92,6 +92,7 @@ final class MockSuppliedRealtime: NSObject, SuppliedRealtimeClientProtocol, @unc
 
     final class Channel: RealtimeChannelProtocol {
         let presence = MockSuppliedRealtime.Presence()
+        let annotations = MockSuppliedRealtime.Annotations()
 
         var state: ARTRealtimeChannelState {
             fatalError("Not implemented")
@@ -332,6 +333,28 @@ final class MockSuppliedRealtime: NSObject, SuppliedRealtimeClientProtocol, @unc
         }
 
         func history(_: ARTRealtimeHistoryQuery?, callback _: @escaping ARTPaginatedPresenceCallback) throws {
+            fatalError("Not implemented")
+        }
+    }
+
+    final class Annotations: RealtimeAnnotationsProtocol {
+        func subscribe(_: @escaping ARTAnnotationCallback) -> ARTEventListener? {
+            fatalError("Not implemented")
+        }
+
+        func subscribe(_: String, callback _: @escaping ARTAnnotationCallback) -> ARTEventListener? {
+            fatalError("Not implemented")
+        }
+
+        func unsubscribe() {
+            fatalError("Not implemented")
+        }
+
+        func unsubscribe(_: ARTEventListener) {
+            fatalError("Not implemented")
+        }
+
+        func unsubscribe(_: String, listener _: ARTEventListener) {
             fatalError("Not implemented")
         }
     }
