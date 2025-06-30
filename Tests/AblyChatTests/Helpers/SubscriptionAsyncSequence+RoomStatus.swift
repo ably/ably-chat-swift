@@ -1,10 +1,10 @@
 import Ably
-import AblyChat
+@testable import AblyChat
 
 /// Extensions for filtering a subscription by a given case, and then providing access to the values associated with these cases.
 ///
 /// This provides better ergonomics than writing e.g. `failedStatusChange = await subscription.first { $0.isSuspended }`, because it means that you don’t have to write another `if case` (or equivalent) to get access to the associated value of `failedStatusChange.current`.
-extension Subscription where Element == RoomStatusChange {
+extension SubscriptionAsyncSequence where Element == RoomStatusChange {
     struct StatusChangeWithError {
         /// A status change whose `current` has an associated error; ``error`` provides access to this error.
         var statusChange: RoomStatusChange
@@ -19,7 +19,7 @@ extension Subscription where Element == RoomStatusChange {
         var error: ARTErrorInfo?
     }
 
-    func suspendedElements() async -> AsyncCompactMapSequence<Subscription<RoomStatusChange>, Subscription<RoomStatusChange>.StatusChangeWithError> {
+    func suspendedElements() async -> AsyncCompactMapSequence<SubscriptionAsyncSequence<RoomStatusChange>, SubscriptionAsyncSequence<RoomStatusChange>.StatusChangeWithError> {
         compactMap { statusChange in
             if case let .suspended(error) = statusChange.current {
                 StatusChangeWithError(statusChange: statusChange, error: error)
@@ -29,7 +29,7 @@ extension Subscription where Element == RoomStatusChange {
         }
     }
 
-    func failedElements() async -> AsyncCompactMapSequence<Subscription<RoomStatusChange>, Subscription<RoomStatusChange>.StatusChangeWithError> {
+    func failedElements() async -> AsyncCompactMapSequence<SubscriptionAsyncSequence<RoomStatusChange>, SubscriptionAsyncSequence<RoomStatusChange>.StatusChangeWithError> {
         compactMap { statusChange in
             if case let .failed(error) = statusChange.current {
                 StatusChangeWithError(statusChange: statusChange, error: error)
@@ -39,7 +39,7 @@ extension Subscription where Element == RoomStatusChange {
         }
     }
 
-    func attachingElements() async -> AsyncCompactMapSequence<Subscription<RoomStatusChange>, Subscription<RoomStatusChange>.StatusChangeWithOptionalError> {
+    func attachingElements() async -> AsyncCompactMapSequence<SubscriptionAsyncSequence<RoomStatusChange>, SubscriptionAsyncSequence<RoomStatusChange>.StatusChangeWithOptionalError> {
         compactMap { statusChange in
             if case let .attaching(error) = statusChange.current {
                 StatusChangeWithOptionalError(statusChange: statusChange, error: error)

@@ -20,20 +20,42 @@ public protocol Connection: AnyObject, Sendable {
      * Subscribes a given listener to a connection status changes.
      *
      * - Parameters:
+     *   - callback: The listener closure for capturing ``ConnectionStatusChange`` events.
+     *
+     * - Returns: A subscription that can be used to unsubscribe from ``ConnectionStatusChange`` events.
+     */
+    @discardableResult
+    func onStatusChange(_ callback: @escaping @MainActor (ConnectionStatusChange) -> Void) -> StatusSubscriptionProtocol
+}
+
+/// `AsyncSequence` variant of `Connection` status changes.
+public extension Connection {
+    /**
+     * Subscribes a given listener to a connection status changes.
+     *
+     * - Parameters:
      *   - bufferingPolicy: The ``BufferingPolicy`` for the created subscription.
      *
      * - Returns: A subscription `AsyncSequence` that can be used to iterate through ``ConnectionStatusChange`` events.
      */
-    func onStatusChange(bufferingPolicy: BufferingPolicy) -> Subscription<ConnectionStatusChange>
+    func onStatusChange(bufferingPolicy: BufferingPolicy) -> SubscriptionAsyncSequence<ConnectionStatusChange> {
+        let subscriptionAsyncSequence = SubscriptionAsyncSequence<ConnectionStatusChange>(bufferingPolicy: bufferingPolicy)
+
+        let subscription = onStatusChange { statusChange in
+            subscriptionAsyncSequence.emit(statusChange)
+        }
+
+        subscriptionAsyncSequence.addTerminationHandler {
+            Task { @MainActor in
+                subscription.off()
+            }
+        }
+
+        return subscriptionAsyncSequence
+    }
 
     /// Same as calling ``onStatusChange(bufferingPolicy:)`` with ``BufferingPolicy/unbounded``.
-    ///
-    /// The `Connection` protocol provides a default implementation of this method.
-    func onStatusChange() -> Subscription<ConnectionStatusChange>
-}
-
-public extension Connection {
-    func onStatusChange() -> Subscription<ConnectionStatusChange> {
+    func onStatusChange() -> SubscriptionAsyncSequence<ConnectionStatusChange> {
         onStatusChange(bufferingPolicy: .unbounded)
     }
 }
