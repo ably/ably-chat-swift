@@ -11,6 +11,7 @@ internal final class DefaultRoomReactions: RoomReactions {
         try await implementation.send(params: params)
     }
 
+    @discardableResult
     internal func subscribe(_ callback: @escaping @MainActor (Reaction) -> Void) -> SubscriptionProtocol {
         implementation.subscribe(callback)
     }
