@@ -31,6 +31,12 @@ internal enum InternalError: Error {
     }
 }
 
+extension InternalError: Equatable {
+    internal static func == (lhs: InternalError, rhs: InternalError) -> Bool {
+        lhs.toARTErrorInfo() == rhs.toARTErrorInfo()
+    }
+}
+
 internal extension ARTErrorInfo {
     func toInternalError() -> InternalError {
         .errorInfo(self)
