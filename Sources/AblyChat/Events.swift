@@ -20,7 +20,7 @@ public enum MessageAction: String, Sendable {
         case .delete:
             .delete
         // ignore any other actions except `message.create` for now
-        case .metaOccupancy,
+        case .meta,
              .messageSummary:
             nil
         @unknown default:

@@ -1,3 +1,4 @@
+import Ably
 import Foundation
 
 /**
@@ -99,7 +100,12 @@ public struct Message: Sendable, Identifiable, Equatable {
      */
     public var operation: MessageOperation?
 
-    public init(serial: String, action: MessageAction, clientID: String, roomID: String, text: String, createdAt: Date?, metadata: MessageMetadata, headers: MessageHeaders, version: String, timestamp: Date?, operation: MessageOperation? = nil) {
+    /**
+     * The reactions summary for this message.
+     */
+    public var reactions: MessageReactionSummary?
+
+    public init(serial: String, action: MessageAction, clientID: String, roomID: String, text: String, createdAt: Date?, metadata: MessageMetadata, headers: MessageHeaders, version: String, timestamp: Date?, operation: MessageOperation? = nil, reactions: MessageReactionSummary? = nil) {
         self.serial = serial
         self.action = action
         self.clientID = clientID
@@ -111,6 +117,7 @@ public struct Message: Sendable, Identifiable, Equatable {
         self.version = version
         self.timestamp = timestamp
         self.operation = operation
+        self.reactions = reactions
     }
 
     /**
@@ -121,7 +128,8 @@ public struct Message: Sendable, Identifiable, Equatable {
     public func copy(
         text: String? = nil,
         metadata: MessageMetadata? = nil,
-        headers: MessageHeaders? = nil
+        headers: MessageHeaders? = nil,
+        reactions: MessageReactionSummary? = nil
     ) -> Message {
         Message(
             serial: serial,
@@ -134,7 +142,8 @@ public struct Message: Sendable, Identifiable, Equatable {
             headers: headers ?? self.headers,
             version: version,
             timestamp: timestamp,
-            operation: operation
+            operation: operation,
+            reactions: reactions ?? self.reactions
         )
     }
 }
@@ -153,9 +162,17 @@ public struct MessageOperation: Sendable, Equatable {
 
 extension Message: JSONObjectDecodable {
     internal init(jsonObject: [String: JSONValue]) throws(InternalError) {
-        let operation = try? jsonObject.objectValueForKey("operation")
+        let operationJson = try? jsonObject.objectValueForKey("operation")
+        let serial = try jsonObject.stringValueForKey("serial")
+        var reactionSummary: MessageReactionSummary?
+        if let summaryJson = try? jsonObject.objectValueForKey("reactions"), !summaryJson.isEmpty {
+            reactionSummary = try MessageReactionSummary(
+                messageSerial: serial,
+                values: summaryJson
+            )
+        }
         try self.init(
-            serial: jsonObject.stringValueForKey("serial"),
+            serial: serial,
             action: jsonObject.rawRepresentableValueForKey("action"),
             clientID: jsonObject.stringValueForKey("clientId"),
             roomID: jsonObject.stringValueForKey("roomId"),
@@ -167,13 +184,34 @@ extension Message: JSONObjectDecodable {
             },
             version: jsonObject.stringValueForKey("version"),
             timestamp: jsonObject.optionalAblyProtocolDateValueForKey("timestamp"),
-            operation: operation.map { op throws(InternalError) in
+            operation: operationJson.map { op throws(InternalError) in
                 try .init(
                     clientID: op.stringValueForKey("clientId"),
                     description: try? op.stringValueForKey("description"),
                     metadata: try? op.objectValueForKey("metadata")
                 )
-            }
+            },
+            reactions: reactionSummary
         )
+    }
+}
+
+public extension Message {
+    /**
+     * Creates a new message instance with the event applied.
+     *
+     * - Parameters:
+     *   - summaryEvent: The event to be applied to the returned message.
+     *
+     * - Throws: ``ARTErrorInfo`` if the event is for a different message.
+     *
+     * - Returns: A new message instance with the event applied.
+     */
+    func with(summaryEvent: MessageReactionSummaryEvent) throws(ARTErrorInfo) -> Self {
+        // (CHA-M11e) For MessageReactionSummaryEvent, the method must verify that the summary.messageSerial in the event matches the message’s own serial. If they don’t match, an error with code 40000 and status code 400 must be thrown.
+        guard serial == summaryEvent.summary.messageSerial else {
+            throw ARTErrorInfo(chatError: .cannotApplyEventForDifferentMessage)
+        }
+        return copy(reactions: summaryEvent.summary)
     }
 }

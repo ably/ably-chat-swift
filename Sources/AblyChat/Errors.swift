@@ -49,6 +49,8 @@ public enum ErrorCode: Int {
         case roomIsReleased
         case roomReleasedBeforeOperationCompleted
         case roomDiscontinuity
+        case unableDeleteReactionWithoutName
+        case cannotApplyEventForDifferentMessage
 
         internal var toNumericErrorCode: ErrorCode {
             switch self {
@@ -64,6 +66,10 @@ public enum ErrorCode: Int {
                 .roomReleasedBeforeOperationCompleted
             case .roomDiscontinuity:
                 .roomDiscontinuity
+            case .unableDeleteReactionWithoutName:
+                .badRequest
+            case .cannotApplyEventForDifferentMessage:
+                .badRequest
             }
         }
 
@@ -75,7 +81,9 @@ public enum ErrorCode: Int {
                  .roomInFailedState,
                  .roomIsReleasing,
                  .roomIsReleased,
-                 .roomReleasedBeforeOperationCompleted:
+                 .roomReleasedBeforeOperationCompleted,
+                 .unableDeleteReactionWithoutName,
+                 .cannotApplyEventForDifferentMessage:
                 400
             case .roomDiscontinuity:
                 500
@@ -139,6 +147,8 @@ internal enum ChatError {
     case presenceOperationRequiresRoomAttach(feature: RoomFeature)
     case roomTransitionedToInvalidStateForPresenceOperation(cause: ARTErrorInfo?)
     case roomDiscontinuity(cause: ARTErrorInfo?)
+    case unableDeleteReactionWithoutName(reactionType: String)
+    case cannotApplyEventForDifferentMessage
 
     internal var codeAndStatusCode: ErrorCodeAndStatusCode {
         switch self {
@@ -163,6 +173,10 @@ internal enum ChatError {
             .variableStatusCode(.roomInInvalidState, statusCode: 400)
         case .roomDiscontinuity:
             .fixedStatusCode(.roomDiscontinuity)
+        case .unableDeleteReactionWithoutName:
+            .fixedStatusCode(.unableDeleteReactionWithoutName)
+        case .cannotApplyEventForDifferentMessage:
+            .fixedStatusCode(.cannotApplyEventForDifferentMessage)
         }
     }
 
@@ -209,6 +223,10 @@ internal enum ChatError {
             "The room operation failed because the room was in an invalid state."
         case .roomDiscontinuity:
             "The room has experienced a discontinuity."
+        case let .unableDeleteReactionWithoutName(reactionType: reactionType):
+            "Cannot delete reaction of type '\(reactionType)' without a reaction name."
+        case .cannotApplyEventForDifferentMessage:
+            "Cannot apply event for different message."
         }
     }
 
@@ -225,7 +243,9 @@ internal enum ChatError {
              .roomIsReleasing,
              .roomIsReleased,
              .roomReleasedBeforeOperationCompleted,
-             .presenceOperationRequiresRoomAttach:
+             .presenceOperationRequiresRoomAttach,
+             .cannotApplyEventForDifferentMessage,
+             .unableDeleteReactionWithoutName:
             nil
         }
     }
