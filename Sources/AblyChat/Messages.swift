@@ -12,11 +12,11 @@ public protocol Messages: AnyObject, Sendable {
      * Subscribe to new messages in this chat room.
      *
      * - Parameters:
-     *   - callback: The listener closure for capturing room ``Message`` events.
+     *   - callback: The listener closure for capturing room `ChatMessageEvent` events.
      *
-     * - Returns: A subscription that can be used to unsubscribe from ``Message`` events.
+     * - Returns: A subscription that can be used to unsubscribe from `ChatMessageEvent` events.
      */
-    func subscribe(_ callback: @escaping @MainActor (Message) -> Void) async throws(ARTErrorInfo) -> MessageSubscriptionResponseProtocol
+    func subscribe(_ callback: @escaping @MainActor (ChatMessageEvent) -> Void) async throws(ARTErrorInfo) -> MessageSubscriptionResponseProtocol
 
     /**
      * Get messages that have been previously sent to the chat room, based on the provided options.
@@ -89,17 +89,17 @@ public extension Messages {
      * - Returns: A subscription ``MessageSubscription`` that can be used to iterate through new messages.
      */
     func subscribe(bufferingPolicy: BufferingPolicy) async throws(ARTErrorInfo) -> MessageSubscriptionAsyncSequence {
-        var emitMessage: ((Message) -> Void)?
-        let subscription = try await subscribe { message in
-            emitMessage?(message)
+        var emitEvent: ((ChatMessageEvent) -> Void)?
+        let subscription = try await subscribe { event in
+            emitEvent?(event)
         }
 
         let subscriptionAsyncSequence = MessageSubscriptionAsyncSequence(
             bufferingPolicy: bufferingPolicy,
             getPreviousMessages: subscription.historyBeforeSubscribe
         )
-        emitMessage = { [weak subscriptionAsyncSequence] message in
-            subscriptionAsyncSequence?.emit(message)
+        emitEvent = { [weak subscriptionAsyncSequence] event in
+            subscriptionAsyncSequence?.emit(event)
         }
 
         subscriptionAsyncSequence.addTerminationHandler {
@@ -298,13 +298,41 @@ internal extension QueryOptions {
     }
 }
 
-// Currently a copy-and-paste of `Subscription`; see notes on that one. For `MessageSubscription`, my intention is that the `BufferingPolicy` passed to `subscribe(bufferingPolicy:)` will also define what the `MessageSubscription` does with messages that are received _before_ the user starts iterating over the sequence (this buffering will allow us to implement the requirement that there be no discontinuity between the the last message returned by `getPreviousMessages` and the first element you get when you iterate).
+/// Event type for chat message subscription.
+public enum ChatMessageEventType: String, Sendable {
+    case created
+    case updated
+    case deleted
+}
 
-/// A non-throwing `AsyncSequence` whose element is ``Message``. The Chat SDK uses this type as the return value of the `AsyncSequence` convenience variants of the ``Messages`` methods that allow you to find out about received chat messages.
+/// Event emitted by message subscriptions, containing the type and the message.
+public struct ChatMessageEvent: Sendable, Equatable {
+    public let type: ChatMessageEventType
+    public let message: Message
+
+    public init(type: ChatMessageEventType, message: Message) {
+        self.type = type
+        self.message = message
+    }
+
+    public init(message: Message) {
+        switch message.action {
+        case .create:
+            type = .created
+        case .update:
+            type = .updated
+        case .delete:
+            type = .deleted
+        }
+        self.message = message
+    }
+}
+
+/// A non-throwing `AsyncSequence` whose element is ``ChatMessageEvent``. The Chat SDK uses this type as the return value of the `AsyncSequence` convenience variants of the ``Messages`` methods that allow you to find out about received chat messages.
 ///
 /// You should only iterate over a given `MessageSubscriptionAsyncSequence` once; the results of iterating more than once are undefined.
 public final class MessageSubscriptionAsyncSequence: Sendable, AsyncSequence {
-    public typealias Element = Message
+    public typealias Element = ChatMessageEvent
 
     private let subscription: SubscriptionAsyncSequence<Element>
 
