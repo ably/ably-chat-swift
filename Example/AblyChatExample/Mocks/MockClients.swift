@@ -536,15 +536,16 @@ class MockOccupancy: Occupancy {
         mockSubscriptions.create(
             randomElement: {
                 let random = Int.random(in: 1 ... 10)
-                return OccupancyEvent(connections: random, presenceMembers: Int.random(in: 0 ... random))
+                let occupancyData = OccupancyData(connections: random, presenceMembers: Int.random(in: 0 ... random))
+                return OccupancyEvent(type: .updated, occupancy: occupancyData)
             },
             interval: 2,
             callback: callback
         )
     }
 
-    func get() async throws(ARTErrorInfo) -> OccupancyEvent {
-        OccupancyEvent(connections: 10, presenceMembers: 5)
+    func get() async throws(ARTErrorInfo) -> OccupancyData {
+        OccupancyData(connections: 10, presenceMembers: 5)
     }
 }
 

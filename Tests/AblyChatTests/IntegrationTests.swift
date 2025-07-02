@@ -9,7 +9,7 @@ extension Tag {
 
 /// Some very basic integration tests, just to check that things are kind of working.
 ///
-/// It would be nice to give this a time limit, but unfortunately the `timeLimit` trait is only available on iOS 16 etc and above. CodeRabbit suggested writing a timeout function myself and wrapping the contents of the test in it, but I didn’t have time to try understanding its suggested code, so it can wait.
+/// It would be nice to give this a time limit, but unfortunately the `timeLimit` trait is only available on iOS 16 etc and above. CodeRabbit suggested writing a timeout function myself and wrapping the contents of the test in it, but I didn't have time to try understanding its suggested code, so it can wait.
 @Suite(.tags(.integration))
 @MainActor
 struct IntegrationTests {
@@ -106,7 +106,7 @@ struct IntegrationTests {
 
         // (1) Send a message before subscribing to messages, so that later on we can check history works.
 
-        // (2) Create a throwaway subscription and wait for it to receive a message. This is to make sure that rxRoom has seen the message that we send here, so that the first message we receive on the subscription created in (5) is that which we’ll send in (6), and not that which we send here.
+        // (2) Create a throwaway subscription and wait for it to receive a message. This is to make sure that rxRoom has seen the message that we send here, so that the first message we receive on the subscription created in (5) is that which we'll send in (6), and not that which we send here.
         let throwawayRxMessageSubscription = try await rxRoom.messages.subscribe()
 
         // (3) Send the message
@@ -123,7 +123,7 @@ struct IntegrationTests {
         // (5) Subscribe to messages
         let rxMessageSubscription = try await rxRoom.messages.subscribe()
 
-        // (6) Now that we’re subscribed to messages, send a message on the other client and check that we receive it on the subscription
+        // (6) Now that we're subscribed to messages, send a message on the other client and check that we receive it on the subscription
         let txMessageAfterRxSubscribe = try await txRoom.messages.send(
             params: .init(
                 text: "Hello from txRoom, after rxRoom subscribe",
@@ -227,15 +227,15 @@ struct IntegrationTests {
          https://ably-real-time.slack.com/archives/C03JDBVM5MY/p1733220395208909
          that
 
-         > new materialised history system doesn’t currently support “live”
-         > history (realtime implementation detail) - so we’re approximating the
+         > new materialised history system doesn't currently support "live"
+         > history (realtime implementation detail) - so we're approximating the
          > behaviour
 
          and indicated that the right workaround for now is to introduce a
          wait. So we retry the fetching of history until we get a non-empty
          result.
 
-         Revert this (https://github.com/ably/ably-chat-swift/issues/175) once it’s fixed in Realtime.
+         Revert this (https://github.com/ably/ably-chat-swift/issues/175) once it's fixed in Realtime.
          */
         let rxMessagesHistory = try await {
             while true {
@@ -323,7 +323,7 @@ struct IntegrationTests {
         // (1) Subscribe to reactions
         let rxReactionSubscription = rxRoom.reactions.subscribe()
 
-        // (2) Now that we’re subscribed to reactions, send a reaction on the other client and check that we receive it on the subscription
+        // (2) Now that we're subscribed to reactions, send a reaction on the other client and check that we receive it on the subscription
         try await txRoom.reactions.send(
             params: .init(
                 type: "heart",
@@ -338,7 +338,7 @@ struct IntegrationTests {
 
         // MARK: - Occupancy
 
-        // It can take a moment for the occupancy to update from the clients connecting above, so we’ll wait a 2 seconds here.
+        // It can take a moment for the occupancy to update from the clients connecting above, so we'll wait a 2 seconds here.
         try await Task.sleep(nanoseconds: 2_000_000_000)
 
         // (1) Get current occupancy
@@ -357,7 +357,7 @@ struct IntegrationTests {
 
         // (5) Check that we received an updated presence count on the subscription
         _ = try #require(await rxOccupancySubscription.first { @Sendable occupancyEvent in
-            occupancyEvent.presenceMembers == 1 // 1 for txClient entering presence
+            occupancyEvent.occupancy.presenceMembers == 1 // 1 for txClient entering presence
         })
 
         // (6) Check that we received an updated presence count when getting the occupancy
@@ -369,7 +369,7 @@ struct IntegrationTests {
 
         // (8) Check that we received an updated presence count on the subscription
         _ = try #require(await rxOccupancySubscription.first { @Sendable occupancyEvent in
-            occupancyEvent.presenceMembers == 0 // 0 for txClient leaving presence
+            occupancyEvent.occupancy.presenceMembers == 0 // 0 for txClient leaving presence
         })
 
         // (9) Check that we received an updated presence count when getting the occupancy
@@ -509,7 +509,7 @@ struct IntegrationTests {
         })
         #expect(rxRoom.status == .released)
 
-        // (3) Fetch the room we just released and check it’s a new object
+        // (3) Fetch the room we just released and check it's a new object
         let postReleaseRxRoom = try await rxClient.rooms.get(name: roomName, options: .init())
         #expect(postReleaseRxRoom !== rxRoom)
     }
