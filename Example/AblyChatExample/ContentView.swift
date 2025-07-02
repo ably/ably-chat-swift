@@ -40,7 +40,7 @@ struct ContentView: View {
         let screenHeight = UIScreen.main.bounds.height
     #endif
 
-    // Can be replaced with your own room ID
+    // Can be replaced with your own room name
     private let roomName = "DemoRoom"
 
     @State private var chatClient = Environment.current.createChatClient()

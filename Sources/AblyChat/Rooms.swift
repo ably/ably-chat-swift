@@ -6,7 +6,7 @@ import Ably
 @MainActor
 public protocol Rooms: AnyObject, Sendable {
     /**
-     * Gets a room reference by ID. The Rooms class ensures that only one reference
+     * Gets a room reference by name. The Rooms class ensures that only one reference
      * exists for each room. A new reference object is created if it doesn't already
      * exist, or if the one used previously was released using ``release(name:)``.
      *
@@ -19,12 +19,12 @@ public protocol Rooms: AnyObject, Sendable {
      * promise will throw an error.
      *
      * - Parameters:
-     *   - name: The ID of the room.
+     *   - name: The name of the room.
      *   - options: The options for the room.
      *
      * - Returns: A new or existing `Room` object.
      *
-     * - Throws: `ARTErrorInfo` if a room with the same ID but different options already exists.
+     * - Throws: `ARTErrorInfo` if a room with the same name but different options already exists.
      */
     func get(name: String, options: RoomOptions) async throws(ARTErrorInfo) -> any Room
 
@@ -44,7 +44,7 @@ public protocol Rooms: AnyObject, Sendable {
      * Calling this function will abort any in-progress `get(name:options:)` calls for the same room.
      *
      * - Parameters:
-     *   - name: The ID of the room.
+     *   - name: The name of the room.
      */
     func release(name: String) async
 
@@ -78,12 +78,12 @@ internal class DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
     private let logger: InternalLogger
     private let roomFactory: RoomFactory
 
-    /// All the state that a `DefaultRooms` instance might hold for a given room ID.
+    /// All the state that a `DefaultRooms` instance might hold for a given room name.
     private enum RoomState {
-        /// There is no room map entry (see ``RoomMapEntry`` for meaning of this term) for this room ID, but a CHA-RC1g release operation is in progress.
+        /// There is no room map entry (see ``RoomMapEntry`` for meaning of this term) for this room name, but a CHA-RC1g release operation is in progress.
         case releaseOperationInProgress(releaseTask: Task<Void, Never>)
 
-        /// There is a room map entry for this room ID.
+        /// There is a room map entry for this room name.
         case roomMapEntry(RoomMapEntry)
     }
 
@@ -126,7 +126,7 @@ internal class DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
         }
     }
 
-    /// The value for a given room ID is the state that corresponds to that room ID.
+    /// The value for a given room name is the state that corresponds to that room name.
     private var roomStates: [String: RoomState] = [:]
 
     internal init(realtime: any InternalRealtimeClientProtocol, clientOptions: ChatClientOptions, logger: InternalLogger, roomFactory: RoomFactory) {
@@ -306,14 +306,14 @@ internal class DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
     }
 
     private func createRoom(name: String, options: RoomOptions) throws(InternalError) -> RoomFactory.Room {
-        logger.log(message: "Creating room with ID \(name), options \(options)", level: .debug)
+        logger.log(message: "Creating room with name \(name), options \(options)", level: .debug)
         let room = try roomFactory.createRoom(realtime: realtime, chatAPI: chatAPI, name: name, options: options, logger: logger)
         roomStates[name] = .roomMapEntry(.created(room: room))
         return room
     }
 
     #if DEBUG
-        internal func testsOnly_hasRoomMapEntryWithID(_ name: String) -> Bool {
+        internal func testsOnly_hasRoomMapEntryWithName(_ name: String) -> Bool {
             guard let roomState = roomStates[name] else {
                 return false
             }

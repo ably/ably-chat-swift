@@ -58,7 +58,7 @@ struct DefaultRoomsTests {
     // @spec CHA-RC1f
     // @spec CHA-RC1f3
     @Test
-    func get_returnsRoomWithGivenIDAndOptions() async throws {
+    func get_returnsRoomWithGivenNameAndOptions() async throws {
         // Given: an instance of DefaultRooms
         let realtime = MockRealtime(channels: .init(channels: [
             .init(name: "basketball::$chat"),
@@ -72,11 +72,11 @@ struct DefaultRoomsTests {
         let name = "basketball"
         let room = try await rooms.get(name: name, options: options)
 
-        // Then: It returns a room that uses the same Realtime instance, with the given ID and options, and it creates a room map entry for that ID
+        // Then: It returns a room that uses the same Realtime instance, with the given name and options, and it creates a room map entry for that name
         let mockRoom = try #require(room as? MockRoom)
         #expect(mockRoom === roomToReturn)
 
-        #expect(rooms.testsOnly_hasRoomMapEntryWithID(name))
+        #expect(rooms.testsOnly_hasRoomMapEntryWithName(name))
 
         let createRoomArguments = try #require(roomFactory.createRoomArguments)
         #expect(createRoomArguments.realtime === realtime)
@@ -86,8 +86,8 @@ struct DefaultRoomsTests {
 
     // @specOneOf(1/2) CHA-RC1f2 - Tests the case where there is already a room in the room map
     @Test
-    func get_whenRoomExistsInRoomMap_returnsExistingRoomWithGivenID() async throws {
-        // Given: an instance of DefaultRooms, which has, per CHA-RC1f3, a room in the room map with a given ID
+    func get_whenRoomExistsInRoomMap_returnsExistingRoomWithGivenName() async throws {
+        // Given: an instance of DefaultRooms, which has, per CHA-RC1f3, a room in the room map with a given name
         let realtime = MockRealtime(channels: .init(channels: [
             .init(name: "basketball::$chat"),
         ]))
@@ -99,7 +99,7 @@ struct DefaultRoomsTests {
         let name = "basketball"
         let firstRoom = try await rooms.get(name: name, options: options)
 
-        // When: get(name:options:) is called with the same room ID and options
+        // When: get(name:options:) is called with the same room name and options
         let secondRoom = try await rooms.get(name: name, options: options)
 
         // Then: It does not create another room, and returns the same room object
@@ -109,8 +109,8 @@ struct DefaultRoomsTests {
 
     // @specOneOf(2/2) CHA-RC1f2 - Tests the case where, per CHA-RC1f4, there is, in the spec’s language, a _future_ in the room map
     @Test
-    func get_whenFutureExistsInRoomMap_returnsExistingRoomWithGivenID() async throws {
-        // Given: an instance of DefaultRooms, for which, per CHA-RC1f4, a previous call to get(name:options:) with a given ID is waiting for a CHA-RC1g release operation to complete
+    func get_whenFutureExistsInRoomMap_returnsExistingRoomWithGivenName() async throws {
+        // Given: an instance of DefaultRooms, for which, per CHA-RC1f4, a previous call to get(name:options:) with a given name is waiting for a CHA-RC1g release operation to complete
         let realtime = MockRealtime(channels: .init(channels: [
             .init(name: "basketball::$chat"),
         ]))
@@ -139,7 +139,7 @@ struct DefaultRoomsTests {
             operationWaitEvent.waitingOperationType == .get && operationWaitEvent.waitedOperationType == .release
         }
 
-        // When: get(name:options:) is called with the same room ID
+        // When: get(name:options:) is called with the same room name
         async let secondRoom = try await rooms.get(name: name, options: options)
 
         // Then: The second call to `get` waits for the first call, and when the CHA-RC1g release operation completes, the second call to get(name:options:) does not create another room and returns the same room object as the first call
@@ -158,7 +158,7 @@ struct DefaultRoomsTests {
     // @specOneOf(1/2) CHA-RC1f1 - Tests the case where there is already a room in the room map
     @Test
     func get_whenRoomExistsInRoomMap_throwsErrorWhenOptionsDoNotMatch() async throws {
-        // Given: an instance of DefaultRooms, which has, per CHA-RC1f3, a room in the room map with a given ID and options
+        // Given: an instance of DefaultRooms, which has, per CHA-RC1f3, a room in the room map with a given name and options
         let realtime = MockRealtime(channels: .init(channels: [
             .init(name: "basketball::$chat"),
         ]))
@@ -170,7 +170,7 @@ struct DefaultRoomsTests {
         let name = "basketball"
         _ = try await rooms.get(name: name, options: options)
 
-        // When: get(name:options:) is called with the same ID but different options
+        // When: get(name:options:) is called with the same name but different options
         // Then: It throws a `badRequest` error
         let differentOptions = RoomOptions(presence: .init(enableEvents: false))
 
@@ -188,7 +188,7 @@ struct DefaultRoomsTests {
     // @specOneOf(2/2) CHA-RC1f1 - Tests the case where, per CHA-RC1f4, there is, in the spec’s language, a _future_ in the room map
     @Test
     func get_whenFutureExistsInRoomMap_throwsErrorWhenOptionsDoNotMatch() async throws {
-        // Given: an instance of DefaultRooms, for which, per CHA-RC1f4, a previous call to get(name:options:) with a given ID and options is waiting for a CHA-RC1g release operation to complete
+        // Given: an instance of DefaultRooms, for which, per CHA-RC1f4, a previous call to get(name:options:) with a given name and options is waiting for a CHA-RC1g release operation to complete
         let realtime = MockRealtime(channels: .init(channels: [
             .init(name: "basketball::$chat"),
         ]))
@@ -216,7 +216,7 @@ struct DefaultRoomsTests {
             operationWaitEvent.waitingOperationType == .get && operationWaitEvent.waitedOperationType == .release
         }
 
-        // When: get(name:options:) is called with the same ID but different options
+        // When: get(name:options:) is called with the same name but different options
         // Then: The second call to get(name:options:) throws a `badRequest` error
         let differentOptions = RoomOptions(presence: .init(enableEvents: false))
 
@@ -265,7 +265,7 @@ struct DefaultRoomsTests {
         _ = await operationWaitSubscription.first { @Sendable operationWaitEvent in
             operationWaitEvent.waitingOperationType == .get && operationWaitEvent.waitedOperationType == .release
         }
-        #expect(rooms.testsOnly_hasRoomMapEntryWithID(name))
+        #expect(rooms.testsOnly_hasRoomMapEntryWithName(name))
 
         // and When: The CHA-RC1g release operation completes
 
@@ -281,14 +281,14 @@ struct DefaultRoomsTests {
     // @spec CHA-RC1g2
     @Test
     func release_withNoRoomMapEntry_andNoReleaseInProgress() async throws {
-        // Given: An instance of DefaultRooms, with neither a room map entry nor a release operation in progress for a given room ID
+        // Given: An instance of DefaultRooms, with neither a room map entry nor a release operation in progress for a given room name
         let realtime = MockRealtime(channels: .init(channels: [
             .init(name: "basketball::$chat"),
         ]))
         let roomFactory = MockRoomFactory()
         let rooms = DefaultRooms(realtime: realtime, clientOptions: .init(), logger: TestLogger(), roomFactory: roomFactory)
 
-        // When: `release(name:)` is called with this room ID
+        // When: `release(name:)` is called with this room name
         // Then: The call to `release(name:)` completes (this is as much as I can do to test the spec’s “no-op”; i.e. check it doesn’t seem to wait for anything or have any obvious side effects)
         let name = "basketball"
         await rooms.release(name: name)
@@ -317,7 +317,7 @@ struct DefaultRoomsTests {
         // Wait for `release` to be called on the room so that we know that the release operation is in progress
         _ = await roomReleaseCalls.first { @Sendable _ in true }
 
-        // When: `release(name:)` is called with this room ID
+        // When: `release(name:)` is called with this room name
         let operationWaitSubscription = rooms.testsOnly_subscribeToOperationWaitEvents()
         async let secondReleaseResult: Void = rooms.release(name: name)
 
@@ -368,7 +368,7 @@ struct DefaultRoomsTests {
             operationWaitEvent.waitingOperationType == .get && operationWaitEvent.waitedOperationType == .release
         }
 
-        // When: `release(name:)` is called on the room, with the same room ID
+        // When: `release(name:)` is called on the room, with the same room name
         async let secondReleaseResult: Void = rooms.release(name: name)
 
         // Then: The pending call to `get(name:options:)` that is waiting for the “CHA-RC1f future” of the “Given” fails with a RoomReleasedBeforeOperationCompleted error
@@ -395,7 +395,7 @@ struct DefaultRoomsTests {
     // @spec CHA-RC1g5
     @Test
     func release() async throws {
-        // Given: an instance of DefaultRooms, which has a room map entry for a given room ID and has no release operation in progress for that room ID
+        // Given: an instance of DefaultRooms, which has a room map entry for a given room name and has no release operation in progress for that room name
         let realtime = MockRealtime(channels: .init(channels: [
             .init(name: "basketball::$chat"),
         ]))
@@ -407,14 +407,14 @@ struct DefaultRoomsTests {
         let name = "basketball"
 
         let roomToReturn = MockRoom(options: options) {
-            await hasExistingRoomAtMomentRoomReleaseCalledStreamComponents.continuation.yield(rooms.testsOnly_hasRoomMapEntryWithID(name))
+            await hasExistingRoomAtMomentRoomReleaseCalledStreamComponents.continuation.yield(rooms.testsOnly_hasRoomMapEntryWithName(name))
         }
         roomFactory.setRoom(roomToReturn)
 
         _ = try await rooms.get(name: name, options: .init())
-        try #require(rooms.testsOnly_hasRoomMapEntryWithID(name))
+        try #require(rooms.testsOnly_hasRoomMapEntryWithName(name))
 
-        // When: `release(name:)` is called with this room ID
+        // When: `release(name:)` is called with this room name
         _ = await rooms.release(name: name)
 
         // Then:
