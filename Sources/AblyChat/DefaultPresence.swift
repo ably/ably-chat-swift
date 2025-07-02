@@ -3,8 +3,8 @@ import Ably
 internal final class DefaultPresence: Presence {
     private let implementation: Implementation
 
-    internal init(channel: any InternalRealtimeChannelProtocol, roomLifecycleManager: any RoomLifecycleManager, roomID: String, clientID: String, logger: InternalLogger, options: PresenceOptions) {
-        implementation = .init(channel: channel, roomLifecycleManager: roomLifecycleManager, roomID: roomID, clientID: clientID, logger: logger, options: options)
+    internal init(channel: any InternalRealtimeChannelProtocol, roomLifecycleManager: any RoomLifecycleManager, roomName: String, clientID: String, logger: InternalLogger, options: PresenceOptions) {
+        implementation = .init(channel: channel, roomLifecycleManager: roomLifecycleManager, roomName: roomName, clientID: clientID, logger: logger, options: options)
     }
 
     internal func get() async throws(ARTErrorInfo) -> [PresenceMember] {
@@ -58,13 +58,13 @@ internal final class DefaultPresence: Presence {
     private final class Implementation: Sendable {
         private let channel: any InternalRealtimeChannelProtocol
         private let roomLifecycleManager: any RoomLifecycleManager
-        private let roomID: String
+        private let roomName: String
         private let clientID: String
         private let logger: InternalLogger
         private let options: PresenceOptions
 
-        internal init(channel: any InternalRealtimeChannelProtocol, roomLifecycleManager: any RoomLifecycleManager, roomID: String, clientID: String, logger: InternalLogger, options: PresenceOptions) {
-            self.roomID = roomID
+        internal init(channel: any InternalRealtimeChannelProtocol, roomLifecycleManager: any RoomLifecycleManager, roomName: String, clientID: String, logger: InternalLogger, options: PresenceOptions) {
+            self.roomName = roomName
             self.channel = channel
             self.roomLifecycleManager = roomLifecycleManager
             self.clientID = clientID

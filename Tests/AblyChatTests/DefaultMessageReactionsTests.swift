@@ -38,7 +38,7 @@ struct DefaultMessageReactionsTests {
                 return message
             }()
         )
-        let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
+        let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", clientID: "clientId", logger: TestLogger())
 
         // When
         defaultMessages.reactions.subscribe { event in
@@ -81,7 +81,7 @@ struct DefaultMessageReactionsTests {
                 extras: nil
             )
         )
-        let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
+        let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", clientID: "clientId", logger: TestLogger())
 
         // When
         defaultMessages.reactions.subscribeRaw { event in

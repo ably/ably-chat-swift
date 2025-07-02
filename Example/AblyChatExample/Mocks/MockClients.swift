@@ -23,16 +23,16 @@ class MockRooms: Rooms {
     let clientOptions: ChatClientOptions
     private var rooms = [String: MockRoom]()
 
-    func get(roomID: String, options: RoomOptions) async throws(ARTErrorInfo) -> any Room {
-        if let room = rooms[roomID] {
+    func get(name: String, options: RoomOptions) async throws(ARTErrorInfo) -> any Room {
+        if let room = rooms[name] {
             return room
         }
-        let room = MockRoom(roomID: roomID, options: options)
-        rooms[roomID] = room
+        let room = MockRoom(name: name, options: options)
+        rooms[name] = room
         return room
     }
 
-    func release(roomID _: String) async {
+    func release(name _: String) async {
         fatalError("Not yet implemented")
     }
 
@@ -44,7 +44,7 @@ class MockRooms: Rooms {
 class MockRoom: Room {
     private let clientID = "AblyTest"
 
-    nonisolated let roomID: String
+    nonisolated let name: String
     nonisolated let options: RoomOptions
     nonisolated let messages: any Messages
     nonisolated let presence: any Presence
@@ -54,14 +54,14 @@ class MockRoom: Room {
 
     let channel: any RealtimeChannelProtocol = MockRealtime.Channel()
 
-    init(roomID: String, options: RoomOptions) {
-        self.roomID = roomID
+    init(name: String, options: RoomOptions) {
+        self.name = name
         self.options = options
-        messages = MockMessages(clientID: clientID, roomID: roomID)
-        presence = MockPresence(clientID: clientID, roomID: roomID)
-        reactions = MockRoomReactions(clientID: clientID, roomID: roomID)
-        typing = MockTyping(clientID: clientID, roomID: roomID)
-        occupancy = MockOccupancy(clientID: clientID, roomID: roomID)
+        messages = MockMessages(clientID: clientID, roomName: name)
+        presence = MockPresence(clientID: clientID, roomName: name)
+        reactions = MockRoomReactions(clientID: clientID, roomName: name)
+        typing = MockTyping(clientID: clientID, roomName: name)
+        occupancy = MockOccupancy(clientID: clientID, roomName: name)
     }
 
     var status: RoomStatus = .initialized
@@ -73,7 +73,7 @@ class MockRoom: Room {
     }
 
     func attach() async throws(ARTErrorInfo) {
-        print("Mock client attached to room with roomID: \(roomID)")
+        print("Mock client attached to room with roomName: \(name)")
     }
 
     func detach() async throws(ARTErrorInfo) {
@@ -105,7 +105,7 @@ class MockRoom: Room {
 
 class MockMessages: Messages {
     let clientID: String
-    let roomID: String
+    let roomName: String
 
     var reactions: any MessageReactions
 
@@ -116,10 +116,10 @@ class MockMessages: Messages {
 
     private let mockSubscriptions = MockMessageSubscriptionStorage<Message>()
 
-    init(clientID: String, roomID: String) {
+    init(clientID: String, roomName: String) {
         self.clientID = clientID
-        self.roomID = roomID
-        reactions = MockMessageReactions(clientID: clientID, roomID: roomID)
+        self.roomName = roomName
+        reactions = MockMessageReactions(clientID: clientID, roomName: roomName)
     }
 
     func subscribe(_ callback: @escaping @MainActor (Message) -> Void) async throws(ARTErrorInfo) -> MessageSubscriptionResponseProtocol {
@@ -129,7 +129,6 @@ class MockMessages: Messages {
                     serial: "\(Date().timeIntervalSince1970)",
                     action: .create,
                     clientID: MockStrings.names.randomElement()!,
-                    roomID: self.roomID,
                     text: MockStrings.randomPhrase(),
                     createdAt: Date(),
                     metadata: [:],
@@ -145,7 +144,7 @@ class MockMessages: Messages {
                 return message
             },
             previousMessages: { _ in
-                MockMessagesPaginatedResult(clientID: self.clientID, roomID: self.roomID)
+                MockMessagesPaginatedResult(clientID: self.clientID, roomName: self.roomName)
             },
             interval: 3.0,
             callback: callback
@@ -153,7 +152,7 @@ class MockMessages: Messages {
     }
 
     func get(options _: QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message> {
-        MockMessagesPaginatedResult(clientID: clientID, roomID: roomID)
+        MockMessagesPaginatedResult(clientID: clientID, roomName: roomName)
     }
 
     func send(params: SendMessageParams) async throws(ARTErrorInfo) -> Message {
@@ -161,7 +160,6 @@ class MockMessages: Messages {
             serial: "\(Date().timeIntervalSince1970)",
             action: .create,
             clientID: clientID,
-            roomID: roomID,
             text: params.text,
             createdAt: Date(),
             metadata: params.metadata ?? [:],
@@ -179,7 +177,6 @@ class MockMessages: Messages {
             serial: newMessage.serial,
             action: .update,
             clientID: clientID,
-            roomID: roomID,
             text: newMessage.text,
             createdAt: Date(),
             metadata: newMessage.metadata,
@@ -197,7 +194,6 @@ class MockMessages: Messages {
             serial: message.serial,
             action: .delete,
             clientID: clientID,
-            roomID: roomID,
             text: message.text,
             createdAt: Date(),
             metadata: message.metadata,
@@ -213,7 +209,7 @@ class MockMessages: Messages {
 
 class MockMessageReactions: MessageReactions {
     let clientID: String
-    let roomID: String
+    let roomName: String
 
     var clientIDs: Set<String> = []
     var messageSerials: [String] = []
@@ -241,9 +237,9 @@ class MockMessageReactions: MessageReactions {
         )
     }
 
-    init(clientID: String, roomID: String) {
+    init(clientID: String, roomName: String) {
         self.clientID = clientID
-        self.roomID = roomID
+        self.roomName = roomName
     }
 
     func send(to messageSerial: String, params: SendMessageReactionParams) async throws(ARTErrorInfo) {
@@ -310,13 +306,13 @@ class MockMessageReactions: MessageReactions {
 
 class MockRoomReactions: RoomReactions {
     let clientID: String
-    let roomID: String
+    let roomName: String
 
     private let mockSubscriptions = MockSubscriptionStorage<Reaction>()
 
-    init(clientID: String, roomID: String) {
+    init(clientID: String, roomName: String) {
         self.clientID = clientID
-        self.roomID = roomID
+        self.roomName = roomName
     }
 
     func send(params: SendReactionParams) async throws(ARTErrorInfo) {
@@ -352,13 +348,13 @@ class MockRoomReactions: RoomReactions {
 
 class MockTyping: Typing {
     let clientID: String
-    let roomID: String
+    let roomName: String
 
     private let mockSubscriptions = MockSubscriptionStorage<TypingSetEvent>()
 
-    init(clientID: String, roomID: String) {
+    init(clientID: String, roomName: String) {
         self.clientID = clientID
-        self.roomID = roomID
+        self.roomName = roomName
     }
 
     @discardableResult
@@ -406,13 +402,13 @@ class MockTyping: Typing {
 
 class MockPresence: Presence {
     let clientID: String
-    let roomID: String
+    let roomName: String
 
     private let mockSubscriptions = MockSubscriptionStorage<PresenceEvent>()
 
-    init(clientID: String, roomID: String) {
+    init(clientID: String, roomName: String) {
         self.clientID = clientID
-        self.roomID = roomID
+        self.roomName = roomName
     }
 
     private func createSubscription(callback: @escaping @MainActor (PresenceEvent) -> Void) -> SubscriptionProtocol {
@@ -526,13 +522,13 @@ class MockPresence: Presence {
 
 class MockOccupancy: Occupancy {
     let clientID: String
-    let roomID: String
+    let roomName: String
 
     private let mockSubscriptions = MockSubscriptionStorage<OccupancyEvent>()
 
-    init(clientID: String, roomID: String) {
+    init(clientID: String, roomName: String) {
         self.clientID = clientID
-        self.roomID = roomID
+        self.roomName = roomName
     }
 
     @discardableResult

@@ -111,7 +111,7 @@ Task {
 
 // Get a chat room for the tutorial
 let room = try await chatClient.rooms.get(
-    roomID: "readme-getting-started")
+    name: "readme-getting-started")
 
 // Add a listener to observe changes to the chat rooms status
 let statusSubscription = room.onStatusChange()
@@ -140,7 +140,7 @@ _ = try await room.messages.send(
 // Wait 5 seconds before closing the connection so we have plenty of time to receive the message we just sent
 // This disconnects the client from Ably servers
 try await Task.sleep(nanoseconds: 5 * NSEC_PER_SEC)
-await chatClient.rooms.release(roomID: "readme-getting-started")
+await chatClient.rooms.release(name: "readme-getting-started")
 realtime.close()
 print("Connection closed")
 ```

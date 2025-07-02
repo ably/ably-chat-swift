@@ -7,12 +7,12 @@ struct DefaultRoomReactionsTests {
     // @spec CHA-ER3d
     @Test
     func reactionsAreSentInTheCorrectFormat() async throws {
-        // channel name and roomID values are arbitrary
+        // channel name and roomName values are arbitrary
         // Given
         let channel = MockRealtimeChannel(name: "basketball::$chat")
 
         // When
-        let defaultRoomReactions = DefaultRoomReactions(channel: channel, clientID: "mockClientId", roomID: "basketball", logger: TestLogger())
+        let defaultRoomReactions = DefaultRoomReactions(channel: channel, clientID: "mockClientId", roomName: "basketball", logger: TestLogger())
 
         let sendReactionParams = SendReactionParams(
             type: "like",
@@ -49,7 +49,7 @@ struct DefaultRoomReactionsTests {
         let channel = MockRealtimeChannel(
             messageToEmitOnSubscribe: generateMessage(serial: "1", reactionType: ":like:")
         )
-        let defaultRoomReactions = DefaultRoomReactions(channel: channel, clientID: "mockClientId", roomID: "basketball", logger: TestLogger())
+        let defaultRoomReactions = DefaultRoomReactions(channel: channel, clientID: "mockClientId", roomName: "basketball", logger: TestLogger())
 
         // When
         let subscription = defaultRoomReactions.subscribe { reaction in
@@ -86,7 +86,7 @@ struct DefaultRoomReactionsTests {
                 return message
             }()
         )
-        let defaultRoomReactions = DefaultRoomReactions(channel: channel, clientID: "mockClientId", roomID: "basketball", logger: TestLogger())
+        let defaultRoomReactions = DefaultRoomReactions(channel: channel, clientID: "mockClientId", roomName: "basketball", logger: TestLogger())
 
         // When
         defaultRoomReactions.subscribe { reaction in

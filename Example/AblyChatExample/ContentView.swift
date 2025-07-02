@@ -41,7 +41,7 @@ struct ContentView: View {
     #endif
 
     // Can be replaced with your own room ID
-    private let roomID = "DemoRoom"
+    private let roomName = "DemoRoom"
 
     @State private var chatClient = Environment.current.createChatClient()
 
@@ -78,7 +78,7 @@ struct ContentView: View {
     }
 
     private func room() async throws -> Room {
-        try await chatClient.rooms.get(roomID: roomID, options: .init(occupancy: .init(enableEvents: true)))
+        try await chatClient.rooms.get(name: roomName, options: .init(occupancy: .init(enableEvents: true)))
     }
 
     private var sendTitle: String {
@@ -101,7 +101,7 @@ struct ContentView: View {
     var body: some View {
         ZStack {
             VStack {
-                Text("In \(roomID) as \(currentClientID)")
+                Text("In \(roomName) as \(currentClientID)")
                     .font(.headline)
                     .padding(5)
                 HStack {

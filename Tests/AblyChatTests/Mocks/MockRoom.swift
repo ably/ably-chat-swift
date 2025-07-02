@@ -12,7 +12,7 @@ class MockRoom: InternalRoom {
         _releaseCallsAsyncSequence = AsyncStream<Void>.makeStream()
     }
 
-    nonisolated var roomID: String {
+    nonisolated var name: String {
         fatalError("Not implemented")
     }
 
