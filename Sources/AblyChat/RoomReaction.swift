@@ -15,7 +15,7 @@ public typealias ReactionMetadata = Metadata
 /**
  * Represents a room-level reaction.
  */
-public struct Reaction: Sendable {
+public struct RoomReaction: Sendable {
     /**
      * The type of the reaction, for example "like" or "love".
      */

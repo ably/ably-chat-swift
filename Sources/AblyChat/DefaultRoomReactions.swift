@@ -81,7 +81,7 @@ internal final class DefaultRoomReactions: RoomReactions {
                     )
 
                     // (CHA-ER4d) Realtime events that are malformed (unknown fields should be ignored) shall not be emitted to listeners.
-                    let reaction = Reaction(
+                    let reaction = RoomReaction(
                         type: dto.type,
                         metadata: dto.metadata ?? [:],
                         headers: dto.headers ?? [:],

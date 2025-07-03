@@ -89,7 +89,7 @@ enum ReactionType: String, CaseIterable {
     }
 }
 
-extension Reaction {
+extension RoomReaction {
     var displayedText: String {
         type
     }
