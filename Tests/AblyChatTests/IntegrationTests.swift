@@ -117,8 +117,8 @@ struct IntegrationTests {
         )
 
         // (4) Wait for rxRoom to see the message we just sent
-        let throwawayRxMessage = try #require(await throwawayRxMessageSubscription.first { @Sendable _ in true })
-        #expect(throwawayRxMessage == txMessageBeforeRxSubscribe)
+        let throwawayRxEvent = try #require(await throwawayRxMessageSubscription.first { @Sendable _ in true })
+        #expect(throwawayRxEvent.message == txMessageBeforeRxSubscribe)
 
         // (5) Subscribe to messages
         let rxMessageSubscription = try await rxRoom.messages.subscribe()
@@ -131,8 +131,8 @@ struct IntegrationTests {
                 headers: ["someHeadersKey": 456, "someOtherHeadersKey": "bar"]
             )
         )
-        let rxMessageFromSubscription = try #require(await rxMessageSubscription.first { @Sendable _ in true })
-        #expect(rxMessageFromSubscription == txMessageAfterRxSubscribe)
+        let rxEventFromSubscription = try #require(await rxMessageSubscription.first { @Sendable _ in true })
+        #expect(rxEventFromSubscription.message == txMessageAfterRxSubscribe)
 
         // MARK: - Message Reactions (Summary)
 
@@ -281,8 +281,8 @@ struct IntegrationTests {
         )
 
         // (2) Check that we received the edited message on the subscription
-        let rxEditedMessageFromSubscription = try #require(await rxMessageEditDeleteSubscription.first { @Sendable _ in true })
-
+        let rxEditedEventFromSubscription = try #require(await rxMessageEditDeleteSubscription.first { @Sendable _ in true })
+        let rxEditedMessageFromSubscription = rxEditedEventFromSubscription.message
         // The createdAt varies by milliseconds so we can't compare the entire objects directly
         #expect(rxEditedMessageFromSubscription.serial == txEditedMessage.serial)
         #expect(rxEditedMessageFromSubscription.clientID == txEditedMessage.clientID)
@@ -306,8 +306,8 @@ struct IntegrationTests {
         )
 
         // (4) Check that we received the deleted message on the subscription
-        let rxDeletedMessageFromSubscription = try #require(await rxMessageEditDeleteSubscription.first { @Sendable _ in true })
-
+        let rxDeletedEventFromSubscription = try #require(await rxMessageEditDeleteSubscription.first { @Sendable _ in true })
+        let rxDeletedMessageFromSubscription = rxDeletedEventFromSubscription.message
         // The createdAt varies by milliseconds so we can't compare the entire objects directly
         #expect(rxDeletedMessageFromSubscription.serial == txDeleteMessage.serial)
         #expect(rxDeletedMessageFromSubscription.clientID == txDeleteMessage.clientID)

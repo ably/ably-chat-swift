@@ -114,7 +114,7 @@ class MockMessages: Messages {
         reactions as! MockMessageReactions
     }
 
-    private let mockSubscriptions = MockMessageSubscriptionStorage<Message>()
+    private let mockSubscriptions = MockMessageSubscriptionStorage<ChatMessageEvent>()
 
     init(clientID: String, roomName: String) {
         self.clientID = clientID
@@ -122,7 +122,7 @@ class MockMessages: Messages {
         reactions = MockMessageReactions(clientID: clientID, roomName: roomName)
     }
 
-    func subscribe(_ callback: @escaping @MainActor (Message) -> Void) async throws(ARTErrorInfo) -> MessageSubscriptionResponseProtocol {
+    func subscribe(_ callback: @escaping @MainActor (ChatMessageEvent) -> Void) async throws(ARTErrorInfo) -> MessageSubscriptionResponseProtocol {
         mockSubscriptions.create(
             randomElement: {
                 let message = Message(
@@ -141,7 +141,7 @@ class MockMessages: Messages {
                     self.mockReactions.messageSerials.append(message.serial)
                 }
                 self.mockReactions.clientIDs.insert(message.clientID)
-                return message
+                return ChatMessageEvent(message: message)
             },
             previousMessages: { _ in
                 MockMessagesPaginatedResult(clientID: self.clientID, roomName: self.roomName)
@@ -168,7 +168,7 @@ class MockMessages: Messages {
             timestamp: Date(),
             operation: nil
         )
-        mockSubscriptions.emit(message)
+        mockSubscriptions.emit(ChatMessageEvent(message: message))
         return message
     }
 
@@ -185,7 +185,7 @@ class MockMessages: Messages {
             timestamp: Date(),
             operation: .init(clientID: clientID)
         )
-        mockSubscriptions.emit(message)
+        mockSubscriptions.emit(ChatMessageEvent(message: message))
         return message
     }
 
@@ -202,7 +202,7 @@ class MockMessages: Messages {
             timestamp: Date(),
             operation: .init(clientID: clientID)
         )
-        mockSubscriptions.emit(message)
+        mockSubscriptions.emit(ChatMessageEvent(message: message))
         return message
     }
 }

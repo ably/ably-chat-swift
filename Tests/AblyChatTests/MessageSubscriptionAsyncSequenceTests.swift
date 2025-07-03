@@ -31,21 +31,18 @@ struct MessageSubscriptionAsyncSequenceTests {
 
     @Test
     func withMockAsyncSequence() async {
-        let subscription = MessageSubscriptionAsyncSequence(mockAsyncSequence: messages.async) { _ in fatalError("Not implemented") }
-
-        #expect(await Array(subscription.prefix(2)).map(\.text) == ["First", "Second"])
+        let events = messages.map { ChatMessageEvent(message: $0) }
+        let subscription = MessageSubscriptionAsyncSequence(mockAsyncSequence: events.async) { _ in fatalError("Not implemented") }
+        #expect(await Array(subscription.prefix(2)).map(\.message.text) == ["First", "Second"])
     }
 
     @Test
     func emit() async {
         let subscription = MessageSubscriptionAsyncSequence(bufferingPolicy: .unbounded) { _ in fatalError("Not implemented") }
-
         async let emittedElements = Array(subscription.prefix(2))
-
-        subscription.emit(messages[0])
-        subscription.emit(messages[1])
-
-        #expect(await emittedElements.map(\.text) == ["First", "Second"])
+        subscription.emit(ChatMessageEvent(message: messages[0]))
+        subscription.emit(ChatMessageEvent(message: messages[1]))
+        #expect(await emittedElements.map(\.message.text) == ["First", "Second"])
     }
 
     @Test

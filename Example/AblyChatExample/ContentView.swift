@@ -253,9 +253,10 @@ struct ContentView: View {
     }
 
     func showMessages(room: Room) async throws {
-        let subscription = try await room.messages.subscribe { message in
-            switch message.action {
-            case .create:
+        let subscription = try await room.messages.subscribe { event in
+            let message = event.message
+            switch event.type {
+            case .created:
                 withAnimation {
                     listItems.insert(
                         .message(
@@ -267,7 +268,7 @@ struct ContentView: View {
                         at: 0
                     )
                 }
-            case .update, .delete:
+            case .updated, .deleted:
                 if let index = listItems.firstIndex(where: { $0.id == message.id }) {
                     listItems[index] = .message(
                         .init(
