@@ -454,35 +454,35 @@ struct DefaultPresenceTests {
         let subscription = await defaultPresence.subscribe(events: .all) // CHA-PR7a and CHA-PR7b since `all` is just a selection of all events
 
         // When
-        subscription.emit(PresenceEvent(action: .present, clientID: "client1", timestamp: Date(), data: nil))
+        subscription.emit(PresenceEvent(type: .present, member: PresenceMember(clientID: "client1", data: nil, extras: nil, updatedAt: Date())))
 
         // Then
         let presentEvent = try #require(await subscription.first { _ in true })
-        #expect(presentEvent.action == .present)
-        #expect(presentEvent.clientID == "client1")
+        #expect(presentEvent.type == .present)
+        #expect(presentEvent.member.clientID == "client1")
 
         // When
-        subscription.emit(PresenceEvent(action: .enter, clientID: "client1", timestamp: Date(), data: nil))
+        subscription.emit(PresenceEvent(type: .enter, member: PresenceMember(clientID: "client1", data: nil, extras: nil, updatedAt: Date())))
 
         // Then
         let enterEvent = try #require(await subscription.first { _ in true })
-        #expect(enterEvent.action == .enter)
-        #expect(enterEvent.clientID == "client1")
+        #expect(enterEvent.type == .enter)
+        #expect(enterEvent.member.clientID == "client1")
 
         // When
-        subscription.emit(PresenceEvent(action: .update, clientID: "client1", timestamp: Date(), data: nil))
+        subscription.emit(PresenceEvent(type: .update, member: PresenceMember(clientID: "client1", data: nil, extras: nil, updatedAt: Date())))
 
         // Then
         let updateEvent = try #require(await subscription.first { _ in true })
-        #expect(updateEvent.action == .update)
-        #expect(updateEvent.clientID == "client1")
+        #expect(updateEvent.type == .update)
+        #expect(updateEvent.member.clientID == "client1")
 
         // When
-        subscription.emit(PresenceEvent(action: .leave, clientID: "client1", timestamp: Date(), data: nil))
+        subscription.emit(PresenceEvent(type: .leave, member: PresenceMember(clientID: "client1", data: nil, extras: nil, updatedAt: Date())))
 
         // Then
         let leaveEvent = try #require(await subscription.first { _ in true })
-        #expect(leaveEvent.action == .leave)
-        #expect(leaveEvent.clientID == "client1")
+        #expect(leaveEvent.type == .leave)
+        #expect(leaveEvent.member.clientID == "client1")
     }
 }
