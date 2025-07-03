@@ -3,13 +3,13 @@ import Ably
 /**
  * Chat Message Actions.
  */
-public enum MessageAction: String, Sendable {
+public enum MessageAction: Sendable {
     /**
      * Action applied to a new message.
      */
-    case create = "message.create"
-    case update = "message.update"
-    case delete = "message.delete"
+    case create
+    case update
+    case delete
 
     internal static func fromRealtimeAction(_ action: ARTMessageAction) -> Self? {
         switch action {
@@ -29,6 +29,34 @@ public enum MessageAction: String, Sendable {
     }
 }
 
+extension MessageAction: InternalRawRepresentable {
+    internal typealias RawValue = String
+
+    internal init?(rawValue: String) {
+        switch rawValue {
+        case "message.create":
+            self = .create
+        case "message.update":
+            self = .update
+        case "message.delete":
+            self = .delete
+        default:
+            return nil
+        }
+    }
+
+    internal var rawValue: String {
+        switch self {
+        case .create:
+            "message.create"
+        case .update:
+            "message.update"
+        case .delete:
+            "message.delete"
+        }
+    }
+}
+
 /// Realtime chat message names.
 internal enum RealtimeMessageName: String, Sendable {
     /// Represents a regular chat message.
@@ -44,12 +72,28 @@ internal enum OccupancyEvents: String {
 }
 
 /// Enum representing the typing event types.
-public enum TypingEventType: String, Sendable {
-    case started = "typing.started"
-    case stopped = "typing.stopped"
+public enum TypingEventType: Sendable {
+    case started
+    case stopped
+
+    internal var rawValue: String {
+        switch self {
+        case .started:
+            "typing.started"
+        case .stopped:
+            "typing.stopped"
+        }
+    }
 }
 
 /// Enum representing the typing set event types.
-public enum TypingSetEventType: String, Sendable {
-    case setChanged = "typing.set.changed"
+public enum TypingSetEventType: Sendable {
+    case setChanged
+
+    internal var rawValue: String {
+        switch self {
+        case .setChanged:
+            "typing.set.changed"
+        }
+    }
 }
