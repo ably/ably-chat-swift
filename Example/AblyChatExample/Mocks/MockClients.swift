@@ -308,7 +308,7 @@ class MockRoomReactions: RoomReactions {
     let clientID: String
     let roomName: String
 
-    private let mockSubscriptions = MockSubscriptionStorage<Reaction>()
+    private let mockSubscriptions = MockSubscriptionStorage<RoomReactionEvent>()
 
     init(clientID: String, roomName: String) {
         self.clientID = clientID
@@ -324,14 +324,15 @@ class MockRoomReactions: RoomReactions {
             clientID: clientID,
             isSelf: false
         )
-        mockSubscriptions.emit(reaction)
+        let event = RoomReactionEvent(type: .reaction, reaction: reaction)
+        mockSubscriptions.emit(event)
     }
 
     @discardableResult
-    func subscribe(_ callback: @escaping @MainActor (Reaction) -> Void) -> SubscriptionProtocol {
+    func subscribe(_ callback: @escaping @MainActor (RoomReactionEvent) -> Void) -> SubscriptionProtocol {
         mockSubscriptions.create(
             randomElement: {
-                Reaction(
+                let reaction = Reaction(
                     type: ReactionType.allCases.randomElement()!.emoji,
                     metadata: [:],
                     headers: [:],
@@ -339,6 +340,7 @@ class MockRoomReactions: RoomReactions {
                     clientID: self.clientID,
                     isSelf: false
                 )
+                return RoomReactionEvent(type: .reaction, reaction: reaction)
             },
             interval: 0.5,
             callback: callback

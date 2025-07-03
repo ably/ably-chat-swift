@@ -292,9 +292,9 @@ struct ContentView: View {
     }
 
     func subscribeToReactions(room: Room) {
-        room.reactions.subscribe { reaction in
+        room.reactions.subscribe { event in
             withAnimation {
-                showReaction(reaction.displayedText)
+                showReaction(event.reaction.displayedText)
             }
         }
     }
