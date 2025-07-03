@@ -171,9 +171,13 @@ extension Message: JSONObjectDecodable {
                 values: summaryJson
             )
         }
+        let rawAction = try jsonObject.stringValueForKey("action")
+        guard let action = MessageAction(rawValue: rawAction) else {
+            throw JSONValueDecodingError.failedToDecodeFromRawValue(rawAction).toInternalError()
+        }
         try self.init(
             serial: serial,
-            action: jsonObject.rawRepresentableValueForKey("action"),
+            action: action,
             clientID: jsonObject.stringValueForKey("clientId"),
             roomID: jsonObject.stringValueForKey("roomId"),
             text: jsonObject.stringValueForKey("text"),
