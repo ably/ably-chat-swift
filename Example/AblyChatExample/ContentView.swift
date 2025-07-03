@@ -63,7 +63,7 @@ struct ContentView: View {
             case let .message(item):
                 item.message.id
             case let .presence(item):
-                item.presence.timestamp.description
+                item.presence.member.updatedAt.description
             }
         }
     }

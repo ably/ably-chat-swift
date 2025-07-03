@@ -192,37 +192,9 @@ public extension Presence {
  * Type for PresenceMember
  */
 public struct PresenceMember: Sendable {
-    public enum Action: Sendable {
-        case present
-        case enter
-        case leave
-        case update
-        case absent
-        case unknown
-
-        internal init(from action: ARTPresenceAction) {
-            switch action {
-            case .present:
-                self = .present
-            case .enter:
-                self = .enter
-            case .leave:
-                self = .leave
-            case .update:
-                self = .update
-            case .absent:
-                self = .absent
-            @unknown default:
-                self = .unknown
-                print("Unknown presence action encountered: \(action)")
-            }
-        }
-    }
-
-    public init(clientID: String, data: PresenceData?, action: PresenceMember.Action, extras: [String: JSONValue]?, updatedAt: Date) {
+    public init(clientID: String, data: PresenceData?, extras: [String: JSONValue]?, updatedAt: Date) {
         self.clientID = clientID
         self.data = data
-        self.action = action
         self.extras = extras
         self.updatedAt = updatedAt
     }
@@ -237,11 +209,6 @@ public struct PresenceMember: Sendable {
      * `nil` means that there is no presence data; this is different to a `JSONValue` of case `.null`
      */
     public var data: PresenceData?
-
-    /**
-     * The current state of the presence member.
-     */
-    public var action: Action
 
     /**
      * The extras associated with the presence member.
@@ -295,28 +262,16 @@ public struct PresenceEvent: Sendable {
     /**
      * The type of the presence event.
      */
-    public var action: PresenceEventType
+    public var type: PresenceEventType
 
     /**
-     * The clientId of the client that triggered the presence event.
+     * The member associated with the presence event.
      */
-    public var clientID: String
+    public var member: PresenceMember
 
-    /**
-     * The timestamp of the presence event.
-     */
-    public var timestamp: Date
-
-    /**
-     * The data associated with the presence event.
-     */
-    public var data: PresenceData?
-
-    public init(action: PresenceEventType, clientID: String, timestamp: Date, data: PresenceData?) {
-        self.action = action
-        self.clientID = clientID
-        self.timestamp = timestamp
-        self.data = data
+    public init(type: PresenceEventType, member: PresenceMember) {
+        self.type = type
+        self.member = member
     }
 }
 
