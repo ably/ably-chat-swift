@@ -332,9 +332,9 @@ struct IntegrationTests {
             )
         )
         let rxReactionFromSubscription = try #require(await rxReactionSubscription.first { @Sendable _ in true })
-        #expect(rxReactionFromSubscription.type == "heart")
-        #expect(rxReactionFromSubscription.metadata == ["someMetadataKey": .number(123), "someOtherMetadataKey": .string("foo")])
-        #expect(rxReactionFromSubscription.headers == ["someHeadersKey": .number(456), "someOtherHeadersKey": .string("bar")])
+        #expect(rxReactionFromSubscription.reaction.type == "heart")
+        #expect(rxReactionFromSubscription.reaction.metadata == ["someMetadataKey": .number(123), "someOtherMetadataKey": .string("foo")])
+        #expect(rxReactionFromSubscription.reaction.headers == ["someHeadersKey": .number(456), "someOtherHeadersKey": .string("bar")])
 
         // MARK: - Occupancy
 

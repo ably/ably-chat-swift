@@ -21,12 +21,12 @@ public protocol RoomReactions: AnyObject, Sendable {
      * Subscribes a given listener to the room reactions.
      *
      * - Parameters:
-     *   - callback: The listener closure for capturing room ``Reaction``.
+     *   - callback: The listener closure for capturing room `RoomReactionEvent`.
      *
-     * - Returns: A subscription that can be used to unsubscribe from ``Reaction`` events.
+     * - Returns: A subscription that can be used to unsubscribe from `RoomReactionEvent` events.
      */
     @discardableResult
-    func subscribe(_ callback: @escaping @MainActor (Reaction) -> Void) -> SubscriptionProtocol
+    func subscribe(_ callback: @escaping @MainActor (RoomReactionEvent) -> Void) -> SubscriptionProtocol
 }
 
 /// `AsyncSequence` variant of receiving room reactions.
@@ -37,13 +37,13 @@ public extension RoomReactions {
      * - Parameters:
      *   - bufferingPolicy: The ``BufferingPolicy`` for the created subscription.
      *
-     * - Returns: A subscription `AsyncSequence` that can be used to iterate through ``Reaction`` events.
+     * - Returns: A subscription `AsyncSequence` that can be used to iterate through `RoomReactionEvent` events.
      */
-    func subscribe(bufferingPolicy: BufferingPolicy) -> SubscriptionAsyncSequence<Reaction> {
-        let subscriptionAsyncSequence = SubscriptionAsyncSequence<Reaction>(bufferingPolicy: bufferingPolicy)
+    func subscribe(bufferingPolicy: BufferingPolicy) -> SubscriptionAsyncSequence<RoomReactionEvent> {
+        let subscriptionAsyncSequence = SubscriptionAsyncSequence<RoomReactionEvent>(bufferingPolicy: bufferingPolicy)
 
-        let subscription = subscribe { reaction in
-            subscriptionAsyncSequence.emit(reaction)
+        let subscription = subscribe { event in
+            subscriptionAsyncSequence.emit(event)
         }
 
         subscriptionAsyncSequence.addTerminationHandler {
@@ -56,7 +56,7 @@ public extension RoomReactions {
     }
 
     /// Same as calling ``subscribe(bufferingPolicy:)`` with ``BufferingPolicy/unbounded``.
-    func subscribe() -> SubscriptionAsyncSequence<Reaction> {
+    func subscribe() -> SubscriptionAsyncSequence<RoomReactionEvent> {
         subscribe(bufferingPolicy: .unbounded)
     }
 }
@@ -102,5 +102,20 @@ public struct SendReactionParams: Sendable {
         self.type = type
         self.metadata = metadata
         self.headers = headers
+    }
+}
+
+/// Event type for room reaction subscription.
+public enum RoomReactionEventType: String, Sendable {
+    case reaction
+}
+
+/// Event emitted by room reaction subscriptions, containing the type and the reaction.
+public struct RoomReactionEvent: Sendable {
+    public let type: RoomReactionEventType
+    public let reaction: Reaction
+    public init(type: RoomReactionEventType = .reaction, reaction: Reaction) {
+        self.type = type
+        self.reaction = reaction
     }
 }

@@ -52,9 +52,9 @@ struct DefaultRoomReactionsTests {
         let defaultRoomReactions = DefaultRoomReactions(channel: channel, clientID: "mockClientId", roomName: "basketball", logger: TestLogger())
 
         // When
-        let subscription = defaultRoomReactions.subscribe { reaction in
+        let subscription = defaultRoomReactions.subscribe { event in
             // Then
-            #expect(reaction.type == ":like:")
+            #expect(event.reaction.type == ":like:")
         }
 
         // CHA-ER4b
@@ -89,8 +89,8 @@ struct DefaultRoomReactionsTests {
         let defaultRoomReactions = DefaultRoomReactions(channel: channel, clientID: "mockClientId", roomName: "basketball", logger: TestLogger())
 
         // When
-        defaultRoomReactions.subscribe { reaction in
-            #expect(reaction.type == ":like:")
+        defaultRoomReactions.subscribe { event in
+            #expect(event.reaction.type == ":like:")
         }
         // will not be received and expectations above will not fail
         channel.simulateIncomingMessage(
