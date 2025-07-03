@@ -151,7 +151,7 @@ class MockMessages: Messages {
         )
     }
 
-    func get(options _: QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message> {
+    func history(options _: QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message> {
         MockMessagesPaginatedResult(clientID: clientID, roomName: roomName)
     }
 
@@ -316,7 +316,7 @@ class MockRoomReactions: RoomReactions {
     }
 
     func send(params: SendReactionParams) async throws(ARTErrorInfo) {
-        let reaction = Reaction(
+        let reaction = RoomReaction(
             type: params.type,
             metadata: [:],
             headers: [:],
@@ -332,7 +332,7 @@ class MockRoomReactions: RoomReactions {
     func subscribe(_ callback: @escaping @MainActor (RoomReactionEvent) -> Void) -> SubscriptionProtocol {
         mockSubscriptions.create(
             randomElement: {
-                let reaction = Reaction(
+                let reaction = RoomReaction(
                     type: ReactionType.allCases.randomElement()!.emoji,
                     metadata: [:],
                     headers: [:],

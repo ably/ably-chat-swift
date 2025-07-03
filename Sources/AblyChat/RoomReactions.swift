@@ -113,8 +113,8 @@ public enum RoomReactionEventType: String, Sendable {
 /// Event emitted by room reaction subscriptions, containing the type and the reaction.
 public struct RoomReactionEvent: Sendable {
     public let type: RoomReactionEventType
-    public let reaction: Reaction
-    public init(type: RoomReactionEventType = .reaction, reaction: Reaction) {
+    public let reaction: RoomReaction
+    public init(type: RoomReactionEventType = .reaction, reaction: RoomReaction) {
         self.type = type
         self.reaction = reaction
     }
