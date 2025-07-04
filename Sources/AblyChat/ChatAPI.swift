@@ -44,13 +44,13 @@ internal final class ChatAPI: Sendable {
 
     internal struct SendMessageReactionParams: Sendable {
         internal let type: MessageReactionType
-        internal let reaction: String
+        internal let name: String
         internal let count: Int?
     }
 
     internal struct DeleteMessageReactionParams: Sendable {
         internal let type: MessageReactionType
-        internal let reaction: String?
+        internal let name: String?
     }
 
     internal struct MessageReactionResponse: JSONObjectDecodable {
@@ -211,7 +211,7 @@ internal final class ChatAPI: Sendable {
 
         let ablyCocoaBody: [String: Any] = [
             "type": params.type.rawValue,
-            "name": params.reaction,
+            "name": params.name,
             "count": params.count ?? 1,
         ]
 
@@ -230,7 +230,7 @@ internal final class ChatAPI: Sendable {
         var httpParams: [String: String] = [
             "type": params.type.rawValue,
         ]
-        httpParams["name"] = params.reaction
+        httpParams["name"] = params.name
 
         return try await makeRequest(endpoint, method: "DELETE", params: httpParams)
     }

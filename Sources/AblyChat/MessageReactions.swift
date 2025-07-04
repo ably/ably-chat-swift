@@ -126,7 +126,7 @@ public struct SendMessageReactionParams: Sendable {
     /**
      * The reaction to add; ie. the emoji.
      */
-    public var reaction: String
+    public var name: String
 
     /**
      * The count of the reaction for type ``MessageReactionType/multiple``.
@@ -134,8 +134,8 @@ public struct SendMessageReactionParams: Sendable {
      */
     public var count: Int?
 
-    public init(reaction: String, type: MessageReactionType? = nil, count: Int? = nil) {
-        self.reaction = reaction
+    public init(name: String, type: MessageReactionType? = nil, count: Int? = nil) {
+        self.name = name
         self.type = type
         self.count = count
     }
@@ -151,13 +151,13 @@ public struct DeleteMessageReactionParams: Sendable {
     public var type: MessageReactionType?
 
     /**
-     * The reaction to remove, ie. the emoji. Required for all reaction types
+     * The reaction to remove, ie. the emoji name. Required for all reaction types
      * except ``MessageReactionType/unique``.
      */
-    public var reaction: String?
+    public var name: String?
 
-    public init(reaction: String? = nil, type: MessageReactionType? = nil) {
-        self.reaction = reaction
+    public init(name: String? = nil, type: MessageReactionType? = nil) {
+        self.name = name
         self.type = type
     }
 }
