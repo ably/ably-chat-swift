@@ -3,8 +3,8 @@ import Ably
 internal final class DefaultRoomReactions: RoomReactions {
     private let implementation: Implementation
 
-    internal init(channel: any InternalRealtimeChannelProtocol, clientID: String, roomID: String, logger: InternalLogger) {
-        implementation = .init(channel: channel, clientID: clientID, roomID: roomID, logger: logger)
+    internal init(channel: any InternalRealtimeChannelProtocol, clientID: String, roomName: String, logger: InternalLogger) {
+        implementation = .init(channel: channel, clientID: clientID, roomName: roomName, logger: logger)
     }
 
     internal func send(params: SendReactionParams) async throws(ARTErrorInfo) {
@@ -20,12 +20,12 @@ internal final class DefaultRoomReactions: RoomReactions {
     @MainActor
     private final class Implementation: Sendable {
         private let channel: any InternalRealtimeChannelProtocol
-        private let roomID: String
+        private let roomName: String
         private let logger: InternalLogger
         private let clientID: String
 
-        internal init(channel: any InternalRealtimeChannelProtocol, clientID: String, roomID: String, logger: InternalLogger) {
-            self.roomID = roomID
+        internal init(channel: any InternalRealtimeChannelProtocol, clientID: String, roomName: String, logger: InternalLogger) {
+            self.roomName = roomName
             self.channel = channel
             self.logger = logger
             self.clientID = clientID

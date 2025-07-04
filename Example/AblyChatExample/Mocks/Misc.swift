@@ -5,7 +5,7 @@ final class MockMessagesPaginatedResult: PaginatedResult {
     typealias Item = Message
 
     let clientID: String
-    let roomID: String
+    let roomName: String
     let numberOfMockMessages: Int
 
     var items: [Item] {
@@ -14,7 +14,6 @@ final class MockMessagesPaginatedResult: PaginatedResult {
                 serial: "\(Date().timeIntervalSince1970)",
                 action: .create,
                 clientID: self.clientID,
-                roomID: self.roomID,
                 text: MockStrings.randomPhrase(),
                 createdAt: Date(),
                 metadata: [:],
@@ -36,9 +35,9 @@ final class MockMessagesPaginatedResult: PaginatedResult {
 
     var current: any PaginatedResult<Item> { fatalError("Not implemented") }
 
-    init(clientID: String, roomID: String, numberOfMockMessages: Int = 3) {
+    init(clientID: String, roomName: String, numberOfMockMessages: Int = 3) {
         self.clientID = clientID
-        self.roomID = roomID
+        self.roomName = roomName
         self.numberOfMockMessages = numberOfMockMessages
     }
 

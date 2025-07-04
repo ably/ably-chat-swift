@@ -6,32 +6,32 @@ import Ably
 @MainActor
 public protocol Rooms: AnyObject, Sendable {
     /**
-     * Gets a room reference by ID. The Rooms class ensures that only one reference
+     * Gets a room reference by name. The Rooms class ensures that only one reference
      * exists for each room. A new reference object is created if it doesn't already
-     * exist, or if the one used previously was released using ``release(roomID:)``.
+     * exist, or if the one used previously was released using ``release(name:)``.
      *
-     * Always call `release(roomID:)` after the ``Room`` object is no longer needed.
+     * Always call `release(name:)` after the ``Room`` object is no longer needed.
      *
      * If a call to this method is made for a room that is currently being released, then this it returns only when
      * the release operation is complete.
      *
-     * If a call to this method is made, followed by a subsequent call to `release(roomID:)` before the `get(roomID:options:)` returns, then the
+     * If a call to this method is made, followed by a subsequent call to `release(name:)` before the `get(name:options:)` returns, then the
      * promise will throw an error.
      *
      * - Parameters:
-     *   - roomID: The ID of the room.
+     *   - name: The name of the room.
      *   - options: The options for the room.
      *
      * - Returns: A new or existing `Room` object.
      *
-     * - Throws: `ARTErrorInfo` if a room with the same ID but different options already exists.
+     * - Throws: `ARTErrorInfo` if a room with the same name but different options already exists.
      */
-    func get(roomID: String, options: RoomOptions) async throws(ARTErrorInfo) -> any Room
+    func get(name: String, options: RoomOptions) async throws(ARTErrorInfo) -> any Room
 
-    /// Same as calling ``get(roomID:options:)`` with `RoomOptions()`.
+    /// Same as calling ``get(name:options:)`` with `RoomOptions()`.
     ///
     /// The `Rooms` protocol provides a default implementation of this method.
-    func get(roomID: String) async throws(ARTErrorInfo) -> any Room
+    func get(name: String) async throws(ARTErrorInfo) -> any Room
 
     /**
      * Release the ``Room`` object if it exists. This method only releases the reference
@@ -39,14 +39,14 @@ public protocol Rooms: AnyObject, Sendable {
      * events.
      *
      * After calling this function, the room object is no-longer usable. If you wish to get the room object again,
-     * you must call ``Rooms/get(roomID:options:)``.
+     * you must call ``Rooms/get(name:options:)``.
      *
-     * Calling this function will abort any in-progress `get(roomID:options:)` calls for the same room.
+     * Calling this function will abort any in-progress `get(name:options:)` calls for the same room.
      *
      * - Parameters:
-     *   - roomID: The ID of the room.
+     *   - name: The name of the room.
      */
-    func release(roomID: String) async
+    func release(name: String) async
 
     /**
      * Get the client options used to create the chat instance.
@@ -57,9 +57,9 @@ public protocol Rooms: AnyObject, Sendable {
 }
 
 public extension Rooms {
-    func get(roomID: String) async throws(ARTErrorInfo) -> any Room {
+    func get(name: String) async throws(ARTErrorInfo) -> any Room {
         // CHA-RC4a
-        try await get(roomID: roomID, options: .init())
+        try await get(name: name, options: .init())
     }
 }
 
@@ -78,12 +78,12 @@ internal class DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
     private let logger: InternalLogger
     private let roomFactory: RoomFactory
 
-    /// All the state that a `DefaultRooms` instance might hold for a given room ID.
+    /// All the state that a `DefaultRooms` instance might hold for a given room name.
     private enum RoomState {
-        /// There is no room map entry (see ``RoomMapEntry`` for meaning of this term) for this room ID, but a CHA-RC1g release operation is in progress.
+        /// There is no room map entry (see ``RoomMapEntry`` for meaning of this term) for this room name, but a CHA-RC1g release operation is in progress.
         case releaseOperationInProgress(releaseTask: Task<Void, Never>)
 
-        /// There is a room map entry for this room ID.
+        /// There is a room map entry for this room name.
         case roomMapEntry(RoomMapEntry)
     }
 
@@ -126,7 +126,7 @@ internal class DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
         }
     }
 
-    /// The value for a given room ID is the state that corresponds to that room ID.
+    /// The value for a given room name is the state that corresponds to that room name.
     private var roomStates: [String: RoomState] = [:]
 
     internal init(realtime: any InternalRealtimeClientProtocol, clientOptions: ChatClientOptions, logger: InternalLogger, roomFactory: RoomFactory) {
@@ -139,9 +139,9 @@ internal class DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
 
     /// The types of operation that this instance can perform.
     internal enum OperationType {
-        /// A call to ``get(roomID:options:)``.
+        /// A call to ``get(name:options:)``.
         case get
-        /// A call to ``release(roomID:)``.
+        /// A call to ``release(name:)``.
         case release
     }
 
@@ -165,9 +165,9 @@ internal class DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
         }
     #endif
 
-    internal func get(roomID: String, options: RoomOptions) async throws(ARTErrorInfo) -> any Room {
+    internal func get(name: String, options: RoomOptions) async throws(ARTErrorInfo) -> any Room {
         do throws(InternalError) {
-            if let existingRoomState = roomStates[roomID] {
+            if let existingRoomState = roomStates[name] {
                 switch existingRoomState {
                 case let .roomMapEntry(existingRoomMapEntry):
                     // CHA-RC1f1
@@ -248,13 +248,13 @@ internal class DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
                                 return await group.next() ?? .success(())
                             }.get()
 
-                            return try .success(createRoom(roomID: roomID, options: options))
+                            return try .success(createRoom(name: name, options: options))
                         } catch {
                             return .failure(error)
                         }
                     }
 
-                    roomStates[roomID] = .roomMapEntry(
+                    roomStates[name] = .roomMapEntry(
                         .requestAwaitingRelease(
                             releaseTask: releaseTask,
                             requestedOptions: options,
@@ -268,7 +268,7 @@ internal class DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
             }
 
             // CHA-RC1f3
-            return try createRoom(roomID: roomID, options: options)
+            return try createRoom(name: name, options: options)
         } catch {
             throw error.toARTErrorInfo()
         }
@@ -305,16 +305,16 @@ internal class DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
         logger.log(message: "\(waitingOperationType) operation completed waiting for in-progress \(waitedOperationType) operation to complete", level: .debug)
     }
 
-    private func createRoom(roomID: String, options: RoomOptions) throws(InternalError) -> RoomFactory.Room {
-        logger.log(message: "Creating room with ID \(roomID), options \(options)", level: .debug)
-        let room = try roomFactory.createRoom(realtime: realtime, chatAPI: chatAPI, roomID: roomID, options: options, logger: logger)
-        roomStates[roomID] = .roomMapEntry(.created(room: room))
+    private func createRoom(name: String, options: RoomOptions) throws(InternalError) -> RoomFactory.Room {
+        logger.log(message: "Creating room with name \(name), options \(options)", level: .debug)
+        let room = try roomFactory.createRoom(realtime: realtime, chatAPI: chatAPI, name: name, options: options, logger: logger)
+        roomStates[name] = .roomMapEntry(.created(room: room))
         return room
     }
 
     #if DEBUG
-        internal func testsOnly_hasRoomMapEntryWithID(_ roomID: String) -> Bool {
-            guard let roomState = roomStates[roomID] else {
+        internal func testsOnly_hasRoomMapEntryWithName(_ name: String) -> Bool {
+            guard let roomState = roomStates[name] else {
                 return false
             }
 
@@ -326,8 +326,8 @@ internal class DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
         }
     #endif
 
-    internal func release(roomID: String) async {
-        guard let roomState = roomStates[roomID] else {
+    internal func release(name: String) async {
+        guard let roomState = roomStates[name] else {
             // CHA-RC1g2 (no-op)
             return
         }
@@ -352,7 +352,7 @@ internal class DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
             let releaseTask = Task {
                 logger.log(message: "Release operation waiting for room release operation to complete", level: .debug)
                 // Clear the `.releaseOperationInProgress` state (written in a `defer` in case `room.release()` becomes throwing in the future)
-                defer { roomStates.removeValue(forKey: roomID) }
+                defer { roomStates.removeValue(forKey: name) }
                 await room.release()
                 logger.log(message: "Release operation completed waiting for room release operation to complete", level: .debug)
             }
@@ -360,7 +360,7 @@ internal class DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
             // Note that, since we’re in an actor (specifically, the MainActor), we expect `releaseTask` to always be executed _after_ this synchronous code section, meaning that the `roomStates` mutations happen in the correct order
 
             // This also achieves CHA-RC1g5 (remove room from room map)
-            roomStates[roomID] = .releaseOperationInProgress(releaseTask: releaseTask)
+            roomStates[name] = .releaseOperationInProgress(releaseTask: releaseTask)
 
             await releaseTask.value
         }

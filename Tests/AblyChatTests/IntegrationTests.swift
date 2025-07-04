@@ -69,9 +69,9 @@ struct IntegrationTests {
         let rxClient = Self.createSandboxChatClient(apiKey: apiKey, loggingLabel: "rx")
 
         // (2) Fetch a room
-        let roomID = "basketball"
+        let roomName = "basketball"
         let txRoom = try await txClient.rooms.get(
-            roomID: roomID,
+            name: roomName,
             options: .init(
                 presence: .init(),
                 typing: .init(heartbeatThrottle: 2),
@@ -80,7 +80,7 @@ struct IntegrationTests {
             )
         )
         let rxRoom = try await rxClient.rooms.get(
-            roomID: roomID,
+            name: roomName,
             options: .init(
                 messages: .init(rawMessageReactions: true),
                 presence: .init(),
@@ -284,7 +284,6 @@ struct IntegrationTests {
         let rxEditedMessageFromSubscription = try #require(await rxMessageEditDeleteSubscription.first { @Sendable _ in true })
 
         // The createdAt varies by milliseconds so we can't compare the entire objects directly
-        #expect(rxEditedMessageFromSubscription.roomID == txEditedMessage.roomID)
         #expect(rxEditedMessageFromSubscription.serial == txEditedMessage.serial)
         #expect(rxEditedMessageFromSubscription.clientID == txEditedMessage.clientID)
         #expect(rxEditedMessageFromSubscription.version == txEditedMessage.version)
@@ -310,7 +309,6 @@ struct IntegrationTests {
         let rxDeletedMessageFromSubscription = try #require(await rxMessageEditDeleteSubscription.first { @Sendable _ in true })
 
         // The createdAt varies by milliseconds so we can't compare the entire objects directly
-        #expect(rxDeletedMessageFromSubscription.roomID == txDeleteMessage.roomID)
         #expect(rxDeletedMessageFromSubscription.serial == txDeleteMessage.serial)
         #expect(rxDeletedMessageFromSubscription.clientID == txDeleteMessage.clientID)
         #expect(rxDeletedMessageFromSubscription.version == txDeleteMessage.version)
@@ -503,7 +501,7 @@ struct IntegrationTests {
         // MARK: - Release
 
         // (1) Release the room
-        await rxClient.rooms.release(roomID: roomID)
+        await rxClient.rooms.release(name: roomName)
 
         // (2) Check that we received a RELEASED status change as a result of releasing the room
         _ = try #require(await rxRoomStatusSubscription.first { @Sendable statusChange in
@@ -512,7 +510,7 @@ struct IntegrationTests {
         #expect(rxRoom.status == .released)
 
         // (3) Fetch the room we just released and check it’s a new object
-        let postReleaseRxRoom = try await rxClient.rooms.get(roomID: roomID, options: .init())
+        let postReleaseRxRoom = try await rxClient.rooms.get(name: roomName, options: .init())
         #expect(postReleaseRxRoom !== rxRoom)
     }
 }

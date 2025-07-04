@@ -3,17 +3,17 @@ import Ably
 @MainActor
 internal final class DefaultMessageReactions: MessageReactions {
     private let channel: any InternalRealtimeChannelProtocol
-    private let roomID: String
+    private let roomName: String
     private let logger: InternalLogger
     private let clientID: String
     private let chatAPI: ChatAPI
 
     private var defaultReaction: MessageReactionType
 
-    internal init(channel: any InternalRealtimeChannelProtocol, chatAPI: ChatAPI, roomID: String, options: MessagesOptions, clientID: String, logger: InternalLogger) {
+    internal init(channel: any InternalRealtimeChannelProtocol, chatAPI: ChatAPI, roomName: String, options: MessagesOptions, clientID: String, logger: InternalLogger) {
         self.channel = channel
         self.chatAPI = chatAPI
-        self.roomID = roomID
+        self.roomName = roomName
         self.logger = logger
         self.clientID = clientID
         defaultReaction = options.defaultMessageReactionType
@@ -32,7 +32,7 @@ internal final class DefaultMessageReactions: MessageReactions {
                 reaction: params.reaction,
                 count: count
             )
-            let response = try await chatAPI.sendReactionToMessage(messageSerial, roomID: roomID, params: apiParams)
+            let response = try await chatAPI.sendReactionToMessage(messageSerial, roomName: roomName, params: apiParams)
 
             logger.log(message: "Added message reaction (annotation serial: \(response.serial))", level: .info)
         } catch {
@@ -51,7 +51,7 @@ internal final class DefaultMessageReactions: MessageReactions {
                 type: reactionType,
                 reaction: reactionType != .unique ? params.reaction : nil
             )
-            let response = try await chatAPI.deleteReactionFromMessage(messageSerial, roomID: roomID, params: apiParams)
+            let response = try await chatAPI.deleteReactionFromMessage(messageSerial, roomName: roomName, params: apiParams)
 
             logger.log(message: "Deleted message reaction (annotation serial: \(response.serial))", level: .info)
         } catch {

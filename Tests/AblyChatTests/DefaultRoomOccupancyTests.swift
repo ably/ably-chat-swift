@@ -23,7 +23,7 @@ struct DefaultRoomOccupancyTests {
         let defaultOccupancy = DefaultOccupancy(
             channel: channel,
             chatAPI: chatAPI,
-            roomID: "basketball",
+            roomName: "basketball",
             logger: TestLogger(),
             options: .init()
         )
@@ -49,7 +49,7 @@ struct DefaultRoomOccupancyTests {
         let defaultOccupancy = DefaultOccupancy(
             channel: channel,
             chatAPI: chatAPI,
-            roomID: "basketball",
+            roomName: "basketball",
             logger: TestLogger(),
             options: .init(enableEvents: true)
         )

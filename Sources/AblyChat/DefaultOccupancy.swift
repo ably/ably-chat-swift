@@ -3,8 +3,8 @@ import Ably
 internal final class DefaultOccupancy: Occupancy {
     private let implementation: Implementation
 
-    internal init(channel: any InternalRealtimeChannelProtocol, chatAPI: ChatAPI, roomID: String, logger: InternalLogger, options: OccupancyOptions) {
-        implementation = .init(channel: channel, chatAPI: chatAPI, roomID: roomID, logger: logger, options: options)
+    internal init(channel: any InternalRealtimeChannelProtocol, chatAPI: ChatAPI, roomName: String, logger: InternalLogger, options: OccupancyOptions) {
+        implementation = .init(channel: channel, chatAPI: chatAPI, roomName: roomName, logger: logger, options: options)
     }
 
     @discardableResult
@@ -20,15 +20,15 @@ internal final class DefaultOccupancy: Occupancy {
     @MainActor
     internal final class Implementation: Sendable {
         private let chatAPI: ChatAPI
-        private let roomID: String
+        private let roomName: String
         private let logger: InternalLogger
         private let channel: any InternalRealtimeChannelProtocol
         private let options: OccupancyOptions
 
-        internal init(channel: any InternalRealtimeChannelProtocol, chatAPI: ChatAPI, roomID: String, logger: InternalLogger, options: OccupancyOptions) {
+        internal init(channel: any InternalRealtimeChannelProtocol, chatAPI: ChatAPI, roomName: String, logger: InternalLogger, options: OccupancyOptions) {
             self.channel = channel
             self.chatAPI = chatAPI
-            self.roomID = roomID
+            self.roomName = roomName
             self.logger = logger
             self.options = options
         }
@@ -74,8 +74,8 @@ internal final class DefaultOccupancy: Occupancy {
         // (CHA-O3) Users can request an instantaneous occupancy check via the REST API. The request is detailed here (https://sdk.ably.com/builds/ably/specification/main/chat-features/#rest-occupancy-request), with the response format being a simple occupancy event
         internal func get() async throws(ARTErrorInfo) -> OccupancyEvent {
             do {
-                logger.log(message: "Getting occupancy for room: \(roomID)", level: .debug)
-                return try await chatAPI.getOccupancy(roomID: roomID)
+                logger.log(message: "Getting occupancy for room: \(roomName)", level: .debug)
+                return try await chatAPI.getOccupancy(roomName: roomName)
             } catch {
                 throw error.toARTErrorInfo()
             }

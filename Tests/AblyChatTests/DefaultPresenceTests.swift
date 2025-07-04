@@ -15,7 +15,7 @@ struct DefaultPresenceTests {
         let defaultPresence = await DefaultPresence(
             channel: channel,
             roomLifecycleManager: MockRoomLifecycleManager(),
-            roomID: "basketball",
+            roomName: "basketball",
             clientID: "client1",
             logger: logger,
             options: .init()
@@ -42,7 +42,7 @@ struct DefaultPresenceTests {
         let defaultPresence = await DefaultPresence(
             channel: channel,
             roomLifecycleManager: roomLifecycleManager,
-            roomID: "basketball",
+            roomName: "basketball",
             clientID: "client1",
             logger: logger,
             options: .init()
@@ -72,7 +72,7 @@ struct DefaultPresenceTests {
         let defaultPresence = await DefaultPresence(
             channel: channel,
             roomLifecycleManager: roomLifecycleManager,
-            roomID: "basketball",
+            roomName: "basketball",
             clientID: "client1",
             logger: logger,
             options: .init()
@@ -108,7 +108,7 @@ struct DefaultPresenceTests {
         let defaultPresence = await DefaultPresence(
             channel: channel,
             roomLifecycleManager: roomLifecycleManager,
-            roomID: "basketball",
+            roomName: "basketball",
             clientID: "client1",
             logger: logger,
             options: .init()
@@ -139,7 +139,7 @@ struct DefaultPresenceTests {
         let defaultPresence = await DefaultPresence(
             channel: channel,
             roomLifecycleManager: roomLifecycleManager,
-            roomID: "basketball",
+            roomName: "basketball",
             clientID: "client1",
             logger: logger,
             options: .init()
@@ -165,7 +165,7 @@ struct DefaultPresenceTests {
         let defaultPresence = await DefaultPresence(
             channel: channel,
             roomLifecycleManager: roomLifecycleManager,
-            roomID: "basketball",
+            roomName: "basketball",
             clientID: "client1",
             logger: logger,
             options: .init()
@@ -195,7 +195,7 @@ struct DefaultPresenceTests {
         let defaultPresence = await DefaultPresence(
             channel: channel,
             roomLifecycleManager: roomLifecycleManager,
-            roomID: "basketball",
+            roomName: "basketball",
             clientID: "client1",
             logger: logger,
             options: .init()
@@ -231,7 +231,7 @@ struct DefaultPresenceTests {
         let defaultPresence = await DefaultPresence(
             channel: channel,
             roomLifecycleManager: roomLifecycleManager,
-            roomID: "basketball",
+            roomName: "basketball",
             clientID: "client1",
             logger: logger,
             options: .init()
@@ -261,7 +261,7 @@ struct DefaultPresenceTests {
         let defaultPresence = await DefaultPresence(
             channel: channel,
             roomLifecycleManager: roomLifecycleManager,
-            roomID: "basketball",
+            roomName: "basketball",
             clientID: "client1",
             logger: logger,
             options: .init()
@@ -290,7 +290,7 @@ struct DefaultPresenceTests {
         let defaultPresence = await DefaultPresence(
             channel: channel,
             roomLifecycleManager: roomLifecycleManager,
-            roomID: "basketball",
+            roomName: "basketball",
             clientID: "client1",
             logger: logger,
             options: .init()
@@ -320,7 +320,7 @@ struct DefaultPresenceTests {
         let defaultPresence = await DefaultPresence(
             channel: channel,
             roomLifecycleManager: roomLifecycleManager,
-            roomID: "basketball",
+            roomName: "basketball",
             clientID: "client1",
             logger: logger,
             options: .init()
@@ -348,7 +348,7 @@ struct DefaultPresenceTests {
         let defaultPresence = await DefaultPresence(
             channel: channel,
             roomLifecycleManager: roomLifecycleManager,
-            roomID: "basketball",
+            roomName: "basketball",
             clientID: "client1",
             logger: logger,
             options: .init()
@@ -376,7 +376,7 @@ struct DefaultPresenceTests {
         let defaultPresence = await DefaultPresence(
             channel: channel,
             roomLifecycleManager: roomLifecycleManager,
-            roomID: "basketball",
+            roomName: "basketball",
             clientID: "client1",
             logger: logger,
             options: .init()
@@ -406,7 +406,7 @@ struct DefaultPresenceTests {
         let defaultPresence = await DefaultPresence(
             channel: channel,
             roomLifecycleManager: roomLifecycleManager,
-            roomID: "basketball",
+            roomName: "basketball",
             clientID: "client1",
             logger: logger,
             options: .init()
@@ -444,7 +444,7 @@ struct DefaultPresenceTests {
         let defaultPresence = await DefaultPresence(
             channel: channel,
             roomLifecycleManager: roomLifecycleManager,
-            roomID: "basketball",
+            roomName: "basketball",
             clientID: "client1",
             logger: logger,
             options: .init()

@@ -10,7 +10,7 @@ public protocol Room: AnyObject, Sendable {
      *
      * - Returns: The room identifier.
      */
-    nonisolated var roomID: String { get }
+    nonisolated var name: String { get }
 
     /**
      * Allows you to send, subscribe-to and query messages in the room.
@@ -209,17 +209,17 @@ public struct RoomStatusChange: Sendable, Equatable {
 internal protocol RoomFactory: Sendable {
     associatedtype Room: AblyChat.InternalRoom
 
-    func createRoom(realtime: any InternalRealtimeClientProtocol, chatAPI: ChatAPI, roomID: String, options: RoomOptions, logger: InternalLogger) throws(InternalError) -> Room
+    func createRoom(realtime: any InternalRealtimeClientProtocol, chatAPI: ChatAPI, name: String, options: RoomOptions, logger: InternalLogger) throws(InternalError) -> Room
 }
 
 internal final class DefaultRoomFactory: Sendable, RoomFactory {
     private let lifecycleManagerFactory = DefaultRoomLifecycleManagerFactory()
 
-    internal func createRoom(realtime: any InternalRealtimeClientProtocol, chatAPI: ChatAPI, roomID: String, options: RoomOptions, logger: InternalLogger) throws(InternalError) -> DefaultRoom {
+    internal func createRoom(realtime: any InternalRealtimeClientProtocol, chatAPI: ChatAPI, name: String, options: RoomOptions, logger: InternalLogger) throws(InternalError) -> DefaultRoom {
         try DefaultRoom(
             realtime: realtime,
             chatAPI: chatAPI,
-            roomID: roomID,
+            name: name,
             options: options,
             logger: logger,
             lifecycleManagerFactory: lifecycleManagerFactory
@@ -228,7 +228,7 @@ internal final class DefaultRoomFactory: Sendable, RoomFactory {
 }
 
 internal class DefaultRoom: InternalRoom {
-    internal nonisolated let roomID: String
+    internal nonisolated let name: String
     internal nonisolated let options: RoomOptions
     private let chatAPI: ChatAPI
 
@@ -257,9 +257,9 @@ internal class DefaultRoom: InternalRoom {
 
     private let logger: InternalLogger
 
-    internal init(realtime: any InternalRealtimeClientProtocol, chatAPI: ChatAPI, roomID: String, options: RoomOptions, logger: InternalLogger, lifecycleManagerFactory: any RoomLifecycleManagerFactory) throws(InternalError) {
+    internal init(realtime: any InternalRealtimeClientProtocol, chatAPI: ChatAPI, name: String, options: RoomOptions, logger: InternalLogger, lifecycleManagerFactory: any RoomLifecycleManagerFactory) throws(InternalError) {
         self.realtime = realtime
-        self.roomID = roomID
+        self.name = name
         self.options = options
         self.logger = logger
         self.chatAPI = chatAPI
@@ -268,7 +268,7 @@ internal class DefaultRoom: InternalRoom {
             throw ARTErrorInfo.create(withCode: 40000, message: "Ensure your Realtime instance is initialized with a clientId.").toInternalError()
         }
 
-        internalChannel = Self.createChannel(roomID: roomID, roomOptions: options, realtime: realtime)
+        internalChannel = Self.createChannel(roomName: name, roomOptions: options, realtime: realtime)
 
         lifecycleManager = lifecycleManagerFactory.createManager(
             channel: internalChannel,
@@ -278,7 +278,7 @@ internal class DefaultRoom: InternalRoom {
         messages = DefaultMessages(
             channel: internalChannel,
             chatAPI: chatAPI,
-            roomID: roomID,
+            roomName: name,
             options: options.messages,
             clientID: clientId,
             logger: logger
@@ -287,14 +287,14 @@ internal class DefaultRoom: InternalRoom {
         reactions = DefaultRoomReactions(
             channel: internalChannel,
             clientID: clientId,
-            roomID: roomID,
+            roomName: name,
             logger: logger
         )
 
         presence = DefaultPresence(
             channel: internalChannel,
             roomLifecycleManager: lifecycleManager,
-            roomID: roomID,
+            roomName: name,
             clientID: clientId,
             logger: logger,
             options: options.presence
@@ -303,14 +303,14 @@ internal class DefaultRoom: InternalRoom {
         occupancy = DefaultOccupancy(
             channel: internalChannel,
             chatAPI: chatAPI,
-            roomID: roomID,
+            roomName: name,
             logger: logger,
             options: options.occupancy
         )
 
         typing = DefaultTyping(
             channel: internalChannel,
-            roomID: roomID,
+            roomName: name,
             clientID: clientId,
             logger: logger,
             heartbeatThrottle: options.typing.heartbeatThrottle,
@@ -318,7 +318,7 @@ internal class DefaultRoom: InternalRoom {
         )
     }
 
-    private static func createChannel(roomID: String, roomOptions: RoomOptions, realtime: any InternalRealtimeClientProtocol) -> any InternalRealtimeChannelProtocol {
+    private static func createChannel(roomName: String, roomOptions: RoomOptions, realtime: any InternalRealtimeClientProtocol) -> any InternalRealtimeChannelProtocol {
         let channelOptions = ARTRealtimeChannelOptions()
 
         // CHA-GP2a
@@ -344,7 +344,7 @@ internal class DefaultRoom: InternalRoom {
         }
 
         // CHA-RC3c
-        return realtime.channels.get("\(roomID)::$chat", options: channelOptions)
+        return realtime.channels.get("\(roomName)::$chat", options: channelOptions)
     }
 
     public func attach() async throws(ARTErrorInfo) {

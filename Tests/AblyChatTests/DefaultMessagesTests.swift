@@ -17,7 +17,7 @@ struct DefaultMessagesTests {
         }
         let chatAPI = ChatAPI(realtime: realtime)
         let channel = MockRealtimeChannel(initialState: .attached)
-        let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
+        let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", clientID: "clientId", logger: TestLogger())
 
         // When
         _ = try await defaultMessages.send(params: .init(text: "hey"))
@@ -39,7 +39,7 @@ struct DefaultMessagesTests {
         }
         let chatAPI = ChatAPI(realtime: realtime)
         let channel = MockRealtimeChannel()
-        let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
+        let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", clientID: "clientId", logger: TestLogger())
 
         // Then
         // TODO: avoids compiler crash (https://github.com/ably/ably-chat-swift/issues/233), revert once Xcode 16.3 released
@@ -66,7 +66,7 @@ struct DefaultMessagesTests {
             properties: ARTChannelProperties(attachSerial: nil, channelSerial: channelSerial),
             initialState: .attached
         )
-        let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
+        let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", clientID: "clientId", logger: TestLogger())
         let subscription = try await defaultMessages.subscribe()
         _ = try await subscription.getPreviousMessages(params: .init())
 
@@ -92,7 +92,7 @@ struct DefaultMessagesTests {
             initialState: .attaching,
             stateChangeToEmitForListener: ARTChannelStateChange(current: .attached, previous: .attaching, event: .attached, reason: nil)
         )
-        let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
+        let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", clientID: "clientId", logger: TestLogger())
 
         // When: subscription is added when the underlying realtime channel is ATTACHING
         let subscription = try await defaultMessages.subscribe()
@@ -120,7 +120,7 @@ struct DefaultMessagesTests {
             properties: ARTChannelProperties(attachSerial: attachSerial, channelSerial: channelSerial),
             initialState: .attached
         )
-        let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
+        let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", clientID: "clientId", logger: TestLogger())
 
         // When: subscription is added when the underlying realtime channel is ATTACHING
         let subscription = try await defaultMessages.subscribe()
@@ -164,7 +164,7 @@ struct DefaultMessagesTests {
             properties: ARTChannelProperties(attachSerial: attachSerial, channelSerial: channelSerial),
             initialState: .attached
         )
-        let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
+        let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", clientID: "clientId", logger: TestLogger())
 
         // When: subscription is added when the underlying realtime channel is ATTACHING
         let subscription = try await defaultMessages.subscribe()
@@ -205,7 +205,7 @@ struct DefaultMessagesTests {
             properties: ARTChannelProperties(attachSerial: nil, channelSerial: "123"),
             initialState: .attached
         )
-        let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
+        let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", clientID: "clientId", logger: TestLogger())
 
         // When: subscription is added when the underlying realtime channel is ATTACHED
         let subscription = try await defaultMessages.subscribe()
@@ -243,7 +243,7 @@ struct DefaultMessagesTests {
             properties: ARTChannelProperties(attachSerial: nil, channelSerial: "123"),
             initialState: .attached
         )
-        let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
+        let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", clientID: "clientId", logger: TestLogger())
 
         // When
         let subscription = try await defaultMessages.subscribe()
@@ -274,7 +274,7 @@ struct DefaultMessagesTests {
             properties: ARTChannelProperties(attachSerial: nil, channelSerial: "123"),
             initialState: .attached
         )
-        let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
+        let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", clientID: "clientId", logger: TestLogger())
 
         // When
         let paginatedResult = try await defaultMessages.get(options: .init())
@@ -303,7 +303,7 @@ struct DefaultMessagesTests {
             properties: ARTChannelProperties(attachSerial: nil, channelSerial: "123"),
             initialState: .attached
         )
-        let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
+        let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", clientID: "clientId", logger: TestLogger())
 
         // When
         // TODO: avoids compiler crash (https://github.com/ably/ably-chat-swift/issues/233), revert once Xcode 16.3 released
@@ -352,7 +352,7 @@ struct DefaultMessagesTests {
             initialState: .attached,
             messageToEmitOnSubscribe: generateMessage(serial: "1", numberKey: 10, stringKey: "hello")
         )
-        let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
+        let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", clientID: "clientId", logger: TestLogger())
 
         // Notes:
         // When using `AsyncSequence` variant of `subscribe` it gives a compile error (Xcode 16.2): "sending main actor-isolated value of type '(MessageSubscription.Element) async -> Bool' (aka '(Message) async -> Bool') with later accesses to nonisolated context risks causing data races". So I used callback one.
@@ -402,7 +402,7 @@ struct DefaultMessagesTests {
                 return message
             }()
         )
-        let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomID: "basketball", clientID: "clientId", logger: TestLogger())
+        let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", clientID: "clientId", logger: TestLogger())
 
         // When
         _ = try await defaultMessages.subscribe { message in
