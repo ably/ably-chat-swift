@@ -192,7 +192,7 @@ internal final class ChatAPI: Sendable {
         return message
     }
 
-    internal func getOccupancy(roomName: String) async throws(InternalError) -> OccupancyEvent {
+    internal func getOccupancy(roomName: String) async throws(InternalError) -> OccupancyData {
         let endpoint = "\(apiVersionV3)/rooms/\(roomName)/occupancy"
         return try await makeRequest(endpoint, method: "GET")
     }

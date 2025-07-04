@@ -350,9 +350,9 @@ struct ContentView: View {
     }
 
     func subscribeToOccupancy(room: Room) {
-        room.occupancy.subscribe { occupancy in
+        room.occupancy.subscribe { event in
             withAnimation {
-                occupancyInfo = "Connections: \(occupancy.presenceMembers) (\(occupancy.connections))"
+                occupancyInfo = "Connections: \(event.occupancy.presenceMembers) (\(event.occupancy.connections))"
             }
         }
     }

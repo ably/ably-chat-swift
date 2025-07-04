@@ -26,7 +26,7 @@ public protocol Occupancy: AnyObject, Sendable {
      *
      * - Returns: A current occupancy of the chat room.
      */
-    func get() async throws(ARTErrorInfo) -> OccupancyEvent
+    func get() async throws(ARTErrorInfo) -> OccupancyData
 }
 
 /// `AsyncSequence` variant of receiving room occupancy events.
@@ -44,8 +44,8 @@ public extension Occupancy {
     func subscribe(bufferingPolicy: BufferingPolicy) -> SubscriptionAsyncSequence<OccupancyEvent> {
         let subscriptionAsyncSequence = SubscriptionAsyncSequence<OccupancyEvent>(bufferingPolicy: bufferingPolicy)
 
-        let subscription = subscribe { occupancy in
-            subscriptionAsyncSequence.emit(occupancy)
+        let subscription = subscribe { occupancyEvent in
+            subscriptionAsyncSequence.emit(occupancyEvent)
         }
 
         subscriptionAsyncSequence.addTerminationHandler {
@@ -68,7 +68,7 @@ public extension Occupancy {
 /**
  * Represents the occupancy of a chat room.
  */
-public struct OccupancyEvent: Sendable {
+public struct OccupancyData: Sendable {
     /**
      * The number of connections to the chat room.
      */
@@ -85,7 +85,21 @@ public struct OccupancyEvent: Sendable {
     }
 }
 
-extension OccupancyEvent: JSONObjectDecodable {
+public enum OccupancyEventType: String, Sendable {
+    case updated
+}
+
+public struct OccupancyEvent: Sendable {
+    public let type: OccupancyEventType
+    public let occupancy: OccupancyData
+
+    public init(type: OccupancyEventType, occupancy: OccupancyData) {
+        self.type = type
+        self.occupancy = occupancy
+    }
+}
+
+extension OccupancyData: JSONObjectDecodable {
     internal init(jsonObject: [String: JSONValue]) throws(InternalError) {
         try self.init(
             connections: Int(jsonObject.numberValueForKey("connections")),
