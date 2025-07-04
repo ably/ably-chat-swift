@@ -72,7 +72,7 @@ internal final class DefaultOccupancy: Occupancy {
             }
         }
 
-        // (CHA-O3) Users can request an instantaneous occupancy check via the REST API. The request is detailed here (https://sdk.ably.com/builds/ably/specification/main/chat-features/#rest-occupancy-request), with the response format being a simple occupancy event
+        // (CHA-O3) Users can request an instantaneous occupancy check via the REST API. The request is detailed here (https://sdk.ably.com/builds/ably/specification/main/chat-features/#rest-occupancy-request), with the response format being a simple occupancy data
         internal func get() async throws(ARTErrorInfo) -> OccupancyData {
             do {
                 logger.log(message: "Getting occupancy for room: \(roomName)", level: .debug)
