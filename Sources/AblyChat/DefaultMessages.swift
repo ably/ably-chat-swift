@@ -83,12 +83,6 @@ internal final class DefaultMessages: Messages {
                             throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without data or text")
                         }
 
-                        guard let ablyCocoaExtras = message.extras else {
-                            throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without extras")
-                        }
-
-                        let extras = JSONValue.objectFromAblyCocoaExtras(ablyCocoaExtras)
-
                         guard let serial = message.serial else {
                             throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without serial")
                         }
@@ -103,7 +97,9 @@ internal final class DefaultMessages: Messages {
 
                         let metadata = try data.optionalObjectValueForKey("metadata")
 
-                        let headers: Headers? = if let headersJSONObject = try extras.optionalObjectValueForKey("headers") {
+                        let headers: Headers? = if
+                            let ablyCocoaExtras = message.extras,
+                            let headersJSONObject = try JSONValue.objectFromAblyCocoaExtras(ablyCocoaExtras).optionalObjectValueForKey("headers") {
                             try headersJSONObject.mapValues { try HeadersValue(jsonValue: $0) }
                         } else {
                             nil
