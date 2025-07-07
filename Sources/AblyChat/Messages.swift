@@ -26,7 +26,7 @@ public protocol Messages: AnyObject, Sendable {
      *
      * - Returns: A paginated result object that can be used to fetch more messages if available.
      */
-    func get(options: QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message>
+    func history(options: QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message>
 
     /**
      * Send a message in the chat room.
