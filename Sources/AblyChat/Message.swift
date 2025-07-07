@@ -40,11 +40,6 @@ public struct Message: Sendable, Identifiable, Equatable {
     public var clientID: String
 
     /**
-     * The roomId of the chat room to which the message belongs.
-     */
-    public var roomID: String
-
-    /**
      * The text of the message.
      */
     public var text: String
@@ -105,11 +100,10 @@ public struct Message: Sendable, Identifiable, Equatable {
      */
     public var reactions: MessageReactionSummary?
 
-    public init(serial: String, action: MessageAction, clientID: String, roomID: String, text: String, createdAt: Date?, metadata: MessageMetadata, headers: MessageHeaders, version: String, timestamp: Date?, operation: MessageOperation? = nil, reactions: MessageReactionSummary? = nil) {
+    public init(serial: String, action: MessageAction, clientID: String, text: String, createdAt: Date?, metadata: MessageMetadata, headers: MessageHeaders, version: String, timestamp: Date?, operation: MessageOperation? = nil, reactions: MessageReactionSummary? = nil) {
         self.serial = serial
         self.action = action
         self.clientID = clientID
-        self.roomID = roomID
         self.text = text
         self.createdAt = createdAt
         self.metadata = metadata
@@ -135,7 +129,6 @@ public struct Message: Sendable, Identifiable, Equatable {
             serial: serial,
             action: action,
             clientID: clientID,
-            roomID: roomID,
             text: text ?? self.text,
             createdAt: createdAt,
             metadata: metadata ?? self.metadata,
@@ -175,7 +168,6 @@ extension Message: JSONObjectDecodable {
             serial: serial,
             action: jsonObject.rawRepresentableValueForKey("action"),
             clientID: jsonObject.stringValueForKey("clientId"),
-            roomID: jsonObject.stringValueForKey("roomId"),
             text: jsonObject.stringValueForKey("text"),
             createdAt: jsonObject.optionalAblyProtocolDateValueForKey("createdAt"),
             metadata: jsonObject.objectValueForKey("metadata"),

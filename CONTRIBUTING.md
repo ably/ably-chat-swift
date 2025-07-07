@@ -56,7 +56,7 @@ If you haven't worked with typed throws before, be aware of a few sharp edges:
 - It is possible to crash the compiler when using Swift Testing's `#expect(throws: …)` in combination with an `expression` that throws a typed error. See https://github.com/ably/ably-chat-swift/issues/233. A workaround that seems to work, which we're using at the moment (will be able to remove once Xcode 16.3 is released) is to move the code with a typed throw into a separate, non-typed-throw function; for example:
   ```swift
   let doIt = {
-      try await rooms.get(roomID: roomID, options: differentOptions)
+      try await rooms.get(name: name, options: differentOptions)
   }
   await #expect {
       try await doIt()

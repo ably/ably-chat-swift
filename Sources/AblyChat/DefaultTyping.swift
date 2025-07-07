@@ -3,8 +3,8 @@ import Ably
 internal final class DefaultTyping: Typing {
     private let implementation: Implementation
 
-    internal init(channel: any InternalRealtimeChannelProtocol, roomID: String, clientID: String, logger: InternalLogger, heartbeatThrottle: TimeInterval, clock: some ClockProtocol) {
-        implementation = .init(channel: channel, roomID: roomID, clientID: clientID, logger: logger, heartbeatThrottle: heartbeatThrottle, clock: clock)
+    internal init(channel: any InternalRealtimeChannelProtocol, roomName: String, clientID: String, logger: InternalLogger, heartbeatThrottle: TimeInterval, clock: some ClockProtocol) {
+        implementation = .init(channel: channel, roomName: roomName, clientID: clientID, logger: logger, heartbeatThrottle: heartbeatThrottle, clock: clock)
     }
 
     // (CHA-T6) Users may subscribe to typing events – updates to a set of clientIDs that are typing. This operation, like all subscription operations, has no side-effects in relation to room lifecycle.
@@ -40,7 +40,7 @@ internal final class DefaultTyping: Typing {
     @MainActor
     private final class Implementation {
         private let channel: any InternalRealtimeChannelProtocol
-        private let roomID: String
+        private let roomName: String
         private let clientID: String
         private let logger: InternalLogger
         private let heartbeatThrottle: TimeInterval
@@ -56,8 +56,8 @@ internal final class DefaultTyping: Typing {
         // (CHA-TM14b1) During this time, each new subsequent call to either function shall abort the previously queued call. In doing so, there shall only ever be one pending call and while the mutex is held, thus the most recent call shall "win" and execute once the mutex is released.
         private let keyboardOperationQueue = TypingOperationQueue<InternalError>()
 
-        internal init(channel: any InternalRealtimeChannelProtocol, roomID: String, clientID: String, logger: InternalLogger, heartbeatThrottle: TimeInterval, clock: some ClockProtocol) {
-            self.roomID = roomID
+        internal init(channel: any InternalRealtimeChannelProtocol, roomName: String, clientID: String, logger: InternalLogger, heartbeatThrottle: TimeInterval, clock: some ClockProtocol) {
+            self.roomName = roomName
             self.channel = channel
             self.clientID = clientID
             self.logger = logger

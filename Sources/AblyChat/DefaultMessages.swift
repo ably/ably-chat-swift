@@ -12,10 +12,10 @@ internal final class DefaultMessages: Messages {
     private let channel: any InternalRealtimeChannelProtocol
     private let implementation: Implementation
 
-    internal init(channel: any InternalRealtimeChannelProtocol, chatAPI: ChatAPI, roomID: String, options: MessagesOptions = .init(), clientID: String, logger: InternalLogger) {
+    internal init(channel: any InternalRealtimeChannelProtocol, chatAPI: ChatAPI, roomName: String, options: MessagesOptions = .init(), clientID: String, logger: InternalLogger) {
         self.channel = channel
-        reactions = DefaultMessageReactions(channel: channel, chatAPI: chatAPI, roomID: roomID, options: options, clientID: clientID, logger: logger)
-        implementation = .init(channel: channel, chatAPI: chatAPI, roomID: roomID, clientID: clientID, logger: logger)
+        reactions = DefaultMessageReactions(channel: channel, chatAPI: chatAPI, roomName: roomName, options: options, clientID: clientID, logger: logger)
+        implementation = .init(channel: channel, chatAPI: chatAPI, roomName: roomName, clientID: clientID, logger: logger)
     }
 
     internal func subscribe(_ callback: @escaping @MainActor (Message) -> Void) async throws(ARTErrorInfo) -> MessageSubscriptionResponseProtocol {
@@ -45,7 +45,7 @@ internal final class DefaultMessages: Messages {
     /// This class exists to make sure that the internals of the SDK only access ably-cocoa via the `InternalRealtimeChannelProtocol` interface. It does this by removing access to the `channel` property that exists as part of the public API of the `Messages` protocol, making it unlikely that we accidentally try to call the `ARTRealtimeChannelProtocol` interface. We can remove this `Implementation` class when we remove the feature-level `channel` property in https://github.com/ably/ably-chat-swift/issues/242.
     @MainActor
     private final class Implementation: Sendable {
-        private let roomID: String
+        private let roomName: String
         private let channel: any InternalRealtimeChannelProtocol
         private let chatAPI: ChatAPI
         private let clientID: String
@@ -54,15 +54,15 @@ internal final class DefaultMessages: Messages {
         // UUID acts as a unique identifier for each listener/subscription. MessageSubscriptionWrapper houses the subscription and the serial of when it was attached or resumed.
         private var subscriptionPoints: [UUID: MessageSubscriptionWrapper] = [:]
 
-        internal init(channel: any InternalRealtimeChannelProtocol, chatAPI: ChatAPI, roomID: String, clientID: String, logger: InternalLogger) {
+        internal init(channel: any InternalRealtimeChannelProtocol, chatAPI: ChatAPI, roomName: String, clientID: String, logger: InternalLogger) {
             self.channel = channel
             self.chatAPI = chatAPI
-            self.roomID = roomID
+            self.roomName = roomName
             self.clientID = clientID
             self.logger = logger
 
             // Implicitly handles channel events and therefore listners within this class. Alternative is to explicitly call something like `DefaultMessages.start()` which makes the SDK more cumbersome to interact with. This class is useless without kicking off this flow so I think leaving it here is suitable.
-            handleChannelEvents(roomId: roomID)
+            handleChannelEvents(roomName: roomName)
         }
 
         // (CHA-M4) Messages can be received via a subscription in realtime.
@@ -129,7 +129,6 @@ internal final class DefaultMessages: Messages {
                             serial: serial,
                             action: action,
                             clientID: clientID,
-                            roomID: self.roomID,
                             text: text,
                             createdAt: message.timestamp,
                             metadata: metadata ?? .init(),
@@ -176,7 +175,7 @@ internal final class DefaultMessages: Messages {
         // (CHA-M6a) A method must be exposed that accepts the standard Ably REST API query parameters. It shall call the “REST API”#rest-fetching-messages and return a PaginatedResult containing messages, which can then be paginated through.
         internal func get(options: QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message> {
             do {
-                return try await chatAPI.getMessages(roomID: roomID, params: options)
+                return try await chatAPI.getMessages(roomName: roomName, params: options)
             } catch {
                 throw error.toARTErrorInfo()
             }
@@ -184,7 +183,7 @@ internal final class DefaultMessages: Messages {
 
         internal func send(params: SendMessageParams) async throws(ARTErrorInfo) -> Message {
             do {
-                return try await chatAPI.sendMessage(roomID: roomID, params: params)
+                return try await chatAPI.sendMessage(roomName: roomName, params: params)
             } catch {
                 throw error.toARTErrorInfo()
             }
@@ -192,7 +191,7 @@ internal final class DefaultMessages: Messages {
 
         internal func update(newMessage: Message, description: String?, metadata: OperationMetadata?) async throws(ARTErrorInfo) -> Message {
             do {
-                return try await chatAPI.updateMessage(with: newMessage, description: description, metadata: metadata)
+                return try await chatAPI.updateMessage(roomName: roomName, with: newMessage, description: description, metadata: metadata)
             } catch {
                 throw error.toARTErrorInfo()
             }
@@ -200,7 +199,7 @@ internal final class DefaultMessages: Messages {
 
         internal func delete(message: Message, params: DeleteMessageParams) async throws(ARTErrorInfo) -> Message {
             do {
-                return try await chatAPI.deleteMessage(message: message, params: params)
+                return try await chatAPI.deleteMessage(roomName: roomName, message: message, params: params)
             } catch {
                 throw error.toARTErrorInfo()
             }
@@ -223,10 +222,10 @@ internal final class DefaultMessages: Messages {
             // (CHA-M5g) The subscribers subscription point must be additionally specified (internally, by us) in the fromSerial query parameter.
             queryOptions.fromSerial = subscriptionPoint
 
-            return try await chatAPI.getMessages(roomID: roomID, params: queryOptions)
+            return try await chatAPI.getMessages(roomName: roomName, params: queryOptions)
         }
 
-        private func handleChannelEvents(roomId _: String) {
+        private func handleChannelEvents(roomName _: String) {
             // (CHA-M5c) If a channel leaves the ATTACHED state and then re-enters ATTACHED with resumed=false, then it must be assumed that messages have been missed. The subscription point of any subscribers must be reset to the attachSerial.
             _ = channel.on(.attached) { [weak self] stateChange in
                 Task {

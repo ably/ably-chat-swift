@@ -208,7 +208,7 @@ internal enum ChatError {
             // This will contain the name of the underlying enum case (we have a test to verify this); this will do for now
             "\(otherInternalError)"
         case let .inconsistentRoomOptions(requested, existing):
-            "Rooms.get(roomID:options:) was called with a different set of room options than was used on a previous call. You must first release the existing room instance using Rooms.release(roomID:). Requested options: \(requested), existing options: \(existing)"
+            "Rooms.get(roomName:options:) was called with a different set of room options than was used on a previous call. You must first release the existing room instance using Rooms.release(roomName:). Requested options: \(requested), existing options: \(existing)"
         case .roomInFailedState:
             "Cannot perform operation because the room is in a failed state."
         case .roomIsReleasing:
