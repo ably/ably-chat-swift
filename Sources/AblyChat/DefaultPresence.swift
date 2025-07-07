@@ -344,7 +344,6 @@ internal final class DefaultPresence: Presence {
                 let presenceMember = PresenceMember(
                     clientID: clientID,
                     data: presenceDataDTO.userCustomData,
-                    action: PresenceMember.Action(from: member.action),
                     extras: member.extras,
                     updatedAt: timestamp
                 )
@@ -370,11 +369,16 @@ internal final class DefaultPresence: Presence {
 
             let presenceDataDTO = try decodePresenceDataDTO(from: message.data)
 
-            let presenceEvent = PresenceEvent(
-                action: event,
+            let member = PresenceMember(
                 clientID: clientID,
-                timestamp: timestamp,
-                data: presenceDataDTO.userCustomData
+                data: presenceDataDTO.userCustomData,
+                extras: message.extras,
+                updatedAt: timestamp
+            )
+
+            let presenceEvent = PresenceEvent(
+                type: event,
+                member: member
             )
 
             logger.log(message: "Returning presence event: \(presenceEvent)", level: .debug)

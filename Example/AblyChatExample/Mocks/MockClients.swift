@@ -414,11 +414,15 @@ class MockPresence: Presence {
     private func createSubscription(callback: @escaping @MainActor (PresenceEvent) -> Void) -> SubscriptionProtocol {
         mockSubscriptions.create(
             randomElement: {
-                PresenceEvent(
-                    action: [.enter, .leave].randomElement()!,
+                let member = PresenceMember(
                     clientID: MockStrings.names.randomElement()!,
-                    timestamp: Date(),
-                    data: nil
+                    data: nil,
+                    extras: nil,
+                    updatedAt: Date()
+                )
+                return PresenceEvent(
+                    type: [.enter, .leave].randomElement()!,
+                    member: member
                 )
             },
             interval: 5,
@@ -431,7 +435,6 @@ class MockPresence: Presence {
             PresenceMember(
                 clientID: name,
                 data: nil,
-                action: .present,
                 extras: nil,
                 updatedAt: Date()
             )
@@ -443,7 +446,6 @@ class MockPresence: Presence {
             PresenceMember(
                 clientID: name,
                 data: nil,
-                action: .present,
                 extras: nil,
                 updatedAt: Date()
             )
@@ -463,12 +465,16 @@ class MockPresence: Presence {
     }
 
     private func enter(dataForEvent: PresenceData?) async throws(ARTErrorInfo) {
+        let member = PresenceMember(
+            clientID: clientID,
+            data: dataForEvent,
+            extras: nil,
+            updatedAt: Date()
+        )
         mockSubscriptions.emit(
             PresenceEvent(
-                action: .enter,
-                clientID: clientID,
-                timestamp: Date(),
-                data: dataForEvent
+                type: .enter,
+                member: member
             )
         )
     }
@@ -482,12 +488,16 @@ class MockPresence: Presence {
     }
 
     private func update(dataForEvent: PresenceData? = nil) async throws(ARTErrorInfo) {
+        let member = PresenceMember(
+            clientID: clientID,
+            data: dataForEvent,
+            extras: nil,
+            updatedAt: Date()
+        )
         mockSubscriptions.emit(
             PresenceEvent(
-                action: .update,
-                clientID: clientID,
-                timestamp: Date(),
-                data: dataForEvent
+                type: .update,
+                member: member
             )
         )
     }
@@ -501,12 +511,16 @@ class MockPresence: Presence {
     }
 
     func leave(dataForEvent: PresenceData? = nil) async throws(ARTErrorInfo) {
+        let member = PresenceMember(
+            clientID: clientID,
+            data: dataForEvent,
+            extras: nil,
+            updatedAt: Date()
+        )
         mockSubscriptions.emit(
             PresenceEvent(
-                action: .leave,
-                clientID: clientID,
-                timestamp: Date(),
-                data: dataForEvent
+                type: .leave,
+                member: member
             )
         )
     }
