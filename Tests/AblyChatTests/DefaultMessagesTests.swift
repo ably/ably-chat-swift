@@ -359,10 +359,11 @@ struct DefaultMessagesTests {
         // When the expectation are not met test crashes with "Fatal error: Internal inconsistency: No test reporter for test AblyChatTests.DefaultMessagesTests/subscriptionCanBeRegisteredToReceiveIncomingMessages()/DefaultMessagesTests.swift:326:6 and test case argumentIDs: Optional([])". I guess this could be avoided by using `withCheckedContinuation`, but it doesn't accept async functions in its closure body (await subscribe).
 
         // When
-        let subscriptionHandle = try await defaultMessages.subscribe { message in
+        let subscriptionHandle = try await defaultMessages.subscribe { event in
             // Then
-            #expect(message.headers == ["numberKey": .number(10), "stringKey": .string("hello")])
-            #expect(message.metadata == ["numberKey": .number(10), "stringKey": .string("hello")])
+            #expect(event.type == .created)
+            #expect(event.message.headers == ["numberKey": .number(10), "stringKey": .string("hello")])
+            #expect(event.message.metadata == ["numberKey": .number(10), "stringKey": .string("hello")])
         }
 
         // CHA-M4b
@@ -405,9 +406,10 @@ struct DefaultMessagesTests {
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", clientID: "clientId", logger: TestLogger())
 
         // When
-        _ = try await defaultMessages.subscribe { message in
+        _ = try await defaultMessages.subscribe { event in
             // Then
-            #expect(message.serial == "123")
+            #expect(event.type == .created)
+            #expect(event.message.serial == "123")
         }
 
         // will not be received and expectations above will not fail
