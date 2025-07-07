@@ -12,7 +12,7 @@ internal final class DefaultOccupancy: Occupancy {
         implementation.subscribe(callback)
     }
 
-    internal func get() async throws(ARTErrorInfo) -> OccupancyEvent {
+    internal func get() async throws(ARTErrorInfo) -> OccupancyData {
         try await implementation.get()
     }
 
@@ -58,7 +58,8 @@ internal final class DefaultOccupancy: Occupancy {
                 let connections = metrics["connections"] as? Int ?? 0
                 let presenceMembers = metrics["presenceMembers"] as? Int ?? 0
 
-                let occupancyEvent = OccupancyEvent(connections: connections, presenceMembers: presenceMembers)
+                let occupancyData = OccupancyData(connections: connections, presenceMembers: presenceMembers)
+                let occupancyEvent = OccupancyEvent(type: .updated, occupancy: occupancyData)
                 logger.log(message: "Emitting occupancy event: \(occupancyEvent)", level: .debug)
                 callback(occupancyEvent)
             }
@@ -71,8 +72,8 @@ internal final class DefaultOccupancy: Occupancy {
             }
         }
 
-        // (CHA-O3) Users can request an instantaneous occupancy check via the REST API. The request is detailed here (https://sdk.ably.com/builds/ably/specification/main/chat-features/#rest-occupancy-request), with the response format being a simple occupancy event
-        internal func get() async throws(ARTErrorInfo) -> OccupancyEvent {
+        // (CHA-O3) Users can request an instantaneous occupancy check via the REST API. The request is detailed here (https://sdk.ably.com/builds/ably/specification/main/chat-features/#rest-occupancy-request), with the response format being a simple occupancy data
+        internal func get() async throws(ARTErrorInfo) -> OccupancyData {
             do {
                 logger.log(message: "Getting occupancy for room: \(roomName)", level: .debug)
                 return try await chatAPI.getOccupancy(roomName: roomName)

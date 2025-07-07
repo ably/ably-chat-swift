@@ -58,11 +58,12 @@ struct DefaultRoomOccupancyTests {
 
         // When
         let subscription = defaultOccupancy.subscribe()
-        subscription.emit(OccupancyEvent(connections: 5, presenceMembers: 2))
+        let occupancyData = OccupancyData(connections: 5, presenceMembers: 2)
+        subscription.emit(OccupancyEvent(type: .updated, occupancy: occupancyData))
 
         // Then
-        let occupancyInfo = try #require(await subscription.first { @Sendable _ in true })
-        #expect(occupancyInfo.connections == 5)
-        #expect(occupancyInfo.presenceMembers == 2)
+        let occupancyEvent = try #require(await subscription.first { @Sendable _ in true })
+        #expect(occupancyEvent.occupancy.connections == 5)
+        #expect(occupancyEvent.occupancy.presenceMembers == 2)
     }
 }
