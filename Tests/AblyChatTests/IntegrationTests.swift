@@ -316,9 +316,9 @@ struct IntegrationTests {
         #expect(rxDeletedMessageFromSubscription.version == txDeleteMessage.version)
         #expect(rxDeletedMessageFromSubscription.id == txDeleteMessage.id)
         #expect(rxDeletedMessageFromSubscription.operation == txDeleteMessage.operation)
-        #expect(rxDeletedMessageFromSubscription.text == txDeleteMessage.text)
-        #expect(rxDeletedMessageFromSubscription.headers == txDeleteMessage.headers)
-        #expect(rxDeletedMessageFromSubscription.metadata == txDeleteMessage.metadata)
+        #expect(rxDeletedMessageFromSubscription.text.isEmpty)
+        #expect(rxDeletedMessageFromSubscription.headers.isEmpty)
+        #expect(rxDeletedMessageFromSubscription.metadata.isEmpty)
 
         // MARK: - Room Reactions
 
