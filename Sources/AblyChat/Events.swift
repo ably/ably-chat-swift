@@ -19,7 +19,7 @@ public enum MessageAction: String, Sendable {
             .update
         case .delete:
             .delete
-        // ignore any other actions except `message.create` for now
+        // ignore any other actions for now (CHA-M4k11)
         case .meta,
              .messageSummary:
             nil
