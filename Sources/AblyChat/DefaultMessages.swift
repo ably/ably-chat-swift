@@ -73,44 +73,55 @@ internal final class DefaultMessages: Messages {
                 // (CHA-M4c) When a realtime message with name set to message.created is received, it is translated into a message event, which contains a type field with the event type as well as a message field containing the Message Struct. This event is then broadcast to all subscribers.
                 // (CHA-M4d) If a realtime message with an unknown name is received, the SDK shall silently discard the message, though it may log at DEBUG or TRACE level.
                 // (CHA-M5k) Incoming realtime events that are malformed (unknown field should be ignored) shall not be emitted to subscribers.
-                let eventListener = channel.subscribe(RealtimeMessageName.chatMessage.rawValue) { message in
+                let eventListener = channel.subscribe(RealtimeMessageName.chatMessage.rawValue) { [logger] message in
                     do {
+                        guard let action = MessageAction.fromRealtimeAction(message.action) else {
+                            throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message with unsupported action: \(message.action)") // CHA-M4k11
+                        }
+
                         // TODO: Revisit errors thrown as part of https://github.com/ably-labs/ably-chat-swift/issues/32
                         guard let ablyCocoaData = message.data,
                               let data = JSONValue(ablyCocoaData: ablyCocoaData).objectValue,
-                              let text = data["text"]?.stringValue
+                              let text = action == .delete /* CHA-M4m5 */ ? "" : data["text"]?.stringValue
                         else {
-                            throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without data or text")
+                            throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without data or text") // CHA-M4k1, CHA-M4k4
                         }
-
-                        guard let ablyCocoaExtras = message.extras else {
-                            throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without extras")
-                        }
-
-                        let extras = JSONValue.objectFromAblyCocoaExtras(ablyCocoaExtras)
 
                         guard let serial = message.serial else {
-                            throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without serial")
+                            throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without serial") // CHA-M4k7
                         }
 
                         guard let clientID = message.clientId else {
-                            throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without clientId")
+                            throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without clientId") // CHA-M4k2
                         }
 
                         guard let version = message.version else {
-                            throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without version")
+                            throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without version") // CHA-M4k8
                         }
 
-                        let metadata = try data.optionalObjectValueForKey("metadata")
+                        let metadata: Metadata?
+                        let headers: Headers?
 
-                        let headers: Headers? = if let headersJSONObject = try extras.optionalObjectValueForKey("headers") {
-                            try headersJSONObject.mapValues { try HeadersValue(jsonValue: $0) }
+                        if action == .delete {
+                            metadata = [:] // CHA-M4m6
+                            headers = [:] // CHA-M4m7
                         } else {
-                            nil
-                        }
+                            metadata = try data.optionalObjectValueForKey("metadata")
+                            guard metadata != nil else {
+                                throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without metadata") // CHA-M4k6
+                            }
 
-                        guard let action = MessageAction.fromRealtimeAction(message.action) else {
-                            return
+                            guard let ablyCocoaExtras = message.extras else {
+                                throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without extras")
+                            }
+
+                            let extras = JSONValue.objectFromAblyCocoaExtras(ablyCocoaExtras)
+
+                            headers = if let headersJSONObject = try extras.optionalObjectValueForKey("headers") {
+                                try headersJSONObject.mapValues { try HeadersValue(jsonValue: $0) }
+                            } else {
+                                throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without headers") // CHA-M4k5
+                            }
                         }
 
                         // `message.operation?.toChatOperation()` is throwing but the linter prefers putting the `try` on Message initialization instead of having it nested.
@@ -131,6 +142,8 @@ internal final class DefaultMessages: Messages {
                         callback(message)
                     } catch {
                         // note: this replaces some existing code that also didn't handle any thrown error; I suspect not intentional, will leave whoever writes the tests for this class to see what's going on
+                        // note: I'm adding this log line here, because it's better then nothing. TODO: proper handling
+                        logger.log(message: "Realtime message receive error: \(error)", level: .error)
                     }
                 }
 
