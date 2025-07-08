@@ -1,5 +1,26 @@
 # Change Log
 
+## [0.5.0](https://github.com/ably/ably-chat-swift/tree/0.5.0)
+
+## What's Changed
+
+The following features have been added in this release:
+
+- Add message reactions by @maratal in https://github.com/ably/ably-chat-swift/pull/307
+
+The following additional changes (some breaking) are also a part of this release:
+
+- Switch to callbacks by @maratal in https://github.com/ably/ably-chat-swift/pull/286
+- Soft deletes changes by @maratal in https://github.com/ably/ably-chat-swift/pull/322
+- Refactor `roomID` to `name` and `roomName` across SDK by @ttypic in https://github.com/ably/ably-chat-swift/pull/308
+- Refactor Occupancy events by @ttypic in https://github.com/ably/ably-chat-swift/pull/309
+- Refactor wrap Message in the Messages subscription in MessageEvent by @ttypic in https://github.com/ably/ably-chat-swift/pull/310
+- Refactor `PresenceEvent` by @ttypic in https://github.com/ably/ably-chat-swift/pull/311
+- Refactor `RoomReactions` event by @ttypic in https://github.com/ably/ably-chat-swift/pull/312
+- Unifies message reactions api across platforms by @umair-ably in https://github.com/ably/ably-chat-swift/pull/317
+
+**Full Changelog**: https://github.com/ably/ably-chat-swift/compare/0.4.0...0.5.0
+
 ## [0.4.0](https://github.com/ably/ably-chat-swift/tree/0.4.0)
 
 ## What's Changed
