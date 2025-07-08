@@ -29,7 +29,7 @@ internal final class DefaultMessageReactions: MessageReactions {
 
             let apiParams: ChatAPI.SendMessageReactionParams = .init(
                 type: params.type ?? defaultReaction,
-                reaction: params.reaction,
+                name: params.name,
                 count: count
             )
             let response = try await chatAPI.sendReactionToMessage(messageSerial, roomName: roomName, params: apiParams)
@@ -43,13 +43,13 @@ internal final class DefaultMessageReactions: MessageReactions {
     // (CHA-MR11) Users should be able to delete a reaction from a message via the `delete` method of the `MessagesReactions` object
     internal func delete(from messageSerial: String, params: DeleteMessageReactionParams) async throws(ARTErrorInfo) {
         let reactionType = params.type ?? defaultReaction
-        if reactionType != .unique, params.reaction == nil {
+        if reactionType != .unique, params.name == nil {
             throw ARTErrorInfo(chatError: .unableDeleteReactionWithoutName(reactionType: reactionType.rawValue))
         }
         do {
             let apiParams: ChatAPI.DeleteMessageReactionParams = .init(
                 type: reactionType,
-                reaction: reactionType != .unique ? params.reaction : nil
+                name: reactionType != .unique ? params.name : nil
             )
             let response = try await chatAPI.deleteReactionFromMessage(messageSerial, roomName: roomName, params: apiParams)
 

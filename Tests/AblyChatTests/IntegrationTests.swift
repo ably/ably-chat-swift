@@ -140,10 +140,10 @@ struct IntegrationTests {
 
         let rxMessageReactionsSubscription = rxRoom.messages.reactions.subscribe()
 
-        try await txRoom.messages.reactions.send(to: messageToReact.serial, params: .init(reaction: "👍"))
-        try await txRoom.messages.reactions.send(to: messageToReact.serial, params: .init(reaction: "🎉"))
-        try await txRoom.messages.reactions.delete(from: messageToReact.serial, params: .init(reaction: "👍"))
-        try await txRoom.messages.reactions.delete(from: messageToReact.serial, params: .init(reaction: "🎉"))
+        try await txRoom.messages.reactions.send(to: messageToReact.serial, params: .init(name: "👍"))
+        try await txRoom.messages.reactions.send(to: messageToReact.serial, params: .init(name: "🎉"))
+        try await txRoom.messages.reactions.delete(from: messageToReact.serial, params: .init(name: "👍"))
+        try await txRoom.messages.reactions.delete(from: messageToReact.serial, params: .init(name: "🎉"))
 
         var reactionSummaryEvents = [MessageReactionSummaryEvent]()
 
@@ -188,9 +188,9 @@ struct IntegrationTests {
 
         let rxMessageRawReactionsSubscription = rxRoom.messages.reactions.subscribeRaw()
 
-        try await txRoom.messages.reactions.send(to: messageToReact.serial, params: .init(reaction: "🔥"))
-        try await txRoom.messages.reactions.send(to: messageToReact.serial, params: .init(reaction: "😆"))
-        try await txRoom.messages.reactions.delete(from: messageToReact.serial, params: .init(reaction: "😆")) // not deleting 🔥 to check it later in history request
+        try await txRoom.messages.reactions.send(to: messageToReact.serial, params: .init(name: "🔥"))
+        try await txRoom.messages.reactions.send(to: messageToReact.serial, params: .init(name: "😆"))
+        try await txRoom.messages.reactions.delete(from: messageToReact.serial, params: .init(name: "😆")) // not deleting 🔥 to check it later in history request
 
         var reactionRawEvents = [MessageReactionRawEvent]()
 

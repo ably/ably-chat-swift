@@ -246,7 +246,7 @@ class MockMessageReactions: MessageReactions {
         reactions.append(
             MessageReaction(
                 type: .distinct,
-                name: params.reaction,
+                name: params.name,
                 messageSerial: messageSerial,
                 count: params.count,
                 clientID: clientID,
@@ -263,7 +263,7 @@ class MockMessageReactions: MessageReactions {
 
     func delete(from messageSerial: String, params: DeleteMessageReactionParams) async throws(ARTErrorInfo) {
         reactions.removeAll { reaction in
-            reaction.messageSerial == messageSerial && reaction.name == params.reaction && reaction.clientID == clientID
+            reaction.messageSerial == messageSerial && reaction.name == params.name && reaction.clientID == clientID
         }
         mockSubscriptions.emit(
             MessageReactionSummaryEvent(
