@@ -15,7 +15,7 @@ struct DefaultRoomReactionsTests {
         let defaultRoomReactions = DefaultRoomReactions(channel: channel, clientID: "mockClientId", roomName: "basketball", logger: TestLogger())
 
         let sendReactionParams = SendReactionParams(
-            type: "like",
+            name: "like",
             metadata: ["someMetadataKey": "someMetadataValue"],
             headers: ["someHeadersKey": "someHeadersValue"]
         )
@@ -25,7 +25,7 @@ struct DefaultRoomReactionsTests {
 
         // Then
         #expect(channel.publishedMessages.last?.name == RoomReactionEvents.reaction.rawValue)
-        #expect(channel.publishedMessages.last?.data == ["type": "like", "metadata": ["someMetadataKey": "someMetadataValue"]])
+        #expect(channel.publishedMessages.last?.data == ["name": "like", "metadata": ["someMetadataKey": "someMetadataValue"]])
         #expect(channel.publishedMessages.last?.extras == ["headers": ["someHeadersKey": "someHeadersValue"], "ephemeral": true])
     }
 
@@ -54,7 +54,7 @@ struct DefaultRoomReactionsTests {
         // When
         let subscription = defaultRoomReactions.subscribe { event in
             // Then
-            #expect(event.reaction.type == ":like:")
+            #expect(event.reaction.name == ":like:")
         }
 
         // CHA-ER4b
@@ -90,7 +90,7 @@ struct DefaultRoomReactionsTests {
 
         // When
         defaultRoomReactions.subscribe { event in
-            #expect(event.reaction.type == ":like:")
+            #expect(event.reaction.name == ":like:")
         }
         // will not be received and expectations above will not fail
         channel.simulateIncomingMessage(

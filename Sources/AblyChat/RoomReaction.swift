@@ -19,7 +19,7 @@ public struct RoomReaction: Sendable {
     /**
      * The type of the reaction, for example "like" or "love".
      */
-    public var type: String
+    public var name: String
 
     /**
      * Metadata of the reaction. If no metadata was set this is an empty object.
@@ -46,8 +46,8 @@ public struct RoomReaction: Sendable {
      */
     public var isSelf: Bool
 
-    public init(type: String, metadata: ReactionMetadata, headers: ReactionHeaders, createdAt: Date, clientID: String, isSelf: Bool) {
-        self.type = type
+    public init(name: String, metadata: ReactionMetadata, headers: ReactionHeaders, createdAt: Date, clientID: String, isSelf: Bool) {
+        self.name = name
         self.metadata = metadata
         self.headers = headers
         self.createdAt = createdAt

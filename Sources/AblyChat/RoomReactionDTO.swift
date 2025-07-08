@@ -4,7 +4,7 @@ internal struct RoomReactionDTO {
     internal var extras: Extras
 
     internal struct Data: Equatable {
-        internal var type: String
+        internal var name: String
         internal var metadata: ReactionMetadata?
     }
 
@@ -14,13 +14,13 @@ internal struct RoomReactionDTO {
 }
 
 internal extension RoomReactionDTO {
-    init(type: String, metadata: ReactionMetadata?, headers: ReactionHeaders?) {
-        data = .init(type: type, metadata: metadata)
+    init(name: String, metadata: ReactionMetadata?, headers: ReactionHeaders?) {
+        data = .init(name: name, metadata: metadata)
         extras = .init(headers: headers)
     }
 
-    var type: String {
-        data.type
+    var name: String {
+        data.name
     }
 
     var metadata: ReactionMetadata? {
@@ -36,18 +36,18 @@ internal extension RoomReactionDTO {
 
 extension RoomReactionDTO.Data: JSONObjectCodable {
     internal enum JSONKey: String {
-        case type
+        case name
         case metadata
     }
 
     internal init(jsonObject: [String: JSONValue]) throws(InternalError) {
-        type = try jsonObject.stringValueForKey(JSONKey.type.rawValue)
+        name = try jsonObject.stringValueForKey(JSONKey.name.rawValue)
         metadata = try jsonObject.optionalObjectValueForKey(JSONKey.metadata.rawValue)
     }
 
     internal var toJSONObject: [String: JSONValue] {
         [
-            JSONKey.type.rawValue: .string(type),
+            JSONKey.name.rawValue: .string(name),
             JSONKey.metadata.rawValue: .object(metadata ?? [:]),
         ]
     }

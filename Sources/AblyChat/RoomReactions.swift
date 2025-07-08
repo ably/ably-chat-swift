@@ -62,14 +62,14 @@ public extension RoomReactions {
 }
 
 /**
- * Params for sending a room-level reactions. Only `type` is mandatory.
+ * Params for sending a room-level reactions. Only `name` is mandatory.
  */
 public struct SendReactionParams: Sendable {
     /**
-     * The type of the reaction, for example an emoji or a short string such as "like".
+     * The name of the reaction, for example an emoji or a short string such as "like".
      * It is the only mandatory parameter to send a room-level reaction.
      */
-    public var type: String
+    public var name: String
 
     /**
      * Optional metadata of the reaction.
@@ -98,8 +98,8 @@ public struct SendReactionParams: Sendable {
      */
     public var headers: ReactionHeaders?
 
-    public init(type: String, metadata: ReactionMetadata? = nil, headers: ReactionHeaders? = nil) {
-        self.type = type
+    public init(name: String, metadata: ReactionMetadata? = nil, headers: ReactionHeaders? = nil) {
+        self.name = name
         self.metadata = metadata
         self.headers = headers
     }

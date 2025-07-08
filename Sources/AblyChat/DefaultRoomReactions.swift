@@ -37,7 +37,7 @@ internal final class DefaultRoomReactions: RoomReactions {
             do {
                 logger.log(message: "Sending reaction with params: \(params)", level: .debug)
 
-                let dto = RoomReactionDTO(type: params.type, metadata: params.metadata, headers: params.headers)
+                let dto = RoomReactionDTO(name: params.name, metadata: params.metadata, headers: params.headers)
 
                 try await channel.publish(
                     RoomReactionEvents.reaction.rawValue,
@@ -82,7 +82,7 @@ internal final class DefaultRoomReactions: RoomReactions {
 
                     // (CHA-ER4d) Realtime events that are malformed (unknown fields should be ignored) shall not be emitted to listeners.
                     let reaction = RoomReaction(
-                        type: dto.type,
+                        name: dto.name,
                         metadata: dto.metadata ?? [:],
                         headers: dto.headers ?? [:],
                         createdAt: timestamp,
