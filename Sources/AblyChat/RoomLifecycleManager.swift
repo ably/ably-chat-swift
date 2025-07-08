@@ -418,7 +418,7 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
             try await channel.attach()
         } catch {
             // CHA-RL1k2, CHA-RL1k3
-            let channelState = await channel.state
+            let channelState = channel.state
             logger.log(message: "Failed to attach channel, error \(error), channel now in \(channelState)", level: .info)
             changeStatus(to: .init(channelState: channelState, error: error.toARTErrorInfo()))
             throw error
@@ -484,7 +484,7 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
             try await channel.detach()
         } catch {
             // CHA-RL2k2, CHA-RL2k3
-            let channelState = await channel.state
+            let channelState = channel.state
             logger.log(message: "Failed to detach channel, error \(error), channel now in \(channelState)", level: .info)
             changeStatus(to: .init(channelState: channelState, error: error.toARTErrorInfo()))
             throw error
@@ -547,7 +547,7 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
         // CHA-RL3n
         while true {
             // CHA-RL3n1
-            if await channel.state == .failed {
+            if channel.state == .failed {
                 logger.log(message: "Channel is FAILED; skipping detach", level: .info)
                 break
             }
@@ -559,7 +559,7 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
                 break
             } catch {
                 // CHA-RL3n3
-                if await channel.state == .failed {
+                if channel.state == .failed {
                     logger.log(message: "Channel is FAILED after detach; exiting detach loop", level: .info)
                     break
                 }

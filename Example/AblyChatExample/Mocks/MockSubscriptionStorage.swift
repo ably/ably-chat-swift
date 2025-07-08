@@ -6,7 +6,7 @@ import AblyChat
 class MockSubscriptionStorage<Element: Sendable> {
     @MainActor
     private struct SubscriptionItem {
-        let subscription: Subscription
+        let subscription: SubscriptionProtocol
         let callback: (Element) -> Void
 
         init(
@@ -26,7 +26,7 @@ class MockSubscriptionStorage<Element: Sendable> {
                 }
                 return needNext
             }
-            subscription = Subscription {
+            subscription = MockSubscription {
                 needNext = false
                 onTerminate()
             }
@@ -64,7 +64,7 @@ class MockSubscriptionStorage<Element: Sendable> {
 class MockStatusSubscriptionStorage<Element: Sendable> {
     @MainActor
     private struct SubscriptionItem {
-        let subscription: StatusSubscription
+        let subscription: StatusSubscriptionProtocol
         let callback: (Element) -> Void
 
         init(
@@ -84,7 +84,7 @@ class MockStatusSubscriptionStorage<Element: Sendable> {
                 }
                 return needNext
             }
-            subscription = StatusSubscription {
+            subscription = MockStatusSubscription {
                 needNext = false
                 onTerminate()
             }
@@ -122,7 +122,7 @@ class MockStatusSubscriptionStorage<Element: Sendable> {
 class MockMessageSubscriptionStorage<Element: Sendable> {
     @MainActor
     private struct SubscriptionItem {
-        let subscription: MessageSubscriptionResponse
+        let subscription: MessageSubscriptionResponseProtocol
         let callback: (Element) -> Void
 
         init(
@@ -141,10 +141,10 @@ class MockMessageSubscriptionStorage<Element: Sendable> {
                 }
                 return needNext
             }
-            subscription = MessageSubscriptionResponse(unsubscribe: {
+            subscription = MockMessageSubscriptionResponse(previousMessages: previousMessages) {
                 needNext = false
                 onTerminate()
-            }, historyBeforeSubscribe: previousMessages)
+            }
         }
     }
 
@@ -177,5 +177,50 @@ class MockMessageSubscriptionStorage<Element: Sendable> {
         for subscriptionItem in subscriptions.values {
             subscriptionItem.callback(element)
         }
+    }
+}
+
+struct MockSubscription: SubscriptionProtocol {
+    private let _unsubscribe: () -> Void
+
+    func unsubscribe() {
+        _unsubscribe()
+    }
+
+    init(unsubscribe: @MainActor @Sendable @escaping () -> Void) {
+        _unsubscribe = unsubscribe
+    }
+}
+
+struct MockStatusSubscription: StatusSubscriptionProtocol {
+    private let _off: () -> Void
+
+    func off() {
+        _off()
+    }
+
+    init(off: @MainActor @Sendable @escaping () -> Void) {
+        _off = off
+    }
+}
+
+struct MockMessageSubscriptionResponse: MessageSubscriptionResponseProtocol {
+    private let _unsubscribe: () -> Void
+    private let previousMessages: @MainActor @Sendable (QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message>
+
+    func historyBeforeSubscribe(_ params: QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message> {
+        try await previousMessages(params)
+    }
+
+    func unsubscribe() {
+        _unsubscribe()
+    }
+
+    init(
+        previousMessages: @escaping @MainActor @Sendable (QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message>,
+        unsubscribe: @MainActor @Sendable @escaping () -> Void
+    ) {
+        self.previousMessages = previousMessages
+        _unsubscribe = unsubscribe
     }
 }

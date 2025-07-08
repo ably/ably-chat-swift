@@ -67,7 +67,7 @@ struct DefaultMessagesTests {
             initialState: .attached
         )
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", clientID: "clientId", logger: TestLogger())
-        let subscription = try await defaultMessages.subscribe()
+        let subscription = defaultMessages.subscribe()
         _ = try await subscription.getPreviousMessages(params: .init())
 
         // Then: subscription point is the current channelSerial of the realtime channel
@@ -85,7 +85,7 @@ struct DefaultMessagesTests {
         let realtime = MockRealtime {
             MockHTTPPaginatedResponse.successSendMessageWithNoItems
         }
-        let attachSerial = "123"
+        let attachSerial = "attach123"
         let chatAPI = ChatAPI(realtime: realtime)
         let channel = MockRealtimeChannel(
             properties: ARTChannelProperties(attachSerial: attachSerial, channelSerial: nil),
@@ -95,7 +95,7 @@ struct DefaultMessagesTests {
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", clientID: "clientId", logger: TestLogger())
 
         // When: subscription is added when the underlying realtime channel is ATTACHING
-        let subscription = try await defaultMessages.subscribe()
+        let subscription = defaultMessages.subscribe()
         _ = try await subscription.getPreviousMessages(params: .init())
 
         // Then: subscription point is the attachSerial of the realtime channel
@@ -122,8 +122,8 @@ struct DefaultMessagesTests {
         )
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", clientID: "clientId", logger: TestLogger())
 
-        // When: subscription is added when the underlying realtime channel is ATTACHING
-        let subscription = try await defaultMessages.subscribe()
+        // When: subscription is added when the underlying realtime channel is ATTACHED
+        let subscription = defaultMessages.subscribe()
         _ = try await subscription.getPreviousMessages(params: .init())
 
         #expect(realtime.callRecorder.hasRecord(
@@ -166,8 +166,8 @@ struct DefaultMessagesTests {
         )
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", clientID: "clientId", logger: TestLogger())
 
-        // When: subscription is added when the underlying realtime channel is ATTACHING
-        let subscription = try await defaultMessages.subscribe()
+        // When: subscription is added when the underlying realtime channel is ATTACHED
+        let subscription = defaultMessages.subscribe()
         _ = try await subscription.getPreviousMessages(params: .init())
 
         #expect(realtime.callRecorder.hasRecord(
@@ -176,6 +176,7 @@ struct DefaultMessagesTests {
         )
         )
 
+        // When: UPDATE event received
         channel.emitEvent(
             ARTChannelStateChange(current: .attached, previous: .attached, event: .update, reason: nil, resumed: false)
         )
@@ -208,7 +209,7 @@ struct DefaultMessagesTests {
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", clientID: "clientId", logger: TestLogger())
 
         // When: subscription is added when the underlying realtime channel is ATTACHED
-        let subscription = try await defaultMessages.subscribe()
+        let subscription = defaultMessages.subscribe()
         let paginatedResult = try await subscription.getPreviousMessages(params: .init(orderBy: .oldestFirst)) // CHA-M5f, try to set unsupported direction
 
         let requestParams = try #require(realtime.requestArguments.first?.params)
@@ -246,7 +247,7 @@ struct DefaultMessagesTests {
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", clientID: "clientId", logger: TestLogger())
 
         // When
-        let subscription = try await defaultMessages.subscribe()
+        let subscription = defaultMessages.subscribe()
 
         // Then
         // TODO: avoids compiler crash (https://github.com/ably/ably-chat-swift/issues/233), revert once Xcode 16.3 released
@@ -359,7 +360,7 @@ struct DefaultMessagesTests {
         // When the expectation are not met test crashes with "Fatal error: Internal inconsistency: No test reporter for test AblyChatTests.DefaultMessagesTests/subscriptionCanBeRegisteredToReceiveIncomingMessages()/DefaultMessagesTests.swift:326:6 and test case argumentIDs: Optional([])". I guess this could be avoided by using `withCheckedContinuation`, but it doesn't accept async functions in its closure body (await subscribe).
 
         // When
-        let subscriptionHandle = try await defaultMessages.subscribe { event in
+        let subscriptionHandle = defaultMessages.subscribe { event in
             // Then
             #expect(event.type == .created)
             #expect(event.message.headers == ["numberKey": .number(10), "stringKey": .string("hello")])
@@ -406,7 +407,7 @@ struct DefaultMessagesTests {
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", clientID: "clientId", logger: TestLogger())
 
         // When
-        _ = try await defaultMessages.subscribe { event in
+        _ = defaultMessages.subscribe { event in
             // Then
             #expect(event.type == .created)
             #expect(event.message.serial == "123")

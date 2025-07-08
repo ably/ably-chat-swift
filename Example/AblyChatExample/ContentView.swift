@@ -253,7 +253,7 @@ struct ContentView: View {
     }
 
     func showMessages(room: Room) async throws {
-        let subscription = try await room.messages.subscribe { event in
+        let subscription = room.messages.subscribe { event in
             let message = event.message
             switch event.type {
             case .created:

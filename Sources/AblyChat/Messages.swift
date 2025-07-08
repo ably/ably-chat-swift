@@ -16,7 +16,7 @@ public protocol Messages: AnyObject, Sendable {
      *
      * - Returns: A subscription that can be used to unsubscribe from `ChatMessageEvent` events.
      */
-    func subscribe(_ callback: @escaping @MainActor (ChatMessageEvent) -> Void) async throws(ARTErrorInfo) -> MessageSubscriptionResponseProtocol
+    func subscribe(_ callback: @escaping @MainActor (ChatMessageEvent) -> Void) -> MessageSubscriptionResponseProtocol
 
     /**
      * Get messages that have been previously sent to the chat room, based on the provided options.
@@ -88,9 +88,9 @@ public extension Messages {
      *
      * - Returns: A subscription ``MessageSubscription`` that can be used to iterate through new messages.
      */
-    func subscribe(bufferingPolicy: BufferingPolicy) async throws(ARTErrorInfo) -> MessageSubscriptionAsyncSequence {
+    func subscribe(bufferingPolicy: BufferingPolicy) -> MessageSubscriptionAsyncSequence {
         var emitEvent: ((ChatMessageEvent) -> Void)?
-        let subscription = try await subscribe { event in
+        let subscription = subscribe { event in
             emitEvent?(event)
         }
 
@@ -112,8 +112,8 @@ public extension Messages {
     }
 
     /// Same as calling ``subscribe(bufferingPolicy:)`` with ``BufferingPolicy/unbounded``.
-    func subscribe() async throws(ARTErrorInfo) -> MessageSubscriptionAsyncSequence {
-        try await subscribe(bufferingPolicy: .unbounded)
+    func subscribe() -> MessageSubscriptionAsyncSequence {
+        subscribe(bufferingPolicy: .unbounded)
     }
 }
 
