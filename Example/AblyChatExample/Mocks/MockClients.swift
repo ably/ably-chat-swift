@@ -317,7 +317,7 @@ class MockRoomReactions: RoomReactions {
 
     func send(params: SendReactionParams) async throws(ARTErrorInfo) {
         let reaction = RoomReaction(
-            type: params.type,
+            name: params.name,
             metadata: [:],
             headers: [:],
             createdAt: Date(),
@@ -333,7 +333,7 @@ class MockRoomReactions: RoomReactions {
         mockSubscriptions.create(
             randomElement: {
                 let reaction = RoomReaction(
-                    type: ReactionType.allCases.randomElement()!.emoji,
+                    name: ReactionName.allCases.randomElement()!.emoji,
                     metadata: [:],
                     headers: [:],
                     createdAt: Date(),

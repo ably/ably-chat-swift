@@ -83,7 +83,7 @@ struct ContentView: View {
 
     private var sendTitle: String {
         if newMessage.isEmpty {
-            ReactionType.like.emoji
+            ReactionName.like.emoji
         } else if editingItemID != nil {
             "Update"
         } else {
@@ -239,7 +239,7 @@ struct ContentView: View {
 
     func sendButtonAction() {
         if newMessage.isEmpty {
-            sendRoomReaction(ReactionType.like.emoji)
+            sendRoomReaction(ReactionName.like.emoji)
         } else if editingItemID != nil {
             Task {
                 try await sendEditedMessage()
@@ -421,7 +421,7 @@ struct ContentView: View {
 
     func sendRoomReaction(_ reaction: String) {
         Task {
-            try await room().reactions.send(params: .init(type: reaction))
+            try await room().reactions.send(params: .init(name: reaction))
         }
     }
 

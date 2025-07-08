@@ -25,14 +25,14 @@ enum RoomReactionDTOTests {
 
         @Test
         func initWithJSONValue_withNoMetadataKey() throws {
-            #expect(try RoomReactionDTO.Data(jsonValue: ["type": "" /* arbitrary */ ]).metadata == nil)
+            #expect(try RoomReactionDTO.Data(jsonValue: ["name": "" /* arbitrary */ ]).metadata == nil)
         }
 
         @Test
         func initWithJSONValue() throws {
             let data = try RoomReactionDTO.Data(
                 jsonValue: [
-                    "type": "someType",
+                    "name": "someName",
                     "metadata": [
                         "someStringKey": "someStringValue",
                         "someNumberKey": 123,
@@ -40,7 +40,7 @@ enum RoomReactionDTOTests {
                 ]
             )
 
-            #expect(data == .init(type: "someType", metadata: ["someStringKey": "someStringValue", "someNumberKey": 123]))
+            #expect(data == .init(name: "someName", metadata: ["someStringKey": "someStringValue", "someNumberKey": 123]))
         }
 
         // MARK: - JSONCodable
@@ -48,15 +48,15 @@ enum RoomReactionDTOTests {
         @Test
         func toJSONValue_withNilMetadata() {
             // i.e. should create an empty object for metadata
-            #expect(RoomReactionDTO.Data(type: "" /* arbitrary */, metadata: nil).toJSONValue == .object(["type": "", "metadata": .object([:])]))
+            #expect(RoomReactionDTO.Data(name: "" /* arbitrary */, metadata: nil).toJSONValue == .object(["name": "", "metadata": .object([:])]))
         }
 
         @Test
         func toJSONValue() {
-            let data = RoomReactionDTO.Data(type: "someType", metadata: ["someStringKey": "someStringValue", "someNumberKey": 123])
+            let data = RoomReactionDTO.Data(name: "someName", metadata: ["someStringKey": "someStringValue", "someNumberKey": 123])
 
             #expect(data.toJSONValue == [
-                "type": "someType",
+                "name": "someName",
                 "metadata": [
                     "someStringKey": "someStringValue",
                     "someNumberKey": 123,

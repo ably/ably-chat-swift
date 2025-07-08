@@ -68,7 +68,7 @@ enum MockStrings {
     }
 }
 
-enum ReactionType: String, CaseIterable {
+enum ReactionName: String, CaseIterable {
     case like, dislike, lol, rofl, ok, idk
 
     var emoji: String {
@@ -91,7 +91,7 @@ enum ReactionType: String, CaseIterable {
 
 extension RoomReaction {
     var displayedText: String {
-        type
+        name
     }
 }
 

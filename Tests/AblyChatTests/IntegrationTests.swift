@@ -326,13 +326,13 @@ struct IntegrationTests {
         // (2) Now that we're subscribed to reactions, send a reaction on the other client and check that we receive it on the subscription
         try await txRoom.reactions.send(
             params: .init(
-                type: "heart",
+                name: "heart",
                 metadata: ["someMetadataKey": 123, "someOtherMetadataKey": "foo"],
                 headers: ["someHeadersKey": 456, "someOtherHeadersKey": "bar"]
             )
         )
         let rxReactionFromSubscription = try #require(await rxReactionSubscription.first { @Sendable _ in true })
-        #expect(rxReactionFromSubscription.reaction.type == "heart")
+        #expect(rxReactionFromSubscription.reaction.name == "heart")
         #expect(rxReactionFromSubscription.reaction.metadata == ["someMetadataKey": .number(123), "someOtherMetadataKey": .string("foo")])
         #expect(rxReactionFromSubscription.reaction.headers == ["someHeadersKey": .number(456), "someOtherHeadersKey": .string("bar")])
 
