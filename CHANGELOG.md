@@ -1,5 +1,15 @@
 # Change Log
 
+## [0.6.0](https://github.com/ably/ably-chat-swift/tree/0.6.0)
+
+## What's Changed
+
+Breaking Changes:
+
+- Renames RoomReaction.type to RoomReaction.name by @umair-ably in https://github.com/ably/ably-chat-swift/pull/326
+
+**Full Changelog**: https://github.com/ably/ably-chat-swift/compare/0.5.0...0.6.0
+
 ## [0.5.0](https://github.com/ably/ably-chat-swift/tree/0.5.0)
 
 ## What's Changed
