@@ -107,7 +107,7 @@ struct IntegrationTests {
         // (1) Send a message before subscribing to messages, so that later on we can check history works.
 
         // (2) Create a throwaway subscription and wait for it to receive a message. This is to make sure that rxRoom has seen the message that we send here, so that the first message we receive on the subscription created in (5) is that which we'll send in (6), and not that which we send here.
-        let throwawayRxMessageSubscription = try await rxRoom.messages.subscribe()
+        let throwawayRxMessageSubscription = rxRoom.messages.subscribe()
 
         // (3) Send the message
         let txMessageBeforeRxSubscribe = try await txRoom.messages.send(
@@ -121,7 +121,7 @@ struct IntegrationTests {
         #expect(throwawayRxEvent.message == txMessageBeforeRxSubscribe)
 
         // (5) Subscribe to messages
-        let rxMessageSubscription = try await rxRoom.messages.subscribe()
+        let rxMessageSubscription = rxRoom.messages.subscribe()
 
         // (6) Now that we're subscribed to messages, send a message on the other client and check that we receive it on the subscription
         let txMessageAfterRxSubscribe = try await txRoom.messages.send(

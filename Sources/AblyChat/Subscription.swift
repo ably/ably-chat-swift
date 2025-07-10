@@ -54,47 +54,66 @@ public protocol MessageSubscriptionResponseProtocol: SubscriptionProtocol, Senda
     func historyBeforeSubscribe(_ params: QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message>
 }
 
-public struct Subscription: SubscriptionProtocol, Sendable {
+internal struct Subscription: SubscriptionProtocol, Sendable {
     private let _unsubscribe: () -> Void
 
-    public func unsubscribe() {
+    internal func unsubscribe() {
         _unsubscribe()
     }
 
-    public init(unsubscribe: @MainActor @Sendable @escaping () -> Void) {
+    internal init(unsubscribe: @MainActor @Sendable @escaping () -> Void) {
         _unsubscribe = unsubscribe
     }
 }
 
-public struct StatusSubscription: StatusSubscriptionProtocol, Sendable {
+internal struct StatusSubscription: StatusSubscriptionProtocol, Sendable {
     private let _off: () -> Void
 
-    public func off() {
+    internal func off() {
         _off()
     }
 
-    public init(off: @MainActor @Sendable @escaping () -> Void) {
+    internal init(off: @MainActor @Sendable @escaping () -> Void) {
         _off = off
     }
 }
 
-public struct MessageSubscriptionResponse: MessageSubscriptionResponseProtocol, Sendable {
+internal struct MessageSubscriptionResponse: MessageSubscriptionResponseProtocol, Sendable {
+    private let chatAPI: ChatAPI
+    private let roomName: String
+    private let subscriptionStartSerial: @MainActor @Sendable () async throws(InternalError) -> String
     private let _unsubscribe: () -> Void
-    private let _historyBeforeSubscribe: @Sendable (QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message>
 
-    public func unsubscribe() {
+    internal func unsubscribe() {
         _unsubscribe()
     }
 
-    public func historyBeforeSubscribe(_ params: QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message> {
-        try await _historyBeforeSubscribe(params)
+    internal func historyBeforeSubscribe(_ params: QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message> {
+        do {
+            let fromSerial = try await subscriptionStartSerial()
+
+            // (CHA-M5f) This method must accept any of the standard history query options, except for direction, which must always be backwards.
+            var queryOptions = params
+            queryOptions.orderBy = .newestFirst // newestFirst is equivalent to backwards
+
+            // (CHA-M5g) The subscribers subscription point must be additionally specified (internally, by us) in the fromSerial query parameter.
+            queryOptions.fromSerial = fromSerial
+
+            return try await chatAPI.getMessages(roomName: roomName, params: queryOptions)
+        } catch {
+            throw error.toARTErrorInfo()
+        }
     }
 
-    public init(
-        unsubscribe: @MainActor @Sendable @escaping () -> Void,
-        historyBeforeSubscribe: @MainActor @Sendable @escaping (QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message>
+    internal init(
+        chatAPI: ChatAPI,
+        roomName: String,
+        subscriptionStartSerial: @MainActor @escaping @Sendable () async throws(InternalError) -> String,
+        unsubscribe: @MainActor @Sendable @escaping () -> Void
     ) {
+        self.chatAPI = chatAPI
+        self.roomName = roomName
+        self.subscriptionStartSerial = subscriptionStartSerial
         _unsubscribe = unsubscribe
-        _historyBeforeSubscribe = historyBeforeSubscribe
     }
 }

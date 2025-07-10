@@ -176,6 +176,18 @@ final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
         return ARTEventListener()
     }
 
+    func once(_ callback: @escaping @MainActor @Sendable (ARTChannelStateChange) -> Void) -> ARTEventListener {
+        stateSubscriptionCallbacks.append(callback)
+        if let stateChangeToEmitForListener {
+            callback(stateChangeToEmitForListener)
+        }
+        return ARTEventListener()
+    }
+
+    func once(_: ARTChannelEvent, callback _: @escaping @MainActor @Sendable (ARTChannelStateChange) -> Void) -> ARTEventListener {
+        fatalError("Not implemented")
+    }
+
     func emitEvent(_ event: ARTChannelStateChange) {
         for callback in stateSubscriptionCallbacks {
             callback(event)

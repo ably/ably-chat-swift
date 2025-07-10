@@ -57,10 +57,12 @@ internal protocol InternalRealtimeChannelProtocol: AnyObject, Sendable {
     func attach() async throws(InternalError)
     func detach() async throws(InternalError)
     var name: String { get }
-    var state: ARTRealtimeChannelState { get async }
-    var errorReason: ARTErrorInfo? { get async }
+    var state: ARTRealtimeChannelState { get }
+    var errorReason: ARTErrorInfo? { get }
     func on(_ cb: @escaping @MainActor (ARTChannelStateChange) -> Void) -> ARTEventListener
     func on(_ event: ARTChannelEvent, callback cb: @escaping @MainActor (ARTChannelStateChange) -> Void) -> ARTEventListener
+    func once(_ cb: @escaping @MainActor (ARTChannelStateChange) -> Void) -> ARTEventListener
+    func once(_ event: ARTChannelEvent, callback cb: @escaping @MainActor (ARTChannelStateChange) -> Void) -> ARTEventListener
     func unsubscribe(_: ARTEventListener?)
     func publish(_ name: String?, data: JSONValue?, extras: [String: JSONValue]?) async throws(InternalError)
     func subscribe(_ callback: @escaping @MainActor (ARTMessage) -> Void) -> ARTEventListener?
@@ -264,6 +266,14 @@ internal final class InternalRealtimeClientAdapter: InternalRealtimeClientProtoc
 
         internal func on(_ event: ARTChannelEvent, callback cb: @escaping @MainActor (ARTChannelStateChange) -> Void) -> ARTEventListener {
             underlying.on(event, callback: toAblyCocoaCallback(cb))
+        }
+
+        internal func once(_ cb: @escaping @MainActor (ARTChannelStateChange) -> Void) -> ARTEventListener {
+            underlying.once(toAblyCocoaCallback(cb))
+        }
+
+        internal func once(_ event: ARTChannelEvent, callback cb: @escaping @MainActor (ARTChannelStateChange) -> Void) -> ARTEventListener {
+            underlying.once(event, callback: toAblyCocoaCallback(cb))
         }
 
         internal func unsubscribe(_ listener: ARTEventListener?) {

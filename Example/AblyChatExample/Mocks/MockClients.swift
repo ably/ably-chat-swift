@@ -122,7 +122,7 @@ class MockMessages: Messages {
         reactions = MockMessageReactions(clientID: clientID, roomName: roomName)
     }
 
-    func subscribe(_ callback: @escaping @MainActor (ChatMessageEvent) -> Void) async throws(ARTErrorInfo) -> MessageSubscriptionResponseProtocol {
+    func subscribe(_ callback: @escaping @MainActor (ChatMessageEvent) -> Void) -> MessageSubscriptionResponseProtocol {
         mockSubscriptions.create(
             randomElement: {
                 let message = Message(
