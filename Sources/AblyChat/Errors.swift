@@ -41,6 +41,16 @@ public enum ErrorCode: Int {
      */
     case roomDiscontinuity = 102_100
 
+    /**
+     * The message was rejected before publishing by a rule on the chat room.
+     */
+    case messageRejectedByBeforePublishRule = 42211
+
+    /**
+     * The message was rejected before publishing by a moderation rule on the chat room.
+     */
+    case messageRejectedByModeration = 42213
+
     /// Has a case for each of the ``ErrorCode`` cases that imply a fixed status code.
     internal enum CaseThatImpliesFixedStatusCode {
         case badRequest
@@ -51,6 +61,8 @@ public enum ErrorCode: Int {
         case roomDiscontinuity
         case unableDeleteReactionWithoutName
         case cannotApplyEventForDifferentMessage
+        case messageRejectedByBeforePublishRule
+        case messageRejectedByModeration
 
         internal var toNumericErrorCode: ErrorCode {
             switch self {
@@ -70,6 +82,10 @@ public enum ErrorCode: Int {
                 .badRequest
             case .cannotApplyEventForDifferentMessage:
                 .badRequest
+            case .messageRejectedByModeration:
+                .messageRejectedByModeration
+            case .messageRejectedByBeforePublishRule:
+                .messageRejectedByBeforePublishRule
             }
         }
 
@@ -85,6 +101,9 @@ public enum ErrorCode: Int {
                  .unableDeleteReactionWithoutName,
                  .cannotApplyEventForDifferentMessage:
                 400
+            case .messageRejectedByModeration,
+                 .messageRejectedByBeforePublishRule:
+                422
             case .roomDiscontinuity:
                 500
             }
@@ -149,6 +168,8 @@ internal enum ChatError {
     case roomDiscontinuity(cause: ARTErrorInfo?)
     case unableDeleteReactionWithoutName(reactionType: String)
     case cannotApplyEventForDifferentMessage
+    case messageRejectedByBeforePublishRule
+    case messageRejectedByModeration
 
     internal var codeAndStatusCode: ErrorCodeAndStatusCode {
         switch self {
@@ -177,6 +198,10 @@ internal enum ChatError {
             .fixedStatusCode(.unableDeleteReactionWithoutName)
         case .cannotApplyEventForDifferentMessage:
             .fixedStatusCode(.cannotApplyEventForDifferentMessage)
+        case .messageRejectedByBeforePublishRule:
+            .fixedStatusCode(.messageRejectedByBeforePublishRule)
+        case .messageRejectedByModeration:
+            .fixedStatusCode(.messageRejectedByModeration)
         }
     }
 
@@ -227,6 +252,10 @@ internal enum ChatError {
             "Cannot delete reaction of type '\(reactionType)' without a reaction name."
         case .cannotApplyEventForDifferentMessage:
             "Cannot apply event for different message."
+        case .messageRejectedByBeforePublishRule:
+            "The message was rejected before publishing by a rule on the chat room."
+        case .messageRejectedByModeration:
+            "The message was rejected before publishing by a moderation rule on the chat room."
         }
     }
 
@@ -245,7 +274,9 @@ internal enum ChatError {
              .roomReleasedBeforeOperationCompleted,
              .presenceOperationRequiresRoomAttach,
              .cannotApplyEventForDifferentMessage,
-             .unableDeleteReactionWithoutName:
+             .unableDeleteReactionWithoutName,
+             .messageRejectedByBeforePublishRule,
+             .messageRejectedByModeration:
             nil
         }
     }
