@@ -80,77 +80,40 @@ internal final class DefaultMessages: Messages {
             // (CHA-M4d) If a realtime message with an unknown name is received, the SDK shall silently discard the message, though it may log at DEBUG or TRACE level.
             // (CHA-M5k) Incoming realtime events that are malformed (unknown field should be ignored) shall not be emitted to subscribers.
             let eventListener = channel.subscribe(RealtimeMessageName.chatMessage.rawValue) { [logger] message in
-                do {
-                    guard let action = MessageAction.fromRealtimeAction(message.action) else {
-                        throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message with unsupported action: \(message.action)") // CHA-M4k11
-                    }
-
-                    // TODO: Revisit errors thrown as part of https://github.com/ably-labs/ably-chat-swift/issues/32
-                    guard let ablyCocoaData = message.data,
-                          let data = JSONValue(ablyCocoaData: ablyCocoaData).objectValue,
-                          let text = action == .delete /* CHA-M4m5 */ ? "" : data["text"]?.stringValue
-                    else {
-                        throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without data or text") // CHA-M4k1, CHA-M4k4
-                    }
-
-                    guard let serial = message.serial else {
-                        throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without serial") // CHA-M4k7
-                    }
-
-                    guard let clientID = message.clientId else {
-                        throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without clientId") // CHA-M4k2
-                    }
-
-                    guard let version = message.version else {
-                        throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without version") // CHA-M4k8
-                    }
-
-                    let metadata: Metadata?
-                    let headers: Headers?
-
-                    if action == .delete {
-                        metadata = [:] // CHA-M4m6
-                        headers = [:] // CHA-M4m7
-                    } else {
-                        metadata = try data.optionalObjectValueForKey("metadata")
-                        guard metadata != nil else {
-                            throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without metadata") // CHA-M4k6
-                        }
-
-                        guard let ablyCocoaExtras = message.extras else {
-                            throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without extras")
-                        }
-
-                        let extras = JSONValue.objectFromAblyCocoaExtras(ablyCocoaExtras)
-
-                        headers = if let headersJSONObject = try extras.optionalObjectValueForKey("headers") {
-                            try headersJSONObject.mapValues { try HeadersValue(jsonValue: $0) }
-                        } else {
-                            throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without headers") // CHA-M4k5
-                        }
-                    }
-
-                    // `message.operation?.toChatOperation()` is throwing but the linter prefers putting the `try` on Message initialization instead of having it nested.
-                    let message = try Message(
-                        serial: serial,
-                        action: action,
-                        clientID: clientID,
-                        text: text,
-                        createdAt: message.timestamp,
-                        metadata: metadata ?? .init(),
-                        headers: headers ?? .init(),
-                        version: version,
-                        timestamp: message.timestamp,
-                        operation: message.operation?.toChatOperation()
-                    )
-
-                    let event = ChatMessageEvent(message: message)
-                    callback(event)
-                } catch {
-                    // note: this replaces some existing code that also didn't handle any thrown error; I suspect not intentional, will leave whoever writes the tests for this class to see what's going on
-                    // note: I'm adding this log line here, because it's better then nothing. TODO: proper handling
-                    logger.log(message: "Realtime message receive error: \(error)", level: .error)
+                guard let action = MessageAction.fromRealtimeAction(message.action) else {
+                    logger.log(message: "Received incoming message with unsupported action: \(message.action)", level: .info) // CHA-M4m5
+                    return
                 }
+
+                let ablyCocoaData = message.data ?? [:] // CHA-M4k2
+                let data = JSONValue(ablyCocoaData: ablyCocoaData).objectValue ?? [:] // CHA-M4k2
+
+                let text = data["text"]?.stringValue ?? "" // CHA-M4k1
+                let metadata = (try? data.optionalObjectValueForKey("metadata")) ?? [:] // CHA-M4k2
+
+                let extras = if let ablyCocoaExtras = message.extras {
+                    JSONValue.objectFromAblyCocoaExtras(ablyCocoaExtras)
+                } else {
+                    [String: JSONValue]() // CHA-M4k2
+                }
+
+                let headers = (try? extras.optionalObjectValueForKey("headers"))?.compactMapValues { try? HeadersValue(jsonValue: $0) } ?? [:] // CHA-M4k2
+
+                let message = Message(
+                    serial: message.serial ?? "", // CHA-M4k1
+                    action: action,
+                    clientID: message.clientId ?? "", // CHA-M4k1
+                    text: text,
+                    createdAt: message.timestamp ?? Date(timeIntervalSince1970: 0), // CHA-M4k4
+                    metadata: metadata,
+                    headers: headers,
+                    version: message.version ?? "", // CHA-M4k1
+                    timestamp: message.timestamp ?? Date(), // CHA-M4k3,
+                    operation: message.operation?.toChatOperation()
+                )
+
+                let event = ChatMessageEvent(message: message)
+                callback(event)
             }
             let uuid = UUID()
             // (CHA-M5a) If a subscription is added when the underlying realtime channel is ATTACHED, then the subscription point is the current channelSerial of the realtime channel.
@@ -261,14 +224,11 @@ internal final class DefaultMessages: Messages {
 }
 
 private extension ARTMessageOperation {
-    func toChatOperation() throws -> MessageOperation {
-        guard let clientId else {
-            throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message where Operation clientId is nil")
-        }
-        return MessageOperation(
-            clientID: clientId,
+    func toChatOperation() -> MessageOperation {
+        MessageOperation(
+            clientID: clientId ?? "", // CHA-M4k1
             description: descriptionText,
-            metadata: metadata != nil ? JSONValue(ablyCocoaData: metadata!).objectValue : nil
+            metadata: JSONValue(ablyCocoaData: metadata ?? [:]).objectValue // CHA-M4k2
         )
     }
 }

@@ -1,4 +1,4 @@
-import Foundation
+import Ably
 
 /**
  * Enum representing different message reaction events in the chat system.
@@ -16,6 +16,19 @@ public enum MessageReactionEvent: String, Sendable {
      * A reactions summary was updated for a message.
      */
     case summary = "reaction.summary"
+}
+
+internal extension MessageReactionEvent {
+    static func fromAnnotationAction(_ annotationAction: ARTAnnotationAction) -> Self? {
+        switch annotationAction {
+        case .create:
+            .create
+        case .delete:
+            .delete
+        @unknown default:
+            nil
+        }
+    }
 }
 
 /**
