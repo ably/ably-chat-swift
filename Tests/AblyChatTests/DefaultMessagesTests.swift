@@ -10,7 +10,7 @@ struct DefaultMessagesTests {
     // @spec CHA-M3b
     // @spec CHA-M3f
     @Test
-    func clientMaySendMessageViaRESTChatAPI() async throws {
+    func sendAndUpdateAndDeleteMessageInTheRoom() async throws {
         // Given
         let realtime = MockRealtime {
             MockHTTPPaginatedResponse.successSendMessage
@@ -20,12 +20,43 @@ struct DefaultMessagesTests {
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", clientID: "clientId", logger: TestLogger())
 
         // When
-        _ = try await defaultMessages.send(params: .init(text: "hey"))
+        let sentMessage = try await defaultMessages.send(params: .init(text: "hey", metadata: ["key1": "val1"], headers: ["key2": "val2"]))
 
         // Then
+        #expect(sentMessage.text == "hey")
+        #expect(sentMessage.metadata == ["key1": "val1"])
+        #expect(sentMessage.headers == ["key2": "val2"])
         #expect(realtime.callRecorder.hasRecord(
             matching: "request(_:path:params:body:headers:)",
-            arguments: ["method": "POST", "path": "/chat/v3/rooms/basketball/messages", "body": ["text": "hey"], "params": [:], "headers": [:]]
+            arguments: ["method": "POST", "path": "/chat/v3/rooms/basketball/messages", "body": ["text": "hey", "metadata": ["key1": "val1"], "headers": ["key2": "val2"]], "params": [:], "headers": [:]]
+        )
+        )
+
+        // When
+        var newMessage = sentMessage
+        newMessage.text = "hey!" // see https://github.com/ably/ably-chat-swift/issues/333
+        let updatedMessage = try await defaultMessages.update(newMessage: newMessage, description: "add exclamation", metadata: ["key3": "val3"])
+
+        // Then
+        #expect(updatedMessage.text == "hey!")
+        #expect(updatedMessage.operation?.metadata == ["key3": "val3"])
+        #expect(updatedMessage.operation?.description == "add exclamation")
+        #expect(realtime.callRecorder.hasRecord(
+            matching: "request(_:path:params:body:headers:)",
+            arguments: ["method": "PUT", "path": "/chat/v3/rooms/basketball/messages/\(sentMessage.serial)", "body": ["message": ["text": "hey!", "metadata": ["key1": "val1"], "headers": ["key2": "val2"]], "description": "add exclamation", "metadata": ["key3": "val3"]], "params": [:], "headers": [:]]
+        )
+        )
+
+        // When
+        let deletedMessage = try await defaultMessages.delete(message: sentMessage, params: .init())
+
+        // Then
+        #expect(deletedMessage.text == "")
+        #expect(deletedMessage.headers == [:])
+        #expect(deletedMessage.metadata == [:])
+        #expect(realtime.callRecorder.hasRecord(
+            matching: "request(_:path:params:body:headers:)",
+            arguments: ["method": "POST", "path": "/chat/v3/rooms/basketball/messages/\(sentMessage.serial)/delete", "body": [:], "params": [:], "headers": [:]]
         )
         )
     }

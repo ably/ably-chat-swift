@@ -128,6 +128,7 @@ internal final class ChatAPI: Sendable {
         }
 
         // (CHA-M8c) An update operation has PUT semantics. If a field is not specified in the update, it is assumed to be removed.
+        // CHA-M8c is not actually respected here, see https://github.com/ably/ably-chat-swift/issues/333
         let response: UpdateMessageResponse = try await makeRequest(endpoint, method: "PUT", body: .jsonObject(body))
 
         // response.timestamp is in milliseconds, convert it to seconds
@@ -177,10 +178,10 @@ internal final class ChatAPI: Sendable {
             serial: message.serial,
             action: .delete,
             clientID: message.clientID,
-            text: message.text,
+            text: "", // CHA-M9b
             createdAt: message.createdAt,
-            metadata: message.metadata,
-            headers: message.headers,
+            metadata: [:], // CHA-M9b
+            headers: [:], // CHA-M9b
             version: response.version,
             timestamp: Date(timeIntervalSince1970: timestampInSeconds),
             operation: .init(
