@@ -63,6 +63,7 @@ public enum ErrorCode: Int {
         case cannotApplyEventForDifferentMessage
         case messageRejectedByBeforePublishRule
         case messageRejectedByModeration
+        case clientIdRequired
 
         internal var toNumericErrorCode: ErrorCode {
             switch self {
@@ -86,6 +87,8 @@ public enum ErrorCode: Int {
                 .messageRejectedByModeration
             case .messageRejectedByBeforePublishRule:
                 .messageRejectedByBeforePublishRule
+            case .clientIdRequired:
+                .badRequest
             }
         }
 
@@ -99,7 +102,8 @@ public enum ErrorCode: Int {
                  .roomIsReleased,
                  .roomReleasedBeforeOperationCompleted,
                  .unableDeleteReactionWithoutName,
-                 .cannotApplyEventForDifferentMessage:
+                 .cannotApplyEventForDifferentMessage,
+                 .clientIdRequired:
                 400
             case .messageRejectedByModeration,
                  .messageRejectedByBeforePublishRule:
@@ -170,6 +174,7 @@ internal enum ChatError {
     case cannotApplyEventForDifferentMessage
     case messageRejectedByBeforePublishRule
     case messageRejectedByModeration
+    case clientIdRequired
 
     internal var codeAndStatusCode: ErrorCodeAndStatusCode {
         switch self {
@@ -202,6 +207,8 @@ internal enum ChatError {
             .fixedStatusCode(.messageRejectedByBeforePublishRule)
         case .messageRejectedByModeration:
             .fixedStatusCode(.messageRejectedByModeration)
+        case .clientIdRequired:
+            .fixedStatusCode(.clientIdRequired)
         }
     }
 
@@ -256,6 +263,8 @@ internal enum ChatError {
             "The message was rejected before publishing by a rule on the chat room."
         case .messageRejectedByModeration:
             "The message was rejected before publishing by a moderation rule on the chat room."
+        case .clientIdRequired:
+            "Ensure your Realtime instance is initialized with a clientId."
         }
     }
 
@@ -276,7 +285,8 @@ internal enum ChatError {
              .cannotApplyEventForDifferentMessage,
              .unableDeleteReactionWithoutName,
              .messageRejectedByBeforePublishRule,
-             .messageRejectedByModeration:
+             .messageRejectedByModeration,
+             .clientIdRequired:
             nil
         }
     }
