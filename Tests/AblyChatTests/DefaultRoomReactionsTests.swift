@@ -34,68 +34,97 @@ struct DefaultRoomReactionsTests {
     @Test
     func subscriptionCanBeRegisteredToReceiveReactionEvents() async throws {
         // Given
-        func generateMessage(serial: String, reactionType: String) -> ARTMessage {
+        func generateMessage(serial: String, reaction: String) -> ARTMessage {
             let message = ARTMessage()
             message.action = .create // arbitrary
             message.serial = serial // arbitrary
             message.clientId = "" // arbitrary
             message.data = [
-                "type": reactionType,
+                "name": reaction,
             ]
             message.version = "0"
+            message.extras = [String: String]() as ARTJsonCompatible
             return message
         }
 
         let channel = MockRealtimeChannel(
-            messageToEmitOnSubscribe: generateMessage(serial: "1", reactionType: ":like:")
+            messageToEmitOnSubscribe: generateMessage(serial: "1", reaction: ":like:")
         )
         let defaultRoomReactions = DefaultRoomReactions(channel: channel, clientID: "mockClientId", roomName: "basketball", logger: TestLogger())
 
         // When
+        var callbackCalls = 0
         let subscription = defaultRoomReactions.subscribe { event in
             // Then
             #expect(event.reaction.name == ":like:")
+            callbackCalls += 1
         }
+        #expect(callbackCalls == 1)
 
         // CHA-ER4b
         subscription.unsubscribe()
 
-        // will not be received and expectations above will not fail
+        // will not be received (because unsubscribed) and expectations above will not fail
         channel.simulateIncomingMessage(
-            generateMessage(serial: "2", reactionType: ":dislike:"),
+            generateMessage(serial: "2", reaction: ":dislike:"),
             for: RoomReactionEvents.reaction.rawValue
         )
     }
 
     // CHA-ER4c is currently untestable due to not subscribing to those events on lower level
-    // @spec CHA-ER4d
+    // @spec CHA-ER4e
+    // @spec CHA-ER4e1
+    // @spec CHA-ER4e2
+    // @spec CHA-ER4e3
+    // @spec CHA-ER4e4
     @Test
-    func malformedRealtimeEventsShallNotBeEmittedToSubscribers() async throws {
+    func malformedEventsWithIncompleteDataStillEmittedWithDefaultValues() async throws {
         // Given
         let channel = MockRealtimeChannel(
             messageToEmitOnSubscribe: {
                 let message = ARTMessage()
                 message.action = .create // arbitrary
+                message.name = "roomReaction"
                 message.serial = "123" // arbitrary
-                message.clientId = "" // arbitrary
+                message.clientId = "c1" // arbitrary
                 message.data = [
-                    "type": ":like:",
+                    "name": ":like:", // arbitrary
+                    "metadata": ["someKey1": "someValue1"], // arbitrary
                 ]
-                message.extras = [:] as any ARTJsonCompatible
-                message.version = "0"
+                message.extras = [
+                    "headers": ["someKey2": "someValue2"], // arbitrary
+                ] as any ARTJsonCompatible
+                message.timestamp = Date(timeIntervalSinceReferenceDate: 0) // arbitrary
                 return message
             }()
         )
         let defaultRoomReactions = DefaultRoomReactions(channel: channel, clientID: "mockClientId", roomName: "basketball", logger: TestLogger())
 
         // When
+        let ts = Date()
+        var callbackCalls = 0
         defaultRoomReactions.subscribe { event in
-            #expect(event.reaction.name == ":like:")
+            #expect(event.type == .reaction)
+            // Then
+            if callbackCalls == 0 {
+                #expect(event.reaction.name == ":like:")
+                #expect(event.reaction.clientID == "c1")
+                #expect(event.reaction.metadata == ["someKey1": "someValue1"])
+                #expect(event.reaction.headers == ["someKey2": "someValue2"])
+                #expect(event.reaction.createdAt == Date(timeIntervalSinceReferenceDate: 0))
+            } else {
+                #expect(event.reaction.name.isEmpty)
+                #expect(event.reaction.clientID.isEmpty)
+                #expect(event.reaction.metadata.isEmpty)
+                #expect(event.reaction.headers.isEmpty)
+                #expect(event.reaction.createdAt.timeIntervalSince(ts) < 1.0)
+            }
+            callbackCalls += 1
         }
-        // will not be received and expectations above will not fail
         channel.simulateIncomingMessage(
             ARTMessage(), // malformed message
-            for: RealtimeMessageName.chatMessage.rawValue
+            for: RoomReactionEvents.reaction.rawValue
         )
+        #expect(callbackCalls == 2)
     }
 }

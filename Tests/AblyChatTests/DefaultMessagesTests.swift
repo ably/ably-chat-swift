@@ -360,7 +360,7 @@ struct DefaultMessagesTests {
         // When the expectation are not met test crashes with "Fatal error: Internal inconsistency: No test reporter for test AblyChatTests.DefaultMessagesTests/subscriptionCanBeRegisteredToReceiveIncomingMessages()/DefaultMessagesTests.swift:326:6 and test case argumentIDs: Optional([])". I guess this could be avoided by using `withCheckedContinuation`, but it doesn't accept async functions in its closure body (await subscribe).
 
         // When
-        let subscriptionHandle = defaultMessages.subscribe { event in
+        let subscription = defaultMessages.subscribe { event in
             // Then
             #expect(event.type == .created)
             #expect(event.message.headers == ["numberKey": .number(10), "stringKey": .string("hello")])
@@ -368,7 +368,7 @@ struct DefaultMessagesTests {
         }
 
         // CHA-M4b
-        subscriptionHandle.unsubscribe()
+        subscription.unsubscribe()
 
         // will not be received and expectations above will not fail
         channel.simulateIncomingMessage(
@@ -377,10 +377,13 @@ struct DefaultMessagesTests {
         )
     }
 
-    // Wrong name, should be CHA-M4k
-    // @spec CHA-M5k
+    // @spec CHA-M4k
+    // @spec CHA-M4k1
+    // @spec CHA-M4k2
+    // @spec CHA-M4k3
+    // @spec CHA-M4k4
     @Test
-    func malformedRealtimeEventsShallNotBeEmittedToSubscribers() async throws {
+    func malformedEventsWithIncompleteDataStillEmittedWithDefaultValues() async throws {
         // Given
         let realtime = MockRealtime()
         let chatAPI = ChatAPI(realtime: realtime)
@@ -393,30 +396,57 @@ struct DefaultMessagesTests {
             initialState: .attached,
             messageToEmitOnSubscribe: {
                 let message = ARTMessage()
-                message.action = .create // arbitrary
+                message.action = .update // arbitrary
                 message.serial = "123" // arbitrary
-                message.clientId = "" // arbitrary
+                message.clientId = "c1" // arbitrary
                 message.data = [
-                    "text": "", // arbitrary
+                    "text": "hey", // arbitrary
+                    "metadata": ["someKey1": "someValue1"], // arbitrary
                 ]
-                message.extras = [:] as any ARTJsonCompatible
-                message.version = "0"
+                message.extras = [
+                    "headers": ["someKey2": "someValue2"], // arbitrary
+                ] as any ARTJsonCompatible
+                message.version = "1" // arbitrary
+                message.timestamp = Date(timeIntervalSinceReferenceDate: 0) // arbitrary
                 return message
             }()
         )
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", clientID: "clientId", logger: TestLogger())
 
         // When
+        let ts = Date()
+        var callbackCalls = 0
         _ = defaultMessages.subscribe { event in
             // Then
-            #expect(event.type == .created)
-            #expect(event.message.serial == "123")
+            if callbackCalls == 0 {
+                #expect(event.type == .updated)
+                #expect(event.message.text == "hey")
+                #expect(event.message.clientID == "c1")
+                #expect(event.message.serial == "123")
+                #expect(event.message.version == "1")
+                #expect(event.message.metadata == ["someKey1": "someValue1"])
+                #expect(event.message.headers == ["someKey2": "someValue2"])
+                #expect(event.message.timestamp == Date(timeIntervalSinceReferenceDate: 0))
+                #expect(event.message.createdAt == Date(timeIntervalSinceReferenceDate: 0))
+            } else {
+                #expect(event.type == .created)
+                #expect(event.message.text.isEmpty)
+                #expect(event.message.clientID.isEmpty)
+                #expect(event.message.serial.isEmpty)
+                #expect(event.message.version.isEmpty)
+                #expect(event.message.metadata.isEmpty)
+                #expect(event.message.headers.isEmpty)
+                #expect(event.message.timestamp != nil)
+                #expect(event.message.createdAt != nil)
+                #expect(event.message.timestamp!.timeIntervalSince(ts) < 1.0)
+                #expect(event.message.createdAt!.timeIntervalSince(ts) < 1.0)
+            }
+            callbackCalls += 1
         }
-
-        // will not be received and expectations above will not fail
         channel.simulateIncomingMessage(
             ARTMessage(), // malformed message
             for: RealtimeMessageName.chatMessage.rawValue
         )
+        #expect(callbackCalls == 2)
     }
 }

@@ -142,11 +142,11 @@ public struct Message: Sendable, Identifiable, Equatable {
 }
 
 public struct MessageOperation: Sendable, Equatable {
-    public var clientID: String
+    public var clientID: String?
     public var description: String?
     public var metadata: MessageMetadata?
 
-    public init(clientID: String, description: String? = nil, metadata: MessageMetadata? = nil) {
+    public init(clientID: String?, description: String? = nil, metadata: MessageMetadata? = nil) {
         self.clientID = clientID
         self.description = description
         self.metadata = metadata
@@ -159,7 +159,7 @@ extension Message: JSONObjectDecodable {
         let serial = try jsonObject.stringValueForKey("serial")
         var reactionSummary: MessageReactionSummary?
         if let summaryJson = try? jsonObject.objectValueForKey("reactions"), !summaryJson.isEmpty {
-            reactionSummary = try MessageReactionSummary(
+            reactionSummary = MessageReactionSummary(
                 messageSerial: serial,
                 values: summaryJson
             )

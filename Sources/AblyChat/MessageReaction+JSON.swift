@@ -8,7 +8,7 @@ internal extension MessageReactionSummary {
         case multiple
     }
 
-    init(messageSerial: String, values jsonObject: [String: JSONValue]) throws(InternalError) {
+    init(messageSerial: String, values jsonObject: [String: JSONValue]) {
         self.messageSerial = messageSerial
 
         // Two different key are used for now until fixed. Internal discussion:
@@ -24,10 +24,10 @@ internal extension MessageReactionSummary {
                     return try MessageReactionSummary.ClientIdList(jsonObject: uniqueJsonItem)
                 }
             } catch {
-                throw JSONValueDecodingError.failedToDecodeFromRawValue("unique: \(uniqueJson)").toInternalError()
+                unique = [:] // CHA-MR6a
             }
         } else {
-            unique = [:]
+            unique = [:] // CHA-MR6a3
         }
 
         let distinctJson = try? jsonObject.optionalObjectValueForKey(MessageReactionType.distinct.rawValue) ??
@@ -41,10 +41,10 @@ internal extension MessageReactionSummary {
                     return try MessageReactionSummary.ClientIdList(jsonObject: distinctJsonItem)
                 }
             } catch {
-                throw JSONValueDecodingError.failedToDecodeFromRawValue("distinct: \(distinctJson)").toInternalError()
+                distinct = [:] // CHA-MR6a
             }
         } else {
-            distinct = [:]
+            distinct = [:] // CHA-MR6a3
         }
 
         let multipleJson = try? jsonObject.optionalObjectValueForKey(MessageReactionType.multiple.rawValue) ??
@@ -58,10 +58,10 @@ internal extension MessageReactionSummary {
                     return try MessageReactionSummary.ClientIdCounts(jsonObject: multipleJsonItem)
                 }
             } catch {
-                throw JSONValueDecodingError.failedToDecodeFromRawValue("multiple: \(multipleJson)").toInternalError()
+                multiple = [:] // CHA-MR6a
             }
         } else {
-            multiple = [:]
+            multiple = [:] // CHA-MR6a3
         }
     }
 }
