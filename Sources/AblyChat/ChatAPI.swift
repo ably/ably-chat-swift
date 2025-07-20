@@ -178,7 +178,7 @@ internal final class ChatAPI: Sendable {
             serial: message.serial,
             action: .delete,
             clientID: message.clientID,
-            text: "", // CHA-M9b
+            text: "", // CHA-M9b (When a message is deleted successfully via the REST API, the caller shall receive a struct representing the Message in response, as if it were received via Realtime event.) Currently realtime sends an empty text for deleted message, so set it to empty text here as well.
             createdAt: message.createdAt,
             metadata: [:], // CHA-M9b
             headers: [:], // CHA-M9b
