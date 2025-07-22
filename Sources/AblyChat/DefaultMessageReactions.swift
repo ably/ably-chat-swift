@@ -65,35 +65,31 @@ internal final class DefaultMessageReactions: MessageReactions {
         logger.log(message: "Subscribing to message reaction summary events", level: .debug)
 
         let eventListener = channel.subscribe { [logger] message in
-            do {
-                guard message.action == .messageSummary else {
-                    return
-                }
-
-                var summaryJson: [String: JSONValue]?
-                if let summaryData = message.summary {
-                    summaryJson = JSONValue(ablyCocoaData: summaryData).objectValue
-                }
-
-                guard let messageSerial = message.serial else {
-                    logger.log(message: "Received summary without serial: \(message)", level: .warn)
-                    return
-                }
-
-                let summaryEvent = try MessageReactionSummaryEvent(
-                    type: MessageReactionEvent.summary,
-                    summary: MessageReactionSummary(
-                        messageSerial: messageSerial,
-                        values: summaryJson ?? [:]
-                    )
-                )
-
-                logger.log(message: "Emitting reaction summary event: \(summaryEvent)", level: .debug)
-
-                callback(summaryEvent)
-            } catch {
-                logger.log(message: "Error processing incoming reaction message: \(error)", level: .error)
+            guard message.action == .messageSummary else {
+                return
             }
+
+            var summaryJson: [String: JSONValue]?
+            if let summaryData = message.summary {
+                summaryJson = JSONValue(ablyCocoaData: summaryData).objectValue
+            }
+
+            guard let messageSerial = message.serial else {
+                logger.log(message: "Received summary without serial: \(message)", level: .warn)
+                return
+            }
+
+            let summaryEvent = MessageReactionSummaryEvent(
+                type: MessageReactionEvent.summary,
+                summary: MessageReactionSummary(
+                    messageSerial: messageSerial,
+                    values: summaryJson ?? [:] // CHA-MR6a1
+                )
+            )
+
+            logger.log(message: "Emitting reaction summary event: \(summaryEvent)", level: .debug)
+
+            callback(summaryEvent)
         }
 
         return Subscription { [weak self] in
@@ -108,16 +104,19 @@ internal final class DefaultMessageReactions: MessageReactions {
 
         let eventListener = channel.annotations.subscribe { [clientID, logger] annotation in
             logger.log(message: "Received reaction (message annotation): \(annotation)", level: .debug)
-            guard let annotationType = MessageReactionType(rawValue: annotation.type) else {
-                logger.log(message: "Received annotation without annotation's type: \(annotation)", level: .debug)
+
+            guard let reactionEventType = MessageReactionEvent.fromAnnotationAction(annotation.action) else {
+                logger.log(message: "Received reaction with unknown action: \(annotation.action)", level: .info) // CHA-MR7b2
+                return
+            }
+            guard let reactionType = MessageReactionType(rawValue: annotation.type) else {
+                logger.log(message: "Received reaction with unknown type: \(annotation.type)", level: .info) // CHA-MR7b1
                 return
             }
 
-            let reactionEventType = annotation.action == .delete ? MessageReactionEvent.delete : MessageReactionEvent.create
-
             var reactionName = annotation.name
             if reactionName == nil {
-                if reactionEventType == .delete, annotationType == .unique {
+                if reactionEventType == .delete, reactionType == .unique {
                     // deletes of type unique are allowed to have no name
                     reactionName = ""
                 } else {
@@ -126,16 +125,16 @@ internal final class DefaultMessageReactions: MessageReactions {
                 }
             }
 
-            let annotationClientID = annotation.clientId ?? ""
+            let annotationClientID = annotation.clientId ?? "" // CHA-MR7b3
 
             let reactionEvent = MessageReactionRawEvent(
                 type: reactionEventType,
                 timestamp: annotation.timestamp,
                 reaction: MessageReaction(
-                    type: annotationType,
-                    name: reactionName ?? "",
+                    type: reactionType,
+                    name: reactionName ?? "", // CHA-MR7b3
                     messageSerial: annotation.messageSerial,
-                    count: annotation.count?.intValue ?? (annotation.action == .create && annotationType == .multiple ? 1 : nil),
+                    count: annotation.count?.intValue ?? (annotation.action == .create && reactionType == .multiple ? 1 : nil),
                     clientID: annotationClientID,
                     isSelf: annotationClientID == clientID
                 )

@@ -145,9 +145,8 @@ final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
     func subscribe(_ name: String, callback: @escaping @MainActor (ARTMessage) -> Void) -> ARTEventListener? {
         if let messageToEmitOnSubscribe {
             callback(messageToEmitOnSubscribe)
-        } else {
-            channelSubscriptions.append((name, callback))
         }
+        channelSubscriptions.append((name, callback))
         return ARTEventListener()
     }
 

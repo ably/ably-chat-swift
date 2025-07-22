@@ -147,7 +147,7 @@ internal final class ChatAPI: Sendable {
             operation: .init(
                 clientID: clientID,
                 description: description,
-                metadata: metadata
+                metadata: metadata ?? [:]
             )
         )
         return message
@@ -186,7 +186,7 @@ internal final class ChatAPI: Sendable {
             operation: .init(
                 clientID: message.clientID,
                 description: params.description,
-                metadata: params.metadata
+                metadata: params.metadata ?? [:]
             )
         )
         return message

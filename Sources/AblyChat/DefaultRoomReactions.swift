@@ -58,43 +58,34 @@ internal final class DefaultRoomReactions: RoomReactions {
             // (CHA-ER4c) Realtime events with an unknown name shall be silently discarded.
             let eventListener = channel.subscribe(RoomReactionEvents.reaction.rawValue) { [clientID, logger] message in
                 logger.log(message: "Received roomReaction message: \(message)", level: .debug)
-                do {
-                    guard let ablyCocoaData = message.data else {
-                        throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without data")
-                    }
 
-                    guard let messageClientID = message.clientId else {
-                        throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without clientId")
-                    }
+                let ablyCocoaData = message.data ?? [:] // CHA-ER4e2
 
-                    guard let timestamp = message.timestamp else {
-                        throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without timestamp")
-                    }
-
-                    guard let ablyCocoaExtras = message.extras else {
-                        throw ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without extras")
-                    }
-
-                    let dto = try RoomReactionDTO(
-                        data: .init(jsonValue: .init(ablyCocoaData: ablyCocoaData)),
-                        extras: .init(jsonObject: JSONValue.objectFromAblyCocoaExtras(ablyCocoaExtras))
-                    )
-
-                    // (CHA-ER4d) Realtime events that are malformed (unknown fields should be ignored) shall not be emitted to listeners.
-                    let reaction = RoomReaction(
-                        name: dto.name,
-                        metadata: dto.metadata ?? [:],
-                        headers: dto.headers ?? [:],
-                        createdAt: timestamp,
-                        clientID: messageClientID,
-                        isSelf: messageClientID == clientID
-                    )
-                    let event = RoomReactionEvent(type: .reaction, reaction: reaction)
-                    logger.log(message: "Emitting room reaction: \(reaction)", level: .debug)
-                    callback(event)
-                } catch {
-                    logger.log(message: "Error processing incoming reaction message: \(error)", level: .error)
+                let extras = if let ablyCocoaExtras = message.extras {
+                    JSONValue.objectFromAblyCocoaExtras(ablyCocoaExtras)
+                } else {
+                    [String: JSONValue]() // CHA-ER4e2
                 }
+
+                let dto = try? RoomReactionDTO(
+                    data: .init(jsonValue: .init(ablyCocoaData: ablyCocoaData)),
+                    extras: .init(jsonObject: extras)
+                )
+
+                let messageClientID = message.clientId ?? "" // CHA-ER4e3
+
+                let reaction = RoomReaction(
+                    name: dto?.name ?? "", // CHA-ER4e1
+                    metadata: dto?.metadata ?? [:],
+                    headers: dto?.headers ?? [:],
+                    createdAt: message.timestamp ?? Date(), // CHA-ER4e4
+                    clientID: messageClientID,
+                    isSelf: messageClientID == clientID
+                )
+
+                let event = RoomReactionEvent(type: .reaction, reaction: reaction)
+                logger.log(message: "Emitting room reaction: \(reaction)", level: .debug)
+                callback(event)
             }
 
             return Subscription { [weak self] in
