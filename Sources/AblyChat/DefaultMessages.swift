@@ -78,7 +78,7 @@ internal final class DefaultMessages: Messages {
             logger.log(message: "Subscribing to messages", level: .debug)
             // (CHA-M4c) When a realtime message with name set to message.created is received, it is translated into a message event, which contains a type field with the event type as well as a message field containing the Message Struct. This event is then broadcast to all subscribers.
             // (CHA-M4d) If a realtime message with an unknown name is received, the SDK shall silently discard the message, though it may log at DEBUG or TRACE level.
-            // (CHA-M5k) Incoming realtime events that are malformed (unknown field should be ignored) shall not be emitted to subscribers.
+            // (CHA-M4k) Incoming realtime events that are malformed (unknown field should be ignored) shall not be emitted to subscribers.
             let eventListener = channel.subscribe(RealtimeMessageName.chatMessage.rawValue) { [logger] message in
                 guard let action = MessageAction.fromRealtimeAction(message.action) else {
                     logger.log(message: "Received incoming message with unsupported action: \(message.action)", level: .info) // CHA-M4m5

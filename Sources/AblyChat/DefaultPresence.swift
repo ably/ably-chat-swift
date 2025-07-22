@@ -171,10 +171,8 @@ internal final class DefaultPresence: Presence {
                     throw error
                 }
 
-                let dto = PresenceDataDTO(userCustomData: data)
-
                 do {
-                    try await channel.presence.enterClient(clientID, data: dto.toJSONValue)
+                    try await channel.presence.enterClient(clientID, data: data)
                 } catch {
                     logger.log(message: "Error entering presence: \(error)", level: .error)
                     throw error
@@ -205,10 +203,8 @@ internal final class DefaultPresence: Presence {
                     throw error
                 }
 
-                let dto = PresenceDataDTO(userCustomData: data)
-
                 do {
-                    try await channel.presence.update(dto.toJSONValue)
+                    try await channel.presence.update(data)
                 } catch {
                     logger.log(message: "Error updating presence: \(error)", level: .error)
                     throw error
@@ -239,10 +235,8 @@ internal final class DefaultPresence: Presence {
                     throw error
                 }
 
-                let dto = PresenceDataDTO(userCustomData: data)
-
                 do {
-                    try await channel.presence.leave(dto.toJSONValue)
+                    try await channel.presence.leave(data)
                 } catch {
                     logger.log(message: "Error leaving presence: \(error)", level: .error)
                     throw error
@@ -310,25 +304,8 @@ internal final class DefaultPresence: Presence {
             }
         }
 
-        private func decodePresenceDataDTO(from presenceData: JSONValue?) throws(InternalError) -> PresenceDataDTO {
-            guard let presenceData else {
-                let error = ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without data")
-                logger.log(message: error.message, level: .error)
-                throw error.toInternalError()
-            }
-
-            do {
-                return try PresenceDataDTO(jsonValue: presenceData)
-            } catch {
-                logger.log(message: "Failed to decode presence data DTO from \(presenceData), error \(error)", level: .error)
-                throw error
-            }
-        }
-
         private func processPresenceGet(members: [PresenceMessage]) throws(InternalError) -> [PresenceMember] {
             let presenceMembers = try members.map { member throws(InternalError) in
-                let presenceDataDTO = try decodePresenceDataDTO(from: member.data)
-
                 guard let clientID = member.clientId else {
                     let error = ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without clientId")
                     logger.log(message: error.message, level: .error)
@@ -343,7 +320,7 @@ internal final class DefaultPresence: Presence {
 
                 let presenceMember = PresenceMember(
                     clientID: clientID,
-                    data: presenceDataDTO.userCustomData,
+                    data: member.data,
                     extras: member.extras,
                     updatedAt: timestamp
                 )
@@ -367,11 +344,9 @@ internal final class DefaultPresence: Presence {
                 throw error
             }
 
-            let presenceDataDTO = try decodePresenceDataDTO(from: message.data)
-
             let member = PresenceMember(
                 clientID: clientID,
-                data: presenceDataDTO.userCustomData,
+                data: message.data,
                 extras: message.extras,
                 updatedAt: timestamp
             )

@@ -27,7 +27,7 @@ struct DefaultPresenceTests {
         // Then
         #expect(channel.presence.callRecorder.hasRecord(
             matching: "enterClient(_:data:)",
-            arguments: ["name": "client1", "data": JSONValue.object(["userCustomData": ["status": "Online"]])]
+            arguments: ["name": "client1", "data": JSONValue.object(["status": "Online"])]
         )
         )
     }
@@ -150,7 +150,7 @@ struct DefaultPresenceTests {
         // Then
         #expect(channel.presence.callRecorder.hasRecord(
             matching: "update(_:)",
-            arguments: ["data": JSONValue.object(["userCustomData": ["status": "Online"]])]
+            arguments: ["data": JSONValue.object(["status": "Online"])]
         )
         )
     }
@@ -268,12 +268,12 @@ struct DefaultPresenceTests {
         )
 
         // When
-        try await defaultPresence.leave()
+        try await defaultPresence.leave(data: ["status": "Online"])
 
         // Then
         #expect(channel.presence.callRecorder.hasRecord(
             matching: "leave(_:)",
-            arguments: ["data": JSONValue.object([:])]
+            arguments: ["data": JSONValue.object(["status": "Online"])]
         )
         )
     }
