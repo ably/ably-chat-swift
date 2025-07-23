@@ -68,7 +68,7 @@ internal final class ChatAPI: Sendable {
     // (CHA-M3a) When a message is sent successfully, the caller shall receive a struct representing the Message in response (as if it were received via Realtime event).
     internal func sendMessage(roomName: String, params: SendMessageParams) async throws(InternalError) -> Message {
         guard let clientId = realtime.clientId else {
-            throw ARTErrorInfo.create(withCode: 40000, message: "Ensure your Realtime instance is initialized with a clientId.").toInternalError()
+            throw ARTErrorInfo(chatError: .clientIdRequired).toInternalError()
         }
 
         let endpoint = "\(apiVersionV3)/rooms/\(roomName)/messages"
@@ -106,7 +106,7 @@ internal final class ChatAPI: Sendable {
     // (CHA-M8a) A client may update a message via the Chat REST API by calling the update method.
     internal func updateMessage(roomName: String, with modifiedMessage: Message, description: String?, metadata: OperationMetadata?) async throws(InternalError) -> Message {
         guard let clientID = realtime.clientId else {
-            throw ARTErrorInfo.create(withCode: 40000, message: "Ensure your Realtime instance is initialized with a clientId.").toInternalError()
+            throw ARTErrorInfo(chatError: .clientIdRequired).toInternalError()
         }
 
         let endpoint = "\(apiVersionV3)/rooms/\(roomName)/messages/\(modifiedMessage.serial)"

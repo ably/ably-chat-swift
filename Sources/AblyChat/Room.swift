@@ -265,7 +265,7 @@ internal class DefaultRoom: InternalRoom {
         self.chatAPI = chatAPI
 
         guard let clientId = realtime.clientId else {
-            throw ARTErrorInfo.create(withCode: 40000, message: "Ensure your Realtime instance is initialized with a clientId.").toInternalError()
+            throw ARTErrorInfo(chatError: .clientIdRequired).toInternalError()
         }
 
         internalChannel = Self.createChannel(roomName: name, roomOptions: options, realtime: realtime)
