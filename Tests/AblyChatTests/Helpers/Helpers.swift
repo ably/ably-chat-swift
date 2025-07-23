@@ -172,6 +172,6 @@ private extension [MockMethodCallRecorder.MethodArgument] {
 extension [String: Any] {
     func toAblyCocoaData() -> Any {
         // Probaly there is a better way of doing this
-        PresenceDataDTO(userCustomData: JSONValue(ablyCocoaData: self)).toJSONValue.toAblyCocoaData
+        JSONValue(ablyCocoaData: self).toAblyCocoaData
     }
 }
