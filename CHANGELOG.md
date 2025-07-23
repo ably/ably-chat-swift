@@ -1,5 +1,20 @@
 # Change Log
 
+## [0.7.0](https://github.com/ably/ably-chat-swift/tree/0.7.0)
+
+## What's Changed
+
+- Adds moderation and rule based error cases by @umair-ably in https://github.com/ably/ably-chat-swift/pull/328
+- Add the soft delete behaviour and validation loosening by @maratal in https://github.com/ably/ably-chat-swift/pull/330
+
+Breaking Changes:
+
+- remove opinionated presence structure by @ttypic in https://github.com/ably/ably-chat-swift/pull/336
+- All errors via chat error by @maratal in https://github.com/ably/ably-chat-swift/pull/331
+- async and throwing from Messages.subscribe by @maratal in https://github.com/ably/ably-chat-swift/pull/318
+
+**Full Changelog**: https://github.com/ably/ably-chat-swift/compare/0.6.0...0.7.0
+
 ## [0.6.0](https://github.com/ably/ably-chat-swift/tree/0.6.0)
 
 ## What's Changed
