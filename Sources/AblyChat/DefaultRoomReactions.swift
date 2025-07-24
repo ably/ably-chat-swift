@@ -56,7 +56,10 @@ internal final class DefaultRoomReactions: RoomReactions {
             logger.log(message: "Subscribing to reaction events", level: .debug)
 
             // (CHA-ER4c) Realtime events with an unknown name shall be silently discarded.
-            let eventListener = channel.subscribe(RoomReactionEvents.reaction.rawValue) { [clientID, logger] message in
+            let eventListener = channel.subscribe(RoomReactionEvents.reaction.rawValue) { [weak self] message in
+                guard let self else {
+                    return
+                }
                 logger.log(message: "Received roomReaction message: \(message)", level: .debug)
 
                 let ablyCocoaData = message.data ?? [:] // CHA-ER4e2
@@ -91,10 +94,6 @@ internal final class DefaultRoomReactions: RoomReactions {
             return Subscription { [weak self] in
                 self?.channel.unsubscribe(eventListener)
             }
-        }
-
-        private enum RoomReactionsError: Error {
-            case noReferenceToSelf
         }
     }
 }

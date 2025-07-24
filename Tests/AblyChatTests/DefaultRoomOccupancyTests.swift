@@ -66,4 +66,36 @@ struct DefaultRoomOccupancyTests {
         #expect(occupancyEvent.occupancy.connections == 5)
         #expect(occupancyEvent.occupancy.presenceMembers == 2)
     }
+
+    // @spec CHA-O4g
+    @Test
+    func ifInvalidOccupancyEventReceivedItMustBeEmittedWithZeroValues() async throws {
+        // Given
+        let realtime = MockRealtime()
+        let chatAPI = ChatAPI(realtime: realtime)
+        let channel = MockRealtimeChannel(
+            name: "basketball::$chat",
+            messageToEmitOnSubscribe: {
+                let message = ARTMessage()
+                return message
+            }()
+        )
+        let defaultOccupancy = DefaultOccupancy(
+            channel: channel,
+            chatAPI: chatAPI,
+            roomName: "basketball",
+            logger: TestLogger(),
+            options: .init(enableEvents: true)
+        )
+
+        // CHA-O4a, CHA-O4c
+
+        // When
+        let subscription = defaultOccupancy.subscribe()
+
+        // Then
+        let occupancyEvent = try #require(await subscription.first { @Sendable _ in true })
+        #expect(occupancyEvent.occupancy.connections == 0)
+        #expect(occupancyEvent.occupancy.presenceMembers == 0)
+    }
 }

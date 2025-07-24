@@ -45,18 +45,19 @@ internal final class DefaultOccupancy: Occupancy {
 
             logger.log(message: "Subscribing to occupancy events", level: .debug)
 
-            let eventListener = channel.subscribe(OccupancyEvents.meta.rawValue) { [logger] message in
+            let eventListener = channel.subscribe(OccupancyEvents.meta.rawValue) { [weak self] message in
+                guard let self else {
+                    return
+                }
                 logger.log(message: "Received occupancy message: \(message)", level: .debug)
-                guard let data = message.data as? [String: Any],
-                      let metrics = data["metrics"] as? [String: Any]
-                else {
-                    let error = ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without data or metrics")
-                    logger.log(message: "Error parsing occupancy message: \(error)", level: .error)
-                    return // (CHA-O4d) implies we don't throw an error
+
+                var metrics = [String: Any]()
+                if let data = message.data as? [String: Any] {
+                    metrics = data["metrics"] as? [String: Any] ?? [:]
                 }
 
-                let connections = metrics["connections"] as? Int ?? 0
-                let presenceMembers = metrics["presenceMembers"] as? Int ?? 0
+                let connections = metrics["connections"] as? Int ?? 0 // CHA-O4g
+                let presenceMembers = metrics["presenceMembers"] as? Int ?? 0 // CHA-O4g
 
                 let occupancyData = OccupancyData(connections: connections, presenceMembers: presenceMembers)
                 let occupancyEvent = OccupancyEvent(type: .updated, occupancy: occupancyData)

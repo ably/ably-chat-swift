@@ -64,7 +64,10 @@ internal final class DefaultMessageReactions: MessageReactions {
     internal func subscribe(_ callback: @escaping @MainActor @Sendable (MessageReactionSummaryEvent) -> Void) -> SubscriptionProtocol {
         logger.log(message: "Subscribing to message reaction summary events", level: .debug)
 
-        let eventListener = channel.subscribe { [logger] message in
+        let eventListener = channel.subscribe { [weak self] message in
+            guard let self else {
+                return
+            }
             guard message.action == .messageSummary else {
                 return
             }
@@ -102,7 +105,10 @@ internal final class DefaultMessageReactions: MessageReactions {
     internal func subscribeRaw(_ callback: @escaping @MainActor @Sendable (MessageReactionRawEvent) -> Void) -> SubscriptionProtocol {
         logger.log(message: "Subscribing to reaction events", level: .debug)
 
-        let eventListener = channel.annotations.subscribe { [clientID, logger] annotation in
+        let eventListener = channel.annotations.subscribe { [weak self] annotation in
+            guard let self else {
+                return
+            }
             logger.log(message: "Received reaction (message annotation): \(annotation)", level: .debug)
 
             guard let reactionEventType = MessageReactionEvent.fromAnnotationAction(annotation.action) else {
