@@ -3,19 +3,30 @@ import Ably
 /**
  * Enum representing different message reaction events in the chat system.
  */
-public enum MessageReactionEvent: String, Sendable {
+public enum MessageReactionEvent: Sendable {
     /**
      * A reaction was added to a message.
      */
-    case create = "reaction.create"
+    case create
     /**
      * A reaction was removed from a message.
      */
-    case delete = "reaction.delete"
+    case delete
     /**
      * A reactions summary was updated for a message.
      */
-    case summary = "reaction.summary"
+    case summary
+
+    internal var rawValue: String {
+        switch self {
+        case .create:
+            "reaction.create"
+        case .delete:
+            "reaction.delete"
+        case .summary:
+            "reaction.summary"
+        }
+    }
 }
 
 internal extension MessageReactionEvent {
@@ -77,7 +88,7 @@ public struct MessageReaction: Sendable {
 /**
  * All annotation types supported by Chat Message Reactions.
  */
-public enum MessageReactionType: String, Sendable {
+public enum MessageReactionType: Sendable {
     /**
      * Allows for at most one reaction per client per message. If a client reacts
      * to a message a second time, only the second reaction is counted in the
@@ -85,7 +96,7 @@ public enum MessageReactionType: String, Sendable {
      *
      * This is similar to reactions on iMessage, Facebook Messenger or WhatsApp.
      */
-    case unique = "reaction:unique.v1"
+    case unique
 
     /**
      * Allows for at most one reaction of each type per client per message. It is
@@ -95,7 +106,7 @@ public enum MessageReactionType: String, Sendable {
      *
      * This is similar to reactions on Slack.
      */
-    case distinct = "reaction:distinct.v1"
+    case distinct
 
     /**
      * Allows any number of reactions, including repeats, and they are counted in
@@ -104,7 +115,41 @@ public enum MessageReactionType: String, Sendable {
      *
      * This is similar to the clap feature on Medium or how room reactions work.
      */
-    case multiple = "reaction:multiple.v1"
+    case multiple
+}
+
+extension MessageReactionType: InternalRawRepresentable {
+    internal typealias RawValue = String
+
+    internal enum Wire: String, Sendable {
+        case unique = "reaction:unique.v1"
+        case distinct = "reaction:distinct.v1"
+        case multiple = "reaction:multiple.v1"
+    }
+
+    internal init?(rawValue: String) {
+        switch Wire(rawValue: rawValue) {
+        case .unique:
+            self = .unique
+        case .distinct:
+            self = .distinct
+        case .multiple:
+            self = .multiple
+        default:
+            return nil
+        }
+    }
+
+    internal var rawValue: String {
+        switch self {
+        case .unique:
+            Wire.unique.rawValue
+        case .distinct:
+            Wire.distinct.rawValue
+        case .multiple:
+            Wire.multiple.rawValue
+        }
+    }
 }
 
 /**
