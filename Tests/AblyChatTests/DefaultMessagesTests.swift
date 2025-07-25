@@ -9,8 +9,12 @@ struct DefaultMessagesTests {
     // @spec CHA-M3a
     // @spec CHA-M3b
     // @spec CHA-M3f
+    // @spec CHA-M8a
+    // @spec CHA-M8b
+    // @spec CHA-M9a
+    // @spec CHA-M9b
     @Test
-    func clientMaySendMessageViaRESTChatAPI() async throws {
+    func sendAndUpdateAndDeleteMessageInTheRoom() async throws {
         // Given
         let realtime = MockRealtime {
             MockHTTPPaginatedResponse.successSendMessage
@@ -20,19 +24,50 @@ struct DefaultMessagesTests {
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", clientID: "clientId", logger: TestLogger())
 
         // When
-        _ = try await defaultMessages.send(params: .init(text: "hey"))
+        let sentMessage = try await defaultMessages.send(params: .init(text: "hey", metadata: ["key1": "val1"], headers: ["key2": "val2"]))
 
         // Then
+        #expect(sentMessage.text == "hey")
+        #expect(sentMessage.metadata == ["key1": "val1"])
+        #expect(sentMessage.headers == ["key2": "val2"])
         #expect(realtime.callRecorder.hasRecord(
             matching: "request(_:path:params:body:headers:)",
-            arguments: ["method": "POST", "path": "/chat/v3/rooms/basketball/messages", "body": ["text": "hey"], "params": [:], "headers": [:]]
+            arguments: ["method": "POST", "path": "/chat/v3/rooms/basketball/messages", "body": ["text": "hey", "metadata": ["key1": "val1"], "headers": ["key2": "val2"]], "params": [:], "headers": [:]]
+        )
+        )
+
+        // When
+        var newMessage = sentMessage
+        newMessage.text = "hey!" // see https://github.com/ably/ably-chat-swift/issues/333
+        let updatedMessage = try await defaultMessages.update(newMessage: newMessage, description: "add exclamation", metadata: ["key3": "val3"])
+
+        // Then
+        #expect(updatedMessage.text == "hey!")
+        #expect(updatedMessage.operation?.metadata == ["key3": "val3"])
+        #expect(updatedMessage.operation?.description == "add exclamation")
+        #expect(realtime.callRecorder.hasRecord(
+            matching: "request(_:path:params:body:headers:)",
+            arguments: ["method": "PUT", "path": "/chat/v3/rooms/basketball/messages/\(sentMessage.serial)", "body": ["message": ["text": "hey!", "metadata": ["key1": "val1"], "headers": ["key2": "val2"]], "description": "add exclamation", "metadata": ["key3": "val3"]], "params": [:], "headers": [:]]
+        )
+        )
+
+        // When
+        let deletedMessage = try await defaultMessages.delete(message: sentMessage, params: .init())
+
+        // Then
+        #expect(deletedMessage.text.isEmpty)
+        #expect(deletedMessage.headers.isEmpty)
+        #expect(deletedMessage.metadata.isEmpty)
+        #expect(realtime.callRecorder.hasRecord(
+            matching: "request(_:path:params:body:headers:)",
+            arguments: ["method": "POST", "path": "/chat/v3/rooms/basketball/messages/\(sentMessage.serial)/delete", "body": [:], "params": [:], "headers": [:]]
         )
         )
     }
 
     // @spec CHA-M3e
     @Test
-    func errorShouldBeThrownIfErrorIsReturnedFromRESTChatAPI() async throws {
+    func errorShouldBeThrownIfErrorIsReturnedFromSendRESTChatAPI() async throws {
         // Given
         let realtime = MockRealtime { @Sendable () throws(ARTErrorInfo) in
             throw ARTErrorInfo(domain: "SomeDomain", code: 123)
@@ -53,12 +88,60 @@ struct DefaultMessagesTests {
         }
     }
 
+    // @spec CHA-M8d
+    @Test
+    func errorShouldBeThrownIfErrorIsReturnedFromUpdateRESTChatAPI() async throws {
+        // Given
+        let realtime = MockRealtime { @Sendable () throws(ARTErrorInfo) in
+            throw ARTErrorInfo(domain: "SomeDomain", code: 123)
+        }
+        let chatAPI = ChatAPI(realtime: realtime)
+        let channel = MockRealtimeChannel()
+        let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", clientID: "clientId", logger: TestLogger())
+
+        // Then
+        // TODO: avoids compiler crash (https://github.com/ably/ably-chat-swift/issues/233), revert once Xcode 16.3 released
+        let doIt = {
+            let message = try Message(jsonObject: ["serial": "0", "version": "0", "text": "hey", "clientId": "0", "action": "message.update", "metadata": [:], "headers": [:]]) // arbitrary
+            _ = try await defaultMessages.update(newMessage: message, description: "", metadata: [:])
+        }
+        await #expect {
+            try await doIt()
+        } throws: { error in
+            error as? ARTErrorInfo == ARTErrorInfo(domain: "SomeDomain", code: 123)
+        }
+    }
+
+    // @spec CHA-M9c
+    @Test
+    func errorShouldBeThrownIfErrorIsReturnedFromDeleteRESTChatAPI() async throws {
+        // Given
+        let realtime = MockRealtime { @Sendable () throws(ARTErrorInfo) in
+            throw ARTErrorInfo(domain: "SomeDomain", code: 123)
+        }
+        let chatAPI = ChatAPI(realtime: realtime)
+        let channel = MockRealtimeChannel()
+        let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", clientID: "clientId", logger: TestLogger())
+
+        // Then
+        // TODO: avoids compiler crash (https://github.com/ably/ably-chat-swift/issues/233), revert once Xcode 16.3 released
+        let doIt = {
+            let message = try Message(jsonObject: ["serial": "0", "version": "0", "text": "hey", "clientId": "0", "action": "message.update", "metadata": [:], "headers": [:]]) // arbitrary
+            _ = try await defaultMessages.delete(message: message, params: .init())
+        }
+        await #expect {
+            try await doIt()
+        } throws: { error in
+            error as? ARTErrorInfo == ARTErrorInfo(domain: "SomeDomain", code: 123)
+        }
+    }
+
     // @spec CHA-M5a
     @Test
     func subscriptionPointIsChannelSerialWhenUnderlyingRealtimeChannelIsAttached() async throws {
         // Given
         let realtime = MockRealtime {
-            MockHTTPPaginatedResponse.successSendMessageWithNoItems
+            MockHTTPPaginatedResponse.successGetMessagesWithNoItems
         }
         let channelSerial = "123"
         let chatAPI = ChatAPI(realtime: realtime)
@@ -83,7 +166,7 @@ struct DefaultMessagesTests {
     func subscriptionPointIsAttachSerialWhenUnderlyingRealtimeChannelIsNotAttached() async throws {
         // Given
         let realtime = MockRealtime {
-            MockHTTPPaginatedResponse.successSendMessageWithNoItems
+            MockHTTPPaginatedResponse.successGetMessagesWithNoItems
         }
         let attachSerial = "attach123"
         let chatAPI = ChatAPI(realtime: realtime)
@@ -113,7 +196,7 @@ struct DefaultMessagesTests {
         let attachSerial = "attach123"
         let channelSerial = "channel456"
         let realtime = MockRealtime {
-            MockHTTPPaginatedResponse.successSendMessageWithNoItems
+            MockHTTPPaginatedResponse.successGetMessagesWithNoItems
         }
         let chatAPI = ChatAPI(realtime: realtime)
         let channel = MockRealtimeChannel(
@@ -157,7 +240,7 @@ struct DefaultMessagesTests {
         let attachSerial = "attach123"
         let channelSerial = "channel456"
         let realtime = MockRealtime {
-            MockHTTPPaginatedResponse.successSendMessageWithNoItems
+            MockHTTPPaginatedResponse.successGetMessagesWithNoItems
         }
         let chatAPI = ChatAPI(realtime: realtime)
         let channel = MockRealtimeChannel(

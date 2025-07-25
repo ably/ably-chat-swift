@@ -59,6 +59,8 @@ extension MockHTTPPaginatedResponse {
         items: [
             [
                 "serial": "3446456",
+                "version": "3446456",
+                "timestamp": 1_631_840_000_000,
                 "createdAt": 1_631_840_000_000,
                 "text": "hello",
             ],
