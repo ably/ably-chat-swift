@@ -175,6 +175,8 @@ internal enum ChatError {
     case messageRejectedByBeforePublishRule
     case messageRejectedByModeration
     case clientIdRequired
+    case attachSerialIsNotDefined
+    case channelFailedToAttach(cause: ARTErrorInfo?)
 
     internal var codeAndStatusCode: ErrorCodeAndStatusCode {
         switch self {
@@ -209,6 +211,10 @@ internal enum ChatError {
             .fixedStatusCode(.messageRejectedByModeration)
         case .clientIdRequired:
             .fixedStatusCode(.clientIdRequired)
+        case .attachSerialIsNotDefined:
+            .fixedStatusCode(.badRequest)
+        case .channelFailedToAttach:
+            .fixedStatusCode(.badRequest)
         }
     }
 
@@ -265,6 +271,10 @@ internal enum ChatError {
             "The message was rejected before publishing by a moderation rule on the chat room."
         case .clientIdRequired:
             "Ensure your Realtime instance is initialized with a clientId."
+        case .attachSerialIsNotDefined:
+            "Channel is attached, but attachSerial is not defined."
+        case let .channelFailedToAttach(cause):
+            "Channel failed to attach: \(String(describing: cause))"
         }
     }
 
@@ -274,6 +284,8 @@ internal enum ChatError {
         case let .roomTransitionedToInvalidStateForPresenceOperation(cause):
             cause
         case let .roomDiscontinuity(cause):
+            cause
+        case let .channelFailedToAttach(cause):
             cause
         case .nonErrorInfoInternalError,
              .inconsistentRoomOptions,
@@ -286,7 +298,8 @@ internal enum ChatError {
              .unableDeleteReactionWithoutName,
              .messageRejectedByBeforePublishRule,
              .messageRejectedByModeration,
-             .clientIdRequired:
+             .clientIdRequired,
+             .attachSerialIsNotDefined:
             nil
         }
     }
