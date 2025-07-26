@@ -563,6 +563,10 @@ class MockOccupancy: Occupancy {
     func get() async throws(ARTErrorInfo) -> OccupancyData {
         OccupancyData(connections: 10, presenceMembers: 5)
     }
+
+    func current() throws(ARTErrorInfo) -> AblyChat.OccupancyData? {
+        OccupancyData(connections: 10, presenceMembers: 5)
+    }
 }
 
 class MockConnection: Connection {
