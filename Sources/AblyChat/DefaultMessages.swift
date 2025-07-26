@@ -5,9 +5,35 @@ internal final class DefaultMessages: Messages {
 
     private let channel: any InternalRealtimeChannelProtocol
 
+    private let roomName: String
+    private let chatAPI: ChatAPI
+    private let clientID: String
+    private let logger: InternalLogger
+
+    private var currentSubscriptionPoint: String?
+    private var subscriptionPoints: [UUID: String] = [:]
+
+    private func updateCurrentSubscriptionPoint() {
+        currentSubscriptionPoint = channel.properties.attachSerial
+        _ = channel.on { [weak self] stateChange in
+            guard let self else {
+                return
+            }
+            if stateChange.current == .attached, !stateChange.resumed {
+                currentSubscriptionPoint = channel.properties.attachSerial
+                subscriptionPoints.removeAll()
+            }
+        }
+    }
+
     internal init(channel: any InternalRealtimeChannelProtocol, chatAPI: ChatAPI, roomName: String, options: MessagesOptions = .init(), clientID: String, logger: InternalLogger) {
         self.channel = channel
+        self.chatAPI = chatAPI
+        self.roomName = roomName
+        self.clientID = clientID
+        self.logger = logger
         reactions = DefaultMessageReactions(channel: channel, chatAPI: chatAPI, roomName: roomName, options: options, clientID: clientID, logger: logger)
+        updateCurrentSubscriptionPoint()
     }
 
     internal func subscribe(_ callback: @escaping @MainActor (ChatMessageEvent) -> Void) -> MessageSubscriptionResponseProtocol {
@@ -149,6 +175,10 @@ internal final class DefaultMessages: Messages {
                 }
             }
         }.get()
+    }
+
+    internal enum MessagesError: Error {
+        case noReferenceToSelf
     }
 }
 
