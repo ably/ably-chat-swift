@@ -177,6 +177,7 @@ internal enum ChatError {
     case clientIdRequired
     case attachSerialIsNotDefined
     case channelFailedToAttach(cause: ARTErrorInfo?)
+    case occupancyEventsNotEnabled
 
     internal var codeAndStatusCode: ErrorCodeAndStatusCode {
         switch self {
@@ -214,6 +215,8 @@ internal enum ChatError {
         case .attachSerialIsNotDefined:
             .fixedStatusCode(.badRequest)
         case .channelFailedToAttach:
+            .fixedStatusCode(.badRequest)
+        case .occupancyEventsNotEnabled:
             .fixedStatusCode(.badRequest)
         }
     }
@@ -275,6 +278,8 @@ internal enum ChatError {
             "Channel is attached, but attachSerial is not defined."
         case let .channelFailedToAttach(cause):
             "Channel failed to attach: \(String(describing: cause))"
+        case .occupancyEventsNotEnabled:
+            "Cannot perform operation because occupancy events are not enabled for this room."
         }
     }
 
@@ -299,7 +304,8 @@ internal enum ChatError {
              .messageRejectedByBeforePublishRule,
              .messageRejectedByModeration,
              .clientIdRequired,
-             .attachSerialIsNotDefined:
+             .attachSerialIsNotDefined,
+             .occupancyEventsNotEnabled:
             nil
         }
     }
