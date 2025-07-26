@@ -7,6 +7,8 @@ internal final class DefaultOccupancy: Occupancy {
     private let logger: InternalLogger
     private let options: OccupancyOptions
 
+    private var lastOccupancyData: OccupancyData?
+
     internal init(channel: any InternalRealtimeChannelProtocol, chatAPI: ChatAPI, roomName: String, logger: InternalLogger, options: OccupancyOptions) {
         self.channel = channel
         self.chatAPI = chatAPI
@@ -40,6 +42,9 @@ internal final class DefaultOccupancy: Occupancy {
 
             let occupancyData = OccupancyData(connections: connections, presenceMembers: presenceMembers)
             let occupancyEvent = OccupancyEvent(type: .updated, occupancy: occupancyData)
+
+            lastOccupancyData = occupancyData
+
             logger.log(message: "Emitting occupancy event: \(occupancyEvent)", level: .debug)
             callback(occupancyEvent)
         }
@@ -60,5 +65,16 @@ internal final class DefaultOccupancy: Occupancy {
         } catch {
             throw error.toARTErrorInfo()
         }
+    }
+
+    // (CHA-O7a) The current method should return the latest occupancy numbers received over the realtime connection in a [meta]occupancy event.
+    internal func current() throws(ARTErrorInfo) -> OccupancyData? {
+        // CHA-O7c
+        if !options.enableEvents {
+            throw ARTErrorInfo(chatError: .occupancyEventsNotEnabled)
+        }
+        // CHA-07a
+        // CHA-07b
+        return lastOccupancyData
     }
 }
