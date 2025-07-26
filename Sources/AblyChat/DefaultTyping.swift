@@ -56,7 +56,7 @@ internal final class DefaultTyping: Typing {
                     callback(
                         TypingSetEvent(
                             type: .setChanged,
-                            currentlyTyping: self.typingTimerManager.currentlyTypingClientIDs(),
+                            currentlyTyping: typingTimerManager.currentlyTypingClientIDs(),
                             change: .init(clientId: messageClientID, type: .stopped)
                         )
                     )
