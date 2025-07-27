@@ -204,15 +204,14 @@ internal final class DefaultPresence: Presence {
 
         logger.log(message: "Subscribing to presence events", level: .debug)
 
-        let eventListener = channel.presence.subscribe(event.toARTPresenceAction()) { [processPresenceSubscribe, logger] message in
-            logger.log(message: "Received presence message: \(message)", level: .debug)
-            do {
-                // processPresenceSubscribe is logging so we don't need to log here
-                let presenceEvent = try processPresenceSubscribe(PresenceMessage(ablyCocoaPresenceMessage: message), event)
-                callback(presenceEvent)
-            } catch {
-                // note: this replaces some existing code that also didn't handle the processPresenceSubscribe error; I suspect not intentional, will leave whoever writes the tests for this class to see what's going on
+        let eventListener = channel.presence.subscribe(event.toARTPresenceAction()) { [weak self] message in
+            guard let self else {
+                return
             }
+            logger.log(message: "Received presence message: \(message)", level: .debug)
+            // processPresenceSubscribe is logging so we don't need to log here
+            let presenceEvent = processPresenceSubscribe(PresenceMessage(ablyCocoaPresenceMessage: message), for: event)
+            callback(presenceEvent)
         }
 
         return Subscription { [weak self] in
@@ -228,14 +227,13 @@ internal final class DefaultPresence: Presence {
         logger.log(message: "Subscribing to presence events", level: .debug)
 
         let eventListeners = events.map { event in
-            channel.presence.subscribe(event.toARTPresenceAction()) { [processPresenceSubscribe, logger] message in
-                logger.log(message: "Received presence message: \(message)", level: .debug)
-                do {
-                    let presenceEvent = try processPresenceSubscribe(PresenceMessage(ablyCocoaPresenceMessage: message), event)
-                    callback(presenceEvent)
-                } catch {
-                    // note: this replaces some existing code that also didn't handle the processPresenceSubscribe error; I suspect not intentional, will leave whoever writes the tests for this class to see what's going on
+            channel.presence.subscribe(event.toARTPresenceAction()) { [weak self] message in
+                guard let self else {
+                    return
                 }
+                logger.log(message: "Received presence message: \(message)", level: .debug)
+                let presenceEvent = processPresenceSubscribe(PresenceMessage(ablyCocoaPresenceMessage: message), for: event)
+                callback(presenceEvent)
             }
         }
 
@@ -263,7 +261,7 @@ internal final class DefaultPresence: Presence {
         return presenceMembers
     }
 
-    private func processPresenceSubscribe(_ message: PresenceMessage, for event: PresenceEventType) throws -> PresenceEvent {
+    private func processPresenceSubscribe(_ message: PresenceMessage, for event: PresenceEventType) -> PresenceEvent {
         let member = PresenceMember(
             clientID: message.clientId ?? "", // CHA-M4k1
             data: message.data,
