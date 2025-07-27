@@ -27,6 +27,15 @@ public protocol Occupancy: AnyObject, Sendable {
      * - Returns: A current occupancy of the chat room.
      */
     func get() async throws(ARTErrorInfo) -> OccupancyData
+
+    /**
+     * Get the latest occupancy data received from realtime events.
+     *
+     * - Returns: The latest occupancy data, or undefined if no realtime events have been received yet.
+     *
+     * - Throws: ``ARTErrorInfo`` if occupancy events are not enabled for this room.
+     */
+    func current() throws(ARTErrorInfo) -> OccupancyData?
 }
 
 /// `AsyncSequence` variant of receiving room occupancy events.
