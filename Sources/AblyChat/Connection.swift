@@ -106,22 +106,22 @@ public enum ConnectionStatus: Sendable {
      */
     case failed
 
-    internal init(from realtimeConnectionState: ARTRealtimeConnectionState) {
-        switch realtimeConnectionState {
+    internal static func fromRealtimeConnectionState(_ state: ARTRealtimeConnectionState) -> Self {
+        switch state {
         case .initialized:
-            self = .initialized
+            .initialized
         case .connecting:
-            self = .connecting
+            .connecting
         case .connected:
-            self = .connected
+            .connected
         case .disconnected:
-            self = .disconnected
+            .disconnected
         case .suspended:
-            self = .suspended
+            .suspended
         case .failed, .closing, .closed:
-            self = .failed
+            .failed
         @unknown default:
-            self = .failed
+            .failed
         }
     }
 }
