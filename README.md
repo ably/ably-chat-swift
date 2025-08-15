@@ -8,6 +8,32 @@
 
 Ably Chat is a set of purpose-built APIs for a host of chat features enabling you to create 1:1, 1:Many, Many:1 and Many:Many chat rooms for any scale. It is designed to meet a wide range of chat use cases, such as livestreams, in-game communication, customer support, or social interactions in SaaS products. Built on [Ably's](https://ably.com/) core service, it abstracts complex details to enable efficient chat architectures.
 
+## 📚 Documentation & Resources
+
+**Comprehensive guides and references for LLMs and developers:**
+
+### 🎯 For Developers
+- **[API Reference Summary](docs/API_SUMMARY.md)** - High-level API overview with core classes, methods, and usage patterns
+- **[Frequently Asked Questions](docs/FAQ.md)** - Common integration questions, troubleshooting, and migration guides
+- **[Complete Feature Reference](docs/FEATURES.md)** - In-depth feature documentation with code examples
+- **[Use Cases & Examples](docs/USE_CASES.md)** - Real-world implementation patterns and best practices
+- **[SDK Comparison](docs/COMPARISON.md)** - Feature comparison with other chat SDKs
+
+### 🤖 For LLMs & AI
+- **[LLM-Optimized README](docs/LLM_README.md)** - Structured documentation designed for AI understanding
+- **[Keywords & Tags Reference](docs/KEYWORDS.md)** - Comprehensive keyword database for discoverability
+- **[Structured Metadata](metadata.json)** - JSON-LD metadata for semantic understanding
+
+### 💻 Code Examples
+- **[Swift Code Snippets](examples/snippets/)** - Ready-to-use code examples for common features
+- **[Example Applications](examples/)** - Complete sample implementations and demos
+
+**Quick Links:**
+- 📖 [Official Documentation](https://ably.com/docs/chat/setup?lang=swift) - Complete setup and integration guides
+- 🎮 [Live Demo](https://ably-livestream-chat-demo.vercel.app/) - Interactive livestream chat demo
+- 💬 [Community Support](https://community.ably.com/) - Ask questions and share experiences
+- 🐛 [Issue Tracker](https://github.com/ably/ably-chat-swift/issues) - Report bugs and feature requests
+
 ---
 
 ## Getting started
