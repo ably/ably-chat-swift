@@ -306,23 +306,11 @@ internal final class DefaultPresence: Presence {
 
         private func processPresenceGet(members: [PresenceMessage]) throws(InternalError) -> [PresenceMember] {
             let presenceMembers = try members.map { member throws(InternalError) in
-                guard let clientID = member.clientId else {
-                    let error = ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without clientId")
-                    logger.log(message: error.message, level: .error)
-                    throw error.toInternalError()
-                }
-
-                guard let timestamp = member.timestamp else {
-                    let error = ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without timestamp")
-                    logger.log(message: error.message, level: .error)
-                    throw error.toInternalError()
-                }
-
                 let presenceMember = PresenceMember(
-                    clientID: clientID,
+                    clientID: member.clientId ?? "", // CHA-M4k1
                     data: member.data,
                     extras: member.extras,
-                    updatedAt: timestamp
+                    updatedAt: member.timestamp ?? Date() // CHA-M4k3
                 )
 
                 logger.log(message: "Returning presence member: \(presenceMember)", level: .debug)
@@ -332,23 +320,11 @@ internal final class DefaultPresence: Presence {
         }
 
         private func processPresenceSubscribe(_ message: PresenceMessage, for event: PresenceEventType) throws -> PresenceEvent {
-            guard let clientID = message.clientId else {
-                let error = ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without clientId")
-                logger.log(message: error.message, level: .error)
-                throw error
-            }
-
-            guard let timestamp = message.timestamp else {
-                let error = ARTErrorInfo.create(withCode: 50000, status: 500, message: "Received incoming message without timestamp")
-                logger.log(message: error.message, level: .error)
-                throw error
-            }
-
             let member = PresenceMember(
-                clientID: clientID,
+                clientID: message.clientId ?? "", // CHA-M4k1
                 data: message.data,
                 extras: message.extras,
-                updatedAt: timestamp
+                updatedAt: message.timestamp ?? Date() // CHA-M4k3
             )
 
             let presenceEvent = PresenceEvent(
