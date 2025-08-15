@@ -301,7 +301,7 @@ struct SpecCoverage: AsyncParsableCommand {
                 // ** @(CHA-RS4b)@ @[Testable]@ Room status update events must contain the previous room status.
                 // (This `Testable` is a convention that’s being used only in the Chat spec)
 
-                let specPointLineRegex = /^\*+ @\((.*?)\)@( @\[Testable\]@ )?/
+                let specPointLineRegex = /^\s*\*+ @\((.*?)\)@( @\[Testable\]@ )?/
 
                 // swiftlint:disable:next force_try
                 guard let match = try! specPointLineRegex.firstMatch(in: specLine) else {

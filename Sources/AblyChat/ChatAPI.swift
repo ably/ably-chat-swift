@@ -200,7 +200,7 @@ internal final class ChatAPI: Sendable {
 
     // (CHA-MR4) Users should be able to send a reaction to a message via the `send` method of the `MessagesReactions` object
     internal func sendReactionToMessage(_ messageSerial: String, roomName: String, params: SendMessageReactionParams) async throws(InternalError) -> MessageReactionResponse {
-        // (CHA-MR11a1) If the serial passed to this method is invalid: undefined, null, empty string, an error with code 40000 must be thrown.
+        // (CHA-MR4a1) If the serial passed to this method is invalid: undefined, null, empty string, an error with code 40000 must be thrown.
         guard !messageSerial.isEmpty else {
             throw ChatError.messageReactionInvalidMessageSerial.toInternalError()
         }

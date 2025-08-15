@@ -7,8 +7,7 @@ internal final class DefaultMessageReactions: MessageReactions {
     private let logger: InternalLogger
     private let clientID: String
     private let chatAPI: ChatAPI
-
-    private var defaultReaction: MessageReactionType
+    private let options: MessagesOptions
 
     internal init(channel: any InternalRealtimeChannelProtocol, chatAPI: ChatAPI, roomName: String, options: MessagesOptions, clientID: String, logger: InternalLogger) {
         self.channel = channel
@@ -16,7 +15,7 @@ internal final class DefaultMessageReactions: MessageReactions {
         self.roomName = roomName
         self.logger = logger
         self.clientID = clientID
-        defaultReaction = options.defaultMessageReactionType
+        self.options = options
     }
 
     // (CHA-MR4) Users should be able to send a reaction to a message via the `send` method of the `MessagesReactions` object
@@ -28,7 +27,7 @@ internal final class DefaultMessageReactions: MessageReactions {
             }
 
             let apiParams: ChatAPI.SendMessageReactionParams = .init(
-                type: params.type ?? defaultReaction,
+                type: params.type ?? options.defaultMessageReactionType,
                 name: params.name,
                 count: count
             )
@@ -42,7 +41,7 @@ internal final class DefaultMessageReactions: MessageReactions {
 
     // (CHA-MR11) Users should be able to delete a reaction from a message via the `delete` method of the `MessagesReactions` object
     internal func delete(from messageSerial: String, params: DeleteMessageReactionParams) async throws(ARTErrorInfo) {
-        let reactionType = params.type ?? defaultReaction
+        let reactionType = params.type ?? options.defaultMessageReactionType
         if reactionType != .unique, params.name == nil {
             throw ARTErrorInfo(chatError: .unableDeleteReactionWithoutName(reactionType: reactionType.rawValue))
         }
@@ -101,6 +100,11 @@ internal final class DefaultMessageReactions: MessageReactions {
     @discardableResult
     internal func subscribeRaw(_ callback: @escaping @MainActor @Sendable (MessageReactionRawEvent) -> Void) -> SubscriptionProtocol {
         logger.log(message: "Subscribing to reaction events", level: .debug)
+        guard options.rawMessageReactions else {
+            // (CHA-MR7a) The attempt to subscribe to raw message reactions must throw an ErrorInfo with code 40000 and status code 400 if the room is not configured to support raw message reactions
+            // I'm replacing throwing with `fatalError` because it's a programmer error to call this method with invalid options.
+            fatalError("Room is not configured to support raw message reactions")
+        }
 
         let eventListener = channel.annotations.subscribe { [clientID, logger] annotation in
             logger.log(message: "Received reaction (message annotation): \(annotation)", level: .debug)
@@ -114,17 +118,6 @@ internal final class DefaultMessageReactions: MessageReactions {
                 return
             }
 
-            var reactionName = annotation.name
-            if reactionName == nil {
-                if reactionEventType == .delete, reactionType == .unique {
-                    // deletes of type unique are allowed to have no name
-                    reactionName = ""
-                } else {
-                    logger.log(message: "Received annotation without name: \(annotation)", level: .debug)
-                    return
-                }
-            }
-
             let annotationClientID = annotation.clientId ?? "" // CHA-MR7b3
 
             let reactionEvent = MessageReactionRawEvent(
@@ -132,7 +125,7 @@ internal final class DefaultMessageReactions: MessageReactions {
                 timestamp: annotation.timestamp,
                 reaction: MessageReaction(
                     type: reactionType,
-                    name: reactionName ?? "", // CHA-MR7b3
+                    name: annotation.name ?? "", // CHA-MR7b3
                     messageSerial: annotation.messageSerial,
                     count: annotation.count?.intValue ?? (annotation.action == .create && reactionType == .multiple ? 1 : nil),
                     clientID: annotationClientID,
