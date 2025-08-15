@@ -23,7 +23,7 @@ jobs:
       # This step can be removed once the runners’ default version of Xcode is 16 or above
       - uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: 16.2
+          xcode-version: 16.3
 
       # We use caching for Mint because at the time of writing SwiftLint took about 5 minutes to build in CI, which is unacceptably slow.
       # https://github.com/actions/cache/blob/40c3b67b2955d93d83b27ed164edd0756bc24049/examples.md#swift---mint
@@ -50,7 +50,7 @@ jobs:
       # This step can be removed once the runners’ default version of Xcode is 16 or above
       - uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: 16.2
+          xcode-version: 16.3
 
       - name: Spec coverage
         run: swift run BuildTool spec-coverage
@@ -69,7 +69,7 @@ jobs:
       # This step can be removed once the runners’ default version of Xcode is 16 or above
       - uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: 16.2
+          xcode-version: 16.3
 
       - id: generation-step
         run: swift run BuildTool generate-matrices >> $GITHUB_OUTPUT
@@ -151,7 +151,7 @@ jobs:
       # This step can be removed once the runners’ default version of Xcode is 16 or above
       - uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: 16.2
+          xcode-version: 16.3
 
       - run: swift run BuildTool generate-code-coverage --result-bundle-path CodeCoverage.xcresult
 
@@ -228,7 +228,7 @@ jobs:
       # This step can be removed once the runners’ default version of Xcode is 16 or above
       - uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: 16.2
+          xcode-version: 16.3
 
       # Dry run upload-action to get base-path url
       - name: Dry-Run Upload (to get url)
