@@ -93,10 +93,9 @@ internal final class ChatAPI: Sendable {
             action: .create,
             clientID: clientId,
             text: params.text,
-            createdAt: createdAtDate,
             metadata: params.metadata ?? [:],
             headers: params.headers ?? [:],
-            version: response.serial,
+            version: .init(serial: response.serial),
             timestamp: createdAtDate
         )
         return message
@@ -139,16 +138,14 @@ internal final class ChatAPI: Sendable {
             action: .update,
             clientID: modifiedMessage.clientID,
             text: modifiedMessage.text,
-            createdAt: modifiedMessage.createdAt,
             metadata: modifiedMessage.metadata,
             headers: modifiedMessage.headers,
-            version: response.version,
-            timestamp: Date(timeIntervalSince1970: timestampInSeconds),
-            operation: .init(
-                clientID: clientID,
-                description: description,
-                metadata: metadata ?? [:]
-            )
+            version: .init(
+                serial: response.version,
+                timestamp: Date(timeIntervalSince1970: timestampInSeconds),
+                clientID: clientID
+            ),
+            timestamp: modifiedMessage.timestamp
         )
         return message
     }
@@ -178,16 +175,14 @@ internal final class ChatAPI: Sendable {
             action: .delete,
             clientID: message.clientID,
             text: message.text,
-            createdAt: message.createdAt,
             metadata: message.metadata,
             headers: message.headers,
-            version: response.version,
-            timestamp: Date(timeIntervalSince1970: timestampInSeconds),
-            operation: .init(
-                clientID: message.clientID,
+            version: .init(
+                serial: response.version,
                 description: params.description,
                 metadata: params.metadata ?? [:]
-            )
+            ),
+            timestamp: Date(timeIntervalSince1970: timestampInSeconds),
         )
         return message
     }

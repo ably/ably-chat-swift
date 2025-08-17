@@ -49,10 +49,9 @@ struct ChatAPITests {
             action: .create,
             clientID: "mockClientId",
             text: "hello",
-            createdAt: Date(timeIntervalSince1970: 1_631_840_000),
             metadata: [:],
             headers: [:],
-            version: "3446456",
+            version: .init(serial: "3446456"),
             timestamp: Date(timeIntervalSince1970: 1_631_840_000)
         )
         #expect(message == expectedMessage)
@@ -146,10 +145,9 @@ struct ChatAPITests {
                     action: .create,
                     clientID: "random",
                     text: "hello",
-                    createdAt: .init(timeIntervalSince1970: 1_730_943_049.269),
                     metadata: [:],
                     headers: [:],
-                    version: "3446456",
+                    version: .init(serial: "3446456"),
                     timestamp: Date(timeIntervalSince1970: 1_730_943_049.269)
                 ),
                 Message(
@@ -157,11 +155,10 @@ struct ChatAPITests {
                     action: .create,
                     clientID: "random",
                     text: "hello response",
-                    createdAt: nil,
                     metadata: [:],
                     headers: [:],
-                    version: "3446457",
-                    timestamp: nil
+                    version: .init(serial: "3446457"),
+                    timestamp: Date(timeIntervalSince1970: 1_730_943_051.269)
                 ),
             ]
         )

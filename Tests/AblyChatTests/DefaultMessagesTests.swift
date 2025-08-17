@@ -423,23 +423,20 @@ struct DefaultMessagesTests {
                 #expect(event.message.text == "hey")
                 #expect(event.message.clientID == "c1")
                 #expect(event.message.serial == "123")
-                #expect(event.message.version == "1")
+                #expect(event.message.version.serial == "1")
                 #expect(event.message.metadata == ["someKey1": "someValue1"])
                 #expect(event.message.headers == ["someKey2": "someValue2"])
                 #expect(event.message.timestamp == Date(timeIntervalSinceReferenceDate: 0))
-                #expect(event.message.createdAt == Date(timeIntervalSinceReferenceDate: 0))
             } else {
                 #expect(event.type == .created)
                 #expect(event.message.text.isEmpty)
                 #expect(event.message.clientID.isEmpty)
                 #expect(event.message.serial.isEmpty)
-                #expect(event.message.version.isEmpty)
+                #expect(event.message.version.serial.isEmpty)
                 #expect(event.message.metadata.isEmpty)
                 #expect(event.message.headers.isEmpty)
                 #expect(event.message.timestamp != nil)
-                #expect(event.message.createdAt != nil)
                 #expect(event.message.timestamp!.timeIntervalSince(ts) < 1.0)
-                #expect(event.message.createdAt!.timeIntervalSince(ts) < 1.0)
             }
             callbackCalls += 1
         }

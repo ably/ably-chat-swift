@@ -69,12 +69,15 @@ internal final class DefaultMessages: Messages {
                 action: action,
                 clientID: message.clientId ?? "", // CHA-M4k1
                 text: text,
-                createdAt: message.timestamp ?? Date(timeIntervalSince1970: 0), // CHA-M4k4
                 metadata: metadata,
                 headers: headers,
-                version: message.version ?? "", // CHA-M4k1
-                timestamp: message.timestamp ?? Date(), // CHA-M4k3,
-                operation: message.operation?.toChatOperation()
+                version: .init(
+                    serial: message.version ?? "", // CHA-M4k1,
+                    clientID: message.operation?.clientId ?? "",
+                    description: message.operation?.descriptionText ?? "",
+                    metadata: JSONValue(ablyCocoaData: message.operation?.metadata ?? [:]).objectValue // CHA-M4k2
+                ),
+                timestamp: message.timestamp ?? Date(timeIntervalSince1970: 0), // CHA-M4k4
             )
 
             let event = ChatMessageEvent(message: message)
@@ -179,15 +182,5 @@ internal final class DefaultMessages: Messages {
 
     internal enum MessagesError: Error {
         case noReferenceToSelf
-    }
-}
-
-private extension ARTMessageOperation {
-    func toChatOperation() -> MessageOperation {
-        MessageOperation(
-            clientID: clientId ?? "", // CHA-M4k1
-            description: descriptionText,
-            metadata: JSONValue(ablyCocoaData: metadata ?? [:]).objectValue // CHA-M4k2
-        )
     }
 }

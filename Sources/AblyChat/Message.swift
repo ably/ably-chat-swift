@@ -47,7 +47,7 @@ public struct Message: Sendable, Identifiable, Equatable {
     /**
      * The timestamp at which the message was created.
      */
-    public var createdAt: Date?
+    public var timestamp: Date?
 
     /**
      * The metadata of a chat message. Allows for attaching extra info to a message,
@@ -80,37 +80,24 @@ public struct Message: Sendable, Identifiable, Equatable {
 
     // (CHA-M10a)
     /**
-     * A unique identifier for the latest version of this message.
+     * An object holding information about the latest version of the message.
      */
-    public var version: String
-
-    /**
-     * The timestamp at which this version was updated, deleted, or created.
-     */
-    public var timestamp: Date?
-
-    /**
-     * The details of the operation that modified the message. This is only set for update and delete actions. It contains
-     * information about the operation: the clientId of the user who performed the operation, a description, and metadata.
-     */
-    public var operation: MessageOperation?
+    public var version: MessageVersion
 
     /**
      * The reactions summary for this message.
      */
     public var reactions: MessageReactionSummary?
 
-    public init(serial: String, action: MessageAction, clientID: String, text: String, createdAt: Date?, metadata: MessageMetadata, headers: MessageHeaders, version: String, timestamp: Date?, operation: MessageOperation? = nil, reactions: MessageReactionSummary? = nil) {
+    public init(serial: String, action: MessageAction, clientID: String, text: String, metadata: MessageMetadata, headers: MessageHeaders, version: MessageVersion, timestamp: Date?, reactions: MessageReactionSummary? = nil) {
         self.serial = serial
         self.action = action
         self.clientID = clientID
         self.text = text
-        self.createdAt = createdAt
         self.metadata = metadata
         self.headers = headers
         self.version = version
         self.timestamp = timestamp
-        self.operation = operation
         self.reactions = reactions
     }
 
@@ -130,23 +117,44 @@ public struct Message: Sendable, Identifiable, Equatable {
             action: action,
             clientID: clientID,
             text: text ?? self.text,
-            createdAt: createdAt,
             metadata: metadata ?? self.metadata,
             headers: headers ?? self.headers,
             version: version,
             timestamp: timestamp,
-            operation: operation,
             reactions: reactions ?? self.reactions
         )
     }
 }
 
-public struct MessageOperation: Sendable, Equatable {
+public struct MessageVersion: Sendable, Equatable {
+    /**
+     * The serial of versioned message.
+     */
+    public var serial: String
+
+    /**
+     * The timestamp of versioned message.
+     */
+    public var timestamp: Date?
+
+    /**
+     * The clientId of publisher of versioned message.
+     */
     public var clientID: String?
+
+    /**
+     * The description provided by publisher of versioned message.
+     */
     public var description: String?
+
+    /**
+     * The metadata provided by publisher of versioned message.
+     */
     public var metadata: MessageMetadata?
 
-    public init(clientID: String?, description: String? = nil, metadata: MessageMetadata? = nil) {
+    public init(serial: String, timestamp: Date? = nil, clientID: String? = nil, description: String? = nil, metadata: MessageMetadata? = nil) {
+        self.serial = serial
+        self.timestamp = timestamp
         self.clientID = clientID
         self.description = description
         self.metadata = metadata
@@ -155,7 +163,6 @@ public struct MessageOperation: Sendable, Equatable {
 
 extension Message: JSONObjectDecodable {
     internal init(jsonObject: [String: JSONValue]) throws(InternalError) {
-        let operationJson = try? jsonObject.objectValueForKey("operation")
         let serial = try jsonObject.stringValueForKey("serial")
         var reactionSummary: MessageReactionSummary?
         if let summaryJson = try? jsonObject.objectValueForKey("reactions"), !summaryJson.isEmpty {
@@ -168,25 +175,24 @@ extension Message: JSONObjectDecodable {
         guard let action = MessageAction(rawValue: rawAction) else {
             throw JSONValueDecodingError.failedToDecodeFromRawValue(rawAction).toInternalError()
         }
+        let versionJson = try jsonObject.objectValueForKey("version")
         try self.init(
             serial: serial,
             action: action,
             clientID: jsonObject.stringValueForKey("clientId"),
             text: jsonObject.stringValueForKey("text"),
-            createdAt: jsonObject.optionalAblyProtocolDateValueForKey("createdAt"),
             metadata: jsonObject.objectValueForKey("metadata"),
             headers: jsonObject.objectValueForKey("headers").ablyChat_mapValuesWithTypedThrow { jsonValue throws(InternalError) in
                 try .init(jsonValue: jsonValue)
             },
-            version: jsonObject.stringValueForKey("version"),
+            version: .init(
+                serial: versionJson.stringValueForKey("serial"),
+                timestamp: versionJson.optionalAblyProtocolDateValueForKey("timestamp"),
+                clientID: versionJson.optionalStringValueForKey("clientId"),
+                description: versionJson.optionalStringValueForKey("description"),
+                metadata: versionJson.optionalObjectValueForKey("metadata")
+            ),
             timestamp: jsonObject.optionalAblyProtocolDateValueForKey("timestamp"),
-            operation: operationJson.map { op throws(InternalError) in
-                try .init(
-                    clientID: op.stringValueForKey("clientId"),
-                    description: try? op.stringValueForKey("description"),
-                    metadata: try? op.objectValueForKey("metadata")
-                )
-            },
             reactions: reactionSummary
         )
     }
