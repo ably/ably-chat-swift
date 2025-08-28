@@ -1,6 +1,6 @@
 ![Ably Chat Swift Header](Images/SwiftChatSDK-github.png)
 [![SPM Swift Compatibility](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fably%2Fably-cocoa%2Fbadge%3Ftype%3Dswift-versions)](https://swiftpackageindex.com/ably/ably-chat-swift)
-[![License](https://badgen.net/github/license/3scale/saas-operator)](https://github.com/ably/ably-chat-kotlin/blob/main/LICENSE)
+[![License](https://badgen.net/github/license/3scale/saas-operator)](https://github.com/ably/ably-chat-swift/blob/main/LICENSE)
 
 ---
 
@@ -14,9 +14,10 @@ Ably Chat is a set of purpose-built APIs for a host of chat features enabling yo
 
 Everything you need to get started with Ably:
 
-- Learn [about Ably Chat.](https://ably.com/docs/chat)
-- [SDK and usage docs in Swift.](https://ably.com/docs/chat/setup?lang=swift)
-- Play with the [livestream chat demo.](https://ably-livestream-chat-demo.vercel.app/)
+* [Getting started with Pub/Sub using Swift.](https://ably.com/docs/getting-started/swift)
+* [SDK and usage docs in Swift.](https://ably.com/docs/chat/setup?lang=swift)
+* Learn [about Ably Chat.](https://ably.com/docs/chat)
+* Play with the [livestream chat demo.](https://ably-livestream-chat-demo.vercel.app/)
 
 ---
 
@@ -27,7 +28,7 @@ Ably aims to support a wide range of platforms. If you experience any compatibil
 This SDK supports the following platforms:
 
 | Platform | Support |
-| -------- | ------- |
+|----------|---------|
 | iOS      | >= 14.0 |
 | macOS    | >= 11.0 |
 | tvOS     | >= 14.0 |
@@ -39,7 +40,7 @@ This SDK supports the following platforms:
 
 ## Releases
 
-The [CHANGELOG.md](/ably/ably-chat-swift/blob/main/CHANGELOG.md) contains details of the latest releases for this SDK. You can also view all Ably releases on [changelog.ably.com](https://changelog.ably.com).
+The [CHANGELOG.md](/CHANGELOG.md) contains details of the latest releases for this SDK. You can also view all Ably releases on [changelog.ably.com](https://changelog.ably.com).
 
 ---
 
