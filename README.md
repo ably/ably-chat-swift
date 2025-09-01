@@ -14,8 +14,8 @@ Ably Chat is a set of purpose-built APIs for a host of chat features enabling yo
 
 Everything you need to get started with Ably:
 
-* [Getting started with Pub/Sub using Swift.](https://ably.com/docs/getting-started/swift)
-* [SDK and usage docs in Swift.](https://ably.com/docs/chat/setup?lang=swift)
+* [Getting started with Ably Chat using Swift.](https://ably.com/docs/chat/getting-started/swift)
+* [Ably Chat SDK and usage docs in Swift.](https://ably.com/docs/chat/setup?lang=swift)
 * Learn [about Ably Chat.](https://ably.com/docs/chat)
 * Play with the [livestream chat demo.](https://ably-livestream-chat-demo.vercel.app/)
 
