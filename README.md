@@ -1,6 +1,6 @@
 ![Ably Chat Swift Header](Images/SwiftChatSDK-github.png)
-[![SPM Swift Compatibility](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fably%2Fably-cocoa%2Fbadge%3Ftype%3Dswift-versions)](https://swiftpackageindex.com/ably/ably-chat-swift)
-[![License](https://badgen.net/github/license/3scale/saas-operator)](https://github.com/ably/ably-chat-swift/blob/main/LICENSE)
+[![SPM Swift Compatibility](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fably%2Fably-chat-swift%2Fbadge%3Ftype%3Dswift-versions)](https://swiftpackageindex.com/ably/ably-chat-swift)
+[![License](https://badgen.net/github/license/ably/ably-chat-swift)](https://github.com/ably/ably-chat-swift/blob/main/LICENSE)
 
 ---
 
