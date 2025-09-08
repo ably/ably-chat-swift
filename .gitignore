@@ -7,7 +7,6 @@ DerivedData/
 .swiftpm/configuration/registries.json
 .swiftpm/xcode/package.xcworkspace/contents.xcworkspacedata
 .netrc
-docs-coverage-report
 # End of .gitignore created by Swift Package Manager
 
 /node_modules
