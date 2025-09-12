@@ -14,10 +14,10 @@ Ably Chat is a set of purpose-built APIs for a host of chat features enabling yo
 
 Everything you need to get started with Ably:
 
-* [Getting started with Ably Chat using Swift.](https://ably.com/docs/chat/getting-started/swift)
-* [Ably Chat SDK and usage docs in Swift.](https://ably.com/docs/chat/setup?lang=swift)
-* Learn [about Ably Chat.](https://ably.com/docs/chat)
-* Play with the [livestream chat demo.](https://ably-livestream-chat-demo.vercel.app/)
+- [Getting started with Ably Chat using Swift.](https://ably.com/docs/chat/getting-started/swift)
+- [Ably Chat SDK and usage docs in Swift.](https://ably.com/docs/chat/setup?lang=swift)
+- Learn [about Ably Chat.](https://ably.com/docs/chat)
+- Play with the [livestream chat demo.](https://ably-livestream-chat-demo.vercel.app/)
 
 ---
 
@@ -28,7 +28,7 @@ Ably aims to support a wide range of platforms. If you experience any compatibil
 This SDK supports the following platforms:
 
 | Platform | Support |
-|----------|---------|
+| -------- | ------- |
 | iOS      | >= 14.0 |
 | macOS    | >= 11.0 |
 | tvOS     | >= 14.0 |
