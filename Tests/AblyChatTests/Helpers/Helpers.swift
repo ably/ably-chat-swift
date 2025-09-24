@@ -149,7 +149,7 @@ class MockMethodCallRecorder: @unchecked Sendable {
         }
     }
 
-    func hasRecord(matching signature: String, arguments: [String: Any]) -> Bool {
+    func hasRecord(matching signature: String, arguments: [String: Any?]) -> Bool {
         mutex.withLock {
             records.contains { record in
                 guard record.signature == signature else {

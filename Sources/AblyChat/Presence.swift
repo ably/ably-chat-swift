@@ -1,6 +1,6 @@
 import Ably
 
-public typealias PresenceData = JSONValue
+public typealias PresenceData = JSONObject
 
 /**
  * This interface is used to interact with presence in a chat room: subscribing to presence events,

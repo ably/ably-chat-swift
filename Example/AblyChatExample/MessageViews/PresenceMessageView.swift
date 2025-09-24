@@ -22,7 +22,7 @@ struct PresenceMessageView: View {
     }
 
     func generatePresenceMessage() -> String {
-        let status = item.presence.member.data?.objectValue?["status"]?.stringValue
+        let status = item.presence.member.data?["status"]?.stringValue
         let clientPresenceChangeMessage = "\(item.presence.member.clientID) \(item.presence.type)"
         let presenceMessage = status != nil ? "\(clientPresenceChangeMessage) with status: \(status!)" : clientPresenceChangeMessage
         return presenceMessage
