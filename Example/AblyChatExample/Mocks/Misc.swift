@@ -15,12 +15,13 @@ final class MockMessagesPaginatedResult: PaginatedResult {
                 action: .create,
                 clientID: self.clientID,
                 text: MockStrings.randomPhrase(),
-                createdAt: Date(),
                 metadata: [:],
                 headers: [:],
-                version: "",
-                timestamp: Date(),
-                operation: nil
+                version: .init(
+                    serial: "",
+                    timestamp: Date()
+                ),
+                timestamp: Date()
             )
         }
     }

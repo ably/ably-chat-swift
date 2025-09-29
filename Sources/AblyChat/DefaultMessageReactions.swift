@@ -72,7 +72,7 @@ internal final class DefaultMessageReactions: MessageReactions {
             }
 
             var summaryJson: [String: JSONValue]?
-            if let summaryData = message.summary {
+            if let summaryData = message.annotations?.summary {
                 summaryJson = JSONValue(ablyCocoaData: summaryData).objectValue
             }
 

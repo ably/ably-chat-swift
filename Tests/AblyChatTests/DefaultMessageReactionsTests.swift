@@ -32,7 +32,7 @@ struct DefaultMessageReactionsTests {
             matching: "request(_:path:params:body:headers:)",
             arguments: [
                 "method": "POST",
-                "path": "/chat/v3/rooms/basketball/messages/\(message.serial)/reactions",
+                "path": "/chat/v4/rooms/basketball/messages/\(message.serial)/reactions",
                 "body": [
                     "name": "😆",
                     "type": "reaction:multiple.v1",
@@ -47,7 +47,7 @@ struct DefaultMessageReactionsTests {
             matching: "request(_:path:params:body:headers:)",
             arguments: [
                 "method": "DELETE",
-                "path": "/chat/v3/rooms/basketball/messages/\(message.serial)/reactions",
+                "path": "/chat/v4/rooms/basketball/messages/\(message.serial)/reactions",
                 "body": [:],
                 "params": [
                     "name": "😆",
@@ -122,20 +122,22 @@ struct DefaultMessageReactionsTests {
                 let message = ARTMessage()
                 message.serial = "001"
                 message.action = .messageSummary
-                message.summary = [
-                    "reaction:unique.v1": [
-                        "like": ["total": 2, "clientIds": ["userOne", "userTwo"]],
-                        "love": ["total": 1, "clientIds": ["userThree"]],
-                    ],
-                    "reaction:distinct.v1": [
-                        "like": ["total": 2, "clientIds": ["userOne", "userTwo"]],
-                        "love": ["total": 1, "clientIds": ["userOne"]],
-                    ],
-                    "reaction:multiple.v1": [
-                        "like": ["total": 5, "clientIds": ["userOne": 3, "userTwo": 2]],
-                        "love": ["total": 10, "clientIds": ["userOne": 10]],
-                    ],
-                ]
+                message.annotations = .init(
+                    summary: [
+                        "reaction:unique.v1": [
+                            "like": ["total": 2, "clientIds": ["userOne", "userTwo"]],
+                            "love": ["total": 1, "clientIds": ["userThree"]],
+                        ],
+                        "reaction:distinct.v1": [
+                            "like": ["total": 2, "clientIds": ["userOne", "userTwo"]],
+                            "love": ["total": 1, "clientIds": ["userOne"]],
+                        ],
+                        "reaction:multiple.v1": [
+                            "like": ["total": 5, "clientIds": ["userOne": 3, "userTwo": 2]],
+                            "love": ["total": 10, "clientIds": ["userOne": 10]],
+                        ],
+                    ]
+                )
                 return message
             }()
         )
@@ -353,7 +355,7 @@ struct DefaultMessageReactionsTests {
             matching: "request(_:path:params:body:headers:)",
             arguments: [
                 "method": "POST",
-                "path": "/chat/v3/rooms/basketball/messages/\(message.serial)/reactions",
+                "path": "/chat/v4/rooms/basketball/messages/\(message.serial)/reactions",
                 "body": [
                     "name": "😆",
                     "type": "reaction:multiple.v1",
@@ -393,7 +395,7 @@ struct DefaultMessageReactionsTests {
             matching: "request(_:path:params:body:headers:)",
             arguments: [
                 "method": "POST",
-                "path": "/chat/v3/rooms/basketball/messages/\(message.serial)/reactions",
+                "path": "/chat/v4/rooms/basketball/messages/\(message.serial)/reactions",
                 "body": [
                     "name": "😆",
                     "type": "reaction:distinct.v1",

@@ -9,15 +9,27 @@ struct DefaultMessagesTests {
     // @spec CHA-M3a
     // @spec CHA-M3b
     // @spec CHA-M3f
-    // @spec CHA-M8a
-    // @spec CHA-M8b
-    // @spec CHA-M9a
-    // @spec CHA-M9b
     @Test
-    func sendAndUpdateAndDeleteMessageInTheRoom() async throws {
+    func sendMessage() async throws {
         // Given
         let realtime = MockRealtime {
-            MockHTTPPaginatedResponse.successSendMessage
+            MockHTTPPaginatedResponse(
+                items: [
+                    [
+                        "serial": "0",
+                        "version": [
+                            "serial": "0",
+                            "timestamp": 1_631_840_030_000,
+                        ],
+                        "metadata": ["key1": "val1"],
+                        "headers": ["key2": "val2"],
+                        "timestamp": 1_631_840_000_000,
+                        "text": "hey",
+                    ],
+                ],
+                statusCode: 200,
+                headers: [:]
+            )
         }
         let chatAPI = ChatAPI(realtime: realtime)
         let channel = MockRealtimeChannel(initialState: .attached)
@@ -27,40 +39,112 @@ struct DefaultMessagesTests {
         let sentMessage = try await defaultMessages.send(params: .init(text: "hey", metadata: ["key1": "val1"], headers: ["key2": "val2"]))
 
         // Then
+        #expect(sentMessage.serial == "0")
+        #expect(sentMessage.action == .create)
         #expect(sentMessage.text == "hey")
+        #expect(sentMessage.version.serial == "0")
         #expect(sentMessage.metadata == ["key1": "val1"])
         #expect(sentMessage.headers == ["key2": "val2"])
         #expect(realtime.callRecorder.hasRecord(
             matching: "request(_:path:params:body:headers:)",
-            arguments: ["method": "POST", "path": "/chat/v3/rooms/basketball/messages", "body": ["text": "hey", "metadata": ["key1": "val1"], "headers": ["key2": "val2"]], "params": [:], "headers": [:]]
+            arguments: ["method": "POST", "path": "/chat/v4/rooms/basketball/messages", "body": ["text": "hey", "metadata": ["key1": "val1"], "headers": ["key2": "val2"]], "params": [:], "headers": [:]]
         )
         )
+    }
+
+    // @spec CHA-M8a
+    // @spec CHA-M8b
+    @Test
+    func updateMessage() async throws {
+        // Given
+        let text = "hey"
+        let realtime = MockRealtime {
+            MockHTTPPaginatedResponse(
+                items: [
+                    [
+                        "serial": "0",
+                        "version": [
+                            "serial": "1",
+                            "metadata": ["key": "val"],
+                            "description": "add exclamation",
+                            "timestamp": 1_631_840_030_000,
+                        ],
+                        "timestamp": 1_631_840_000_000,
+                        "text": "\(text)",
+                    ],
+                ],
+                statusCode: 200,
+                headers: [:]
+            )
+        }
+        let chatAPI = ChatAPI(realtime: realtime)
+        let channel = MockRealtimeChannel(initialState: .attached)
+        let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", clientID: "clientId", logger: TestLogger())
+
+        let sentMessage = try Message(jsonObject: ["serial": "0", "version": ["serial": "0"], "text": .string(text), "clientId": "0", "action": "message.create", "metadata": [:], "headers": [:]]) // arbitrary
 
         // When
         var newMessage = sentMessage
-        newMessage.text = "hey!" // see https://github.com/ably/ably-chat-swift/issues/333
-        let updatedMessage = try await defaultMessages.update(newMessage: newMessage, description: "add exclamation", metadata: ["key3": "val3"])
+        newMessage.text = text + "!" // see https://github.com/ably/ably-chat-swift/issues/333
+        let updatedMessage = try await defaultMessages.update(newMessage: newMessage, description: "add exclamation", metadata: ["key": "val"])
 
         // Then
+        #expect(updatedMessage.serial == "0")
+        #expect(updatedMessage.action == .update)
         #expect(updatedMessage.text == "hey!")
-        #expect(updatedMessage.operation?.metadata == ["key3": "val3"])
-        #expect(updatedMessage.operation?.description == "add exclamation")
+        #expect(updatedMessage.version.serial == "1")
+        #expect(updatedMessage.version.metadata == ["key": "val"])
+        #expect(updatedMessage.version.description == "add exclamation")
         #expect(realtime.callRecorder.hasRecord(
             matching: "request(_:path:params:body:headers:)",
-            arguments: ["method": "PUT", "path": "/chat/v3/rooms/basketball/messages/\(sentMessage.serial)", "body": ["message": ["text": "hey!", "metadata": ["key1": "val1"], "headers": ["key2": "val2"]], "description": "add exclamation", "metadata": ["key3": "val3"]], "params": [:], "headers": [:]]
+            arguments: ["method": "PUT", "path": "/chat/v4/rooms/basketball/messages/\(sentMessage.serial)", "body": ["message": ["text": "hey!", "metadata": [:], "headers": [:]], "description": "add exclamation", "metadata": ["key": "val"]], "params": [:], "headers": [:]]
         )
         )
+    }
+
+    // @spec CHA-M9a
+    // @spec CHA-M9b
+    @Test
+    func deleteMessage() async throws {
+        // Given
+        let text = "hey"
+        let realtime = MockRealtime {
+            MockHTTPPaginatedResponse(
+                items: [
+                    [
+                        "serial": "0",
+                        "action": "message.delete",
+                        "version": [
+                            "serial": "1",
+                            "timestamp": 1_631_840_030_000,
+                        ],
+                        "timestamp": 1_631_840_000_000,
+                        "text": "",
+                    ],
+                ],
+                statusCode: 200,
+                headers: [:]
+            )
+        }
+        let chatAPI = ChatAPI(realtime: realtime)
+        let channel = MockRealtimeChannel(initialState: .attached)
+        let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", clientID: "clientId", logger: TestLogger())
+
+        let sentMessage = try Message(jsonObject: ["serial": "0", "version": ["serial": "0"], "text": .string(text), "clientId": "0", "action": "message.create", "metadata": ["key": "val"], "headers": [:]]) // arbitrary
 
         // When
         let deletedMessage = try await defaultMessages.delete(message: sentMessage, params: .init())
 
         // Then
+        #expect(deletedMessage.serial == "0")
+        #expect(deletedMessage.version.serial == "1")
+        #expect(deletedMessage.action == .delete)
         #expect(deletedMessage.text.isEmpty)
         #expect(deletedMessage.headers.isEmpty)
         #expect(deletedMessage.metadata.isEmpty)
         #expect(realtime.callRecorder.hasRecord(
             matching: "request(_:path:params:body:headers:)",
-            arguments: ["method": "POST", "path": "/chat/v3/rooms/basketball/messages/\(sentMessage.serial)/delete", "body": [:], "params": [:], "headers": [:]]
+            arguments: ["method": "POST", "path": "/chat/v4/rooms/basketball/messages/\(sentMessage.serial)/delete", "body": [:], "params": [:], "headers": [:]]
         )
         )
     }
@@ -102,7 +186,7 @@ struct DefaultMessagesTests {
         // Then
         // TODO: avoids compiler crash (https://github.com/ably/ably-chat-swift/issues/233), revert once Xcode 16.3 released
         let doIt = {
-            let message = try Message(jsonObject: ["serial": "0", "version": "0", "text": "hey", "clientId": "0", "action": "message.update", "metadata": [:], "headers": [:]]) // arbitrary
+            let message = try Message(jsonObject: ["serial": "0", "version": ["serial": "0"], "text": "hey", "clientId": "0", "action": "message.update", "metadata": [:], "headers": [:]]) // arbitrary
             _ = try await defaultMessages.update(newMessage: message, description: "", metadata: [:])
         }
         await #expect {
@@ -126,7 +210,7 @@ struct DefaultMessagesTests {
         // Then
         // TODO: avoids compiler crash (https://github.com/ably/ably-chat-swift/issues/233), revert once Xcode 16.3 released
         let doIt = {
-            let message = try Message(jsonObject: ["serial": "0", "version": "0", "text": "hey", "clientId": "0", "action": "message.update", "metadata": [:], "headers": [:]]) // arbitrary
+            let message = try Message(jsonObject: ["serial": "0", "version": ["serial": "0"], "text": "hey", "clientId": "0", "action": "message.update", "metadata": [:], "headers": [:]]) // arbitrary
             _ = try await defaultMessages.delete(message: message, params: .init())
         }
         await #expect {
@@ -156,7 +240,7 @@ struct DefaultMessagesTests {
         // Then: subscription point is the current channelSerial of the realtime channel
         #expect(realtime.callRecorder.hasRecord(
             matching: "request(_:path:params:body:headers:)",
-            arguments: ["method": "GET", "path": "/chat/v3/rooms/basketball/messages", "body": [:], "params": ["direction": "backwards", "fromSerial": "\(channelSerial)"], "headers": [:]]
+            arguments: ["method": "GET", "path": "/chat/v4/rooms/basketball/messages", "body": [:], "params": ["direction": "backwards", "fromSerial": "\(channelSerial)"], "headers": [:]]
         )
         )
     }
@@ -184,7 +268,7 @@ struct DefaultMessagesTests {
         // Then: subscription point is the attachSerial of the realtime channel
         #expect(realtime.callRecorder.hasRecord(
             matching: "request(_:path:params:body:headers:)",
-            arguments: ["method": "GET", "path": "/chat/v3/rooms/basketball/messages", "body": [:], "params": ["direction": "backwards", "fromSerial": "\(attachSerial)"], "headers": [:]]
+            arguments: ["method": "GET", "path": "/chat/v4/rooms/basketball/messages", "body": [:], "params": ["direction": "backwards", "fromSerial": "\(attachSerial)"], "headers": [:]]
         )
         )
     }
@@ -211,7 +295,7 @@ struct DefaultMessagesTests {
 
         #expect(realtime.callRecorder.hasRecord(
             matching: "request(_:path:params:body:headers:)",
-            arguments: ["method": "GET", "path": "/chat/v3/rooms/basketball/messages", "body": [:], "params": ["direction": "backwards", "fromSerial": "\(channelSerial)"], "headers": [:]]
+            arguments: ["method": "GET", "path": "/chat/v4/rooms/basketball/messages", "body": [:], "params": ["direction": "backwards", "fromSerial": "\(channelSerial)"], "headers": [:]]
         )
         )
 
@@ -228,7 +312,7 @@ struct DefaultMessagesTests {
         // Then: subscription point is the attachSerial of the realtime channel
         #expect(realtime.callRecorder.hasRecord(
             matching: "request(_:path:params:body:headers:)",
-            arguments: ["method": "GET", "path": "/chat/v3/rooms/basketball/messages", "body": [:], "params": ["direction": "backwards", "fromSerial": "\(attachSerial)"], "headers": [:]]
+            arguments: ["method": "GET", "path": "/chat/v4/rooms/basketball/messages", "body": [:], "params": ["direction": "backwards", "fromSerial": "\(attachSerial)"], "headers": [:]]
         )
         )
     }
@@ -255,7 +339,7 @@ struct DefaultMessagesTests {
 
         #expect(realtime.callRecorder.hasRecord(
             matching: "request(_:path:params:body:headers:)",
-            arguments: ["method": "GET", "path": "/chat/v3/rooms/basketball/messages", "body": [:], "params": ["direction": "backwards", "fromSerial": "\(channelSerial)"], "headers": [:]]
+            arguments: ["method": "GET", "path": "/chat/v4/rooms/basketball/messages", "body": [:], "params": ["direction": "backwards", "fromSerial": "\(channelSerial)"], "headers": [:]]
         )
         )
 
@@ -269,7 +353,7 @@ struct DefaultMessagesTests {
         // Then: subscription point is the attachSerial of the realtime channel
         #expect(realtime.callRecorder.hasRecord(
             matching: "request(_:path:params:body:headers:)",
-            arguments: ["method": "GET", "path": "/chat/v3/rooms/basketball/messages", "body": [:], "params": ["direction": "backwards", "fromSerial": "\(attachSerial)"], "headers": [:]]
+            arguments: ["method": "GET", "path": "/chat/v4/rooms/basketball/messages", "body": [:], "params": ["direction": "backwards", "fromSerial": "\(attachSerial)"], "headers": [:]]
         )
         )
     }
@@ -424,7 +508,7 @@ struct DefaultMessagesTests {
             message.extras = [
                 "headers": ["numberKey": numberKey, "stringKey": stringKey],
             ] as any ARTJsonCompatible
-            message.version = "0"
+            message.version = .init(serial: "0")
             return message
         }
 
@@ -463,8 +547,9 @@ struct DefaultMessagesTests {
     // @spec CHA-M4k
     // @spec CHA-M4k1
     // @spec CHA-M4k2
-    // @spec CHA-M4k3
-    // @spec CHA-M4k4
+    // @spec CHA-M4k5
+    // @spec CHA-M4k6
+    // @spec CHA-M4k7
     @Test
     func malformedEventsWithIncompleteDataStillEmittedWithDefaultValues() async throws {
         // Given
@@ -489,15 +574,14 @@ struct DefaultMessagesTests {
                 message.extras = [
                     "headers": ["someKey2": "someValue2"], // arbitrary
                 ] as any ARTJsonCompatible
-                message.version = "1" // arbitrary
-                message.timestamp = Date(timeIntervalSinceReferenceDate: 0) // arbitrary
+                message.version = .init(serial: "1") // arbitrary
+                message.timestamp = Date(timeIntervalSince1970: 0) // arbitrary
                 return message
             }()
         )
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", clientID: "clientId", logger: TestLogger())
 
         // When
-        let ts = Date()
         var callbackCalls = 0
         _ = defaultMessages.subscribe { event in
             // Then
@@ -506,23 +590,20 @@ struct DefaultMessagesTests {
                 #expect(event.message.text == "hey")
                 #expect(event.message.clientID == "c1")
                 #expect(event.message.serial == "123")
-                #expect(event.message.version == "1")
+                #expect(event.message.version.serial == "1")
                 #expect(event.message.metadata == ["someKey1": "someValue1"])
                 #expect(event.message.headers == ["someKey2": "someValue2"])
-                #expect(event.message.timestamp == Date(timeIntervalSinceReferenceDate: 0))
-                #expect(event.message.createdAt == Date(timeIntervalSinceReferenceDate: 0))
+                #expect(event.message.timestamp == Date(timeIntervalSince1970: 0))
             } else {
                 #expect(event.type == .created)
                 #expect(event.message.text.isEmpty)
                 #expect(event.message.clientID.isEmpty)
                 #expect(event.message.serial.isEmpty)
-                #expect(event.message.version.isEmpty)
+                #expect(event.message.version.serial == event.message.serial)
                 #expect(event.message.metadata.isEmpty)
                 #expect(event.message.headers.isEmpty)
-                #expect(event.message.timestamp != nil)
-                #expect(event.message.createdAt != nil)
-                #expect(event.message.timestamp!.timeIntervalSince(ts) < 1.0)
-                #expect(event.message.createdAt!.timeIntervalSince(ts) < 1.0)
+                #expect(event.message.timestamp == Date(timeIntervalSince1970: 0))
+                #expect(event.message.version.timestamp == event.message.timestamp)
             }
             callbackCalls += 1
         }

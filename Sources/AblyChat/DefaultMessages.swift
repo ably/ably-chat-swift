@@ -63,18 +63,25 @@ internal final class DefaultMessages: Messages {
             }
 
             let headers = (try? extras.optionalObjectValueForKey("headers"))?.compactMapValues { try? HeadersValue(jsonValue: $0) } ?? [:] // CHA-M4k2
+            let version = message.version ?? .init()
+            let timestamp = message.timestamp ?? Date(timeIntervalSince1970: 0) // CHA-M4k5
+            let serial = message.serial ?? "" // CHA-M4k1
 
             let message = Message(
-                serial: message.serial ?? "", // CHA-M4k1
+                serial: serial,
                 action: action,
                 clientID: message.clientId ?? "", // CHA-M4k1
                 text: text,
-                createdAt: message.timestamp ?? Date(timeIntervalSince1970: 0), // CHA-M4k4
                 metadata: metadata,
                 headers: headers,
-                version: message.version ?? "", // CHA-M4k1
-                timestamp: message.timestamp ?? Date(), // CHA-M4k3,
-                operation: message.operation?.toChatOperation()
+                version: .init(
+                    serial: version.serial ?? serial, // CHA-M4k6
+                    timestamp: version.timestamp ?? timestamp, // CHA-M4k7
+                    clientID: version.clientId ?? "", // CHA-M4k1
+                    description: version.descriptionText,
+                    metadata: version.metadata?.mapValues { .string($0) } ?? [:] // CHA-M4k2
+                ),
+                timestamp: timestamp
             )
 
             let event = ChatMessageEvent(message: message)
@@ -179,15 +186,5 @@ internal final class DefaultMessages: Messages {
 
     internal enum MessagesError: Error {
         case noReferenceToSelf
-    }
-}
-
-private extension ARTMessageOperation {
-    func toChatOperation() -> MessageOperation {
-        MessageOperation(
-            clientID: clientId ?? "", // CHA-M4k1
-            description: descriptionText,
-            metadata: JSONValue(ablyCocoaData: metadata ?? [:]).objectValue // CHA-M4k2
-        )
     }
 }
