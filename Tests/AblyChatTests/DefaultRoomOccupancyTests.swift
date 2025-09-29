@@ -63,7 +63,7 @@ struct DefaultRoomOccupancyTests {
                         "presenceMembers": 2, // arbitrary
                     ],
                 ]
-                message.version = "0" // arbitrary
+                message.version = .init(serial: "0") // arbitrary
                 return message
             }()
         )

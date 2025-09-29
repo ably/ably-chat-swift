@@ -1,5 +1,6 @@
 @testable import AblyChat
 import AsyncAlgorithms
+import Foundation
 import Testing
 
 private final class MockPaginatedResult<Item: Equatable>: PaginatedResult {
@@ -26,7 +27,7 @@ private final class MockPaginatedResult<Item: Equatable>: PaginatedResult {
 
 struct MessageSubscriptionAsyncSequenceTests {
     let messages = ["First", "Second"].map { text in
-        Message(serial: "", action: .create, clientID: "", text: text, createdAt: .init(), metadata: [:], headers: [:], version: "", timestamp: nil)
+        Message(serial: "", action: .create, clientID: "", text: text, metadata: [:], headers: [:], version: .init(serial: "", timestamp: Date()), timestamp: Date())
     }
 
     @Test

@@ -175,3 +175,17 @@ extension [String: Any] {
         JSONValue(ablyCocoaData: self).toAblyCocoaData
     }
 }
+
+extension ARTMessageVersion {
+    convenience init(serial: String) {
+        self.init()
+        self.serial = serial
+    }
+}
+
+extension ARTMessageAnnotations {
+    convenience init(summary: [String: Any]) {
+        self.init()
+        self.summary = summary
+    }
+}

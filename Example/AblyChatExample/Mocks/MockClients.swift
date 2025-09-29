@@ -130,12 +130,13 @@ class MockMessages: Messages {
                     action: .create,
                     clientID: MockStrings.names.randomElement()!,
                     text: MockStrings.randomPhrase(),
-                    createdAt: Date(),
                     metadata: [:],
                     headers: [:],
-                    version: "",
-                    timestamp: Date(),
-                    operation: nil
+                    version: .init(
+                        serial: "",
+                        timestamp: Date()
+                    ),
+                    timestamp: Date()
                 )
                 if byChance(30) { /* 30% of the messages will get the reaction */
                     self.mockReactions.messageSerials.append(message.serial)
@@ -161,12 +162,13 @@ class MockMessages: Messages {
             action: .create,
             clientID: clientID,
             text: params.text,
-            createdAt: Date(),
             metadata: params.metadata ?? [:],
             headers: params.headers ?? [:],
-            version: "",
-            timestamp: Date(),
-            operation: nil
+            version: .init(
+                serial: "",
+                timestamp: Date()
+            ),
+            timestamp: Date()
         )
         mockSubscriptions.emit(ChatMessageEvent(message: message))
         return message
@@ -178,12 +180,10 @@ class MockMessages: Messages {
             action: .update,
             clientID: clientID,
             text: newMessage.text,
-            createdAt: Date(),
             metadata: newMessage.metadata,
             headers: newMessage.headers,
-            version: "\(Date().timeIntervalSince1970)",
-            timestamp: Date(),
-            operation: .init(clientID: clientID)
+            version: .init(serial: "\(Date().timeIntervalSince1970)", timestamp: Date(), clientID: clientID),
+            timestamp: Date()
         )
         mockSubscriptions.emit(ChatMessageEvent(message: message))
         return message
@@ -195,12 +195,14 @@ class MockMessages: Messages {
             action: .delete,
             clientID: clientID,
             text: message.text,
-            createdAt: Date(),
             metadata: message.metadata,
             headers: message.headers,
-            version: "\(Date().timeIntervalSince1970)",
-            timestamp: Date(),
-            operation: .init(clientID: clientID)
+            version: .init(
+                serial: "\(Date().timeIntervalSince1970)",
+                timestamp: Date(),
+                clientID: clientID
+            ),
+            timestamp: Date()
         )
         mockSubscriptions.emit(ChatMessageEvent(message: message))
         return message

@@ -59,13 +59,15 @@ extension MockHTTPPaginatedResponse {
         items: [
             [
                 "serial": "3446456",
-                "version": "3446456",
+                "version": [
+                    "serial": "3446456",
+                ],
                 "timestamp": 1_631_840_000_000,
                 "createdAt": 1_631_840_000_000,
                 "text": "hello",
             ],
         ],
-        statusCode: 500,
+        statusCode: 200,
         headers: [:]
     )
 
@@ -97,11 +99,12 @@ extension MockHTTPPaginatedResponse {
                 "clientId": "random",
                 "serial": "3446456",
                 "action": "message.create",
-                "createdAt": 1_730_943_049_269,
                 "text": "hello",
                 "metadata": [:],
                 "headers": [:],
-                "version": "3446456",
+                "version": [
+                    "serial": "3446456",
+                ],
                 "timestamp": 1_730_943_049_269,
             ],
             [
@@ -111,7 +114,10 @@ extension MockHTTPPaginatedResponse {
                 "text": "hello response",
                 "metadata": [:],
                 "headers": [:],
-                "version": "3446457",
+                "version": [
+                    "serial": "3446457",
+                ],
+                "timestamp": 1_730_943_051_269,
             ],
         ],
         statusCode: 200,
@@ -129,11 +135,13 @@ extension MockHTTPPaginatedResponse {
                 "clientId": "random",
                 "serial": "3446458",
                 "action": "message.create",
-                "createdAt": 1_730_943_049_269,
+                "timestamp": 1_730_943_053_269,
                 "text": "next hello",
                 "metadata": [:],
                 "headers": [:],
-                "version": "3446458",
+                "version": [
+                    "serial": "3446458",
+                ],
             ],
             [
                 "clientId": "random",
@@ -142,7 +150,10 @@ extension MockHTTPPaginatedResponse {
                 "text": "next hello response",
                 "metadata": [:],
                 "headers": [:],
-                "version": "3446459",
+                "version": [
+                    "serial": "3446459",
+                ],
+                "timestamp": 1_730_943_055_269,
             ],
         ],
         statusCode: 200,

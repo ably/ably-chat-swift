@@ -9,7 +9,7 @@ internal final class ChatAPI: Sendable {
     }
 
     private let realtime: any InternalRealtimeClientProtocol
-    private let apiVersionV3 = "/chat/v3"
+    private let apiVersionV4 = "/chat/v4"
 
     public init(realtime: any InternalRealtimeClientProtocol) {
         self.realtime = realtime
@@ -17,28 +17,29 @@ internal final class ChatAPI: Sendable {
 
     // (CHA-M6) Messages should be queryable from a paginated REST API.
     internal func getMessages(roomName: String, params: QueryOptions) async throws(InternalError) -> any PaginatedResult<Message> {
-        let endpoint = "\(apiVersionV3)/rooms/\(roomName)/messages"
+        let endpoint = "\(apiVersionV4)/rooms/\(roomName)/messages"
         let result: Result<PaginatedResultWrapper<Message>, InternalError> = await makePaginatedRequest(endpoint, params: params.asQueryItems())
         return try result.get()
     }
 
     internal struct SendMessageResponse: JSONObjectDecodable {
         internal let serial: String
-        internal let createdAt: Int64
+        internal let timestamp: Int64
 
         internal init(jsonObject: [String: JSONValue]) throws(InternalError) {
             serial = try jsonObject.stringValueForKey("serial")
-            createdAt = try Int64(jsonObject.numberValueForKey("createdAt"))
+            timestamp = try Int64(jsonObject.numberValueForKey("timestamp"))
         }
     }
 
     internal struct MessageOperationResponse: JSONObjectDecodable {
-        internal let version: String
+        internal let version: MessageVersion
         internal let timestamp: Int64
 
         internal init(jsonObject: [String: JSONValue]) throws(InternalError) {
-            version = try jsonObject.stringValueForKey("version")
             timestamp = try Int64(jsonObject.numberValueForKey("timestamp"))
+            let timestampInSeconds = Date(timeIntervalSince1970: TimeInterval(Double(timestamp) / 1000))
+            version = try MessageVersion(jsonObject: jsonObject.objectValueForKey("version"), defaultTimestamp: timestampInSeconds)
         }
     }
 
@@ -67,11 +68,11 @@ internal final class ChatAPI: Sendable {
     // (CHA-M3) Messages are sent to Ably via the Chat REST API, using the send method.
     // (CHA-M3a) When a message is sent successfully, the caller shall receive a struct representing the Message in response (as if it were received via Realtime event).
     internal func sendMessage(roomName: String, params: SendMessageParams) async throws(InternalError) -> Message {
-        guard let clientId = realtime.clientId else {
+        guard let clientID = realtime.clientId else {
             throw ARTErrorInfo(chatError: .clientIdRequired).toInternalError()
         }
 
-        let endpoint = "\(apiVersionV3)/rooms/\(roomName)/messages"
+        let endpoint = "\(apiVersionV4)/rooms/\(roomName)/messages"
         var body: [String: JSONValue] = ["text": .string(params.text)]
 
         // (CHA-M3b) A message may be sent without metadata or headers. When these are not specified by the user, they must be omitted from the REST payload.
@@ -85,19 +86,21 @@ internal final class ChatAPI: Sendable {
 
         let response: SendMessageResponse = try await makeRequest(endpoint, method: "POST", body: .jsonObject(body))
 
-        // response.createdAt is in milliseconds, convert it to seconds
-        let createdAtInSeconds = TimeInterval(Double(response.createdAt) / 1000)
-        let createdAtDate = Date(timeIntervalSince1970: createdAtInSeconds)
+        // response.timestamp is in milliseconds, convert it to seconds
+        let timestampInSeconds = Date(timeIntervalSince1970: TimeInterval(Double(response.timestamp) / 1000))
         let message = Message(
             serial: response.serial,
             action: .create,
-            clientID: clientId,
+            clientID: clientID,
             text: params.text,
-            createdAt: createdAtDate,
             metadata: params.metadata ?? [:],
             headers: params.headers ?? [:],
-            version: response.serial,
-            timestamp: createdAtDate
+            version: .init(
+                serial: response.serial,
+                timestamp: timestampInSeconds,
+                clientID: clientID
+            ),
+            timestamp: timestampInSeconds
         )
         return message
     }
@@ -105,11 +108,7 @@ internal final class ChatAPI: Sendable {
     // (CHA-M8) A client must be able to update a message in a room.
     // (CHA-M8a) A client may update a message via the Chat REST API by calling the update method.
     internal func updateMessage(roomName: String, with modifiedMessage: Message, description: String?, metadata: OperationMetadata?) async throws(InternalError) -> Message {
-        guard let clientID = realtime.clientId else {
-            throw ARTErrorInfo(chatError: .clientIdRequired).toInternalError()
-        }
-
-        let endpoint = "\(apiVersionV3)/rooms/\(roomName)/messages/\(modifiedMessage.serial)"
+        let endpoint = "\(apiVersionV4)/rooms/\(roomName)/messages/\(modifiedMessage.serial)"
         var body: [String: JSONValue] = [:]
         let messageObject: [String: JSONValue] = [
             "text": .string(modifiedMessage.text),
@@ -131,25 +130,16 @@ internal final class ChatAPI: Sendable {
         // CHA-M8c is not actually respected here, see https://github.com/ably/ably-chat-swift/issues/333
         let response: UpdateMessageResponse = try await makeRequest(endpoint, method: "PUT", body: .jsonObject(body))
 
-        // response.timestamp is in milliseconds, convert it to seconds
-        let timestampInSeconds = TimeInterval(Double(response.timestamp) / 1000)
-
         // (CHA-M8b) When a message is updated successfully via the REST API, the caller shall receive a struct representing the Message in response, as if it were received via Realtime event.
         let message = Message(
             serial: modifiedMessage.serial,
             action: .update,
             clientID: modifiedMessage.clientID,
             text: modifiedMessage.text,
-            createdAt: modifiedMessage.createdAt,
             metadata: modifiedMessage.metadata,
             headers: modifiedMessage.headers,
             version: response.version,
-            timestamp: Date(timeIntervalSince1970: timestampInSeconds),
-            operation: .init(
-                clientID: clientID,
-                description: description,
-                metadata: metadata ?? [:]
-            )
+            timestamp: modifiedMessage.timestamp
         )
         return message
     }
@@ -157,7 +147,7 @@ internal final class ChatAPI: Sendable {
     // (CHA-M9) A client must be able to delete a message in a room.
     // (CHA-M9a) A client may delete a message via the Chat REST API by calling the delete method.
     internal func deleteMessage(roomName: String, message: Message, params: DeleteMessageParams) async throws(InternalError) -> Message {
-        let endpoint = "\(apiVersionV3)/rooms/\(roomName)/messages/\(message.serial)/delete"
+        let endpoint = "\(apiVersionV4)/rooms/\(roomName)/messages/\(message.serial)/delete"
         var body: [String: JSONValue] = [:]
 
         if let description = params.description {
@@ -179,22 +169,16 @@ internal final class ChatAPI: Sendable {
             action: .delete,
             clientID: message.clientID,
             text: "", // CHA-M9b (When a message is deleted successfully via the REST API, the caller shall receive a struct representing the Message in response, as if it were received via Realtime event.) Currently realtime sends an empty text for deleted message, so set it to empty text here as well.
-            createdAt: message.createdAt,
             metadata: [:], // CHA-M9b
             headers: [:], // CHA-M9b
             version: response.version,
-            timestamp: Date(timeIntervalSince1970: timestampInSeconds),
-            operation: .init(
-                clientID: message.clientID,
-                description: params.description,
-                metadata: params.metadata ?? [:]
-            )
+            timestamp: Date(timeIntervalSince1970: timestampInSeconds)
         )
         return message
     }
 
     internal func getOccupancy(roomName: String) async throws(InternalError) -> OccupancyData {
-        let endpoint = "\(apiVersionV3)/rooms/\(roomName)/occupancy"
+        let endpoint = "\(apiVersionV4)/rooms/\(roomName)/occupancy"
         return try await makeRequest(endpoint, method: "GET")
     }
 
@@ -205,7 +189,7 @@ internal final class ChatAPI: Sendable {
             throw ChatError.messageReactionInvalidMessageSerial.toInternalError()
         }
 
-        let endpoint = "\(apiVersionV3)/rooms/\(roomName)/messages/\(messageSerial)/reactions"
+        let endpoint = "\(apiVersionV4)/rooms/\(roomName)/messages/\(messageSerial)/reactions"
 
         let ablyCocoaBody: [String: Any] = [
             "type": params.type.rawValue,
@@ -223,7 +207,7 @@ internal final class ChatAPI: Sendable {
             throw ChatError.messageReactionInvalidMessageSerial.toInternalError()
         }
 
-        let endpoint = "\(apiVersionV3)/rooms/\(roomName)/messages/\(messageSerial)/reactions"
+        let endpoint = "\(apiVersionV4)/rooms/\(roomName)/messages/\(messageSerial)/reactions"
 
         var httpParams: [String: String] = [
             "type": params.type.rawValue,
