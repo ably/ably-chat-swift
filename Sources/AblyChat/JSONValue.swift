@@ -1,6 +1,9 @@
 import Ably
 import Foundation
 
+/// A JSON object (where "object" has the meaning defined by the [JSON specification](https://www.json.org)).
+public typealias JSONObject = [String: JSONValue]
+
 /// A JSON value (where "value" has the meaning defined by the [JSON specification](https://www.json.org)).
 ///
 /// `JSONValue` provides a type-safe API for working with JSON values. It implements Swift’s `ExpressibleBy*Literal` protocols. This allows you to write type-safe JSON values using familiar syntax. For example:
@@ -26,7 +29,7 @@ import Foundation
 ///
 /// > Note: To write a `JSONValue` that corresponds to the `null` JSON value, you must explicitly write `.null`. `JSONValue` deliberately does not implement the `ExpressibleByNilLiteral` protocol in order to avoid confusion between a value of type `JSONValue?` and a `JSONValue` with case `.null`.
 public indirect enum JSONValue: Sendable, Equatable {
-    case object([String: JSONValue])
+    case object(JSONObject)
     case array([JSONValue])
     case string(String)
     case number(Double)
@@ -36,7 +39,7 @@ public indirect enum JSONValue: Sendable, Equatable {
     // MARK: - Convenience getters for associated values
 
     /// If this `JSONValue` has case `object`, this returns the associated value. Else, it returns `nil`.
-    public var objectValue: [String: JSONValue]? {
+    public var objectValue: JSONObject? {
         if case let .object(objectValue) = self {
             objectValue
         } else {
@@ -198,7 +201,7 @@ internal extension JSONValue {
     }
 }
 
-internal extension [String: JSONValue] {
+internal extension JSONObject {
     /// Creates an ably-cocoa deserialized JSON object from a dictionary that has string keys and `JSONValue` values.
     ///
     /// Specifically, the value of this property can be used as:
@@ -208,6 +211,11 @@ internal extension [String: JSONValue] {
     /// - the `data` argument that’s passed to `ARTRealtime`’s `publish(…)` method
     var toAblyCocoaDataDictionary: [String: Any] {
         mapValues(\.toAblyCocoaData)
+    }
+
+    /// Creates an ably-cocoa data object from a dictionary that has string keys and `JSONValue` values.
+    var toAblyCocoaData: Any {
+        toAblyCocoaDataDictionary
     }
 
     /// Creates an ably-cocoa `ARTJsonCompatible` object from a dictionary that has string keys and `JSONValue` values.

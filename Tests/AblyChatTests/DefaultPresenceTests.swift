@@ -27,7 +27,33 @@ struct DefaultPresenceTests {
         // Then
         #expect(channel.presence.callRecorder.hasRecord(
             matching: "enterClient(_:data:)",
-            arguments: ["name": "client1", "data": JSONValue.object(["status": "Online"])]
+            arguments: ["name": "client1", "data": ["status": JSONValue.string("Online")]]
+        )
+        )
+    }
+
+    // @spec CHA-PR3a
+    @Test
+    func usersMayEnterPresenceWithoutData() async throws {
+        // Given
+        let channel = await MockRealtimeChannel(name: "basketball::$chat::$chatMessages")
+        let logger = TestLogger()
+        let defaultPresence = await DefaultPresence(
+            channel: channel,
+            roomLifecycleManager: MockRoomLifecycleManager(),
+            roomName: "basketball",
+            clientID: "client1",
+            logger: logger,
+            options: .init()
+        )
+
+        // When
+        try await defaultPresence.enter()
+
+        // Then
+        #expect(channel.presence.callRecorder.hasRecord(
+            matching: "enterClient(_:data:)",
+            arguments: ["data": nil, "name": "client1"]
         )
         )
     }
@@ -150,7 +176,7 @@ struct DefaultPresenceTests {
         // Then
         #expect(channel.presence.callRecorder.hasRecord(
             matching: "update(_:)",
-            arguments: ["data": JSONValue.object(["status": "Online"])]
+            arguments: ["data": ["status": JSONValue.string("Online")]]
         )
         )
     }
@@ -273,7 +299,7 @@ struct DefaultPresenceTests {
         // Then
         #expect(channel.presence.callRecorder.hasRecord(
             matching: "leave(_:)",
-            arguments: ["data": JSONValue.object(["status": "Online"])]
+            arguments: ["data": ["status": JSONValue.string("Online")]]
         )
         )
     }

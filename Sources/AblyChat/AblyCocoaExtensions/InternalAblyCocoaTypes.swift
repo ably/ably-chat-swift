@@ -76,13 +76,13 @@ internal protocol InternalRealtimeChannelProtocol: AnyObject, Sendable {
 internal protocol InternalRealtimePresenceProtocol: AnyObject, Sendable {
     func get() async throws(InternalError) -> [PresenceMessage]
     func get(_ query: ARTRealtimePresenceQuery) async throws(InternalError) -> [PresenceMessage]
-    func leave(_ data: JSONValue?) async throws(InternalError)
-    func enterClient(_ clientID: String, data: JSONValue?) async throws(InternalError)
-    func update(_ data: JSONValue?) async throws(InternalError)
+    func leave(_ data: JSONObject?) async throws(InternalError)
+    func enterClient(_ clientID: String, data: JSONObject?) async throws(InternalError)
+    func update(_ data: JSONObject?) async throws(InternalError)
     func subscribe(_ callback: @escaping @MainActor (ARTPresenceMessage) -> Void) -> ARTEventListener?
     func subscribe(_ action: ARTPresenceAction, callback: @escaping @MainActor (ARTPresenceMessage) -> Void) -> ARTEventListener?
     func unsubscribe(_ listener: ARTEventListener)
-    func leaveClient(_ clientId: String, data: JSONValue?) async throws(InternalError)
+    func leaveClient(_ clientId: String, data: JSONObject?) async throws(InternalError)
 }
 
 /// Expresses the requirements of the object returned by ``InternalRealtimeChannelProtocol/annotations``.
@@ -336,7 +336,7 @@ internal final class InternalRealtimeClientAdapter: InternalRealtimeClientProtoc
             }
         }
 
-        internal func leave(_ data: JSONValue?) async throws(InternalError) {
+        internal func leave(_ data: JSONObject?) async throws(InternalError) {
             do {
                 try await withCheckedContinuation { (continuation: CheckedContinuation<Result<Void, ARTErrorInfo>, _>) in
                     underlying.leave(data?.toAblyCocoaData) { error in
@@ -352,7 +352,7 @@ internal final class InternalRealtimeClientAdapter: InternalRealtimeClientProtoc
             }
         }
 
-        internal func enterClient(_ clientID: String, data: JSONValue?) async throws(InternalError) {
+        internal func enterClient(_ clientID: String, data: JSONObject?) async throws(InternalError) {
             do {
                 try await withCheckedContinuation { (continuation: CheckedContinuation<Result<Void, ARTErrorInfo>, _>) in
                     underlying.enterClient(clientID, data: data?.toAblyCocoaData) { error in
@@ -368,7 +368,7 @@ internal final class InternalRealtimeClientAdapter: InternalRealtimeClientProtoc
             }
         }
 
-        internal func update(_ data: JSONValue?) async throws(InternalError) {
+        internal func update(_ data: JSONObject?) async throws(InternalError) {
             do {
                 try await withCheckedContinuation { (continuation: CheckedContinuation<Result<Void, ARTErrorInfo>, _>) in
                     underlying.update(data?.toAblyCocoaData) { error in
@@ -396,7 +396,7 @@ internal final class InternalRealtimeClientAdapter: InternalRealtimeClientProtoc
             underlying.unsubscribe(listener)
         }
 
-        internal func leaveClient(_ clientID: String, data: JSONValue?) async throws(InternalError) {
+        internal func leaveClient(_ clientID: String, data: JSONObject?) async throws(InternalError) {
             do {
                 try await withCheckedContinuation { (continuation: CheckedContinuation<Result<Void, ARTErrorInfo>, _>) in
                     underlying.leaveClient(clientID, data: data?.toAblyCocoaData) { error in
@@ -463,7 +463,7 @@ internal struct PresenceMessage {
     internal var clientId: String?
     internal var timestamp: Date?
     internal var action: ARTPresenceAction
-    internal var data: JSONValue?
+    internal var data: JSONObject?
     internal var extras: [String: JSONValue]?
 }
 
@@ -473,7 +473,7 @@ internal extension PresenceMessage {
         timestamp = ablyCocoaPresenceMessage.timestamp
         action = ablyCocoaPresenceMessage.action
         if let ablyCocoaData = ablyCocoaPresenceMessage.data {
-            data = .init(ablyCocoaData: ablyCocoaData)
+            data = JSONValue(ablyCocoaData: ablyCocoaData).objectValue
         }
         if let ablyCocoaExtras = ablyCocoaPresenceMessage.extras {
             extras = JSONValue.objectFromAblyCocoaExtras(ablyCocoaExtras)
