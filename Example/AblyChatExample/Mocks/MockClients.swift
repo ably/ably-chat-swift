@@ -230,7 +230,7 @@ class MockMessageReactions: MessageReactions {
                     }
                     dict[newItem.name] = oldItem
                 } else {
-                    dict[newItem.name] = MessageReactionSummary.ClientIdList(total: 1, clientIds: [newItem.clientID])
+                    dict[newItem.name] = MessageReactionSummary.ClientIdList(total: 1, clientIds: [newItem.clientID], clipped: false)
                 }
             },
             multiple: [:]

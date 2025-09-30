@@ -163,12 +163,18 @@ public struct MessageReactionSummary: Sendable, Equatable {
         /**
          * Total amount of reactions of a given type.
          */
-        public var total: UInt
+        public var total: Int
 
         /**
          * List of clients who left given reaction type.
          */
         public var clientIds: [String]
+
+        /**
+         * Whether the list of clientIds has been clipped due to exceeding the maximum number of
+         * clients.
+         */
+        public var clipped: Bool // TM7c1c
     }
 
     /**
@@ -178,12 +184,29 @@ public struct MessageReactionSummary: Sendable, Equatable {
         /**
          * Total amount of reactions of a given type.
          */
-        public var total: UInt
+        public var total: Int
 
         /**
          * Map of clients who left given reaction type number of times.
          */
-        public var clientIds: [String: UInt]
+        public var clientIds: [String: Int]
+
+        /**
+         * The sum of the counts from all unidentified clients who have published an annotation with this
+         * name, and so who are not included in the clientIds list
+         */
+        public var totalUnidentified: Int // TM7d1d
+
+        /**
+         * Whether the list of clientIds has been clipped due to exceeding the maximum number of
+         * clients.
+         */
+        public var clipped: Bool // TM7d1c
+
+        /**
+         * The total number of distinct clientIds in the map (equal to length of map if clipped is false).
+         */
+        public var totalClientIds: Int // TM7d1e
     }
 
     /**

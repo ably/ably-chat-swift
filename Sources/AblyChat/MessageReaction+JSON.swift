@@ -70,11 +70,13 @@ extension MessageReactionSummary.ClientIdList: JSONObjectDecodable {
     internal enum JSONKey: String {
         case total
         case clientIds
+        case clipped
     }
 
     internal init(jsonObject: [String: JSONValue]) throws(InternalError) {
-        total = try UInt(jsonObject.numberValueForKey(JSONKey.total.rawValue))
+        total = try Int(jsonObject.numberValueForKey(JSONKey.total.rawValue))
         clientIds = try jsonObject.arrayValueForKey(JSONKey.clientIds.rawValue).compactMap(\.stringValue)
+        clipped = try jsonObject.optionalBoolValueForKey(JSONKey.clipped.rawValue) ?? false
     }
 }
 
@@ -82,10 +84,16 @@ extension MessageReactionSummary.ClientIdCounts: JSONObjectDecodable {
     internal enum JSONKey: String {
         case total
         case clientIds
+        case totalUnidentified
+        case clipped
+        case totalClientIds
     }
 
     internal init(jsonObject: [String: JSONValue]) throws(InternalError) {
-        total = try UInt(jsonObject.numberValueForKey(JSONKey.total.rawValue))
-        clientIds = try jsonObject.objectValueForKey(JSONKey.clientIds.rawValue).mapValues { UInt($0.numberValue ?? 0) }
+        total = try Int(jsonObject.numberValueForKey(JSONKey.total.rawValue))
+        clientIds = try jsonObject.objectValueForKey(JSONKey.clientIds.rawValue).mapValues { Int($0.numberValue ?? 0) }
+        totalUnidentified = try jsonObject.optionalNumberValueForKey(JSONKey.totalUnidentified.rawValue).map(Int.init) ?? 0
+        clipped = try jsonObject.optionalBoolValueForKey(JSONKey.clipped.rawValue) ?? false
+        totalClientIds = try jsonObject.optionalNumberValueForKey(JSONKey.totalClientIds.rawValue).map(Int.init) ?? total
     }
 }
