@@ -1,5 +1,19 @@
 # Change Log
 
+## [0.8.0](https://github.com/ably/ably-chat-swift/tree/0.8.0)
+
+## What's Changed
+
+- Adds new getting started link by @franrob-projects in https://github.com/ably/ably-chat-swift/pull/352
+- Add support for clipped summaries and unidentified totals by @ttypic in https://github.com/ably/ably-chat-swift/pull/355
+
+Breaking Changes:
+
+- presence: make data a json object by @AndyTWF in https://github.com/ably/ably-chat-swift/pull/354
+- Message payload v4 by @maratal in https://github.com/ably/ably-chat-swift/pull/350
+
+**Full Changelog**: https://github.com/ably/ably-chat-swift/compare/0.7.0...0.8.0
+
 ## [0.7.0](https://github.com/ably/ably-chat-swift/tree/0.7.0)
 
 ## What's Changed
