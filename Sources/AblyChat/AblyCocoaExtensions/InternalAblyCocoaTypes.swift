@@ -132,8 +132,8 @@ private final class UnsafeSendingBox<T>: @unchecked Sendable {
 
 internal final class InternalRealtimeClientAdapter: InternalRealtimeClientProtocol {
     private let underlying: any RealtimeClientProtocol
-    internal let channels: Channels
-    internal let connection: Connection
+    internal let channels: InternalRealtimeChannelsAdapter
+    internal let connection: InternalConnectionAdapter
 
     internal init(underlying: any RealtimeClientProtocol) {
         self.underlying = underlying
@@ -167,294 +167,294 @@ internal final class InternalRealtimeClientAdapter: InternalRealtimeClientProtoc
             throw error.toInternalError()
         }
     }
+}
 
-    internal final class Channels: InternalRealtimeChannelsProtocol {
-        private let underlying: any RealtimeChannelsProtocol
+internal final class InternalConnectionAdapter: InternalConnectionProtocol {
+    private let underlying: any CoreConnectionProtocol
 
-        internal init(underlying: any RealtimeChannelsProtocol) {
-            self.underlying = underlying
-        }
+    internal init(underlying: any CoreConnectionProtocol) {
+        self.underlying = underlying
+    }
 
-        internal func get(_ name: String, options: ARTRealtimeChannelOptions) -> some InternalRealtimeChannelProtocol {
-            let underlyingChannel = underlying.get(name, options: options)
-            return InternalRealtimeClientAdapter.Channel(underlying: underlyingChannel)
-        }
+    internal var state: ARTRealtimeConnectionState {
+        underlying.state
+    }
 
-        internal func release(_ name: String) {
-            underlying.release(name)
+    internal var errorReason: ARTErrorInfo? {
+        underlying.errorReason
+    }
+
+    internal func on(_ cb: @escaping @MainActor (ARTConnectionStateChange) -> Void) -> ARTEventListener {
+        underlying.on(toAblyCocoaCallback(cb))
+    }
+
+    internal func off(_ listener: ARTEventListener) {
+        underlying.off(listener)
+    }
+}
+
+internal final class InternalRealtimeAnnotationsAdapter: InternalRealtimeAnnotationsProtocol {
+    private let underlying: any RealtimeAnnotationsProtocol
+
+    internal init(underlying: any RealtimeAnnotationsProtocol) {
+        self.underlying = underlying
+    }
+
+    internal func subscribe(_ callback: @escaping @MainActor @Sendable (ARTAnnotation) -> Void) -> ARTEventListener? {
+        underlying.subscribe(toAblyCocoaCallback(callback))
+    }
+
+    internal func subscribe(_ type: String, callback: @escaping @MainActor @Sendable (ARTAnnotation) -> Void) -> ARTEventListener? {
+        underlying.subscribe(type, callback: toAblyCocoaCallback(callback))
+    }
+
+    internal func unsubscribe(_ listener: ARTEventListener) {
+        underlying.unsubscribe(listener)
+    }
+}
+
+internal final class InternalRealtimePresenceAdapter: InternalRealtimePresenceProtocol {
+    private let underlying: any RealtimePresenceProtocol
+
+    internal init(underlying: any RealtimePresenceProtocol) {
+        self.underlying = underlying
+    }
+
+    internal func get() async throws(InternalError) -> [PresenceMessage] {
+        do {
+            return try await withCheckedContinuation { (continuation: CheckedContinuation<Result<[PresenceMessage], ARTErrorInfo>, _>) in
+                underlying.get { members, error in
+                    if let error {
+                        continuation.resume(returning: .failure(error))
+                    } else if let members {
+                        continuation.resume(returning: .success(members.map { .init(ablyCocoaPresenceMessage: $0) }))
+                    } else {
+                        preconditionFailure("There is no error, so expected members")
+                    }
+                }
+            }.get()
+        } catch {
+            throw error.toInternalError()
         }
     }
 
-    internal final class Channel: InternalRealtimeChannelProtocol {
-        internal let underlying: any RealtimeChannelProtocol
-        internal let presence: InternalRealtimeClientAdapter.Presence
-        internal let annotations: InternalRealtimeClientAdapter.Annotations
-
-        internal init(underlying: any RealtimeChannelProtocol) {
-            self.underlying = underlying
-            presence = .init(underlying: underlying.presence)
-            annotations = .init(underlying: underlying.annotations)
-        }
-
-        internal var name: String {
-            underlying.name
-        }
-
-        internal var state: ARTRealtimeChannelState {
-            underlying.state
-        }
-
-        internal var errorReason: ARTErrorInfo? {
-            underlying.errorReason
-        }
-
-        internal var properties: ARTChannelProperties {
-            underlying.properties
-        }
-
-        internal func attach() async throws(InternalError) {
-            do {
-                try await withCheckedContinuation { (continuation: CheckedContinuation<Result<Void, ARTErrorInfo>, _>) in
-                    underlying.attach { error in
-                        if let error {
-                            continuation.resume(returning: .failure(error))
-                        } else {
-                            continuation.resume(returning: .success(()))
-                        }
+    internal func get(_ query: ARTRealtimePresenceQuery) async throws(InternalError) -> [PresenceMessage] {
+        do {
+            return try await withCheckedContinuation { (continuation: CheckedContinuation<Result<[PresenceMessage], ARTErrorInfo>, _>) in
+                underlying.get(query) { members, error in
+                    if let error {
+                        continuation.resume(returning: .failure(error))
+                    } else if let members {
+                        continuation.resume(returning: .success(members.map { .init(ablyCocoaPresenceMessage: $0) }))
+                    } else {
+                        preconditionFailure("There is no error, so expected members")
                     }
-                }.get()
-            } catch {
-                throw error.toInternalError()
-            }
-        }
-
-        internal func detach() async throws(InternalError) {
-            do {
-                try await withCheckedContinuation { (continuation: CheckedContinuation<Result<Void, ARTErrorInfo>, _>) in
-                    underlying.detach { error in
-                        if let error {
-                            continuation.resume(returning: .failure(error))
-                        } else {
-                            continuation.resume(returning: .success(()))
-                        }
-                    }
-                }.get()
-            } catch {
-                throw error.toInternalError()
-            }
-        }
-
-        internal func publish(_ name: String?, data: JSONValue?, extras: [String: JSONValue]?) async throws(InternalError) {
-            do {
-                try await withCheckedContinuation { (continuation: CheckedContinuation<Result<Void, ARTErrorInfo>, _>) in
-                    underlying.publish(name, data: data?.toAblyCocoaData, extras: extras?.toARTJsonCompatible) { error in
-                        if let error {
-                            continuation.resume(returning: .failure(error))
-                        } else {
-                            continuation.resume(returning: .success(()))
-                        }
-                    }
-                }.get()
-            } catch {
-                throw error.toInternalError()
-            }
-        }
-
-        internal func on(_ cb: @escaping @MainActor (ARTChannelStateChange) -> Void) -> ARTEventListener {
-            underlying.on(toAblyCocoaCallback(cb))
-        }
-
-        internal func on(_ event: ARTChannelEvent, callback cb: @escaping @MainActor (ARTChannelStateChange) -> Void) -> ARTEventListener {
-            underlying.on(event, callback: toAblyCocoaCallback(cb))
-        }
-
-        internal func once(_ cb: @escaping @MainActor (ARTChannelStateChange) -> Void) -> ARTEventListener {
-            underlying.once(toAblyCocoaCallback(cb))
-        }
-
-        internal func once(_ event: ARTChannelEvent, callback cb: @escaping @MainActor (ARTChannelStateChange) -> Void) -> ARTEventListener {
-            underlying.once(event, callback: toAblyCocoaCallback(cb))
-        }
-
-        internal func unsubscribe(_ listener: ARTEventListener?) {
-            underlying.unsubscribe(listener)
-        }
-
-        internal func subscribe(_ name: String, callback: @escaping @MainActor (ARTMessage) -> Void) -> ARTEventListener? {
-            underlying.subscribe(name, callback: toAblyCocoaCallback(callback))
-        }
-
-        internal func subscribe(_ callback: @escaping @MainActor (ARTMessage) -> Void) -> ARTEventListener? {
-            underlying.subscribe(toAblyCocoaCallback(callback))
-        }
-
-        internal func off(_ listener: ARTEventListener) {
-            underlying.off(listener)
+                }
+            }.get()
+        } catch {
+            throw error.toInternalError()
         }
     }
 
-    internal final class Presence: InternalRealtimePresenceProtocol {
-        private let underlying: any RealtimePresenceProtocol
-
-        internal init(underlying: any RealtimePresenceProtocol) {
-            self.underlying = underlying
-        }
-
-        internal func get() async throws(InternalError) -> [PresenceMessage] {
-            do {
-                return try await withCheckedContinuation { (continuation: CheckedContinuation<Result<[PresenceMessage], ARTErrorInfo>, _>) in
-                    underlying.get { members, error in
-                        if let error {
-                            continuation.resume(returning: .failure(error))
-                        } else if let members {
-                            continuation.resume(returning: .success(members.map { .init(ablyCocoaPresenceMessage: $0) }))
-                        } else {
-                            preconditionFailure("There is no error, so expected members")
-                        }
+    internal func leave(_ data: JSONObject?) async throws(InternalError) {
+        do {
+            try await withCheckedContinuation { (continuation: CheckedContinuation<Result<Void, ARTErrorInfo>, _>) in
+                underlying.leave(data?.toAblyCocoaData) { error in
+                    if let error {
+                        continuation.resume(returning: .failure(error))
+                    } else {
+                        continuation.resume(returning: .success(()))
                     }
-                }.get()
-            } catch {
-                throw error.toInternalError()
-            }
-        }
-
-        internal func get(_ query: ARTRealtimePresenceQuery) async throws(InternalError) -> [PresenceMessage] {
-            do {
-                return try await withCheckedContinuation { (continuation: CheckedContinuation<Result<[PresenceMessage], ARTErrorInfo>, _>) in
-                    underlying.get(query) { members, error in
-                        if let error {
-                            continuation.resume(returning: .failure(error))
-                        } else if let members {
-                            continuation.resume(returning: .success(members.map { .init(ablyCocoaPresenceMessage: $0) }))
-                        } else {
-                            preconditionFailure("There is no error, so expected members")
-                        }
-                    }
-                }.get()
-            } catch {
-                throw error.toInternalError()
-            }
-        }
-
-        internal func leave(_ data: JSONObject?) async throws(InternalError) {
-            do {
-                try await withCheckedContinuation { (continuation: CheckedContinuation<Result<Void, ARTErrorInfo>, _>) in
-                    underlying.leave(data?.toAblyCocoaData) { error in
-                        if let error {
-                            continuation.resume(returning: .failure(error))
-                        } else {
-                            continuation.resume(returning: .success(()))
-                        }
-                    }
-                }.get()
-            } catch {
-                throw error.toInternalError()
-            }
-        }
-
-        internal func enterClient(_ clientID: String, data: JSONObject?) async throws(InternalError) {
-            do {
-                try await withCheckedContinuation { (continuation: CheckedContinuation<Result<Void, ARTErrorInfo>, _>) in
-                    underlying.enterClient(clientID, data: data?.toAblyCocoaData) { error in
-                        if let error {
-                            continuation.resume(returning: .failure(error))
-                        } else {
-                            continuation.resume(returning: .success(()))
-                        }
-                    }
-                }.get()
-            } catch {
-                throw error.toInternalError()
-            }
-        }
-
-        internal func update(_ data: JSONObject?) async throws(InternalError) {
-            do {
-                try await withCheckedContinuation { (continuation: CheckedContinuation<Result<Void, ARTErrorInfo>, _>) in
-                    underlying.update(data?.toAblyCocoaData) { error in
-                        if let error {
-                            continuation.resume(returning: .failure(error))
-                        } else {
-                            continuation.resume(returning: .success(()))
-                        }
-                    }
-                }.get()
-            } catch {
-                throw error.toInternalError()
-            }
-        }
-
-        internal func subscribe(_ callback: @escaping @MainActor (ARTPresenceMessage) -> Void) -> ARTEventListener? {
-            underlying.subscribe(toAblyCocoaCallback(callback))
-        }
-
-        internal func subscribe(_ action: ARTPresenceAction, callback: @escaping @MainActor (ARTPresenceMessage) -> Void) -> ARTEventListener? {
-            underlying.subscribe(action, callback: toAblyCocoaCallback(callback))
-        }
-
-        internal func unsubscribe(_ listener: ARTEventListener) {
-            underlying.unsubscribe(listener)
-        }
-
-        internal func leaveClient(_ clientID: String, data: JSONObject?) async throws(InternalError) {
-            do {
-                try await withCheckedContinuation { (continuation: CheckedContinuation<Result<Void, ARTErrorInfo>, _>) in
-                    underlying.leaveClient(clientID, data: data?.toAblyCocoaData) { error in
-                        if let error {
-                            continuation.resume(returning: .failure(error))
-                        } else {
-                            continuation.resume(returning: .success(()))
-                        }
-                    }
-                }.get()
-            } catch {
-                throw error.toInternalError()
-            }
+                }
+            }.get()
+        } catch {
+            throw error.toInternalError()
         }
     }
 
-    internal final class Annotations: InternalRealtimeAnnotationsProtocol {
-        private let underlying: any RealtimeAnnotationsProtocol
-
-        internal init(underlying: any RealtimeAnnotationsProtocol) {
-            self.underlying = underlying
-        }
-
-        internal func subscribe(_ callback: @escaping @MainActor @Sendable (ARTAnnotation) -> Void) -> ARTEventListener? {
-            underlying.subscribe(toAblyCocoaCallback(callback))
-        }
-
-        internal func subscribe(_ type: String, callback: @escaping @MainActor @Sendable (ARTAnnotation) -> Void) -> ARTEventListener? {
-            underlying.subscribe(type, callback: toAblyCocoaCallback(callback))
-        }
-
-        internal func unsubscribe(_ listener: ARTEventListener) {
-            underlying.unsubscribe(listener)
+    internal func enterClient(_ clientID: String, data: JSONObject?) async throws(InternalError) {
+        do {
+            try await withCheckedContinuation { (continuation: CheckedContinuation<Result<Void, ARTErrorInfo>, _>) in
+                underlying.enterClient(clientID, data: data?.toAblyCocoaData) { error in
+                    if let error {
+                        continuation.resume(returning: .failure(error))
+                    } else {
+                        continuation.resume(returning: .success(()))
+                    }
+                }
+            }.get()
+        } catch {
+            throw error.toInternalError()
         }
     }
 
-    internal final class Connection: InternalConnectionProtocol {
-        private let underlying: any CoreConnectionProtocol
-
-        internal init(underlying: any CoreConnectionProtocol) {
-            self.underlying = underlying
+    internal func update(_ data: JSONObject?) async throws(InternalError) {
+        do {
+            try await withCheckedContinuation { (continuation: CheckedContinuation<Result<Void, ARTErrorInfo>, _>) in
+                underlying.update(data?.toAblyCocoaData) { error in
+                    if let error {
+                        continuation.resume(returning: .failure(error))
+                    } else {
+                        continuation.resume(returning: .success(()))
+                    }
+                }
+            }.get()
+        } catch {
+            throw error.toInternalError()
         }
+    }
 
-        internal var state: ARTRealtimeConnectionState {
-            underlying.state
-        }
+    internal func subscribe(_ callback: @escaping @MainActor (ARTPresenceMessage) -> Void) -> ARTEventListener? {
+        underlying.subscribe(toAblyCocoaCallback(callback))
+    }
 
-        internal var errorReason: ARTErrorInfo? {
-            underlying.errorReason
-        }
+    internal func subscribe(_ action: ARTPresenceAction, callback: @escaping @MainActor (ARTPresenceMessage) -> Void) -> ARTEventListener? {
+        underlying.subscribe(action, callback: toAblyCocoaCallback(callback))
+    }
 
-        internal func on(_ cb: @escaping @MainActor (ARTConnectionStateChange) -> Void) -> ARTEventListener {
-            underlying.on(toAblyCocoaCallback(cb))
-        }
+    internal func unsubscribe(_ listener: ARTEventListener) {
+        underlying.unsubscribe(listener)
+    }
 
-        internal func off(_ listener: ARTEventListener) {
-            underlying.off(listener)
+    internal func leaveClient(_ clientID: String, data: JSONObject?) async throws(InternalError) {
+        do {
+            try await withCheckedContinuation { (continuation: CheckedContinuation<Result<Void, ARTErrorInfo>, _>) in
+                underlying.leaveClient(clientID, data: data?.toAblyCocoaData) { error in
+                    if let error {
+                        continuation.resume(returning: .failure(error))
+                    } else {
+                        continuation.resume(returning: .success(()))
+                    }
+                }
+            }.get()
+        } catch {
+            throw error.toInternalError()
         }
+    }
+}
+
+internal final class InternalRealtimeChannelAdapter: InternalRealtimeChannelProtocol {
+    internal let underlying: any RealtimeChannelProtocol
+    internal let presence: InternalRealtimePresenceAdapter
+    internal let annotations: InternalRealtimeAnnotationsAdapter
+
+    internal init(underlying: any RealtimeChannelProtocol) {
+        self.underlying = underlying
+        presence = .init(underlying: underlying.presence)
+        annotations = .init(underlying: underlying.annotations)
+    }
+
+    internal var name: String {
+        underlying.name
+    }
+
+    internal var state: ARTRealtimeChannelState {
+        underlying.state
+    }
+
+    internal var errorReason: ARTErrorInfo? {
+        underlying.errorReason
+    }
+
+    internal var properties: ARTChannelProperties {
+        underlying.properties
+    }
+
+    internal func attach() async throws(InternalError) {
+        do {
+            try await withCheckedContinuation { (continuation: CheckedContinuation<Result<Void, ARTErrorInfo>, _>) in
+                underlying.attach { error in
+                    if let error {
+                        continuation.resume(returning: .failure(error))
+                    } else {
+                        continuation.resume(returning: .success(()))
+                    }
+                }
+            }.get()
+        } catch {
+            throw error.toInternalError()
+        }
+    }
+
+    internal func detach() async throws(InternalError) {
+        do {
+            try await withCheckedContinuation { (continuation: CheckedContinuation<Result<Void, ARTErrorInfo>, _>) in
+                underlying.detach { error in
+                    if let error {
+                        continuation.resume(returning: .failure(error))
+                    } else {
+                        continuation.resume(returning: .success(()))
+                    }
+                }
+            }.get()
+        } catch {
+            throw error.toInternalError()
+        }
+    }
+
+    internal func publish(_ name: String?, data: JSONValue?, extras: [String: JSONValue]?) async throws(InternalError) {
+        do {
+            try await withCheckedContinuation { (continuation: CheckedContinuation<Result<Void, ARTErrorInfo>, _>) in
+                underlying.publish(name, data: data?.toAblyCocoaData, extras: extras?.toARTJsonCompatible) { error in
+                    if let error {
+                        continuation.resume(returning: .failure(error))
+                    } else {
+                        continuation.resume(returning: .success(()))
+                    }
+                }
+            }.get()
+        } catch {
+            throw error.toInternalError()
+        }
+    }
+
+    internal func on(_ cb: @escaping @MainActor (ARTChannelStateChange) -> Void) -> ARTEventListener {
+        underlying.on(toAblyCocoaCallback(cb))
+    }
+
+    internal func on(_ event: ARTChannelEvent, callback cb: @escaping @MainActor (ARTChannelStateChange) -> Void) -> ARTEventListener {
+        underlying.on(event, callback: toAblyCocoaCallback(cb))
+    }
+
+    internal func once(_ cb: @escaping @MainActor (ARTChannelStateChange) -> Void) -> ARTEventListener {
+        underlying.once(toAblyCocoaCallback(cb))
+    }
+
+    internal func once(_ event: ARTChannelEvent, callback cb: @escaping @MainActor (ARTChannelStateChange) -> Void) -> ARTEventListener {
+        underlying.once(event, callback: toAblyCocoaCallback(cb))
+    }
+
+    internal func unsubscribe(_ listener: ARTEventListener?) {
+        underlying.unsubscribe(listener)
+    }
+
+    internal func subscribe(_ name: String, callback: @escaping @MainActor (ARTMessage) -> Void) -> ARTEventListener? {
+        underlying.subscribe(name, callback: toAblyCocoaCallback(callback))
+    }
+
+    internal func subscribe(_ callback: @escaping @MainActor (ARTMessage) -> Void) -> ARTEventListener? {
+        underlying.subscribe(toAblyCocoaCallback(callback))
+    }
+
+    internal func off(_ listener: ARTEventListener) {
+        underlying.off(listener)
+    }
+}
+
+internal final class InternalRealtimeChannelsAdapter: InternalRealtimeChannelsProtocol {
+    private let underlying: any RealtimeChannelsProtocol
+
+    internal init(underlying: any RealtimeChannelsProtocol) {
+        self.underlying = underlying
+    }
+
+    internal func get(_ name: String, options: ARTRealtimeChannelOptions) -> some InternalRealtimeChannelProtocol {
+        let underlyingChannel = underlying.get(name, options: options)
+        return InternalRealtimeChannelAdapter(underlying: underlyingChannel)
+    }
+
+    internal func release(_ name: String) {
+        underlying.release(name)
     }
 }
 
