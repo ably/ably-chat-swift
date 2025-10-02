@@ -12,7 +12,7 @@ public protocol SuppliedRealtimeClientProtocol: Sendable, RealtimeClientProtocol
 /// Expresses the requirements of the object returned by ``SuppliedRealtimeClientProtocol/createWrapperSDKProxy(with:)``.
 public protocol RealtimeClientProtocol: ARTRealtimeInstanceMethodsProtocol, Sendable {
     associatedtype Channels: RealtimeChannelsProtocol
-    associatedtype Connection: ConnectionProtocol
+    associatedtype Connection: CoreConnectionProtocol
 
     var channels: Channels { get }
     var connection: Connection { get }
@@ -41,4 +41,6 @@ public protocol RealtimePresenceProtocol: ARTRealtimePresenceProtocol, Sendable 
 public protocol RealtimeAnnotationsProtocol: ARTRealtimeAnnotationsProtocol, Sendable {}
 
 /// Expresses the requirements of the object returned by ``RealtimeClientProtocol/connection``.
-public protocol ConnectionProtocol: ARTConnectionProtocol, Sendable {}
+///
+/// - Note: `Core` here is to disambiguate from the `Connection` protocol that a `ChatClient` exposes.
+public protocol CoreConnectionProtocol: ARTConnectionProtocol, Sendable {}

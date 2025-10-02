@@ -359,7 +359,7 @@ final class MockSuppliedRealtime: NSObject, SuppliedRealtimeClientProtocol, @unc
         }
     }
 
-    final class Connection: NSObject, ConnectionProtocol {
+    final class Connection: NSObject, CoreConnectionProtocol {
         var id: String? {
             fatalError("Not implemented")
         }

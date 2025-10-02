@@ -16,4 +16,4 @@ extension ARTWrapperSDKProxyRealtimePresence: RealtimePresenceProtocol {}
 extension ARTRealtimeAnnotations: RealtimeAnnotationsProtocol {}
 extension ARTWrapperSDKProxyRealtimeAnnotations: RealtimeAnnotationsProtocol {}
 
-extension ARTConnection: ConnectionProtocol {}
+extension ARTConnection: CoreConnectionProtocol {}

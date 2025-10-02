@@ -15,7 +15,7 @@ final class MockRealtime: NSObject, RealtimeClientProtocol, Sendable {
 
     let channels = Channels()
 
-    final class Connection: NSObject, ConnectionProtocol {
+    final class Connection: NSObject, CoreConnectionProtocol {
         init(id: String? = nil, key: String? = nil, maxMessageSize: Int = 0, state: ARTRealtimeConnectionState = .closed, errorReason: ARTErrorInfo? = nil, recoveryKey: String? = nil) {
             self.id = id
             self.key = key

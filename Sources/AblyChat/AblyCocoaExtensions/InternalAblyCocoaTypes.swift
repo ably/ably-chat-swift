@@ -434,9 +434,9 @@ internal final class InternalRealtimeClientAdapter: InternalRealtimeClientProtoc
     }
 
     internal final class Connection: InternalConnectionProtocol {
-        private let underlying: any ConnectionProtocol
+        private let underlying: any CoreConnectionProtocol
 
-        internal init(underlying: any ConnectionProtocol) {
+        internal init(underlying: any CoreConnectionProtocol) {
             self.underlying = underlying
         }
 
