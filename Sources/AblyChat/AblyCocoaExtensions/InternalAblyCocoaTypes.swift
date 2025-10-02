@@ -131,11 +131,11 @@ private final class UnsafeSendingBox<T>: @unchecked Sendable {
 }
 
 internal final class InternalRealtimeClientAdapter: InternalRealtimeClientProtocol {
-    private let underlying: RealtimeClient
+    private let underlying: any RealtimeClientProtocol
     internal let channels: Channels
     internal let connection: Connection
 
-    internal init(underlying: RealtimeClient) {
+    internal init(underlying: any RealtimeClientProtocol) {
         self.underlying = underlying
         channels = .init(underlying: underlying.channels)
         connection = .init(underlying: underlying.connection)

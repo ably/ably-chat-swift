@@ -29,7 +29,7 @@ public protocol ChatClient: AnyObject, Sendable {
      *
      * - Returns: The Ably Realtime client.
      */
-    nonisolated var realtime: RealtimeClient { get }
+    nonisolated var realtime: any RealtimeClientProtocol { get }
 
     /**
      * Returns the resolved client options for the client, including any defaults that have been set.
@@ -38,8 +38,6 @@ public protocol ChatClient: AnyObject, Sendable {
      */
     nonisolated var clientOptions: ChatClientOptions { get }
 }
-
-public typealias RealtimeClient = any RealtimeClientProtocol
 
 @MainActor
 internal protocol InternalRealtimeClientFactory {
@@ -56,7 +54,7 @@ internal final class DefaultInternalRealtimeClientFactory: InternalRealtimeClien
  * This is the core client for Ably chat. It provides access to chat rooms.
  */
 public class DefaultChatClient: ChatClient {
-    public nonisolated let realtime: RealtimeClient
+    public nonisolated let realtime: any RealtimeClientProtocol
     public nonisolated let clientOptions: ChatClientOptions
     public let rooms: Rooms
     private let logger: InternalLogger

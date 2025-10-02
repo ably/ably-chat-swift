@@ -2,12 +2,12 @@ import Ably
 @testable import AblyChat
 
 class MockChatClient: ChatClient {
-    let realtime: RealtimeClient
+    let realtime: any RealtimeClientProtocol
     nonisolated let clientOptions: ChatClientOptions
     nonisolated let rooms: Rooms
     nonisolated let connection: Connection
 
-    init(realtime: RealtimeClient, clientOptions: ChatClientOptions?) {
+    init(realtime: any RealtimeClientProtocol, clientOptions: ChatClientOptions?) {
         self.realtime = realtime
         self.clientOptions = clientOptions ?? .init()
         connection = MockConnection(status: .connected, error: nil)
