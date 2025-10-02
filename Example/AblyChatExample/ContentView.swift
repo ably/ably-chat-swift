@@ -303,7 +303,7 @@ struct ContentView: View {
                         if let index = listItems.firstIndex(where: { $0.id == reactedMessageItem.message.serial }) {
                             listItems[index] = try .message(
                                 .init(
-                                    message: reactedMessageItem.message.with(summaryEvent: summaryEvent),
+                                    message: reactedMessageItem.message.with(summaryEvent),
                                     isSender: reactedMessageItem.message.clientID == currentClientID,
                                 ),
                             )
