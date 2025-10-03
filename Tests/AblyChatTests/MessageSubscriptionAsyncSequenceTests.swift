@@ -3,7 +3,7 @@ import AsyncAlgorithms
 import Foundation
 import Testing
 
-private final class MockPaginatedResult<Item: Equatable>: PaginatedResult {
+private final class MockPaginatedResult<Item: Equatable>: PaginatedResult, Equatable {
     var items: [Item] { fatalError("Not implemented") }
 
     var hasNext: Bool { fatalError("Not implemented") }
