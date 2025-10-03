@@ -54,7 +54,7 @@ public protocol MessageSubscriptionResponseProtocol: SubscriptionProtocol, Senda
     func historyBeforeSubscribe(_ params: QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message>
 }
 
-internal struct Subscription: SubscriptionProtocol, Sendable {
+internal struct DefaultSubscription: SubscriptionProtocol, Sendable {
     private let _unsubscribe: () -> Void
 
     internal func unsubscribe() {
@@ -66,7 +66,7 @@ internal struct Subscription: SubscriptionProtocol, Sendable {
     }
 }
 
-internal struct StatusSubscription: StatusSubscriptionProtocol, Sendable {
+internal struct DefaultStatusSubscription: StatusSubscriptionProtocol, Sendable {
     private let _off: () -> Void
 
     internal func off() {
@@ -78,7 +78,7 @@ internal struct StatusSubscription: StatusSubscriptionProtocol, Sendable {
     }
 }
 
-internal struct MessageSubscriptionResponse: MessageSubscriptionResponseProtocol, Sendable {
+internal struct DefaultMessageSubscriptionResponse: MessageSubscriptionResponseProtocol, Sendable {
     private let chatAPI: ChatAPI
     private let roomName: String
     private let subscriptionStartSerial: @MainActor @Sendable () async throws(InternalError) -> String

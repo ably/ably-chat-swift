@@ -49,7 +49,7 @@ internal final class DefaultOccupancy: Occupancy {
             callback(occupancyEvent)
         }
 
-        return Subscription {
+        return DefaultSubscription {
             guard let eventListener else {
                 return
             }

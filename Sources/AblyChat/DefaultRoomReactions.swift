@@ -73,7 +73,7 @@ internal final class DefaultRoomReactions: RoomReactions {
             callback(event)
         }
 
-        return Subscription { [weak self] in
+        return DefaultSubscription { [weak self] in
             self?.channel.unsubscribe(eventListener)
         }
     }

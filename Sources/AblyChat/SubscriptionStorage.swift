@@ -7,7 +7,7 @@ import Foundation
 internal class SubscriptionStorage<Element: Sendable> {
     private struct SubscriptionItem {
         let callback: (Element) -> Void
-        let subscription: Subscription
+        let subscription: DefaultSubscription
     }
 
     private var subscriptions: [UUID: SubscriptionItem] = [:]
@@ -15,7 +15,7 @@ internal class SubscriptionStorage<Element: Sendable> {
     /// Creates a subscription and adds it to the list managed by this `SubscriptionStorage` instance.
     internal func create(_ callback: @escaping @MainActor (Element) -> Void) -> any SubscriptionProtocol {
         let id = UUID()
-        let subscription = Subscription { [weak self] in
+        let subscription = DefaultSubscription { [weak self] in
             self?.subscriptionDidTerminate(id: id)
         }
         let subscriptionItem = SubscriptionItem(callback: callback, subscription: subscription)
@@ -48,7 +48,7 @@ internal class SubscriptionStorage<Element: Sendable> {
 internal class StatusSubscriptionStorage<Element: Sendable> {
     private struct SubscriptionItem {
         let callback: (Element) -> Void
-        let subscription: StatusSubscription
+        let subscription: DefaultStatusSubscription
     }
 
     private var subscriptions: [UUID: SubscriptionItem] = [:]
@@ -56,7 +56,7 @@ internal class StatusSubscriptionStorage<Element: Sendable> {
     /// Creates a subscription and adds it to the list managed by this `SubscriptionStorage` instance.
     internal func create(_ callback: @escaping @MainActor (Element) -> Void) -> any StatusSubscriptionProtocol {
         let id = UUID()
-        let statusSubscription = StatusSubscription { [weak self] in
+        let statusSubscription = DefaultStatusSubscription { [weak self] in
             self?.subscriptionDidTerminate(id: id)
         }
         let element = SubscriptionItem(callback: callback, subscription: statusSubscription)

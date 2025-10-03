@@ -99,7 +99,7 @@ class MockRoom: Room {
             }
             return needNext
         }
-        return StatusSubscription {
+        return DefaultStatusSubscription {
             needNext = false
         }
     }

@@ -97,7 +97,7 @@ internal final class DefaultTyping: Typing {
         }
 
         // (CHA-T6b) A subscription to typing may be removed, after which it shall receive no further events.
-        return Subscription {
+        return DefaultSubscription {
             if let startedEventListener {
                 self.channel.unsubscribe(startedEventListener)
             }

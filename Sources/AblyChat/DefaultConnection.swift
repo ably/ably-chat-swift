@@ -72,7 +72,7 @@ internal final class DefaultConnection: Connection {
             callback(statusChange)
         }
 
-        return StatusSubscription { [weak self] in
+        return DefaultStatusSubscription { [weak self] in
             guard let self else {
                 return
             }

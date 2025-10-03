@@ -94,7 +94,7 @@ internal final class DefaultMessageReactions: MessageReactions {
             callback(summaryEvent)
         }
 
-        return Subscription { [weak self] in
+        return DefaultSubscription { [weak self] in
             self?.channel.unsubscribe(eventListener)
         }
     }
@@ -143,7 +143,7 @@ internal final class DefaultMessageReactions: MessageReactions {
 
             callback(reactionEvent)
         }
-        return Subscription { [weak self] in
+        return DefaultSubscription { [weak self] in
             self?.channel.unsubscribe(eventListener)
         }
     }

@@ -214,7 +214,7 @@ internal final class DefaultPresence: Presence {
             callback(presenceEvent)
         }
 
-        return Subscription { [weak self] in
+        return DefaultSubscription { [weak self] in
             if let eventListener {
                 self?.channel.presence.unsubscribe(eventListener)
             }
@@ -237,7 +237,7 @@ internal final class DefaultPresence: Presence {
             }
         }
 
-        return Subscription { [weak self] in
+        return DefaultSubscription { [weak self] in
             for eventListener in eventListeners {
                 if let eventListener {
                     self?.channel.presence.unsubscribe(eventListener)

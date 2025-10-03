@@ -92,7 +92,7 @@ internal final class DefaultMessages: Messages {
         if channel.state == .attached {
             subscriptionPoints[uuid] = channel.properties.channelSerial
         }
-        let subscription = MessageSubscriptionResponse(
+        let subscription = DefaultMessageSubscriptionResponse(
             chatAPI: chatAPI,
             roomName: roomName,
             subscriptionStartSerial: { [weak self] () throws(InternalError) in
