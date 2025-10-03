@@ -3,7 +3,7 @@ import Foundation
 /**
  * Represents the options for a given chat room.
  */
-public struct RoomOptions: Sendable, Equatable {
+public struct RoomOptions: Sendable {
     /**
      * The presence options for the room.
      */
@@ -41,7 +41,7 @@ public struct RoomOptions: Sendable, Equatable {
 /**
  * Represents the presence options for a chat room.
  */
-public struct PresenceOptions: Sendable, Equatable {
+public struct PresenceOptions: Sendable {
     /**
      * Whether or not the client should receive presence events from the server. This setting
      * can be disabled if you are using presence in your Chat Room, but this particular client does not
@@ -59,7 +59,7 @@ public struct PresenceOptions: Sendable, Equatable {
 /**
  * Represents the messages options for a chat room.
  */
-public struct MessagesOptions: Sendable, Equatable {
+public struct MessagesOptions: Sendable {
     /**
      * Whether to enable receiving raw individual message reactions from the
      * realtime channel. Set to true if subscribing to raw message reactions.
@@ -89,7 +89,7 @@ public struct MessagesOptions: Sendable, Equatable {
 /**
  * Represents the typing options for a chat room.
  */
-public struct TypingOptions: Sendable, Equatable {
+public struct TypingOptions: Sendable {
     // (CHA-T10) Users may configure a heartbeat interval (the no-op period for typing.keystroke when the heartbeat timer is set active at CHA-T4a4). This configuration is provided at the RoomOptions.typing.heartbeatThrottleMs property, or idiomatic equivalent. The default is 10000ms.
     /**
      * The heartbeat interval for typing events in seconds. Once ``Typing/keystroke()`` is called, subsequent keystroke events will be
@@ -110,14 +110,14 @@ public struct TypingOptions: Sendable, Equatable {
 /**
  * Represents the reactions options for a chat room.
  */
-public struct RoomReactionsOptions: Sendable, Equatable {
+public struct RoomReactionsOptions: Sendable {
     public init() {}
 }
 
 /**
  * Represents the occupancy options for a chat room.
  */
-public struct OccupancyOptions: Sendable, Equatable {
+public struct OccupancyOptions: Sendable {
     /**
      * Whether to enable inbound occupancy events.
      *
@@ -129,5 +129,100 @@ public struct OccupancyOptions: Sendable, Equatable {
 
     public init(enableEvents: Bool = false) {
         self.enableEvents = enableEvents
+    }
+}
+
+// MARK: - Equatable
+
+internal extension RoomOptions {
+    /// A type that has all of `RoomOptions`'s properties and which is `Equatable`. This lets us compare two `RoomOptions` values — as we need to do when fetching a room when there is an existing room — without having to mark it publicly as `Equatable`.
+    ///
+    /// This is currently kept in sync manually with the options types. (TODO: https://github.com/ably/ably-chat-swift/issues/373, use a tool like Sourcery to keep in sync automatically)
+    struct EquatableBox: Equatable {
+        internal var messages: MessagesOptions.EquatableBox
+        internal var presence: PresenceOptions.EquatableBox
+        internal var typing: TypingOptions.EquatableBox
+        internal var reactions: RoomReactionsOptions.EquatableBox
+        internal var occupancy: OccupancyOptions.EquatableBox
+
+        internal init(_ options: RoomOptions) {
+            messages = MessagesOptions.EquatableBox(options.messages)
+            presence = PresenceOptions.EquatableBox(options.presence)
+            typing = TypingOptions.EquatableBox(options.typing)
+            reactions = RoomReactionsOptions.EquatableBox(options.reactions)
+            occupancy = OccupancyOptions.EquatableBox(options.occupancy)
+        }
+    }
+
+    var equatableBox: EquatableBox {
+        .init(self)
+    }
+}
+
+internal extension PresenceOptions {
+    struct EquatableBox: Equatable {
+        internal var enableEvents: Bool
+
+        internal init(_ options: PresenceOptions) {
+            enableEvents = options.enableEvents
+        }
+    }
+
+    var equatableBox: EquatableBox {
+        .init(self)
+    }
+}
+
+internal extension MessagesOptions {
+    struct EquatableBox: Equatable {
+        internal var rawMessageReactions: Bool
+        internal var defaultMessageReactionType: MessageReactionType
+
+        internal init(_ options: MessagesOptions) {
+            rawMessageReactions = options.rawMessageReactions
+            defaultMessageReactionType = options.defaultMessageReactionType
+        }
+    }
+
+    var equatableBox: EquatableBox {
+        .init(self)
+    }
+}
+
+internal extension TypingOptions {
+    struct EquatableBox: Equatable {
+        internal var heartbeatThrottle: TimeInterval
+
+        internal init(_ options: TypingOptions) {
+            heartbeatThrottle = options.heartbeatThrottle
+        }
+    }
+
+    var equatableBox: EquatableBox {
+        .init(self)
+    }
+}
+
+internal extension RoomReactionsOptions {
+    struct EquatableBox: Equatable {
+        internal init(_: RoomReactionsOptions) {}
+    }
+
+    var equatableBox: EquatableBox {
+        .init(self)
+    }
+}
+
+internal extension OccupancyOptions {
+    struct EquatableBox: Equatable {
+        internal var enableEvents: Bool
+
+        internal init(_ options: OccupancyOptions) {
+            enableEvents = options.enableEvents
+        }
+    }
+
+    var equatableBox: EquatableBox {
+        .init(self)
     }
 }

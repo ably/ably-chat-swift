@@ -57,3 +57,9 @@ extension DiscontinuityEvent: Equatable {
         lhs.error === rhs.error
     }
 }
+
+extension RoomOptions: Equatable {
+    public static func == (lhs: RoomOptions, rhs: RoomOptions) -> Bool {
+        lhs.equatableBox == rhs.equatableBox
+    }
+}
