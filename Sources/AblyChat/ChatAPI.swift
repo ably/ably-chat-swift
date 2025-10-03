@@ -18,8 +18,7 @@ internal final class ChatAPI: Sendable {
     // (CHA-M6) Messages should be queryable from a paginated REST API.
     internal func getMessages(roomName: String, params: QueryOptions) async throws(InternalError) -> any PaginatedResult<Message> {
         let endpoint = "\(apiVersionV4)/rooms/\(roomName)/messages"
-        let result: Result<PaginatedResultWrapper<Message>, InternalError> = await makePaginatedRequest(endpoint, params: params.asQueryItems())
-        return try result.get()
+        return try await makePaginatedRequest(endpoint, params: params.asQueryItems())
     }
 
     internal struct SendMessageResponse: JSONObjectDecodable {
@@ -240,21 +239,16 @@ internal final class ChatAPI: Sendable {
         return try Response(jsonValue: jsonValue)
     }
 
-    // TODO: (https://github.com/ably/ably-chat-swift/issues/267) switch this back to use `throws` once Xcode 16.3 typed throw crashes are fixed
     private func makePaginatedRequest<Response: JSONDecodable & Sendable & Equatable>(
         _ url: String,
         params: [String: String]? = nil
-    ) async -> Result<PaginatedResultWrapper<Response>, InternalError> {
-        do {
-            let paginatedResponse = try await realtime.request("GET", path: url, params: params, body: nil, headers: [:])
-            let jsonValues = paginatedResponse.items.map { JSONValue(ablyCocoaData: $0) }
-            let items = try jsonValues.map { jsonValue throws(InternalError) in
-                try Response(jsonValue: jsonValue)
-            }
-            return .success(paginatedResponse.toPaginatedResult(items: items))
-        } catch {
-            return .failure(error)
+    ) async throws(InternalError) -> any PaginatedResult<Response> {
+        let paginatedResponse = try await realtime.request("GET", path: url, params: params, body: nil, headers: [:])
+        let jsonValues = paginatedResponse.items.map { JSONValue(ablyCocoaData: $0) }
+        let items = try jsonValues.map { jsonValue throws(InternalError) in
+            try Response(jsonValue: jsonValue)
         }
+        return paginatedResponse.toPaginatedResult(items: items)
     }
 
     internal enum ChatError: Error {
