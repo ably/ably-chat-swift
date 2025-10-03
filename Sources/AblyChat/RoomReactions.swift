@@ -108,7 +108,7 @@ public struct SendReactionParams: Sendable {
 }
 
 /// Event type for room reaction subscription.
-public enum RoomReactionEventType: String, Sendable {
+public enum RoomReactionEventType: Sendable {
     case reaction
 }
 
