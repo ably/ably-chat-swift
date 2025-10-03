@@ -8,9 +8,9 @@ public protocol PaginatedResult<Item>: AnyObject, Sendable, Equatable {
     var isLast: Bool { get }
     // TODO: (https://github.com/ably-labs/ably-chat-swift/issues/11): consider how to avoid the need for an unwrap
     // Note that there seems to be a compiler bug (https://github.com/swiftlang/swift/issues/79992) that means that the compiler does not enforce the access level of the error type for property getters. I accidentally originally wrote these as throws(InternalError), which the compiler should have rejected since InternalError is internal and this protocol is public, but it did not reject it and this mistake was only noticed in code review.
-    var next: (any PaginatedResult<Item>)? { get async throws(ARTErrorInfo) }
-    var first: any PaginatedResult<Item> { get async throws(ARTErrorInfo) }
-    var current: any PaginatedResult<Item> { get async throws(ARTErrorInfo) }
+    var next: Self? { get async throws(ARTErrorInfo) }
+    var first: Self { get async throws(ARTErrorInfo) }
+    var current: Self { get async throws(ARTErrorInfo) }
 }
 
 /// Used internally to reduce the amount of duplicate code when interacting with `ARTHTTPPaginatedCallback`'s. The wrapper takes in the callback result from the caller e.g. `realtime.request` and either throws the appropriate error, or decodes and returns the response.
@@ -62,7 +62,7 @@ internal final class PaginatedResultWrapper<Item: JSONDecodable & Sendable & Equ
     }
 
     /// Asynchronously fetch the next page if available
-    internal var next: (any PaginatedResult<Item>)? {
+    internal var next: PaginatedResultWrapper<Item>? {
         get async throws(ARTErrorInfo) {
             do {
                 return try await withCheckedContinuation { continuation in
@@ -77,7 +77,7 @@ internal final class PaginatedResultWrapper<Item: JSONDecodable & Sendable & Equ
     }
 
     /// Asynchronously fetch the first page
-    internal var first: any PaginatedResult<Item> {
+    internal var first: PaginatedResultWrapper<Item> {
         get async throws(ARTErrorInfo) {
             do {
                 return try await withCheckedContinuation { continuation in
@@ -92,7 +92,7 @@ internal final class PaginatedResultWrapper<Item: JSONDecodable & Sendable & Equ
     }
 
     /// Asynchronously fetch the current page
-    internal var current: any PaginatedResult<Item> {
+    internal var current: PaginatedResultWrapper<Item> {
         self
     }
 

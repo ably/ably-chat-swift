@@ -34,6 +34,8 @@ public protocol StatusSubscriptionProtocol: Sendable {
  */
 @MainActor
 public protocol MessageSubscriptionResponseProtocol: SubscriptionProtocol, Sendable {
+    associatedtype HistoryResult: PaginatedResult<Message>
+
     /**
      * Get the previous messages that were sent to the room before the listener was subscribed.
      *
@@ -51,10 +53,10 @@ public protocol MessageSubscriptionResponseProtocol: SubscriptionProtocol, Senda
      *
      * - Returns: A paginated result of messages, in newest-to-oldest order.
      */
-    func historyBeforeSubscribe(_ params: QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message>
+    func historyBeforeSubscribe(_ params: QueryOptions) async throws(ARTErrorInfo) -> HistoryResult
 }
 
-internal struct Subscription: SubscriptionProtocol, Sendable {
+internal struct DefaultSubscription: SubscriptionProtocol, Sendable {
     private let _unsubscribe: () -> Void
 
     internal func unsubscribe() {
@@ -66,7 +68,7 @@ internal struct Subscription: SubscriptionProtocol, Sendable {
     }
 }
 
-internal struct StatusSubscription: StatusSubscriptionProtocol, Sendable {
+internal struct DefaultStatusSubscription: StatusSubscriptionProtocol, Sendable {
     private let _off: () -> Void
 
     internal func off() {
@@ -78,7 +80,7 @@ internal struct StatusSubscription: StatusSubscriptionProtocol, Sendable {
     }
 }
 
-internal struct MessageSubscriptionResponse: MessageSubscriptionResponseProtocol, Sendable {
+internal struct DefaultMessageSubscriptionResponse: MessageSubscriptionResponseProtocol, Sendable {
     private let chatAPI: ChatAPI
     private let roomName: String
     private let subscriptionStartSerial: @MainActor @Sendable () async throws(InternalError) -> String
@@ -88,7 +90,7 @@ internal struct MessageSubscriptionResponse: MessageSubscriptionResponseProtocol
         _unsubscribe()
     }
 
-    internal func historyBeforeSubscribe(_ params: QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message> {
+    internal func historyBeforeSubscribe(_ params: QueryOptions) async throws(ARTErrorInfo) -> some PaginatedResult<Message> {
         do {
             let fromSerial = try await subscriptionStartSerial()
 

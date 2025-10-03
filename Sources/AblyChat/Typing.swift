@@ -8,6 +8,8 @@ import Ably
  */
 @MainActor
 public protocol Typing: AnyObject, Sendable {
+    associatedtype Subscription: SubscriptionProtocol
+
     /**
      * Subscribes a given listener to all typing events from users in the chat room.
      *
@@ -17,7 +19,7 @@ public protocol Typing: AnyObject, Sendable {
      * - Returns: A subscription that can be used to unsubscribe from ``TypingEvent`` events.
      */
     @discardableResult
-    func subscribe(_ callback: @escaping @MainActor (TypingSetEvent) -> Void) -> any SubscriptionProtocol
+    func subscribe(_ callback: @escaping @MainActor (TypingSetEvent) -> Void) -> Subscription
 
     /**
      * Get the current typers, a set of clientIds.

@@ -10,6 +10,8 @@ public typealias PresenceData = JSONObject
  */
 @MainActor
 public protocol Presence: AnyObject, Sendable {
+    associatedtype Subscription: SubscriptionProtocol
+
     /**
      * Same as ``get(params:)``, but with defaults params.
      */
@@ -81,7 +83,7 @@ public protocol Presence: AnyObject, Sendable {
      * - Returns: A subscription that can be used to unsubscribe from ``PresenceEvent`` events.
      */
     @discardableResult
-    func subscribe(event: PresenceEventType, _ callback: @escaping @MainActor (PresenceEvent) -> Void) -> any SubscriptionProtocol
+    func subscribe(event: PresenceEventType, _ callback: @escaping @MainActor (PresenceEvent) -> Void) -> Subscription
 
     /**
      * Subscribes a given listener to different presence events in the chat room.
@@ -95,7 +97,7 @@ public protocol Presence: AnyObject, Sendable {
      * - Returns: A subscription that can be used to unsubscribe from ``PresenceEvent`` events.
      */
     @discardableResult
-    func subscribe(events: [PresenceEventType], _ callback: @escaping @MainActor (PresenceEvent) -> Void) -> any SubscriptionProtocol
+    func subscribe(events: [PresenceEventType], _ callback: @escaping @MainActor (PresenceEvent) -> Void) -> Subscription
 
     /**
      * Method to join room presence, will emit an enter event to all subscribers. Repeat calls will trigger more enter events.

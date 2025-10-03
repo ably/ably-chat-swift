@@ -7,6 +7,14 @@ import Ably
 public protocol Room: AnyObject, Sendable {
     associatedtype Channel
 
+    associatedtype Messages: AblyChat.Messages
+    associatedtype Presence: AblyChat.Presence
+    associatedtype Reactions: AblyChat.RoomReactions
+    associatedtype Typing: AblyChat.Typing
+    associatedtype Occupancy: AblyChat.Occupancy
+
+    associatedtype StatusSubscription: StatusSubscriptionProtocol
+
     /**
      * The unique identifier of the room.
      *
@@ -19,7 +27,7 @@ public protocol Room: AnyObject, Sendable {
      *
      * - Returns: The messages instance for the room.
      */
-    nonisolated var messages: any Messages { get }
+    nonisolated var messages: Messages { get }
 
     /**
      * Allows you to subscribe to presence events in the room.
@@ -28,7 +36,7 @@ public protocol Room: AnyObject, Sendable {
      *
      * - Returns: The presence instance for the room.
      */
-    nonisolated var presence: any Presence { get }
+    nonisolated var presence: Presence { get }
 
     /**
      * Allows you to interact with room-level reactions.
@@ -37,7 +45,7 @@ public protocol Room: AnyObject, Sendable {
      *
      * - Returns: The room reactions instance for the room.
      */
-    nonisolated var reactions: any RoomReactions { get }
+    nonisolated var reactions: Reactions { get }
 
     /**
      * Allows you to interact with typing events in the room.
@@ -46,7 +54,7 @@ public protocol Room: AnyObject, Sendable {
      *
      * - Returns: The typing instance for the room.
      */
-    nonisolated var typing: any Typing { get }
+    nonisolated var typing: Typing { get }
 
     /**
      * Allows you to interact with occupancy metrics for the room.
@@ -55,7 +63,7 @@ public protocol Room: AnyObject, Sendable {
      *
      * - Returns: The occupancy instance for the room.
      */
-    nonisolated var occupancy: any Occupancy { get }
+    nonisolated var occupancy: Occupancy { get }
 
     /**
      * The current status of the room.
@@ -73,7 +81,7 @@ public protocol Room: AnyObject, Sendable {
      * - Returns: A subscription that can be used to unsubscribe from ``RoomStatusChange`` events.
      */
     @discardableResult
-    func onStatusChange(_ callback: @escaping @MainActor (RoomStatusChange) -> Void) -> any StatusSubscriptionProtocol
+    func onStatusChange(_ callback: @escaping @MainActor (RoomStatusChange) -> Void) -> StatusSubscription
 
     /**
      * Subscribes a given listener to a detected discontinuity.
@@ -84,7 +92,7 @@ public protocol Room: AnyObject, Sendable {
      * - Returns: A subscription that can be used to unsubscribe from ``DiscontinuityEvent``.
      */
     @discardableResult
-    func onDiscontinuity(_ callback: @escaping @MainActor (DiscontinuityEvent) -> Void) -> any StatusSubscriptionProtocol
+    func onDiscontinuity(_ callback: @escaping @MainActor (DiscontinuityEvent) -> Void) -> StatusSubscription
 
     /**
      * Attaches to the room to receive events in realtime.
@@ -218,7 +226,7 @@ internal protocol RoomFactory: Sendable {
 internal final class DefaultRoomFactory<Realtime: InternalRealtimeClientProtocol>: Sendable, RoomFactory {
     private let lifecycleManagerFactory = DefaultRoomLifecycleManagerFactory()
 
-    internal func createRoom(realtime: Realtime, chatAPI: ChatAPI, name: String, options: RoomOptions, logger: any InternalLogger) throws(InternalError) -> DefaultRoom<Realtime> {
+    internal func createRoom(realtime: Realtime, chatAPI: ChatAPI, name: String, options: RoomOptions, logger: any InternalLogger) throws(InternalError) -> DefaultRoom<Realtime, DefaultRoomLifecycleManager> {
         try DefaultRoom(
             realtime: realtime,
             chatAPI: chatAPI,
@@ -230,21 +238,21 @@ internal final class DefaultRoomFactory<Realtime: InternalRealtimeClientProtocol
     }
 }
 
-internal class DefaultRoom<Realtime: InternalRealtimeClientProtocol>: InternalRoom {
+internal class DefaultRoom<Realtime: InternalRealtimeClientProtocol, LifecycleManager: RoomLifecycleManager>: InternalRoom {
     internal nonisolated let name: String
     internal nonisolated let options: RoomOptions
     private let chatAPI: ChatAPI
 
-    public nonisolated let messages: any Messages
-    public nonisolated let reactions: any RoomReactions
-    public nonisolated let presence: any Presence
-    public nonisolated let occupancy: any Occupancy
-    public nonisolated let typing: any Typing
+    internal nonisolated let messages: DefaultMessages
+    internal nonisolated let reactions: DefaultRoomReactions
+    internal nonisolated let presence: DefaultPresence
+    internal nonisolated let occupancy: DefaultOccupancy
+    internal nonisolated let typing: DefaultTyping
 
     // Exposed for testing.
     private nonisolated let realtime: Realtime
 
-    private let lifecycleManager: any RoomLifecycleManager
+    private let lifecycleManager: LifecycleManager
     private let internalChannel: Realtime.Channels.Channel
 
     // Note: This property only exists to satisfy the `Room` interface. Do not use this property inside this class; use `internalChannel`.
@@ -260,7 +268,7 @@ internal class DefaultRoom<Realtime: InternalRealtimeClientProtocol>: InternalRo
 
     private let logger: any InternalLogger
 
-    internal init(realtime: Realtime, chatAPI: ChatAPI, name: String, options: RoomOptions, logger: any InternalLogger, lifecycleManagerFactory: any RoomLifecycleManagerFactory) throws(InternalError) {
+    internal init<LifecycleManagerFactory: RoomLifecycleManagerFactory>(realtime: Realtime, chatAPI: ChatAPI, name: String, options: RoomOptions, logger: any InternalLogger, lifecycleManagerFactory: LifecycleManagerFactory) throws(InternalError) where LifecycleManagerFactory.Manager == LifecycleManager {
         self.realtime = realtime
         self.name = name
         self.options = options
@@ -376,7 +384,7 @@ internal class DefaultRoom<Realtime: InternalRealtimeClientProtocol>: InternalRo
     // MARK: - Room status
 
     @discardableResult
-    internal func onStatusChange(_ callback: @escaping @MainActor (RoomStatusChange) -> Void) -> any StatusSubscriptionProtocol {
+    internal func onStatusChange(_ callback: @escaping @MainActor (RoomStatusChange) -> Void) -> LifecycleManager.StatusSubscription {
         lifecycleManager.onRoomStatusChange(callback)
     }
 
@@ -387,7 +395,7 @@ internal class DefaultRoom<Realtime: InternalRealtimeClientProtocol>: InternalRo
     // MARK: - Discontinuities
 
     @discardableResult
-    internal func onDiscontinuity(_ callback: @escaping @MainActor (DiscontinuityEvent) -> Void) -> any StatusSubscriptionProtocol {
+    internal func onDiscontinuity(_ callback: @escaping @MainActor (DiscontinuityEvent) -> Void) -> LifecycleManager.StatusSubscription {
         lifecycleManager.onDiscontinuity(callback)
     }
 }

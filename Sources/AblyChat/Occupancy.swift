@@ -8,6 +8,8 @@ import Ably
  */
 @MainActor
 public protocol Occupancy: AnyObject, Sendable {
+    associatedtype Subscription: SubscriptionProtocol
+
     /**
      * Subscribes a given listener to occupancy updates of the chat room.
      *
@@ -19,7 +21,7 @@ public protocol Occupancy: AnyObject, Sendable {
      * - Returns: A subscription that can be used to unsubscribe from ``OccupancyEvent`` events.
      */
     @discardableResult
-    func subscribe(_ callback: @escaping @MainActor (OccupancyEvent) -> Void) -> any SubscriptionProtocol
+    func subscribe(_ callback: @escaping @MainActor (OccupancyEvent) -> Void) -> Subscription
 
     /**
      * Get the current occupancy of the chat room.

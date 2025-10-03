@@ -10,11 +10,11 @@ private final class MockPaginatedResult<Item: Equatable>: PaginatedResult {
 
     var isLast: Bool { fatalError("Not implemented") }
 
-    var next: (any AblyChat.PaginatedResult<Item>)? { fatalError("Not implemented") }
+    var next: MockPaginatedResult<Item>? { fatalError("Not implemented") }
 
-    var first: any AblyChat.PaginatedResult<Item> { fatalError("Not implemented") }
+    var first: MockPaginatedResult<Item> { fatalError("Not implemented") }
 
-    var current: any AblyChat.PaginatedResult<Item> { fatalError("Not implemented") }
+    var current: MockPaginatedResult<Item> { fatalError("Not implemented") }
 
     init() {}
 
@@ -33,13 +33,13 @@ struct MessageSubscriptionAsyncSequenceTests {
     @Test
     func withMockAsyncSequence() async {
         let events = messages.map { ChatMessageEvent(message: $0) }
-        let subscription = MessageSubscriptionAsyncSequence(mockAsyncSequence: events.async) { _ in fatalError("Not implemented") }
+        let subscription = MessageSubscriptionAsyncSequence<MockPaginatedResult>(mockAsyncSequence: events.async) { _ in fatalError("Not implemented") }
         #expect(await Array(subscription.prefix(2)).map(\.message.text) == ["First", "Second"])
     }
 
     @Test
     func emit() async {
-        let subscription = MessageSubscriptionAsyncSequence(bufferingPolicy: .unbounded) { _ in fatalError("Not implemented") }
+        let subscription = MessageSubscriptionAsyncSequence<MockPaginatedResult>(bufferingPolicy: .unbounded) { _ in fatalError("Not implemented") }
         async let emittedElements = Array(subscription.prefix(2))
         subscription.emit(ChatMessageEvent(message: messages[0]))
         subscription.emit(ChatMessageEvent(message: messages[1]))

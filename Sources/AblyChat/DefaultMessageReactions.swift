@@ -60,7 +60,7 @@ internal final class DefaultMessageReactions: MessageReactions {
 
     // (CHA-MR6) Users must be able to subscribe to message reaction summaries via the subscribe method of the MessagesReactions object. The events emitted will be of type MessageReactionSummaryEvent.
     @discardableResult
-    internal func subscribe(_ callback: @escaping @MainActor @Sendable (MessageReactionSummaryEvent) -> Void) -> any SubscriptionProtocol {
+    internal func subscribe(_ callback: @escaping @MainActor @Sendable (MessageReactionSummaryEvent) -> Void) -> DefaultSubscription {
         logger.log(message: "Subscribing to message reaction summary events", level: .debug)
 
         let eventListener = channel.subscribe { [weak self] message in
@@ -94,14 +94,14 @@ internal final class DefaultMessageReactions: MessageReactions {
             callback(summaryEvent)
         }
 
-        return Subscription { [weak self] in
+        return DefaultSubscription { [weak self] in
             self?.channel.unsubscribe(eventListener)
         }
     }
 
     // (CHA-MR7) Users must be able to subscribe to raw message reactions (as individual annotations) via the subscribeRaw method of the MessagesReactions object. The events emitted are of type MessageReactionRawEvent.
     @discardableResult
-    internal func subscribeRaw(_ callback: @escaping @MainActor @Sendable (MessageReactionRawEvent) -> Void) -> any SubscriptionProtocol {
+    internal func subscribeRaw(_ callback: @escaping @MainActor @Sendable (MessageReactionRawEvent) -> Void) -> DefaultSubscription {
         logger.log(message: "Subscribing to reaction events", level: .debug)
         guard options.rawMessageReactions else {
             // (CHA-MR7a) The attempt to subscribe to raw message reactions must throw an ErrorInfo with code 40000 and status code 400 if the room is not configured to support raw message reactions
@@ -143,7 +143,7 @@ internal final class DefaultMessageReactions: MessageReactions {
 
             callback(reactionEvent)
         }
-        return Subscription { [weak self] in
+        return DefaultSubscription { [weak self] in
             self?.channel.unsubscribe(eventListener)
         }
     }

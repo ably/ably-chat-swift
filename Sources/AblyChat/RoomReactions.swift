@@ -7,6 +7,8 @@ import Ably
  */
 @MainActor
 public protocol RoomReactions: AnyObject, Sendable {
+    associatedtype Subscription: SubscriptionProtocol
+
     /**
      * Send a reaction to the room including some metadata.
      *
@@ -26,7 +28,7 @@ public protocol RoomReactions: AnyObject, Sendable {
      * - Returns: A subscription that can be used to unsubscribe from `RoomReactionEvent` events.
      */
     @discardableResult
-    func subscribe(_ callback: @escaping @MainActor (RoomReactionEvent) -> Void) -> any SubscriptionProtocol
+    func subscribe(_ callback: @escaping @MainActor (RoomReactionEvent) -> Void) -> Subscription
 }
 
 /// `AsyncSequence` variant of receiving room reactions.

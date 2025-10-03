@@ -5,6 +5,8 @@ import Ably
  */
 @MainActor
 public protocol Connection: AnyObject, Sendable {
+    associatedtype StatusSubscription: StatusSubscriptionProtocol
+
     /**
      * The current status of the connection.
      */
@@ -25,7 +27,7 @@ public protocol Connection: AnyObject, Sendable {
      * - Returns: A subscription that can be used to unsubscribe from ``ConnectionStatusChange`` events.
      */
     @discardableResult
-    func onStatusChange(_ callback: @escaping @MainActor (ConnectionStatusChange) -> Void) -> any StatusSubscriptionProtocol
+    func onStatusChange(_ callback: @escaping @MainActor (ConnectionStatusChange) -> Void) -> StatusSubscription
 }
 
 /// `AsyncSequence` variant of `Connection` status changes.

@@ -16,23 +16,23 @@ class MockRoom: InternalRoom {
         fatalError("Not implemented")
     }
 
-    nonisolated var messages: any Messages {
+    nonisolated var messages: DefaultMessages {
         fatalError("Not implemented")
     }
 
-    nonisolated var presence: any Presence {
+    nonisolated var presence: DefaultPresence {
         fatalError("Not implemented")
     }
 
-    nonisolated var reactions: any RoomReactions {
+    nonisolated var reactions: DefaultRoomReactions {
         fatalError("Not implemented")
     }
 
-    nonisolated var typing: any Typing {
+    nonisolated var typing: DefaultTyping {
         fatalError("Not implemented")
     }
 
-    nonisolated var occupancy: any Occupancy {
+    nonisolated var occupancy: DefaultOccupancy {
         fatalError("Not implemented")
     }
 
@@ -65,12 +65,12 @@ class MockRoom: InternalRoom {
     private let _releaseCallsAsyncSequence: (stream: AsyncStream<Void>, continuation: AsyncStream<Void>.Continuation)
 
     @discardableResult
-    func onStatusChange(_: @escaping @MainActor (RoomStatusChange) -> Void) -> any StatusSubscriptionProtocol {
+    func onStatusChange(_: @escaping @MainActor (RoomStatusChange) -> Void) -> DefaultStatusSubscription {
         fatalError("Not implemented")
     }
 
     @discardableResult
-    func onDiscontinuity(_: @escaping @MainActor (DiscontinuityEvent) -> Void) -> any StatusSubscriptionProtocol {
+    func onDiscontinuity(_: @escaping @MainActor (DiscontinuityEvent) -> Void) -> DefaultStatusSubscription {
         fatalError("Not implemented")
     }
 

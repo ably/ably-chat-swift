@@ -3,6 +3,7 @@ import Ably
 @MainActor
 public protocol ChatClient: AnyObject, Sendable {
     associatedtype Realtime
+    associatedtype Connection: AblyChat.Connection
     associatedtype Rooms: AblyChat.Rooms
 
     /**
@@ -18,7 +19,7 @@ public protocol ChatClient: AnyObject, Sendable {
      *
      * - Returns: The connection object.
      */
-    nonisolated var connection: any Connection { get }
+    nonisolated var connection: Connection { get }
 
     /**
      * Returns the clientId of the current client.
@@ -70,7 +71,10 @@ public class DefaultChatClient: ChatClient {
 
     // (CHA-CS1) Every chat client has a status, which describes the current status of the connection.
     // (CHA-CS4) The chat client must allow its connection status to be observed by clients.
-    public let connection: any Connection
+    private let _connection: DefaultConnection
+    public var connection: some Connection {
+        _connection
+    }
 
     /**
      * Constructor for Chat
@@ -101,7 +105,7 @@ public class DefaultChatClient: ChatClient {
         logger = DefaultInternalLogger(logHandler: self.clientOptions.logHandler, logLevel: self.clientOptions.logLevel)
         let roomFactory = DefaultRoomFactory<InternalRealtimeClientAdapter<ARTWrapperSDKProxyRealtime>>()
         _rooms = DefaultRooms(realtime: internalRealtime, clientOptions: self.clientOptions, logger: logger, roomFactory: roomFactory)
-        connection = DefaultConnection(realtime: internalRealtime)
+        _connection = DefaultConnection(realtime: internalRealtime)
     }
 
     public nonisolated var clientID: String {
