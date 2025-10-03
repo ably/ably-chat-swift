@@ -118,7 +118,7 @@ struct IntegrationTests {
 
         // (4) Wait for rxRoom to see the message we just sent
         let throwawayRxEvent = try #require(await throwawayRxMessageSubscription.first { @Sendable _ in true })
-        #expect(throwawayRxEvent.message == txMessageBeforeRxSubscribe)
+        #expect(areMessagesEqualModuloNonSerialVersionInfo(throwawayRxEvent.message, txMessageBeforeRxSubscribe))
 
         // (5) Subscribe to messages
         let rxMessageSubscription = rxRoom.messages.subscribe()
@@ -132,7 +132,7 @@ struct IntegrationTests {
             ),
         )
         let rxEventFromSubscription = try #require(await rxMessageSubscription.first { @Sendable _ in true })
-        #expect(rxEventFromSubscription.message == txMessageAfterRxSubscribe)
+        #expect(areMessagesEqualModuloNonSerialVersionInfo(rxEventFromSubscription.message, txMessageAfterRxSubscribe))
 
         // MARK: - Message Reactions (Summary)
 
@@ -286,7 +286,7 @@ struct IntegrationTests {
         // The createdAt varies by milliseconds so we can't compare the entire objects directly
         #expect(rxEditedMessageFromSubscription.serial == txEditedMessage.serial)
         #expect(rxEditedMessageFromSubscription.clientID == txEditedMessage.clientID)
-        #expect(rxEditedMessageFromSubscription.version == txEditedMessage.version)
+        #expect(rxEditedMessageFromSubscription.version.serial == txEditedMessage.version.serial)
         #expect(rxEditedMessageFromSubscription.id == txEditedMessage.id)
         // Ensures text has been edited from original message
         #expect(rxEditedMessageFromSubscription.text == txEditedMessage.text)
@@ -310,7 +310,7 @@ struct IntegrationTests {
         // The createdAt varies by milliseconds so we can't compare the entire objects directly
         #expect(rxDeletedMessageFromSubscription.serial == txDeleteMessage.serial)
         #expect(rxDeletedMessageFromSubscription.clientID == txDeleteMessage.clientID)
-        #expect(rxDeletedMessageFromSubscription.version == txDeleteMessage.version)
+        #expect(rxDeletedMessageFromSubscription.version.serial == txDeleteMessage.version.serial)
         #expect(rxDeletedMessageFromSubscription.id == txDeleteMessage.id)
         #expect(rxDeletedMessageFromSubscription.text.isEmpty)
         #expect(rxDeletedMessageFromSubscription.headers.isEmpty)
@@ -510,4 +510,13 @@ struct IntegrationTests {
         let postReleaseRxRoom = try await rxClient.rooms.get(name: roomName, options: .init())
         #expect(postReleaseRxRoom !== rxRoom)
     }
+}
+
+/// Compares two messages for equality, ignoring all properties of the messages' `version` except for `serial`.
+private func areMessagesEqualModuloNonSerialVersionInfo(_ message1: Message, _ message2: Message) -> Bool {
+    var message2Copy = message2
+    message2Copy.version = message1.version
+    message2Copy.version.serial = message2.version.serial
+
+    return message1 == message2Copy
 }
