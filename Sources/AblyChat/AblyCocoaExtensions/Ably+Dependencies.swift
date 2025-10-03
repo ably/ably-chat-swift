@@ -1,14 +1,17 @@
 import Ably
 
-extension ARTRealtime: SuppliedRealtimeClientProtocol {}
-
-extension ARTWrapperSDKProxyRealtime: RealtimeClientProtocol {}
+extension ARTRealtime: RealtimeClientProtocol {}
+extension ARTWrapperSDKProxyRealtime: ProxyRealtimeClientProtocol {
+    internal typealias Proxied = ARTRealtime
+}
 
 extension ARTRealtimeChannels: RealtimeChannelsProtocol {}
-extension ARTWrapperSDKProxyRealtimeChannels: RealtimeChannelsProtocol {}
+extension ARTWrapperSDKProxyRealtimeChannels: ProxyRealtimeChannelsProtocol {
+    internal typealias Proxied = ARTRealtimeChannels
+}
 
 extension ARTRealtimeChannel: RealtimeChannelProtocol {}
-extension ARTWrapperSDKProxyRealtimeChannel: RealtimeChannelProtocol {}
+extension ARTWrapperSDKProxyRealtimeChannel: ProxyRealtimeChannelProtocol {}
 
 extension ARTRealtimePresence: RealtimePresenceProtocol {}
 extension ARTWrapperSDKProxyRealtimePresence: RealtimePresenceProtocol {}
@@ -16,4 +19,4 @@ extension ARTWrapperSDKProxyRealtimePresence: RealtimePresenceProtocol {}
 extension ARTRealtimeAnnotations: RealtimeAnnotationsProtocol {}
 extension ARTWrapperSDKProxyRealtimeAnnotations: RealtimeAnnotationsProtocol {}
 
-extension ARTConnection: ConnectionProtocol {}
+extension ARTConnection: CoreConnectionProtocol {}

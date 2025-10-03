@@ -4,7 +4,10 @@ import Ably
  * Manages the lifecycle of chat rooms.
  */
 @MainActor
-public protocol Rooms: AnyObject, Sendable {
+public protocol Rooms<Channel>: AnyObject, Sendable {
+    associatedtype Channel
+    associatedtype Room: AblyChat.Room where Room.Channel == Channel
+
     /**
      * Gets a room reference by name. The Rooms class ensures that only one reference
      * exists for each room. A new reference object is created if it doesn't already
@@ -26,12 +29,12 @@ public protocol Rooms: AnyObject, Sendable {
      *
      * - Throws: `ARTErrorInfo` if a room with the same name but different options already exists.
      */
-    func get(name: String, options: RoomOptions) async throws(ARTErrorInfo) -> any Room
+    func get(name: String, options: RoomOptions) async throws(ARTErrorInfo) -> Room
 
     /// Same as calling ``get(name:options:)`` with `RoomOptions()`.
     ///
     /// The `Rooms` protocol provides a default implementation of this method.
-    func get(name: String) async throws(ARTErrorInfo) -> any Room
+    func get(name: String) async throws(ARTErrorInfo) -> Room
 
     /**
      * Release the ``Room`` object if it exists. This method only releases the reference
@@ -57,18 +60,18 @@ public protocol Rooms: AnyObject, Sendable {
 }
 
 public extension Rooms {
-    func get(name: String) async throws(ARTErrorInfo) -> any Room {
+    func get(name: String) async throws(ARTErrorInfo) -> Room {
         // CHA-RC4a
         try await get(name: name, options: .init())
     }
 }
 
 internal class DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
-    private nonisolated let realtime: any InternalRealtimeClientProtocol
+    private nonisolated let realtime: RoomFactory.Realtime
     private let chatAPI: ChatAPI
 
     #if DEBUG
-        internal nonisolated var testsOnly_realtime: any InternalRealtimeClientProtocol {
+        internal nonisolated var testsOnly_realtime: RoomFactory.Realtime {
             realtime
         }
     #endif
@@ -128,7 +131,7 @@ internal class DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
     /// The value for a given room name is the state that corresponds to that room name.
     private var roomStates: [String: RoomState] = [:]
 
-    internal init(realtime: any InternalRealtimeClientProtocol, clientOptions: ChatClientOptions, logger: InternalLogger, roomFactory: RoomFactory) {
+    internal init(realtime: RoomFactory.Realtime, clientOptions: ChatClientOptions, logger: InternalLogger, roomFactory: RoomFactory) {
         self.realtime = realtime
         self.clientOptions = clientOptions
         self.logger = logger
@@ -164,7 +167,7 @@ internal class DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
         }
     #endif
 
-    internal func get(name: String, options: RoomOptions) async throws(ARTErrorInfo) -> any Room {
+    internal func get(name: String, options: RoomOptions) async throws(ARTErrorInfo) -> RoomFactory.Room {
         do throws(InternalError) {
             if let existingRoomState = roomStates[name] {
                 switch existingRoomState {

@@ -1,16 +1,11 @@
 import Ably
-import AblyChat
+@testable import AblyChat
 import Foundation
 
 // This mock isn't used much in the tests, since inside the SDK we mainly use `InternalRealtimeClientProtocol` (whose mock is ``MockRealtime``).
-final class MockSuppliedRealtime: NSObject, SuppliedRealtimeClientProtocol, @unchecked Sendable {
+final class MockAblyCocoaRealtime: NSObject, RealtimeClientProtocol, @unchecked Sendable {
     let connection = Connection()
     let channels = Channels()
-    let createWrapperSDKProxyReturnValue: MockSuppliedRealtime?
-
-    private let mutex = NSLock()
-    /// Access must be synchronized via ``mutex``.
-    private(set) var _createWrapperSDKProxyOptionsArgument: ARTWrapperSDKProxyOptions?
 
     var device: ARTLocalDevice {
         fatalError("Not implemented")
@@ -20,11 +15,7 @@ final class MockSuppliedRealtime: NSObject, SuppliedRealtimeClientProtocol, @unc
         fatalError("Not implemented")
     }
 
-    init(
-        createWrapperSDKProxyReturnValue: MockSuppliedRealtime? = nil,
-    ) {
-        self.createWrapperSDKProxyReturnValue = createWrapperSDKProxyReturnValue
-    }
+    override init() {}
 
     func time(_: @escaping ARTDateTimeCallback) {
         fatalError("Not implemented")
@@ -54,24 +45,6 @@ final class MockSuppliedRealtime: NSObject, SuppliedRealtimeClientProtocol, @unc
         fatalError("Not implemented")
     }
 
-    func createWrapperSDKProxy(with options: ARTWrapperSDKProxyOptions) -> some RealtimeClientProtocol {
-        guard let createWrapperSDKProxyReturnValue else {
-            fatalError("createWrapperSDKProxyReturnValue must be set in order to call createWrapperSDKProxy(with:)")
-        }
-
-        mutex.withLock {
-            _createWrapperSDKProxyOptionsArgument = options
-        }
-
-        return createWrapperSDKProxyReturnValue
-    }
-
-    var createWrapperSDKProxyOptionsArgument: ARTWrapperSDKProxyOptions? {
-        mutex.withLock {
-            _createWrapperSDKProxyOptionsArgument
-        }
-    }
-
     final class Channels: RealtimeChannelsProtocol {
         func get(_: String, options _: ARTRealtimeChannelOptions) -> Channel {
             fatalError("Not implemented")
@@ -91,8 +64,8 @@ final class MockSuppliedRealtime: NSObject, SuppliedRealtimeClientProtocol, @unc
     }
 
     final class Channel: RealtimeChannelProtocol {
-        let presence = MockSuppliedRealtime.Presence()
-        let annotations = MockSuppliedRealtime.Annotations()
+        let presence = MockAblyCocoaRealtime.Presence()
+        let annotations = MockAblyCocoaRealtime.Annotations()
 
         var state: ARTRealtimeChannelState {
             fatalError("Not implemented")
@@ -359,7 +332,7 @@ final class MockSuppliedRealtime: NSObject, SuppliedRealtimeClientProtocol, @unc
         }
     }
 
-    final class Connection: NSObject, ConnectionProtocol {
+    final class Connection: NSObject, CoreConnectionProtocol {
         var id: String? {
             fatalError("Not implemented")
         }

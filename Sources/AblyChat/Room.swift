@@ -5,6 +5,8 @@ import Ably
  */
 @MainActor
 public protocol Room: AnyObject, Sendable {
+    associatedtype Channel
+
     /**
      * The unique identifier of the room.
      *
@@ -117,7 +119,7 @@ public protocol Room: AnyObject, Sendable {
      *
      * - Returns: The realtime channel.
      */
-    nonisolated var channel: any RealtimeChannelProtocol { get }
+    nonisolated var channel: Channel { get }
 }
 
 /// `AsyncSequence` variant of `Room` status changes.
@@ -207,15 +209,16 @@ public struct RoomStatusChange: Sendable, Equatable {
 
 @MainActor
 internal protocol RoomFactory: Sendable {
+    associatedtype Realtime: InternalRealtimeClientProtocol where Realtime.Channels.Channel.Proxied == Room.Channel
     associatedtype Room: AblyChat.InternalRoom
 
-    func createRoom(realtime: any InternalRealtimeClientProtocol, chatAPI: ChatAPI, name: String, options: RoomOptions, logger: InternalLogger) throws(InternalError) -> Room
+    func createRoom(realtime: Realtime, chatAPI: ChatAPI, name: String, options: RoomOptions, logger: InternalLogger) throws(InternalError) -> Room
 }
 
-internal final class DefaultRoomFactory: Sendable, RoomFactory {
+internal final class DefaultRoomFactory<Realtime: InternalRealtimeClientProtocol>: Sendable, RoomFactory {
     private let lifecycleManagerFactory = DefaultRoomLifecycleManagerFactory()
 
-    internal func createRoom(realtime: any InternalRealtimeClientProtocol, chatAPI: ChatAPI, name: String, options: RoomOptions, logger: InternalLogger) throws(InternalError) -> DefaultRoom {
+    internal func createRoom(realtime: Realtime, chatAPI: ChatAPI, name: String, options: RoomOptions, logger: InternalLogger) throws(InternalError) -> DefaultRoom<Realtime> {
         try DefaultRoom(
             realtime: realtime,
             chatAPI: chatAPI,
@@ -227,7 +230,7 @@ internal final class DefaultRoomFactory: Sendable, RoomFactory {
     }
 }
 
-internal class DefaultRoom: InternalRoom {
+internal class DefaultRoom<Realtime: InternalRealtimeClientProtocol>: InternalRoom {
     internal nonisolated let name: String
     internal nonisolated let options: RoomOptions
     private let chatAPI: ChatAPI
@@ -239,25 +242,25 @@ internal class DefaultRoom: InternalRoom {
     public nonisolated let typing: any Typing
 
     // Exposed for testing.
-    private nonisolated let realtime: any InternalRealtimeClientProtocol
+    private nonisolated let realtime: Realtime
 
     private let lifecycleManager: any RoomLifecycleManager
-    private let internalChannel: any InternalRealtimeChannelProtocol
+    private let internalChannel: Realtime.Channels.Channel
 
     // Note: This property only exists to satisfy the `Room` interface. Do not use this property inside this class; use `internalChannel`.
-    internal nonisolated var channel: any RealtimeChannelProtocol {
-        internalChannel.underlying
+    internal nonisolated var channel: Realtime.Channels.Channel.Proxied {
+        internalChannel.proxied
     }
 
     #if DEBUG
-        internal nonisolated var testsOnly_internalChannel: any InternalRealtimeChannelProtocol {
+        internal nonisolated var testsOnly_internalChannel: Realtime.Channels.Channel {
             internalChannel
         }
     #endif
 
     private let logger: InternalLogger
 
-    internal init(realtime: any InternalRealtimeClientProtocol, chatAPI: ChatAPI, name: String, options: RoomOptions, logger: InternalLogger, lifecycleManagerFactory: any RoomLifecycleManagerFactory) throws(InternalError) {
+    internal init(realtime: Realtime, chatAPI: ChatAPI, name: String, options: RoomOptions, logger: InternalLogger, lifecycleManagerFactory: any RoomLifecycleManagerFactory) throws(InternalError) {
         self.realtime = realtime
         self.name = name
         self.options = options
@@ -318,7 +321,7 @@ internal class DefaultRoom: InternalRoom {
         )
     }
 
-    private static func createChannel(roomName: String, roomOptions: RoomOptions, realtime: any InternalRealtimeClientProtocol) -> any InternalRealtimeChannelProtocol {
+    private static func createChannel(roomName: String, roomOptions: RoomOptions, realtime: Realtime) -> Realtime.Channels.Channel {
         let channelOptions = ARTRealtimeChannelOptions()
 
         // CHA-GP2a

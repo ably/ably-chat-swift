@@ -2,20 +2,23 @@ import Ably
 @testable import AblyChat
 
 class MockChatClient: ChatClient {
-    let realtime: RealtimeClient
+    final class Realtime: Sendable {
+        init() {}
+    }
+
+    let realtime = Realtime()
     nonisolated let clientOptions: ChatClientOptions
-    nonisolated let rooms: Rooms
+    nonisolated let rooms: MockRooms
     nonisolated let connection: Connection
 
-    init(realtime: RealtimeClient, clientOptions: ChatClientOptions?) {
-        self.realtime = realtime
+    init(clientOptions: ChatClientOptions?) {
         self.clientOptions = clientOptions ?? .init()
         connection = MockConnection(status: .connected, error: nil)
         rooms = MockRooms(clientOptions: self.clientOptions)
     }
 
     nonisolated var clientID: String {
-        realtime.clientId ?? "AblyTest"
+        "AblyTest"
     }
 }
 
@@ -23,7 +26,7 @@ class MockRooms: Rooms {
     let clientOptions: ChatClientOptions
     private var rooms = [String: MockRoom]()
 
-    func get(name: String, options: RoomOptions) async throws(ARTErrorInfo) -> any Room {
+    func get(name: String, options: RoomOptions) async throws(ARTErrorInfo) -> MockRoom {
         if let room = rooms[name] {
             return room
         }
@@ -42,6 +45,10 @@ class MockRooms: Rooms {
 }
 
 class MockRoom: Room {
+    final class Channel: Sendable {
+        init() {}
+    }
+
     private let clientID = "AblyTest"
 
     nonisolated let name: String
@@ -52,7 +59,7 @@ class MockRoom: Room {
     nonisolated let typing: any Typing
     nonisolated let occupancy: any Occupancy
 
-    let channel: any RealtimeChannelProtocol = MockRealtime.Channel()
+    let channel = Channel()
 
     init(name: String, options: RoomOptions) {
         self.name = name

@@ -74,7 +74,7 @@ class MockRoom: InternalRoom {
         fatalError("Not implemented")
     }
 
-    nonisolated var channel: any RealtimeChannelProtocol {
+    nonisolated var channel: MockAblyCocoaRealtime.Channel {
         fatalError("Not implemented")
     }
 }

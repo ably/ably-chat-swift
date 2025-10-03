@@ -102,10 +102,10 @@ When writing unit tests, there are times that we need to access internal state o
 So, when writing an API which has `internal` access level purely to enable it to be called by the tests, prefix this API’s name with `testOnly_`. For example:
 
 ```swift
-private nonisolated let realtime: RealtimeClient
+private nonisolated let realtime: any RealtimeClientProtocol
 
 #if DEBUG
-    internal nonisolated var testsOnly_realtime: RealtimeClient {
+    internal nonisolated var testsOnly_realtime: any RealtimeClientProtocol {
         realtime
     }
 #endif
@@ -171,6 +171,8 @@ Example:
 
 For each release, the following needs to be done:
 
+- Confirm that none of our `Package.swift` dependencies are specified using a fixed `.revision`.
+  - The dependency that is most likely to be using a fixed revision is [ably-cocoa](https://github.com/ably/ably-cocoa); make a new release of that library if needed.
 - Create a new branch `release/x.x.x` (where `x.x.x` is the new version number) from the `main` branch
 - Update the following (we have https://github.com/ably/ably-chat-swift/issues/277 for adding a script to do this):
   - the `version` constant in [`Sources/AblyChat/Version.swift`](Sources/AblyChat/Version.swift)

@@ -13,11 +13,10 @@ private enum Environment: Equatable {
     case live(key: String, clientId: String)
 
     @MainActor
-    func createChatClient() -> ChatClient {
+    func createChatClient() -> any ChatClient {
         switch self {
         case .mock:
             return MockChatClient(
-                realtime: MockRealtime(),
                 clientOptions: ChatClientOptions(),
             )
         case let .live(key: key, clientId: clientId):
@@ -77,7 +76,7 @@ struct ContentView: View {
         }.first
     }
 
-    private func room() async throws -> Room {
+    private func room() async throws -> any Room {
         try await chatClient.rooms.get(name: roomName, options: .init(occupancy: .init(enableEvents: true)))
     }
 
@@ -92,10 +91,7 @@ struct ContentView: View {
     }
 
     private var currentClientID: String {
-        guard let clientID = chatClient.realtime.clientId else {
-            fatalError("realtime.clientId should be set.")
-        }
-        return clientID
+        chatClient.clientID
     }
 
     var body: some View {
@@ -252,7 +248,7 @@ struct ContentView: View {
         }
     }
 
-    func showMessages(room: Room) async throws {
+    func showMessages(room: any Room) async throws {
         let subscription = room.messages.subscribe { event in
             let message = event.message
             switch event.type {
@@ -291,7 +287,7 @@ struct ContentView: View {
         }
     }
 
-    func subscribeToReactions(room: Room) {
+    func subscribeToReactions(room: any Room) {
         room.reactions.subscribe { event in
             withAnimation {
                 showReaction(event.reaction.displayedText)
@@ -299,7 +295,7 @@ struct ContentView: View {
         }
     }
 
-    func subscribeToMessageReactions(room: Room) {
+    func subscribeToMessageReactions(room: any Room) {
         room.messages.reactions.subscribe { summaryEvent in
             do {
                 try withAnimation {
@@ -320,7 +316,7 @@ struct ContentView: View {
         }
     }
 
-    func subscribeToPresence(room: Room) {
+    func subscribeToPresence(room: any Room) {
         room.presence.subscribe(events: [.enter, .leave, .update]) { event in
             withAnimation {
                 listItems.insert(
@@ -335,7 +331,7 @@ struct ContentView: View {
         }
     }
 
-    func subscribeToTypingEvents(room: Room) {
+    func subscribeToTypingEvents(room: any Room) {
         room.typing.subscribe { typing in
             withAnimation {
                 // Set the typing info to the list of users currently typing
@@ -345,12 +341,12 @@ struct ContentView: View {
         }
     }
 
-    func showOccupancy(room: Room) async throws {
+    func showOccupancy(room: any Room) async throws {
         let occupancy = try await room.occupancy.get()
         occupancyInfo = "Connections: \(occupancy.presenceMembers) (\(occupancy.connections))"
     }
 
-    func subscribeToOccupancy(room: Room) {
+    func subscribeToOccupancy(room: any Room) {
         room.occupancy.subscribe { event in
             withAnimation {
                 occupancyInfo = "Connections: \(event.occupancy.presenceMembers) (\(event.occupancy.connections))"
@@ -368,7 +364,7 @@ struct ContentView: View {
         }
     }
 
-    func subscribeToRoomStatus(room: Room) {
+    func subscribeToRoomStatus(room: any Room) {
         room.onStatusChange { status in
             withAnimation {
                 if status.current.isAttaching {
