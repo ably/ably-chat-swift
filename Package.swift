@@ -4,6 +4,7 @@ import PackageDescription
 
 let commonSwiftSettings: [SwiftSetting] = [
     .enableUpcomingFeature("MemberImportVisibility"),
+    .enableUpcomingFeature("ExistentialAny"),
 ]
 
 let package = Package(

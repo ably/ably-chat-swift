@@ -25,7 +25,7 @@ public protocol Connection: AnyObject, Sendable {
      * - Returns: A subscription that can be used to unsubscribe from ``ConnectionStatusChange`` events.
      */
     @discardableResult
-    func onStatusChange(_ callback: @escaping @MainActor (ConnectionStatusChange) -> Void) -> StatusSubscriptionProtocol
+    func onStatusChange(_ callback: @escaping @MainActor (ConnectionStatusChange) -> Void) -> any StatusSubscriptionProtocol
 }
 
 /// `AsyncSequence` variant of `Connection` status changes.

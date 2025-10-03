@@ -17,7 +17,7 @@ public protocol Typing: AnyObject, Sendable {
      * - Returns: A subscription that can be used to unsubscribe from ``TypingEvent`` events.
      */
     @discardableResult
-    func subscribe(_ callback: @escaping @MainActor (TypingSetEvent) -> Void) -> SubscriptionProtocol
+    func subscribe(_ callback: @escaping @MainActor (TypingSetEvent) -> Void) -> any SubscriptionProtocol
 
     /**
      * Get the current typers, a set of clientIds.

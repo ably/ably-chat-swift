@@ -371,7 +371,7 @@ struct DefaultRoomsTests {
         async let secondReleaseResult: Void = rooms.release(name: name)
 
         // Then: The pending call to `get(name:options:)` that is waiting for the “CHA-RC1f future” of the “Given” fails with a RoomReleasedBeforeOperationCompleted error
-        let roomGetError: Error?
+        let roomGetError: (any Error)?
         do {
             _ = try await fetchedRoom
             roomGetError = nil

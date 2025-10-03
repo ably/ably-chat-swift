@@ -55,10 +55,10 @@ extension InternalLogger {
 }
 
 internal final class DefaultInternalLogger: InternalLogger {
-    private let logHandler: LogHandler
+    private let logHandler: any LogHandler
 
     #if DEBUG
-        internal var testsOnly_logHandler: LogHandler {
+        internal var testsOnly_logHandler: any LogHandler {
             logHandler
         }
     #endif
@@ -71,7 +71,7 @@ internal final class DefaultInternalLogger: InternalLogger {
         }
     #endif
 
-    internal init(logHandler: LogHandler?, logLevel: LogLevel?) {
+    internal init(logHandler: (any LogHandler)?, logLevel: LogLevel?) {
         self.logHandler = logHandler ?? DefaultLogHandler()
         self.logLevel = logLevel ?? .error
     }

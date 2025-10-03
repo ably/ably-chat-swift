@@ -5,10 +5,10 @@ internal final class DefaultPresence: Presence {
     private let roomLifecycleManager: any RoomLifecycleManager
     private let roomName: String
     private let clientID: String
-    private let logger: InternalLogger
+    private let logger: any InternalLogger
     private let options: PresenceOptions
 
-    internal init(channel: any InternalRealtimeChannelProtocol, roomLifecycleManager: any RoomLifecycleManager, roomName: String, clientID: String, logger: InternalLogger, options: PresenceOptions) {
+    internal init(channel: any InternalRealtimeChannelProtocol, roomLifecycleManager: any RoomLifecycleManager, roomName: String, clientID: String, logger: any InternalLogger, options: PresenceOptions) {
         self.channel = channel
         self.roomLifecycleManager = roomLifecycleManager
         self.roomName = roomName
@@ -199,7 +199,7 @@ internal final class DefaultPresence: Presence {
 
     // (CHA-PR7a) Users may provide a listener to subscribe to all presence events in a room.
     // (CHA-PR7b) Users may provide a listener and a list of selected presence events, to subscribe to just those events in a room.
-    internal func subscribe(event: PresenceEventType, _ callback: @escaping @MainActor (PresenceEvent) -> Void) -> SubscriptionProtocol {
+    internal func subscribe(event: PresenceEventType, _ callback: @escaping @MainActor (PresenceEvent) -> Void) -> any SubscriptionProtocol {
         fatalErrorIfEnableEventsDisabled()
 
         logger.log(message: "Subscribing to presence events", level: .debug)
@@ -221,7 +221,7 @@ internal final class DefaultPresence: Presence {
         }
     }
 
-    internal func subscribe(events: [PresenceEventType], _ callback: @escaping @MainActor (PresenceEvent) -> Void) -> SubscriptionProtocol {
+    internal func subscribe(events: [PresenceEventType], _ callback: @escaping @MainActor (PresenceEvent) -> Void) -> any SubscriptionProtocol {
         fatalErrorIfEnableEventsDisabled()
 
         logger.log(message: "Subscribing to presence events", level: .debug)

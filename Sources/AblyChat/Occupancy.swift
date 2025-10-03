@@ -19,7 +19,7 @@ public protocol Occupancy: AnyObject, Sendable {
      * - Returns: A subscription that can be used to unsubscribe from ``OccupancyEvent`` events.
      */
     @discardableResult
-    func subscribe(_ callback: @escaping @MainActor (OccupancyEvent) -> Void) -> SubscriptionProtocol
+    func subscribe(_ callback: @escaping @MainActor (OccupancyEvent) -> Void) -> any SubscriptionProtocol
 
     /**
      * Get the current occupancy of the chat room.

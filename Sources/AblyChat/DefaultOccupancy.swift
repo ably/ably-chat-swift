@@ -4,12 +4,12 @@ internal final class DefaultOccupancy: Occupancy {
     private let channel: any InternalRealtimeChannelProtocol
     private let chatAPI: ChatAPI
     private let roomName: String
-    private let logger: InternalLogger
+    private let logger: any InternalLogger
     private let options: OccupancyOptions
 
     private var lastOccupancyData: OccupancyData?
 
-    internal init(channel: any InternalRealtimeChannelProtocol, chatAPI: ChatAPI, roomName: String, logger: InternalLogger, options: OccupancyOptions) {
+    internal init(channel: any InternalRealtimeChannelProtocol, chatAPI: ChatAPI, roomName: String, logger: any InternalLogger, options: OccupancyOptions) {
         self.channel = channel
         self.chatAPI = chatAPI
         self.roomName = roomName
@@ -18,7 +18,7 @@ internal final class DefaultOccupancy: Occupancy {
     }
 
     @discardableResult
-    internal func subscribe(_ callback: @escaping @MainActor (OccupancyEvent) -> Void) -> SubscriptionProtocol {
+    internal func subscribe(_ callback: @escaping @MainActor (OccupancyEvent) -> Void) -> any SubscriptionProtocol {
         // CHA-O4e (we use a fatalError for this programmer error, which is the idiomatic thing to do for Swift)
         guard options.enableEvents else {
             fatalError("In order to be able to subscribe to presence events, please set enableEvents to true in the room's occupancy options.")

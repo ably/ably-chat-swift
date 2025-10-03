@@ -4,7 +4,7 @@ import Foundation
 internal final class TypingTimerManager<AnyClock: ClockProtocol>: TypingTimerManagerProtocol {
     private let heartbeatThrottle: TimeInterval
     private let gracePeriod: TimeInterval
-    private let logger: InternalLogger
+    private let logger: any InternalLogger
     private let clock: AnyClock
 
     /// Stores the CHA-T13b1 "is somebody typing" timers. Keys are clientID.
@@ -13,7 +13,7 @@ internal final class TypingTimerManager<AnyClock: ClockProtocol>: TypingTimerMan
     /// Stores the moment when the CHA-T4a4 heartbeat timer (which we use for deciding whether to publish another typing event for the current user) was started. If `nil`, then there is no active heartbeat timer.
     private var heartbeatTimerStartedAt: AnyClock.Instant?
 
-    internal init(heartbeatThrottle: TimeInterval, gracePeriod: TimeInterval, logger: InternalLogger, clock: AnyClock) {
+    internal init(heartbeatThrottle: TimeInterval, gracePeriod: TimeInterval, logger: any InternalLogger, clock: AnyClock) {
         self.heartbeatThrottle = heartbeatThrottle
         self.gracePeriod = gracePeriod
         self.logger = logger

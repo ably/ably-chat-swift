@@ -26,7 +26,7 @@ public protocol RoomReactions: AnyObject, Sendable {
      * - Returns: A subscription that can be used to unsubscribe from `RoomReactionEvent` events.
      */
     @discardableResult
-    func subscribe(_ callback: @escaping @MainActor (RoomReactionEvent) -> Void) -> SubscriptionProtocol
+    func subscribe(_ callback: @escaping @MainActor (RoomReactionEvent) -> Void) -> any SubscriptionProtocol
 }
 
 /// `AsyncSequence` variant of receiving room reactions.

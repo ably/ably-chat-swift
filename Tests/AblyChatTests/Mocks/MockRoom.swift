@@ -65,12 +65,12 @@ class MockRoom: InternalRoom {
     private let _releaseCallsAsyncSequence: (stream: AsyncStream<Void>, continuation: AsyncStream<Void>.Continuation)
 
     @discardableResult
-    func onStatusChange(_: @escaping @MainActor (RoomStatusChange) -> Void) -> StatusSubscriptionProtocol {
+    func onStatusChange(_: @escaping @MainActor (RoomStatusChange) -> Void) -> any StatusSubscriptionProtocol {
         fatalError("Not implemented")
     }
 
     @discardableResult
-    func onDiscontinuity(_: @escaping @MainActor (DiscontinuityEvent) -> Void) -> StatusSubscriptionProtocol {
+    func onDiscontinuity(_: @escaping @MainActor (DiscontinuityEvent) -> Void) -> any StatusSubscriptionProtocol {
         fatalError("Not implemented")
     }
 

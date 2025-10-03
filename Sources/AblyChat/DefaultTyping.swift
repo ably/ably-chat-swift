@@ -4,13 +4,13 @@ internal final class DefaultTyping: Typing {
     private let channel: any InternalRealtimeChannelProtocol
     private let roomName: String
     private let clientID: String
-    private let logger: InternalLogger
+    private let logger: any InternalLogger
     private let heartbeatThrottle: TimeInterval
 
     // (CHA-T10a) A grace period shall be set by the client (the grace period on the CHA-T10 heartbeat interval when receiving events). The default value shall be set to 2000ms.
     private let gracePeriod: TimeInterval = 2
 
-    private let typingTimerManager: TypingTimerManagerProtocol
+    private let typingTimerManager: any TypingTimerManagerProtocol
 
     // (CHA-T14) Multiple asynchronous calls to keystroke/stop typing must eventually converge to a consistent state.
     // (CHA-TM14a) When a call to keystroke or stop is made, it should attempt to acquire a mutex lock.
@@ -18,7 +18,7 @@ internal final class DefaultTyping: Typing {
     // (CHA-TM14b1) During this time, each new subsequent call to either function shall abort the previously queued call. In doing so, there shall only ever be one pending call and while the mutex is held, thus the most recent call shall "win" and execute once the mutex is released.
     private let keyboardOperationQueue = TypingOperationQueue<InternalError>()
 
-    internal init(channel: any InternalRealtimeChannelProtocol, roomName: String, clientID: String, logger: InternalLogger, heartbeatThrottle: TimeInterval, clock: some ClockProtocol) {
+    internal init(channel: any InternalRealtimeChannelProtocol, roomName: String, clientID: String, logger: any InternalLogger, heartbeatThrottle: TimeInterval, clock: some ClockProtocol) {
         self.roomName = roomName
         self.channel = channel
         self.clientID = clientID
@@ -35,7 +35,7 @@ internal final class DefaultTyping: Typing {
 
     // (CHA-T6) Users may subscribe to typing events – updates to a set of clientIDs that are typing. This operation, like all subscription operations, has no side-effects in relation to room lifecycle.
     @discardableResult
-    internal func subscribe(_ callback: @escaping @MainActor (TypingSetEvent) -> Void) -> SubscriptionProtocol {
+    internal func subscribe(_ callback: @escaping @MainActor (TypingSetEvent) -> Void) -> any SubscriptionProtocol {
         // (CHA-T6a) Users may provide a listener to subscribe to typing event V2 in a chat room.
         let startedEventListener = channel.subscribe(TypingEventType.started.rawValue) { [weak self] message in
             guard let self, let messageClientID = message.clientId else {

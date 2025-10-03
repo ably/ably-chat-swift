@@ -66,7 +66,7 @@ public class DefaultChatClient: ChatClient {
         _rooms
     }
 
-    private let logger: InternalLogger
+    private let logger: any InternalLogger
 
     // (CHA-CS1) Every chat client has a status, which describes the current status of the connection.
     // (CHA-CS4) The chat client must allow its connection status to be observed by clients.
@@ -121,7 +121,7 @@ public struct ChatClientOptions: Sendable {
      *
      * By default, the client will log messages to the console.
      */
-    public var logHandler: LogHandler?
+    public var logHandler: (any LogHandler)?
 
     /**
      * The minimum log level at which messages will be logged.

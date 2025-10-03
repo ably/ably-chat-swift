@@ -16,7 +16,7 @@ public protocol Messages: AnyObject, Sendable {
      *
      * - Returns: A subscription that can be used to unsubscribe from `ChatMessageEvent` events.
      */
-    func subscribe(_ callback: @escaping @MainActor (ChatMessageEvent) -> Void) -> MessageSubscriptionResponseProtocol
+    func subscribe(_ callback: @escaping @MainActor (ChatMessageEvent) -> Void) -> any MessageSubscriptionResponseProtocol
 
     /**
      * Get messages that have been previously sent to the chat room, based on the provided options.
@@ -76,7 +76,7 @@ public protocol Messages: AnyObject, Sendable {
     /**
      * Add, delete, and subscribe to message reactions.
      */
-    var reactions: MessageReactions { get }
+    var reactions: any MessageReactions { get }
 }
 
 public extension Messages {

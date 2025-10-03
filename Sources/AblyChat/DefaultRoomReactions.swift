@@ -3,10 +3,10 @@ import Ably
 internal final class DefaultRoomReactions: RoomReactions {
     private let channel: any InternalRealtimeChannelProtocol
     private let roomName: String
-    private let logger: InternalLogger
+    private let logger: any InternalLogger
     private let clientID: String
 
-    internal init(channel: any InternalRealtimeChannelProtocol, clientID: String, roomName: String, logger: InternalLogger) {
+    internal init(channel: any InternalRealtimeChannelProtocol, clientID: String, roomName: String, logger: any InternalLogger) {
         self.roomName = roomName
         self.channel = channel
         self.logger = logger
@@ -34,7 +34,7 @@ internal final class DefaultRoomReactions: RoomReactions {
     // (CHA-ER4) A user may subscribe to reaction events in Realtime.
     // (CHA-ER4a) A user may provide a listener to subscribe to reaction events. This operation must have no side-effects in relation to room or underlying status. When a realtime message with name roomReaction is received, this message is converted into a reaction object and emitted to subscribers.
     @discardableResult
-    internal func subscribe(_ callback: @escaping @MainActor (RoomReactionEvent) -> Void) -> SubscriptionProtocol {
+    internal func subscribe(_ callback: @escaping @MainActor (RoomReactionEvent) -> Void) -> any SubscriptionProtocol {
         logger.log(message: "Subscribing to reaction events", level: .debug)
 
         // (CHA-ER4c) Realtime events with an unknown name shall be silently discarded.
