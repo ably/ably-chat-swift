@@ -1,6 +1,6 @@
 import Ably
 
-public protocol PaginatedResult<Item>: AnyObject, Sendable, Equatable {
+public protocol PaginatedResult<Item>: AnyObject, Sendable {
     associatedtype Item
 
     var items: [Item] { get }
@@ -48,7 +48,7 @@ internal enum PaginatedResultError: Error {
 }
 
 /// `PaginatedResult` protocol implementation allowing access to the underlying items from a lower level paginated response object e.g. `ARTHTTPPaginatedResponse`, whilst succinctly handling errors through the use of `ARTHTTPPaginatedCallbackWrapper`.
-internal final class PaginatedResultWrapper<Item: JSONDecodable & Sendable & Equatable>: PaginatedResult {
+internal final class PaginatedResultWrapper<Item: JSONDecodable & Sendable & Equatable>: PaginatedResult, Equatable {
     internal let items: [Item]
     internal let hasNext: Bool
     internal let isLast: Bool
