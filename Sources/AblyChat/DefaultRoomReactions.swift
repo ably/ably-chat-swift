@@ -34,7 +34,7 @@ internal final class DefaultRoomReactions: RoomReactions {
     // (CHA-ER4) A user may subscribe to reaction events in Realtime.
     // (CHA-ER4a) A user may provide a listener to subscribe to reaction events. This operation must have no side-effects in relation to room or underlying status. When a realtime message with name roomReaction is received, this message is converted into a reaction object and emitted to subscribers.
     @discardableResult
-    internal func subscribe(_ callback: @escaping @MainActor (RoomReactionEvent) -> Void) -> any SubscriptionProtocol {
+    internal func subscribe(_ callback: @escaping @MainActor (RoomReactionEvent) -> Void) -> some SubscriptionProtocol {
         logger.log(message: "Subscribing to reaction events", level: .debug)
 
         // (CHA-ER4c) Realtime events with an unknown name shall be silently discarded.

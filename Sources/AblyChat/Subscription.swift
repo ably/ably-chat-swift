@@ -34,6 +34,8 @@ public protocol StatusSubscriptionProtocol: Sendable {
  */
 @MainActor
 public protocol MessageSubscriptionResponseProtocol: SubscriptionProtocol, Sendable {
+    associatedtype HistoryResult: PaginatedResult<Message>
+
     /**
      * Get the previous messages that were sent to the room before the listener was subscribed.
      *
@@ -51,7 +53,7 @@ public protocol MessageSubscriptionResponseProtocol: SubscriptionProtocol, Senda
      *
      * - Returns: A paginated result of messages, in newest-to-oldest order.
      */
-    func historyBeforeSubscribe(_ params: QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message>
+    func historyBeforeSubscribe(_ params: QueryOptions) async throws(ARTErrorInfo) -> HistoryResult
 }
 
 internal struct DefaultSubscription: SubscriptionProtocol, Sendable {
@@ -88,7 +90,7 @@ internal struct DefaultMessageSubscriptionResponse: MessageSubscriptionResponseP
         _unsubscribe()
     }
 
-    internal func historyBeforeSubscribe(_ params: QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message> {
+    internal func historyBeforeSubscribe(_ params: QueryOptions) async throws(ARTErrorInfo) -> some PaginatedResult<Message> {
         do {
             let fromSerial = try await subscriptionStartSerial()
 

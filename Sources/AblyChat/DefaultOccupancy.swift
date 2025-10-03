@@ -18,7 +18,7 @@ internal final class DefaultOccupancy: Occupancy {
     }
 
     @discardableResult
-    internal func subscribe(_ callback: @escaping @MainActor (OccupancyEvent) -> Void) -> any SubscriptionProtocol {
+    internal func subscribe(_ callback: @escaping @MainActor (OccupancyEvent) -> Void) -> some SubscriptionProtocol {
         // CHA-O4e (we use a fatalError for this programmer error, which is the idiomatic thing to do for Swift)
         guard options.enableEvents else {
             fatalError("In order to be able to subscribe to presence events, please set enableEvents to true in the room's occupancy options.")

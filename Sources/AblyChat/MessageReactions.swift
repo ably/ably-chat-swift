@@ -7,6 +7,8 @@ import Ably
  */
 @MainActor
 public protocol MessageReactions: AnyObject, Sendable {
+    associatedtype Subscription: SubscriptionProtocol
+
     /**
      * Add a message reaction.
      *
@@ -36,7 +38,7 @@ public protocol MessageReactions: AnyObject, Sendable {
      * - Returns: A subscription handle object that should be used to unsubscribe.
      */
     @discardableResult
-    func subscribe(_ callback: @escaping @MainActor (MessageReactionSummaryEvent) -> Void) -> any SubscriptionProtocol
+    func subscribe(_ callback: @escaping @MainActor (MessageReactionSummaryEvent) -> Void) -> Subscription
 
     /**
      * Subscribe to individual reaction events.
@@ -49,7 +51,7 @@ public protocol MessageReactions: AnyObject, Sendable {
      * - Note: If you only need to keep track of reaction counts and clients, use ``subscribe(_:)`` instead.
      */
     @discardableResult
-    func subscribeRaw(_ callback: @escaping @MainActor (MessageReactionRawEvent) -> Void) -> any SubscriptionProtocol
+    func subscribeRaw(_ callback: @escaping @MainActor (MessageReactionRawEvent) -> Void) -> Subscription
 }
 
 /// `AsyncSequence` variant of receiving message reactions events.

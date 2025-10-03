@@ -21,7 +21,7 @@ internal final class DefaultConnection: Connection {
 
     // (CHA-CS4d) Clients must be able to register a listener for connection status events and receive such events.
     @discardableResult
-    internal func onStatusChange(_ callback: @escaping @MainActor (ConnectionStatusChange) -> Void) -> any StatusSubscriptionProtocol {
+    internal func onStatusChange(_ callback: @escaping @MainActor (ConnectionStatusChange) -> Void) -> some StatusSubscriptionProtocol {
         // (CHA-CS5) The chat client must monitor the underlying realtime connection for connection status changes.
         let eventListener = realtime.connection.on { [weak self] stateChange in
             guard let self else {

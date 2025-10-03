@@ -2,12 +2,14 @@ import Ably
 
 @MainActor
 internal protocol RoomLifecycleManager: Sendable {
+    associatedtype StatusSubscription: StatusSubscriptionProtocol
+
     func performAttachOperation() async throws(InternalError)
     func performDetachOperation() async throws(InternalError)
     func performReleaseOperation() async
     var roomStatus: RoomStatus { get }
     @discardableResult
-    func onRoomStatusChange(_ callback: @escaping @MainActor (RoomStatusChange) -> Void) -> any StatusSubscriptionProtocol
+    func onRoomStatusChange(_ callback: @escaping @MainActor (RoomStatusChange) -> Void) -> StatusSubscription
 
     /// Waits until we can perform presence operations on this room's channel without triggering an implicit attach.
     ///
@@ -22,7 +24,7 @@ internal protocol RoomLifecycleManager: Sendable {
     func waitToBeAbleToPerformPresenceOperations(requestedByFeature requester: RoomFeature) async throws(InternalError)
 
     @discardableResult
-    func onDiscontinuity(_ callback: @escaping @MainActor (DiscontinuityEvent) -> Void) -> any StatusSubscriptionProtocol
+    func onDiscontinuity(_ callback: @escaping @MainActor (DiscontinuityEvent) -> Void) -> StatusSubscription
 }
 
 @MainActor
@@ -178,7 +180,7 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
     // MARK: - Room status and its changes
 
     @discardableResult
-    internal func onRoomStatusChange(_ callback: @escaping @MainActor (RoomStatusChange) -> Void) -> any StatusSubscriptionProtocol {
+    internal func onRoomStatusChange(_ callback: @escaping @MainActor (RoomStatusChange) -> Void) -> DefaultStatusSubscription {
         roomStatusChangeSubscriptions.create(callback)
     }
 
@@ -222,7 +224,7 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
     }
 
     @discardableResult
-    internal func onDiscontinuity(_ callback: @escaping @MainActor (DiscontinuityEvent) -> Void) -> any StatusSubscriptionProtocol {
+    internal func onDiscontinuity(_ callback: @escaping @MainActor (DiscontinuityEvent) -> Void) -> DefaultStatusSubscription {
         discontinuitySubscriptions.create(callback)
     }
 

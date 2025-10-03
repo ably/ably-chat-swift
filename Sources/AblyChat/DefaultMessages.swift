@@ -1,7 +1,7 @@
 import Ably
 
 internal final class DefaultMessages: Messages {
-    internal let reactions: any MessageReactions
+    internal let reactions: DefaultMessageReactions
 
     private let channel: any InternalRealtimeChannelProtocol
 
@@ -36,7 +36,7 @@ internal final class DefaultMessages: Messages {
         updateCurrentSubscriptionPoint()
     }
 
-    internal func subscribe(_ callback: @escaping @MainActor (ChatMessageEvent) -> Void) -> any MessageSubscriptionResponseProtocol {
+    internal func subscribe(_ callback: @escaping @MainActor (ChatMessageEvent) -> Void) -> some MessageSubscriptionResponseProtocol {
         logger.log(message: "Subscribing to messages", level: .debug)
         // (CHA-M4c) When a realtime message with name set to message.created is received, it is translated into a message event, which contains a type field with the event type as well as a message field containing the Message Struct. This event is then broadcast to all subscribers.
         // (CHA-M4d) If a realtime message with an unknown name is received, the SDK shall silently discard the message, though it may log at DEBUG or TRACE level.
@@ -115,7 +115,7 @@ internal final class DefaultMessages: Messages {
     }
 
     // (CHA-M6a) A method must be exposed that accepts the standard Ably REST API query parameters. It shall call the "REST API"#rest-fetching-messages and return a PaginatedResult containing messages, which can then be paginated through.
-    internal func history(options: QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message> {
+    internal func history(options: QueryOptions) async throws(ARTErrorInfo) -> some PaginatedResult<Message> {
         do {
             return try await chatAPI.getMessages(roomName: roomName, params: options)
         } catch {

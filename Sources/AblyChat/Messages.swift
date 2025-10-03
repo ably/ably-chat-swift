@@ -8,6 +8,10 @@ import Ably
  */
 @MainActor
 public protocol Messages: AnyObject, Sendable {
+    associatedtype Reactions: MessageReactions
+    associatedtype SubscribeResponse: MessageSubscriptionResponseProtocol
+    associatedtype HistoryResult: PaginatedResult<Message>
+
     /**
      * Subscribe to new messages in this chat room.
      *
@@ -16,7 +20,7 @@ public protocol Messages: AnyObject, Sendable {
      *
      * - Returns: A subscription that can be used to unsubscribe from `ChatMessageEvent` events.
      */
-    func subscribe(_ callback: @escaping @MainActor (ChatMessageEvent) -> Void) -> any MessageSubscriptionResponseProtocol
+    func subscribe(_ callback: @escaping @MainActor (ChatMessageEvent) -> Void) -> SubscribeResponse
 
     /**
      * Get messages that have been previously sent to the chat room, based on the provided options.
@@ -26,7 +30,7 @@ public protocol Messages: AnyObject, Sendable {
      *
      * - Returns: A paginated result object that can be used to fetch more messages if available.
      */
-    func history(options: QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message>
+    func history(options: QueryOptions) async throws(ARTErrorInfo) -> HistoryResult
 
     /**
      * Send a message in the chat room.
@@ -76,7 +80,7 @@ public protocol Messages: AnyObject, Sendable {
     /**
      * Add, delete, and subscribe to message reactions.
      */
-    var reactions: any MessageReactions { get }
+    var reactions: Reactions { get }
 }
 
 public extension Messages {
@@ -88,7 +92,7 @@ public extension Messages {
      *
      * - Returns: A subscription ``MessageSubscription`` that can be used to iterate through new messages.
      */
-    func subscribe(bufferingPolicy: BufferingPolicy) -> MessageSubscriptionAsyncSequence {
+    func subscribe(bufferingPolicy: BufferingPolicy) -> MessageSubscriptionAsyncSequence<SubscribeResponse.HistoryResult> {
         var emitEvent: ((ChatMessageEvent) -> Void)?
         let subscription = subscribe { event in
             emitEvent?(event)
@@ -112,7 +116,7 @@ public extension Messages {
     }
 
     /// Same as calling ``subscribe(bufferingPolicy:)`` with ``BufferingPolicy/unbounded``.
-    func subscribe() -> MessageSubscriptionAsyncSequence {
+    func subscribe() -> MessageSubscriptionAsyncSequence<SubscribeResponse.HistoryResult> {
         subscribe(bufferingPolicy: .unbounded)
     }
 }
@@ -331,25 +335,25 @@ public struct ChatMessageEvent: Sendable, Equatable {
 /// A non-throwing `AsyncSequence` whose element is ``ChatMessageEvent``. The Chat SDK uses this type as the return value of the `AsyncSequence` convenience variants of the ``Messages`` methods that allow you to find out about received chat messages.
 ///
 /// You should only iterate over a given `MessageSubscriptionAsyncSequence` once; the results of iterating more than once are undefined.
-public final class MessageSubscriptionAsyncSequence: Sendable, AsyncSequence {
+public final class MessageSubscriptionAsyncSequence<HistoryResult: PaginatedResult<Message>>: Sendable, AsyncSequence {
     public typealias Element = ChatMessageEvent
 
     private let subscription: SubscriptionAsyncSequence<Element>
 
     // can be set by either initialiser
-    private let getPreviousMessages: @Sendable (QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message>
+    private let getPreviousMessages: @Sendable (QueryOptions) async throws(ARTErrorInfo) -> HistoryResult
 
     // used internally
     internal init(
         bufferingPolicy: BufferingPolicy,
-        getPreviousMessages: @escaping @Sendable (QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message>,
+        getPreviousMessages: @escaping @Sendable (QueryOptions) async throws(ARTErrorInfo) -> HistoryResult,
     ) {
         subscription = .init(bufferingPolicy: bufferingPolicy)
         self.getPreviousMessages = getPreviousMessages
     }
 
     // used for testing
-    public init<Underlying: AsyncSequence & Sendable>(mockAsyncSequence: Underlying, mockGetPreviousMessages: @escaping @Sendable (QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message>) where Underlying.Element == Element {
+    public init<Underlying: AsyncSequence & Sendable>(mockAsyncSequence: Underlying, mockGetPreviousMessages: @escaping @Sendable (QueryOptions) async throws(ARTErrorInfo) -> HistoryResult) where Underlying.Element == Element {
         subscription = .init(mockAsyncSequence: mockAsyncSequence)
         getPreviousMessages = mockGetPreviousMessages
     }
@@ -363,7 +367,7 @@ public final class MessageSubscriptionAsyncSequence: Sendable, AsyncSequence {
         subscription.addTerminationHandler(onTermination)
     }
 
-    public func getPreviousMessages(params: QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message> {
+    public func getPreviousMessages(params: QueryOptions) async throws(ARTErrorInfo) -> HistoryResult {
         try await getPreviousMessages(params)
     }
 
