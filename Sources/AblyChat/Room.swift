@@ -13,7 +13,7 @@ public protocol Room: AnyObject, Sendable {
     associatedtype Typing: AblyChat.Typing
     associatedtype Occupancy: AblyChat.Occupancy
 
-    associatedtype StatusSubscription: StatusSubscriptionProtocol
+    associatedtype StatusSubscription: AblyChat.StatusSubscription
 
     /**
      * The unique identifier of the room.

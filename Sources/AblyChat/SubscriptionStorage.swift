@@ -13,7 +13,7 @@ internal class SubscriptionStorage<Element: Sendable> {
     private var subscriptions: [UUID: SubscriptionItem] = [:]
 
     /// Creates a subscription and adds it to the list managed by this `SubscriptionStorage` instance.
-    internal func create(_ callback: @escaping @MainActor (Element) -> Void) -> any SubscriptionProtocol {
+    internal func create(_ callback: @escaping @MainActor (Element) -> Void) -> any Subscription {
         let id = UUID()
         let subscription = DefaultSubscription { [weak self] in
             self?.subscriptionDidTerminate(id: id)

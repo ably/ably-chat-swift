@@ -8,7 +8,7 @@ import Ably
  */
 @MainActor
 public protocol Typing: AnyObject, Sendable {
-    associatedtype Subscription: SubscriptionProtocol
+    associatedtype Subscription: AblyChat.Subscription
 
     /**
      * Subscribes a given listener to all typing events from users in the chat room.

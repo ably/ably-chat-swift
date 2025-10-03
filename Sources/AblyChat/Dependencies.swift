@@ -14,7 +14,7 @@ internal protocol ProxyRealtimeChannelProtocol: Sendable, RealtimeChannelProtoco
     var underlyingChannel: Proxied { get }
 }
 
-/// Expresses the requirements of the realtime client used by a ``ChatClient``.
+/// Expresses the requirements of the realtime client used by a ``ChatClientProtocol``.
 internal protocol RealtimeClientProtocol: ARTRealtimeInstanceMethodsProtocol, Sendable {
     associatedtype Channels: RealtimeChannelsProtocol
     associatedtype Connection: CoreConnectionProtocol
@@ -47,5 +47,5 @@ internal protocol RealtimeAnnotationsProtocol: ARTRealtimeAnnotationsProtocol, S
 
 /// Expresses the requirements of the object returned by ``RealtimeClientProtocol/connection``.
 ///
-/// - Note: `Core` here is to disambiguate from the `Connection` protocol that a `ChatClient` exposes.
+/// - Note: `Core` here is to disambiguate from the `Connection` protocol that a `ChatClientProtocol` exposes.
 internal protocol CoreConnectionProtocol: ARTConnectionProtocol, Sendable {}

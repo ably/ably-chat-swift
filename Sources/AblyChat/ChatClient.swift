@@ -1,7 +1,7 @@
 import Ably
 
 @MainActor
-public protocol ChatClient: AnyObject, Sendable {
+public protocol ChatClientProtocol: AnyObject, Sendable {
     associatedtype Realtime
     associatedtype Connection: AblyChat.Connection
     associatedtype Rooms: AblyChat.Rooms
@@ -59,7 +59,7 @@ internal final class DefaultInternalRealtimeClientFactory<Underlying: ProxyRealt
 /**
  * This is the core client for Ably chat. It provides access to chat rooms.
  */
-public class DefaultChatClient: ChatClient {
+public class ChatClient: ChatClientProtocol {
     public nonisolated let realtime: ARTRealtime
     public nonisolated let clientOptions: ChatClientOptions
     private let _rooms: DefaultRooms<DefaultRoomFactory<InternalRealtimeClientAdapter<ARTWrapperSDKProxyRealtime>>>

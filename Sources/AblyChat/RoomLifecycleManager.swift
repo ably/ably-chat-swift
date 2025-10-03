@@ -2,7 +2,7 @@ import Ably
 
 @MainActor
 internal protocol RoomLifecycleManager: Sendable {
-    associatedtype StatusSubscription: StatusSubscriptionProtocol
+    associatedtype StatusSubscription: AblyChat.StatusSubscription
 
     func performAttachOperation() async throws(InternalError)
     func performDetachOperation() async throws(InternalError)
@@ -267,7 +267,7 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
         private let operationWaitEventSubscriptions = SubscriptionStorage<OperationWaitEvent>()
 
         /// Returns a subscription which emits an event each time one room lifecycle operation is going to wait for another to complete.
-        internal func testsOnly_subscribeToOperationWaitEvents(_ callback: @escaping @MainActor (OperationWaitEvent) -> Void) -> any SubscriptionProtocol {
+        internal func testsOnly_subscribeToOperationWaitEvents(_ callback: @escaping @MainActor (OperationWaitEvent) -> Void) -> any Subscription {
             operationWaitEventSubscriptions.create(callback)
         }
     #endif
@@ -595,7 +595,7 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
             // CHA-RL9, which is invoked by CHA-PR3d, CHA-PR10d, CHA-PR6c
 
             // CHA-RL9a
-            var nextRoomStatusSubscription: (any StatusSubscriptionProtocol)!
+            var nextRoomStatusSubscription: StatusSubscription!
             var nextRoomStatusChange: RoomStatusChange!
             await withCheckedContinuation { (continuation: CheckedContinuation<Void, _>) in
                 self.logger.log(message: "waitToBeAbleToPerformPresenceOperations waiting for status change", level: .debug)
@@ -633,7 +633,7 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
         private let statusChangeWaitEventSubscriptions = SubscriptionStorage<StatusChangeWaitEvent>()
 
         /// Returns a subscription which emits an event each time ``waitToBeAbleToPerformPresenceOperations(requestedByFeature:)`` is going to wait for a room status change.
-        internal func testsOnly_subscribeToStatusChangeWaitEvents(_ callback: @escaping @MainActor (StatusChangeWaitEvent) -> Void) -> any SubscriptionProtocol {
+        internal func testsOnly_subscribeToStatusChangeWaitEvents(_ callback: @escaping @MainActor (StatusChangeWaitEvent) -> Void) -> any Subscription {
             statusChangeWaitEventSubscriptions.create(callback)
         }
     #endif

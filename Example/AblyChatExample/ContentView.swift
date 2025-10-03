@@ -13,7 +13,7 @@ private enum Environment: Equatable {
     case live(key: String, clientId: String)
 
     @MainActor
-    func createChatClient() -> any ChatClient {
+    func createChatClient() -> any ChatClientProtocol {
         switch self {
         case .mock:
             return MockChatClient(
@@ -25,7 +25,7 @@ private enum Environment: Equatable {
             realtimeOptions.clientId = clientId
             let realtime = ARTRealtime(options: realtimeOptions)
 
-            return DefaultChatClient(realtime: realtime, clientOptions: .init())
+            return ChatClient(realtime: realtime, clientOptions: .init())
         }
     }
 }

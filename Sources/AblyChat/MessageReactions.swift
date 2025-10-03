@@ -7,7 +7,7 @@ import Ably
  */
 @MainActor
 public protocol MessageReactions: AnyObject, Sendable {
-    associatedtype Subscription: SubscriptionProtocol
+    associatedtype Subscription: AblyChat.Subscription
 
     /**
      * Add a message reaction.

@@ -10,7 +10,7 @@ public typealias PresenceData = JSONObject
  */
 @MainActor
 public protocol Presence: AnyObject, Sendable {
-    associatedtype Subscription: SubscriptionProtocol
+    associatedtype Subscription: AblyChat.Subscription
 
     /**
      * Same as ``get(params:)``, but with defaults params.

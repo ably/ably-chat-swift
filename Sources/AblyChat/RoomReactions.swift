@@ -7,7 +7,7 @@ import Ably
  */
 @MainActor
 public protocol RoomReactions: AnyObject, Sendable {
-    associatedtype Subscription: SubscriptionProtocol
+    associatedtype Subscription: AblyChat.Subscription
 
     /**
      * Send a reaction to the room including some metadata.

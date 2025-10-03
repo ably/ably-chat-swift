@@ -2,7 +2,7 @@ import Ably
 
 /// A mock subclass of ably-cocoa's `ARTRealtime`.
 ///
-/// This is used very little in the tests (only in `DefaultChatClientTests`); elsewhere we work with protocol mocks.
+/// This is used very little in the tests (only in `ChatClientTests`); elsewhere we work with protocol mocks.
 class MockConcreteAblyCocoaRealtime: ARTRealtime, @unchecked Sendable {
     required init(token _: String) {
         fatalError("init(token:) has not been implemented")
