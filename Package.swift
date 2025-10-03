@@ -3,6 +3,7 @@
 import PackageDescription
 
 let commonSwiftSettings: [SwiftSetting] = [
+    .treatAllWarnings(as: .error),
     .enableUpcomingFeature("MemberImportVisibility"),
     .enableUpcomingFeature("ExistentialAny"),
 ]
