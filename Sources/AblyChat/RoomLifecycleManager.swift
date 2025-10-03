@@ -610,7 +610,7 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
             }
             nextRoomStatusSubscription.off()
             // CHA-RL9b
-            if nextRoomStatusChange.current != .attached(error: nil) {
+            guard case let .attached(error) = nextRoomStatusChange.current, error == nil else {
                 // CHA-RL9c
                 throw ARTErrorInfo(chatError: .roomTransitionedToInvalidStateForPresenceOperation(cause: nextRoomStatusChange.current.error)).toInternalError()
             }
