@@ -310,7 +310,7 @@ public enum ChatMessageEventType: String, Sendable {
 }
 
 /// Event emitted by message subscriptions, containing the type and the message.
-public struct ChatMessageEvent: Sendable, Equatable {
+public struct ChatMessageEvent: Sendable {
     public var type: ChatMessageEventType
     public var message: Message
 
