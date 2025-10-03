@@ -3,7 +3,7 @@ import Ably
 /**
  * The different states that a room can be in throughout its lifecycle.
  */
-public enum RoomStatus: Sendable, Equatable {
+public enum RoomStatus: Sendable {
     /**
      * A temporary state for when the room object is first initialized.
      */

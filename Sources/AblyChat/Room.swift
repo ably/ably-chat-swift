@@ -198,7 +198,7 @@ internal protocol InternalRoom: Room {
 /**
  * Represents a change in the status of the room.
  */
-public struct RoomStatusChange: Sendable, Equatable {
+public struct RoomStatusChange: Sendable {
     /**
      * The new status of the room.
      */
