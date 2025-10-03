@@ -204,12 +204,6 @@ extension MessageVersion {
     }
 }
 
-public extension MessageVersion {
-    static func == (lhs: Self, rhs: Self) -> Bool {
-        lhs.serial == rhs.serial
-    }
-}
-
 public extension Message {
     /**
      * Creates a new message instance with the event applied.
