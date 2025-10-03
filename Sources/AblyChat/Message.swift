@@ -19,10 +19,7 @@ public typealias OperationMetadata = Metadata
 /**
  * Represents a single message in a chat room.
  */
-public struct Message: Sendable, Identifiable, Equatable {
-    // id to meet Identifiable conformance. 2 messages in the same channel cannot have the same serial.
-    public var id: String { serial }
-
+public struct Message: Sendable, Equatable {
     /**
      * The unique identifier of the message.
      */
@@ -201,12 +198,6 @@ extension MessageVersion {
             description: jsonObject.optionalStringValueForKey("description"),
             metadata: jsonObject.optionalObjectValueForKey("metadata"),
         )
-    }
-}
-
-public extension MessageVersion {
-    static func == (lhs: Self, rhs: Self) -> Bool {
-        lhs.serial == rhs.serial
     }
 }
 

@@ -127,6 +127,7 @@ public struct ChatClientOptions: Sendable {
      */
     public var logHandler: (any LogHandler)?
 
+    // TODO: why is this optional
     /**
      * The minimum log level at which messages will be logged.
      *

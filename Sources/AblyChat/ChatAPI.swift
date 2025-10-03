@@ -11,7 +11,7 @@ internal final class ChatAPI {
     private let realtime: any InternalRealtimeClientProtocol
     private let apiVersionV4 = "/chat/v4"
 
-    public init(realtime: any InternalRealtimeClientProtocol) {
+    internal init(realtime: any InternalRealtimeClientProtocol) {
         self.realtime = realtime
     }
 

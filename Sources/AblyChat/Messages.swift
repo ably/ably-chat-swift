@@ -303,14 +303,14 @@ internal extension QueryOptions {
 }
 
 /// Event type for chat message subscription.
-public enum ChatMessageEventType: String, Sendable {
+public enum ChatMessageEventType: Sendable {
     case created
     case updated
     case deleted
 }
 
 /// Event emitted by message subscriptions, containing the type and the message.
-public struct ChatMessageEvent: Sendable, Equatable {
+public struct ChatMessageEvent: Sendable {
     public let type: ChatMessageEventType
     public let message: Message
 
