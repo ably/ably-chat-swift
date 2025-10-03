@@ -1,7 +1,7 @@
 import Ably
 @testable import AblyChat
 
-class MockChatClient: ChatClient {
+class MockChatClient: ChatClientProtocol {
     final class Realtime: Sendable {
         init() {}
     }

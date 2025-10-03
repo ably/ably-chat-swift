@@ -51,11 +51,11 @@ struct IntegrationTests {
         return ARTRealtime(options: realtimeOptions)
     }
 
-    private static func createSandboxChatClient(apiKey: String, loggingLabel: String) -> DefaultChatClient {
+    private static func createSandboxChatClient(apiKey: String, loggingLabel: String) -> ChatClient {
         let realtime = createSandboxRealtime(apiKey: apiKey, loggingLabel: loggingLabel)
         let clientOptions = TestLogger.loggingEnabled ? ChatClientOptions(logHandler: ChatLogger(label: loggingLabel), logLevel: .trace) : nil
 
-        return DefaultChatClient(realtime: realtime, clientOptions: clientOptions)
+        return ChatClient(realtime: realtime, clientOptions: clientOptions)
     }
 
     @Test
