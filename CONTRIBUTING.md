@@ -171,6 +171,8 @@ Example:
 
 For each release, the following needs to be done:
 
+- Confirm that none of our `Package.swift` dependencies are specified using a fixed `.revision`.
+  - The dependency that is most likely to be using a fixed revision is [ably-cocoa](https://github.com/ably/ably-cocoa); make a new release of that library if needed.
 - Create a new branch `release/x.x.x` (where `x.x.x` is the new version number) from the `main` branch
 - Update the following (we have https://github.com/ably/ably-chat-swift/issues/277 for adding a script to do this):
   - the `version` constant in [`Sources/AblyChat/Version.swift`](Sources/AblyChat/Version.swift)

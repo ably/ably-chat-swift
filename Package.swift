@@ -20,7 +20,8 @@ let package = Package(
     dependencies: [
         .package(
             url: "https://github.com/ably/ably-cocoa",
-            from: "1.2.46",
+            // TODO: Unpin before next release
+            revision: "95658a91243e787f5f8020b8188ae394e016ed75",
         ),
         .package(
             url: "https://github.com/apple/swift-argument-parser",
