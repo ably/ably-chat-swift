@@ -124,7 +124,7 @@ class MockMessages: Messages {
         reactions = MockMessageReactions(clientID: clientID, roomName: roomName)
     }
 
-    func subscribe(_ callback: @escaping @MainActor (ChatMessageEvent) -> Void) -> some MessageSubscriptionResponseProtocol {
+    func subscribe(_ callback: @escaping @MainActor (ChatMessageEvent) -> Void) -> some MessageSubscriptionResponse {
         mockSubscriptions.create(
             randomElement: {
                 let message = Message(
@@ -333,7 +333,7 @@ class MockRoomReactions: RoomReactions {
     }
 
     @discardableResult
-    func subscribe(_ callback: @escaping @MainActor (RoomReactionEvent) -> Void) -> some SubscriptionProtocol {
+    func subscribe(_ callback: @escaping @MainActor (RoomReactionEvent) -> Void) -> some Subscription {
         mockSubscriptions.create(
             randomElement: {
                 let reaction = RoomReaction(
@@ -364,7 +364,7 @@ class MockTyping: Typing {
     }
 
     @discardableResult
-    func subscribe(_ callback: @escaping @MainActor (TypingSetEvent) -> Void) -> some SubscriptionProtocol {
+    func subscribe(_ callback: @escaping @MainActor (TypingSetEvent) -> Void) -> some Subscription {
         mockSubscriptions.create(
             randomElement: {
                 TypingSetEvent(
@@ -585,7 +585,7 @@ class MockConnection: Connection {
     }
 
     @discardableResult
-    func onStatusChange(_ callback: @escaping @MainActor (ConnectionStatusChange) -> Void) -> some StatusSubscriptionProtocol {
+    func onStatusChange(_ callback: @escaping @MainActor (ConnectionStatusChange) -> Void) -> some StatusSubscription {
         mockSubscriptions.create(
             randomElement: {
                 ConnectionStatusChange(

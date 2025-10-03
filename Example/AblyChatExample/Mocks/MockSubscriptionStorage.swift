@@ -155,7 +155,7 @@ class MockMessageSubscriptionStorage<Element: Sendable, PaginatedResult: AblyCha
         previousMessages: @escaping @MainActor @Sendable (QueryOptions) async throws(ARTErrorInfo) -> PaginatedResult,
         interval: @autoclosure @escaping @MainActor @Sendable () -> Double,
         callback: @escaping @MainActor (Element) -> Void,
-    ) -> some MessageSubscriptionResponseProtocol {
+    ) -> some MessageSubscriptionResponse {
         let id = UUID()
         let subscriptionItem = SubscriptionItem(
             randomElement: randomElement,
@@ -180,7 +180,7 @@ class MockMessageSubscriptionStorage<Element: Sendable, PaginatedResult: AblyCha
     }
 }
 
-struct MockSubscription: SubscriptionProtocol {
+struct MockSubscription: Subscription {
     private let _unsubscribe: () -> Void
 
     func unsubscribe() {
@@ -192,7 +192,7 @@ struct MockSubscription: SubscriptionProtocol {
     }
 }
 
-struct MockStatusSubscription: StatusSubscriptionProtocol {
+struct MockStatusSubscription: StatusSubscription {
     private let _off: () -> Void
 
     func off() {
@@ -204,7 +204,7 @@ struct MockStatusSubscription: StatusSubscriptionProtocol {
     }
 }
 
-struct MockMessageSubscriptionResponse<PaginatedResult: AblyChat.PaginatedResult<Message>>: MessageSubscriptionResponseProtocol {
+struct MockMessageSubscriptionResponse<PaginatedResult: AblyChat.PaginatedResult<Message>>: MessageSubscriptionResponse {
     private let _unsubscribe: () -> Void
     private let previousMessages: @MainActor @Sendable (QueryOptions) async throws(ARTErrorInfo) -> PaginatedResult
 

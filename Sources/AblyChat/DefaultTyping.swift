@@ -35,7 +35,7 @@ internal final class DefaultTyping: Typing {
 
     // (CHA-T6) Users may subscribe to typing events – updates to a set of clientIDs that are typing. This operation, like all subscription operations, has no side-effects in relation to room lifecycle.
     @discardableResult
-    internal func subscribe(_ callback: @escaping @MainActor (TypingSetEvent) -> Void) -> some SubscriptionProtocol {
+    internal func subscribe(_ callback: @escaping @MainActor (TypingSetEvent) -> Void) -> some Subscription {
         // (CHA-T6a) Users may provide a listener to subscribe to typing event V2 in a chat room.
         let startedEventListener = channel.subscribe(TypingEventType.started.rawValue) { [weak self] message in
             guard let self, let messageClientID = message.clientId else {

@@ -5,7 +5,7 @@ import Ably
  */
 @MainActor
 public protocol Connection: AnyObject, Sendable {
-    associatedtype StatusSubscription: StatusSubscriptionProtocol
+    associatedtype StatusSubscription: AblyChat.StatusSubscription
 
     /**
      * The current status of the connection.

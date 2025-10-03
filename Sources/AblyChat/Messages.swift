@@ -9,7 +9,7 @@ import Ably
 @MainActor
 public protocol Messages: AnyObject, Sendable {
     associatedtype Reactions: MessageReactions
-    associatedtype SubscribeResponse: MessageSubscriptionResponseProtocol
+    associatedtype SubscribeResponse: MessageSubscriptionResponse
     associatedtype HistoryResult: PaginatedResult<Message>
 
     /**
