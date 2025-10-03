@@ -287,7 +287,7 @@ struct IntegrationTests {
         #expect(rxEditedMessageFromSubscription.serial == txEditedMessage.serial)
         #expect(rxEditedMessageFromSubscription.clientID == txEditedMessage.clientID)
         #expect(rxEditedMessageFromSubscription.version.serial == txEditedMessage.version.serial)
-        #expect(rxEditedMessageFromSubscription.id == txEditedMessage.id)
+        #expect(rxEditedMessageFromSubscription.serial == txEditedMessage.serial)
         // Ensures text has been edited from original message
         #expect(rxEditedMessageFromSubscription.text == txEditedMessage.text)
         // Ensure headers are now null when compared to original message
@@ -311,7 +311,7 @@ struct IntegrationTests {
         #expect(rxDeletedMessageFromSubscription.serial == txDeleteMessage.serial)
         #expect(rxDeletedMessageFromSubscription.clientID == txDeleteMessage.clientID)
         #expect(rxDeletedMessageFromSubscription.version.serial == txDeleteMessage.version.serial)
-        #expect(rxDeletedMessageFromSubscription.id == txDeleteMessage.id)
+        #expect(rxDeletedMessageFromSubscription.serial == txDeleteMessage.serial)
         #expect(rxDeletedMessageFromSubscription.text.isEmpty)
         #expect(rxDeletedMessageFromSubscription.headers.isEmpty)
         #expect(rxDeletedMessageFromSubscription.metadata.isEmpty)
