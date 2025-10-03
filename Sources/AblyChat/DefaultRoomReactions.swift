@@ -24,7 +24,7 @@ internal final class DefaultRoomReactions: RoomReactions {
             try await channel.publish(
                 RoomReactionEvents.reaction.rawValue,
                 data: dto.data.toJSONValue,
-                extras: dto.extras.toJSONObject
+                extras: dto.extras.toJSONObject,
             )
         } catch {
             throw error.toARTErrorInfo()
@@ -54,7 +54,7 @@ internal final class DefaultRoomReactions: RoomReactions {
 
             let dto = try? RoomReactionDTO(
                 data: .init(jsonValue: .init(ablyCocoaData: ablyCocoaData)),
-                extras: .init(jsonObject: extras)
+                extras: .init(jsonObject: extras),
             )
 
             let messageClientID = message.clientId ?? "" // CHA-ER4e3
@@ -65,7 +65,7 @@ internal final class DefaultRoomReactions: RoomReactions {
                 headers: dto?.headers ?? [:],
                 createdAt: message.timestamp ?? Date(), // CHA-ER4e4
                 clientID: messageClientID,
-                isSelf: messageClientID == clientID
+                isSelf: messageClientID == clientID,
             )
 
             let event = RoomReactionEvent(type: .reaction, reaction: reaction)

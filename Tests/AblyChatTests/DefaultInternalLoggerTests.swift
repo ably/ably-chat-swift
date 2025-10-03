@@ -20,7 +20,7 @@ struct DefaultInternalLoggerTests {
         logger.log(
             message: "Hello",
             level: .error, // arbitrary
-            codeLocation: .init(fileID: "Ably/Room.swift", line: 123)
+            codeLocation: .init(fileID: "Ably/Room.swift", line: 123),
         )
 
         // Then: It calls log(…) on the underlying logger, interpolating the code location into the message and passing through the level
@@ -36,14 +36,14 @@ struct DefaultInternalLoggerTests {
         let logHandler = MockLogHandler()
         let logger = DefaultInternalLogger(
             logHandler: logHandler,
-            logLevel: .info // arbitrary
+            logLevel: .info, // arbitrary
         )
 
         // When: `log(message:level:codeLocation:)` is called on it, with `level` less severe than that of the instance
         logger.log(
             message: "Hello",
             level: .debug,
-            codeLocation: .init(fileID: "", line: 0)
+            codeLocation: .init(fileID: "", line: 0),
         )
 
         // Then: It does not call `log(…)` on the underlying logger

@@ -24,7 +24,7 @@ struct MessageReactionsSheet: View {
                 reactions[key] = ReactionItem(
                     emoji: emoji,
                     author: clientId,
-                    count: 1
+                    count: 1,
                 )
             }
         }
@@ -78,12 +78,12 @@ struct MessageReactionsSheet: View {
                             #if os(iOS)
                                 .background(
                                     RoundedRectangle(cornerRadius: 16)
-                                        .fill(Color(.systemBackground).opacity(0.7))
+                                        .fill(Color(.systemBackground).opacity(0.7)),
                                 )
                             #elseif os(macOS)
                                 .background(
                                     RoundedRectangle(cornerRadius: 16)
-                                        .fill(Color(NSColor.windowBackgroundColor).opacity(0.7))
+                                        .fill(Color(NSColor.windowBackgroundColor).opacity(0.7)),
                                 )
                             #endif
                         }
@@ -101,12 +101,12 @@ struct MessageReactionsSheet: View {
             #if os(iOS)
                 .background(
                     BlurView(style: .systemUltraThinMaterial)
-                        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous)),
                 )
             #elseif os(macOS)
                 .background(
                     BlurView(material: .hudWindow, blendingMode: .withinWindow)
-                        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous)),
                 )
             #endif
                 .padding(.horizontal, 0)

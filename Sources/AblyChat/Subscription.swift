@@ -109,7 +109,7 @@ internal struct MessageSubscriptionResponse: MessageSubscriptionResponseProtocol
         chatAPI: ChatAPI,
         roomName: String,
         subscriptionStartSerial: @MainActor @escaping @Sendable () async throws(InternalError) -> String,
-        unsubscribe: @MainActor @Sendable @escaping () -> Void
+        unsubscribe: @MainActor @Sendable @escaping () -> Void,
     ) {
         self.chatAPI = chatAPI
         self.roomName = roomName

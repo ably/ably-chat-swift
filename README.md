@@ -34,7 +34,7 @@ This SDK supports the following platforms:
 | tvOS     | >= 14.0 |
 
 > [!NOTE]
-> Xcode 16.1 or later is required.
+> Xcode 26.0 or later is required.
 
 ---
 

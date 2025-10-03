@@ -17,14 +17,14 @@ struct BuildTool: AsyncParsableCommand {
             SpecCoverage.self,
             BuildDocumentation.self,
             GenerateCodeCoverage.self,
-        ]
+        ],
     )
 }
 
 @available(macOS 14, *)
 struct BuildLibrary: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
-        abstract: "Build the AblyChat library"
+        abstract: "Build the AblyChat library",
     )
 
     @Option var configuration: Configuration?
@@ -42,7 +42,7 @@ struct BuildLibrary: AsyncParsableCommand {
 struct BuildLibraryForTesting: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         abstract: "Build the AblyChat library for testing",
-        discussion: "After running this command, you can run the test-library command."
+        discussion: "After running this command, you can run the test-library command.",
     )
 
     @Option var platform: Platform
@@ -59,7 +59,7 @@ struct BuildLibraryForTesting: AsyncParsableCommand {
 struct TestLibrary: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         abstract: "Test the AblyChat library",
-        discussion: "You need to run the build-library-for-testing command before running this command."
+        discussion: "You need to run the build-library-for-testing command before running this command.",
     )
 
     @Option var platform: Platform
@@ -76,7 +76,7 @@ struct TestLibrary: AsyncParsableCommand {
 struct GenerateCodeCoverage: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         abstract: "Generate code coverage for the AblyChat library",
-        discussion: "Runs the unit tests and outputs a .xcresult bundle containing code coverage information"
+        discussion: "Runs the unit tests and outputs a .xcresult bundle containing code coverage information",
     )
 
     @Option(help: "Pathname of where to output the .xcresult bundle.")
@@ -92,7 +92,7 @@ struct GenerateCodeCoverage: AsyncParsableCommand {
             scheme: scheme,
             destination: destinationSpecifier,
             testPlan: "UnitTests",
-            resultBundlePath: resultBundlePath
+            resultBundlePath: resultBundlePath,
         )
     }
 }
@@ -130,11 +130,11 @@ struct GenerateMatrices: ParsableCommand {
         }
 
         and PlatformArgument is a value that can be passed as the --platform argument of the build-and-test-library or build-example-app commands.
-        """
+        """,
     )
 
     mutating func run() throws {
-        let tooling = ["16.3"].map { xcodeVersion in
+        let tooling = ["26.0"].map { xcodeVersion in
             [
                 "xcodeVersion": xcodeVersion,
             ]
@@ -215,7 +215,7 @@ struct Lint: AsyncParsableCommand {
         if swiftVersionFileVersion != packageManifestFileVersion {
             throw Error.mismatchedVersions(
                 swiftVersionFileVersion: swiftVersionFileVersion,
-                packageManifestFileVersion: packageManifestFileVersion
+                packageManifestFileVersion: packageManifestFileVersion,
             )
         }
     }
@@ -269,7 +269,7 @@ struct Lint: AsyncParsableCommand {
 struct SpecCoverage: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         abstract: "Print information about which spec points are implemented",
-        discussion: "You can set the GITHUB_TOKEN environment variable to provide a GitHub authentication token to use when fetching the latest commit."
+        discussion: "You can set the GITHUB_TOKEN environment variable to provide a GitHub authentication token to use when fetching the latest commit.",
     )
 
     @Option(help: "The SHA of the spec commit to use")
@@ -484,10 +484,10 @@ struct SpecCoverage: AsyncParsableCommand {
                 summary: .init(
                     specPointCount: specFile.specPoints.count,
                     testableSpecPointCount: testableSpecPoints.count,
-                    specPointCoverages: specPointCoverages
+                    specPointCoverages: specPointCoverages,
                 ),
                 testableSpecPointCoverages: specPointCoverages,
-                nonTestableSpecPointIDsWithConformanceTags: nonTestableSpecPointIDsWithConformanceTags
+                nonTestableSpecPointIDsWithConformanceTags: nonTestableSpecPointIDsWithConformanceTags,
             )
         }
 
@@ -531,7 +531,7 @@ struct SpecCoverage: AsyncParsableCommand {
             if conformanceTagTypeCases.count > 1 {
                 throw Error.multipleConformanceTagTypes(
                     specPointID: specPoint.id,
-                    types: conformanceTagTypeCases.map { "\($0)" }
+                    types: conformanceTagTypeCases.map { "\($0)" },
                 )
             }
 
@@ -543,7 +543,7 @@ struct SpecCoverage: AsyncParsableCommand {
                     throw Error.specOneOfIncorrectTotals(
                         specPointID: specPoint.id,
                         coverageTagTotals: specOneOfDatas.map(\.total),
-                        actualTotal: specOneOfDatas.count
+                        actualTotal: specOneOfDatas.count,
                     )
                 }
 
@@ -554,7 +554,7 @@ struct SpecCoverage: AsyncParsableCommand {
                     throw Error.specOneOfIncorrectIndices(
                         specPointID: specPoint.id,
                         coverageTagIndices: coverageTagIndices,
-                        expectedIndices: expectedIndices
+                        expectedIndices: expectedIndices,
                     )
                 }
             }
@@ -562,7 +562,7 @@ struct SpecCoverage: AsyncParsableCommand {
             return SpecPointCoverage(
                 specPointID: specPoint.id,
                 coverageLevel: coverageLevel ?? .notTested,
-                comments: comments
+                comments: comments,
             )
         }
     }
@@ -774,7 +774,7 @@ struct SpecCoverage: AsyncParsableCommand {
     private func fetchTestSourceFilePaths() async throws -> [URL] {
         let packageDescribeOutputData = try await ProcessRunner.runAndReturnStdout(
             executableName: "swift",
-            arguments: ["package", "describe", "--type", "json"]
+            arguments: ["package", "describe", "--type", "json"],
         )
 
         let packageDescribeOutput = try JSONDecoder().decode(PackageDescribeOutput.self, from: packageDescribeOutputData)
@@ -793,7 +793,7 @@ struct SpecCoverage: AsyncParsableCommand {
 @available(macOS 14, *)
 struct BuildDocumentation: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
-        abstract: "Build documentation for the library"
+        abstract: "Build documentation for the library",
     )
 
     mutating func run() async throws {
@@ -820,7 +820,7 @@ struct BuildDocumentation: AsyncParsableCommand {
 
                 // Increases the detail level of the aforementioned coverage table in CLI output.
                 "--coverage-summary-level", "detailed",
-            ]
+            ],
         )
     }
 }

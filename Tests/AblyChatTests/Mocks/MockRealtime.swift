@@ -22,7 +22,7 @@ final class MockRealtime: InternalRealtimeClientProtocol {
         channels: MockChannels = .init(channels: []),
         connection: MockConnection = .init(),
         paginatedCallback: (@Sendable () throws(ARTErrorInfo) -> ARTHTTPPaginatedResponse)? = nil,
-        createWrapperSDKProxyReturnValue: MockSuppliedRealtime? = nil
+        createWrapperSDKProxyReturnValue: MockSuppliedRealtime? = nil,
     ) {
         self.channels = channels
         self.paginatedCallback = paginatedCallback
@@ -44,7 +44,7 @@ final class MockRealtime: InternalRealtimeClientProtocol {
                     "params": params ?? [:],
                     "body": body == nil ? [:] : body as? [String: Any],
                     "headers": headers ?? [:],
-                ]
+                ],
             )
             return try paginatedCallback()
         } catch {

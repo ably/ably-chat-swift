@@ -10,7 +10,7 @@ struct DefaultTypingTests {
     private func createTyping(
         channel: MockRealtimeChannel = MockRealtimeChannel(),
         heartbeatThrottle: TimeInterval = 30, // Use a shorter throttle for faster tests
-        mockClock: MockTestClock = MockTestClock()
+        mockClock: MockTestClock = MockTestClock(),
     ) -> DefaultTyping {
         let mockLogger = MockInternalLogger()
 
@@ -20,7 +20,7 @@ struct DefaultTypingTests {
             clientID: "test-client",
             logger: mockLogger,
             heartbeatThrottle: heartbeatThrottle,
-            clock: mockClock
+            clock: mockClock,
         )
     }
 
@@ -95,8 +95,8 @@ struct DefaultTypingTests {
             TypingSetEvent(
                 type: .setChanged,
                 currentlyTyping: [clientId],
-                change: .init(clientId: clientId, type: .started)
-            )
+                change: .init(clientId: clientId, type: .started),
+            ),
         )
 
         // Then
@@ -120,8 +120,8 @@ struct DefaultTypingTests {
             TypingSetEvent(
                 type: .setChanged,
                 currentlyTyping: [],
-                change: .init(clientId: clientId, type: .stopped)
-            )
+                change: .init(clientId: clientId, type: .stopped),
+            ),
         )
 
         // Then

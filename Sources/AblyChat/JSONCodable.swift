@@ -272,7 +272,7 @@ internal extension [String: JSONValue] {
     ///   - `JSONValueDecodingError.noValueForKey` if the key is absent
     ///   - `JSONValueDecodingError.wrongTypeForKey` if the value does not have case `string`
     ///   - `JSONValueDecodingError.failedToDecodeFromRawValue` if `init(rawValue:)` returns `nil`
-    func rawRepresentableValueForKey<T: RawRepresentable>(_ key: String, type: T.Type = T.self) throws(InternalError) -> T where T.RawValue == String {
+    func rawRepresentableValueForKey<T: RawRepresentable>(_ key: String, type _: T.Type = T.self) throws(InternalError) -> T where T.RawValue == String {
         let rawValue = try stringValueForKey(key)
 
         return try rawRepresentableValueFromRawValue(rawValue, type: T.self)
@@ -283,7 +283,7 @@ internal extension [String: JSONValue] {
     /// - Throws:
     ///   - `JSONValueDecodingError.wrongTypeForKey` if the value does not have case `string` or `null`
     ///   - `JSONValueDecodingError.failedToDecodeFromRawValue` if `init(rawValue:)` returns `nil`
-    func optionalRawRepresentableValueForKey<T: RawRepresentable>(_ key: String, type: T.Type = T.self) throws(InternalError) -> T? where T.RawValue == String {
+    func optionalRawRepresentableValueForKey<T: RawRepresentable>(_ key: String, type _: T.Type = T.self) throws(InternalError) -> T? where T.RawValue == String {
         guard let rawValue = try optionalStringValueForKey(key) else {
             return nil
         }

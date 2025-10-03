@@ -23,7 +23,7 @@ final class MockRealtimePresence: InternalRealtimePresenceProtocol {
     func get() async throws(InternalError) -> [PresenceMessage] {
         callRecorder.addRecord(
             signature: "get()",
-            arguments: [:]
+            arguments: [:],
         )
         return []
     }
@@ -31,7 +31,7 @@ final class MockRealtimePresence: InternalRealtimePresenceProtocol {
     func get(_ query: ARTRealtimePresenceQuery) async throws(InternalError) -> [PresenceMessage] {
         callRecorder.addRecord(
             signature: "get(_:)",
-            arguments: ["query": "\(query.callRecorderDescription)"]
+            arguments: ["query": "\(query.callRecorderDescription)"],
         )
         return []
     }
@@ -39,21 +39,21 @@ final class MockRealtimePresence: InternalRealtimePresenceProtocol {
     func leave(_ data: JSONObject?) async throws(InternalError) {
         callRecorder.addRecord(
             signature: "leave(_:)",
-            arguments: ["data": data]
+            arguments: ["data": data],
         )
     }
 
     func enterClient(_ name: String, data: JSONObject?) async throws(InternalError) {
         callRecorder.addRecord(
             signature: "enterClient(_:data:)",
-            arguments: ["name": name, "data": data]
+            arguments: ["name": name, "data": data],
         )
     }
 
     func update(_ data: JSONObject?) async throws(InternalError) {
         callRecorder.addRecord(
             signature: "update(_:)",
-            arguments: ["data": data]
+            arguments: ["data": data],
         )
     }
 }

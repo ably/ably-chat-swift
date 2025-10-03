@@ -18,7 +18,7 @@ private enum Environment: Equatable {
         case .mock:
             return MockChatClient(
                 realtime: MockRealtime(),
-                clientOptions: ChatClientOptions()
+                clientOptions: ChatClientOptions(),
             )
         case let .live(key: key, clientId: clientId):
             let realtimeOptions = ARTClientOptions()
@@ -136,7 +136,7 @@ struct ContentView: View {
                                 },
                                 onDeleteReaction: { reaction in
                                     deleteMessageReaction(reaction, messageSerial: messageItem.message.serial)
-                                }
+                                },
                             ).id(item.id)
                                 .flip()
                         }
@@ -262,10 +262,10 @@ struct ContentView: View {
                         .message(
                             .init(
                                 message: message,
-                                isSender: message.clientID == currentClientID
-                            )
+                                isSender: message.clientID == currentClientID,
+                            ),
                         ),
-                        at: 0
+                        at: 0,
                     )
                 }
             case .updated, .deleted:
@@ -273,8 +273,8 @@ struct ContentView: View {
                     listItems[index] = .message(
                         .init(
                             message: message,
-                            isSender: message.clientID == currentClientID
-                        )
+                            isSender: message.clientID == currentClientID,
+                        ),
                     )
                 }
             }
@@ -308,8 +308,8 @@ struct ContentView: View {
                             listItems[index] = try .message(
                                 .init(
                                     message: reactedMessageItem.message.with(summaryEvent: summaryEvent),
-                                    isSender: reactedMessageItem.message.clientID == currentClientID
-                                )
+                                    isSender: reactedMessageItem.message.clientID == currentClientID,
+                                ),
                             )
                         }
                     }
@@ -326,10 +326,10 @@ struct ContentView: View {
                 listItems.insert(
                     .presence(
                         .init(
-                            presence: event
-                        )
+                            presence: event,
+                        ),
                     ),
-                    at: 0
+                    at: 0,
                 )
             }
         }
@@ -482,7 +482,7 @@ extension ContentView {
             opacity: 1.0,
             rotationAngle: 0, // Initial angle
             rotationSpeed: randomRotationSpeed,
-            duration: duration
+            duration: duration,
         )
 
         reactions.append(newReaction)

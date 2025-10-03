@@ -33,7 +33,7 @@ enum DestinationFetcher {
     private static func fetchSimctlAvailableDevicesOutput() async throws -> SimctlOutput {
         let data = try await ProcessRunner.runAndReturnStdout(
             executableName: "xcrun",
-            arguments: ["simctl", "list", "--json", "devices", "available"]
+            arguments: ["simctl", "list", "--json", "devices", "available"],
         )
 
         return try JSONDecoder().decode(SimctlOutput.self, from: data)

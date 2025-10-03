@@ -18,7 +18,7 @@ internal class TypingOperationQueue<Failure: Error> {
 
         init(
             operation: @escaping () async throws(Failure) -> Void,
-            continuation: CheckedContinuation<Result<Void, Failure>, Never>
+            continuation: CheckedContinuation<Result<Void, Failure>, Never>,
         ) {
             // Convert from throwing to `Result`-returning
             self.operation = {

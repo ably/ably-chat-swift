@@ -29,7 +29,7 @@ internal final class DefaultMessageReactions: MessageReactions {
             let apiParams: ChatAPI.SendMessageReactionParams = .init(
                 type: params.type ?? options.defaultMessageReactionType,
                 name: params.name,
-                count: count
+                count: count,
             )
             let response = try await chatAPI.sendReactionToMessage(messageSerial, roomName: roomName, params: apiParams)
 
@@ -48,7 +48,7 @@ internal final class DefaultMessageReactions: MessageReactions {
         do {
             let apiParams: ChatAPI.DeleteMessageReactionParams = .init(
                 type: reactionType,
-                name: reactionType != .unique ? params.name : nil
+                name: reactionType != .unique ? params.name : nil,
             )
             let response = try await chatAPI.deleteReactionFromMessage(messageSerial, roomName: roomName, params: apiParams)
 
@@ -85,8 +85,8 @@ internal final class DefaultMessageReactions: MessageReactions {
                 type: MessageReactionEvent.summary,
                 summary: MessageReactionSummary(
                     messageSerial: messageSerial,
-                    values: summaryJson ?? [:] // CHA-MR6a1
-                )
+                    values: summaryJson ?? [:], // CHA-MR6a1
+                ),
             )
 
             logger.log(message: "Emitting reaction summary event: \(summaryEvent)", level: .debug)
@@ -135,8 +135,8 @@ internal final class DefaultMessageReactions: MessageReactions {
                     messageSerial: annotation.messageSerial,
                     count: annotation.count?.intValue ?? (annotation.action == .create && reactionType == .multiple ? 1 : nil),
                     clientID: annotationClientID,
-                    isSelf: annotationClientID == clientID
-                )
+                    isSelf: annotationClientID == clientID,
+                ),
             )
 
             logger.log(message: "Emitting message reaction event: \(reactionEvent)", level: .debug)

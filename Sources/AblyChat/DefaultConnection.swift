@@ -37,7 +37,7 @@ internal final class DefaultConnection: Connection {
                 current: currentState,
                 previous: previousState,
                 error: stateChange.reason,
-                retryIn: stateChange.retryIn
+                retryIn: stateChange.retryIn,
             )
 
             let isTimerRunning = timerManager.hasRunningTask()

@@ -96,7 +96,7 @@ public extension Messages {
 
         let subscriptionAsyncSequence = MessageSubscriptionAsyncSequence(
             bufferingPolicy: bufferingPolicy,
-            getPreviousMessages: subscription.historyBeforeSubscribe
+            getPreviousMessages: subscription.historyBeforeSubscribe,
         )
         emitEvent = { [weak subscriptionAsyncSequence] event in
             subscriptionAsyncSequence?.emit(event)
@@ -342,7 +342,7 @@ public final class MessageSubscriptionAsyncSequence: Sendable, AsyncSequence {
     // used internally
     internal init(
         bufferingPolicy: BufferingPolicy,
-        getPreviousMessages: @escaping @Sendable (QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message>
+        getPreviousMessages: @escaping @Sendable (QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message>,
     ) {
         subscription = .init(bufferingPolicy: bufferingPolicy)
         self.getPreviousMessages = getPreviousMessages

@@ -19,9 +19,9 @@ final class MockMessagesPaginatedResult: PaginatedResult {
                 headers: [:],
                 version: .init(
                     serial: "",
-                    timestamp: Date()
+                    timestamp: Date(),
                 ),
-                timestamp: Date()
+                timestamp: Date(),
             )
         }
     }

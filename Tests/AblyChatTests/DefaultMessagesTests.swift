@@ -28,7 +28,7 @@ struct DefaultMessagesTests {
                     ],
                 ],
                 statusCode: 200,
-                headers: [:]
+                headers: [:],
             )
         }
         let chatAPI = ChatAPI(realtime: realtime)
@@ -47,9 +47,8 @@ struct DefaultMessagesTests {
         #expect(sentMessage.headers == ["key2": "val2"])
         #expect(realtime.callRecorder.hasRecord(
             matching: "request(_:path:params:body:headers:)",
-            arguments: ["method": "POST", "path": "/chat/v4/rooms/basketball/messages", "body": ["text": "hey", "metadata": ["key1": "val1"], "headers": ["key2": "val2"]], "params": [:], "headers": [:]]
-        )
-        )
+            arguments: ["method": "POST", "path": "/chat/v4/rooms/basketball/messages", "body": ["text": "hey", "metadata": ["key1": "val1"], "headers": ["key2": "val2"]], "params": [:], "headers": [:]],
+        ))
     }
 
     // @spec CHA-M8a
@@ -74,7 +73,7 @@ struct DefaultMessagesTests {
                     ],
                 ],
                 statusCode: 200,
-                headers: [:]
+                headers: [:],
             )
         }
         let chatAPI = ChatAPI(realtime: realtime)
@@ -97,9 +96,8 @@ struct DefaultMessagesTests {
         #expect(updatedMessage.version.description == "add exclamation")
         #expect(realtime.callRecorder.hasRecord(
             matching: "request(_:path:params:body:headers:)",
-            arguments: ["method": "PUT", "path": "/chat/v4/rooms/basketball/messages/\(sentMessage.serial)", "body": ["message": ["text": "hey!", "metadata": [:], "headers": [:]], "description": "add exclamation", "metadata": ["key": "val"]], "params": [:], "headers": [:]]
-        )
-        )
+            arguments: ["method": "PUT", "path": "/chat/v4/rooms/basketball/messages/\(sentMessage.serial)", "body": ["message": ["text": "hey!", "metadata": [:], "headers": [:]], "description": "add exclamation", "metadata": ["key": "val"]], "params": [:], "headers": [:]],
+        ))
     }
 
     // @spec CHA-M9a
@@ -123,7 +121,7 @@ struct DefaultMessagesTests {
                     ],
                 ],
                 statusCode: 200,
-                headers: [:]
+                headers: [:],
             )
         }
         let chatAPI = ChatAPI(realtime: realtime)
@@ -144,9 +142,8 @@ struct DefaultMessagesTests {
         #expect(deletedMessage.metadata.isEmpty)
         #expect(realtime.callRecorder.hasRecord(
             matching: "request(_:path:params:body:headers:)",
-            arguments: ["method": "POST", "path": "/chat/v4/rooms/basketball/messages/\(sentMessage.serial)/delete", "body": [:], "params": [:], "headers": [:]]
-        )
-        )
+            arguments: ["method": "POST", "path": "/chat/v4/rooms/basketball/messages/\(sentMessage.serial)/delete", "body": [:], "params": [:], "headers": [:]],
+        ))
     }
 
     // @spec CHA-M3e
@@ -231,7 +228,7 @@ struct DefaultMessagesTests {
         let chatAPI = ChatAPI(realtime: realtime)
         let channel = MockRealtimeChannel(
             properties: ARTChannelProperties(attachSerial: nil, channelSerial: channelSerial),
-            initialState: .attached
+            initialState: .attached,
         )
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", clientID: "clientId", logger: TestLogger())
         let subscription = defaultMessages.subscribe()
@@ -240,9 +237,8 @@ struct DefaultMessagesTests {
         // Then: subscription point is the current channelSerial of the realtime channel
         #expect(realtime.callRecorder.hasRecord(
             matching: "request(_:path:params:body:headers:)",
-            arguments: ["method": "GET", "path": "/chat/v4/rooms/basketball/messages", "body": [:], "params": ["direction": "backwards", "fromSerial": "\(channelSerial)"], "headers": [:]]
-        )
-        )
+            arguments: ["method": "GET", "path": "/chat/v4/rooms/basketball/messages", "body": [:], "params": ["direction": "backwards", "fromSerial": "\(channelSerial)"], "headers": [:]],
+        ))
     }
 
     // @spec CHA-M5b
@@ -257,7 +253,7 @@ struct DefaultMessagesTests {
         let channel = MockRealtimeChannel(
             properties: ARTChannelProperties(attachSerial: attachSerial, channelSerial: nil),
             initialState: .attaching,
-            stateChangeToEmitForListener: ARTChannelStateChange(current: .attached, previous: .attaching, event: .attached, reason: nil)
+            stateChangeToEmitForListener: ARTChannelStateChange(current: .attached, previous: .attaching, event: .attached, reason: nil),
         )
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", clientID: "clientId", logger: TestLogger())
 
@@ -268,9 +264,8 @@ struct DefaultMessagesTests {
         // Then: subscription point is the attachSerial of the realtime channel
         #expect(realtime.callRecorder.hasRecord(
             matching: "request(_:path:params:body:headers:)",
-            arguments: ["method": "GET", "path": "/chat/v4/rooms/basketball/messages", "body": [:], "params": ["direction": "backwards", "fromSerial": "\(attachSerial)"], "headers": [:]]
-        )
-        )
+            arguments: ["method": "GET", "path": "/chat/v4/rooms/basketball/messages", "body": [:], "params": ["direction": "backwards", "fromSerial": "\(attachSerial)"], "headers": [:]],
+        ))
     }
 
     // @spec CHA-M5c
@@ -285,7 +280,7 @@ struct DefaultMessagesTests {
         let chatAPI = ChatAPI(realtime: realtime)
         let channel = MockRealtimeChannel(
             properties: ARTChannelProperties(attachSerial: attachSerial, channelSerial: channelSerial),
-            initialState: .attached
+            initialState: .attached,
         )
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", clientID: "clientId", logger: TestLogger())
 
@@ -295,16 +290,15 @@ struct DefaultMessagesTests {
 
         #expect(realtime.callRecorder.hasRecord(
             matching: "request(_:path:params:body:headers:)",
-            arguments: ["method": "GET", "path": "/chat/v4/rooms/basketball/messages", "body": [:], "params": ["direction": "backwards", "fromSerial": "\(channelSerial)"], "headers": [:]]
-        )
+            arguments: ["method": "GET", "path": "/chat/v4/rooms/basketball/messages", "body": [:], "params": ["direction": "backwards", "fromSerial": "\(channelSerial)"], "headers": [:]],
+        ))
+
+        channel.emitEvent(
+            ARTChannelStateChange(current: .detached, previous: .attached, event: .detached, reason: ARTErrorInfo(domain: "Some", code: 123)),
         )
 
         channel.emitEvent(
-            ARTChannelStateChange(current: .detached, previous: .attached, event: .detached, reason: ARTErrorInfo(domain: "Some", code: 123))
-        )
-
-        channel.emitEvent(
-            ARTChannelStateChange(current: .attached, previous: .detached, event: .attached, reason: nil, resumed: false)
+            ARTChannelStateChange(current: .attached, previous: .detached, event: .attached, reason: nil, resumed: false),
         )
 
         _ = try await subscription.getPreviousMessages(params: .init())
@@ -312,9 +306,8 @@ struct DefaultMessagesTests {
         // Then: subscription point is the attachSerial of the realtime channel
         #expect(realtime.callRecorder.hasRecord(
             matching: "request(_:path:params:body:headers:)",
-            arguments: ["method": "GET", "path": "/chat/v4/rooms/basketball/messages", "body": [:], "params": ["direction": "backwards", "fromSerial": "\(attachSerial)"], "headers": [:]]
-        )
-        )
+            arguments: ["method": "GET", "path": "/chat/v4/rooms/basketball/messages", "body": [:], "params": ["direction": "backwards", "fromSerial": "\(attachSerial)"], "headers": [:]],
+        ))
     }
 
     // @spec CHA-M5d
@@ -329,7 +322,7 @@ struct DefaultMessagesTests {
         let chatAPI = ChatAPI(realtime: realtime)
         let channel = MockRealtimeChannel(
             properties: ARTChannelProperties(attachSerial: attachSerial, channelSerial: channelSerial),
-            initialState: .attached
+            initialState: .attached,
         )
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", clientID: "clientId", logger: TestLogger())
 
@@ -339,13 +332,12 @@ struct DefaultMessagesTests {
 
         #expect(realtime.callRecorder.hasRecord(
             matching: "request(_:path:params:body:headers:)",
-            arguments: ["method": "GET", "path": "/chat/v4/rooms/basketball/messages", "body": [:], "params": ["direction": "backwards", "fromSerial": "\(channelSerial)"], "headers": [:]]
-        )
-        )
+            arguments: ["method": "GET", "path": "/chat/v4/rooms/basketball/messages", "body": [:], "params": ["direction": "backwards", "fromSerial": "\(channelSerial)"], "headers": [:]],
+        ))
 
         // When: UPDATE event received
         channel.emitEvent(
-            ARTChannelStateChange(current: .attached, previous: .attached, event: .update, reason: nil, resumed: false)
+            ARTChannelStateChange(current: .attached, previous: .attached, event: .update, reason: nil, resumed: false),
         )
 
         _ = try await subscription.getPreviousMessages(params: .init())
@@ -353,9 +345,8 @@ struct DefaultMessagesTests {
         // Then: subscription point is the attachSerial of the realtime channel
         #expect(realtime.callRecorder.hasRecord(
             matching: "request(_:path:params:body:headers:)",
-            arguments: ["method": "GET", "path": "/chat/v4/rooms/basketball/messages", "body": [:], "params": ["direction": "backwards", "fromSerial": "\(attachSerial)"], "headers": [:]]
-        )
-        )
+            arguments: ["method": "GET", "path": "/chat/v4/rooms/basketball/messages", "body": [:], "params": ["direction": "backwards", "fromSerial": "\(attachSerial)"], "headers": [:]],
+        ))
     }
 
     // @spec CHA-M5f
@@ -371,7 +362,7 @@ struct DefaultMessagesTests {
         let chatAPI = ChatAPI(realtime: realtime)
         let channel = MockRealtimeChannel(
             properties: ARTChannelProperties(attachSerial: nil, channelSerial: "123"),
-            initialState: .attached
+            initialState: .attached,
         )
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", clientID: "clientId", logger: TestLogger())
 
@@ -409,7 +400,7 @@ struct DefaultMessagesTests {
         let chatAPI = ChatAPI(realtime: realtime)
         let channel = MockRealtimeChannel(
             properties: ARTChannelProperties(attachSerial: nil, channelSerial: "123"),
-            initialState: .attached
+            initialState: .attached,
         )
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", clientID: "clientId", logger: TestLogger())
 
@@ -440,7 +431,7 @@ struct DefaultMessagesTests {
         let chatAPI = ChatAPI(realtime: realtime)
         let channel = MockRealtimeChannel(
             properties: ARTChannelProperties(attachSerial: nil, channelSerial: "123"),
-            initialState: .attached
+            initialState: .attached,
         )
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", clientID: "clientId", logger: TestLogger())
 
@@ -469,7 +460,7 @@ struct DefaultMessagesTests {
         let chatAPI = ChatAPI(realtime: realtime)
         let channel = MockRealtimeChannel(
             properties: ARTChannelProperties(attachSerial: nil, channelSerial: "123"),
-            initialState: .attached
+            initialState: .attached,
         )
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", clientID: "clientId", logger: TestLogger())
 
@@ -515,10 +506,10 @@ struct DefaultMessagesTests {
         let channel = MockRealtimeChannel(
             properties: .init(
                 attachSerial: "001",
-                channelSerial: "001"
+                channelSerial: "001",
             ),
             initialState: .attached,
-            messageToEmitOnSubscribe: generateMessage(serial: "1", numberKey: 10, stringKey: "hello")
+            messageToEmitOnSubscribe: generateMessage(serial: "1", numberKey: 10, stringKey: "hello"),
         )
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", clientID: "clientId", logger: TestLogger())
 
@@ -540,7 +531,7 @@ struct DefaultMessagesTests {
         // will not be received and expectations above will not fail
         channel.simulateIncomingMessage(
             generateMessage(serial: "2", numberKey: 11, stringKey: "hello there"),
-            for: RealtimeMessageName.chatMessage.rawValue
+            for: RealtimeMessageName.chatMessage.rawValue,
         )
     }
 
@@ -559,7 +550,7 @@ struct DefaultMessagesTests {
         let channel = MockRealtimeChannel(
             properties: .init(
                 attachSerial: "001",
-                channelSerial: "001"
+                channelSerial: "001",
             ),
             initialState: .attached,
             messageToEmitOnSubscribe: {
@@ -577,7 +568,7 @@ struct DefaultMessagesTests {
                 message.version = .init(serial: "1") // arbitrary
                 message.timestamp = Date(timeIntervalSince1970: 0) // arbitrary
                 return message
-            }()
+            }(),
         )
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", clientID: "clientId", logger: TestLogger())
 
@@ -609,7 +600,7 @@ struct DefaultMessagesTests {
         }
         channel.simulateIncomingMessage(
             ARTMessage(), // malformed message
-            for: RealtimeMessageName.chatMessage.rawValue
+            for: RealtimeMessageName.chatMessage.rawValue,
         )
         #expect(callbackCalls == 2)
     }

@@ -65,14 +65,13 @@ struct DefaultRoomTests {
         [
             (
                 enableEvents: true,
-                expectedOccupancyChannelParam: "metrics"
+                expectedOccupancyChannelParam: "metrics",
             ),
             (
                 enableEvents: false,
-                expectedOccupancyChannelParam: nil
+                expectedOccupancyChannelParam: nil,
             ),
-        ]
-    )
+        ])
     func occupancyEnableEvents(enableEvents: Bool, expectedOccupancyChannelParam: String?) async throws {
         // Given: A DefaultRoom instance, with the occupancy.enableEvents room option set per the test argument
         let channelsList = [
@@ -94,14 +93,13 @@ struct DefaultRoomTests {
             (
                 enableEvents: true,
                 // i.e. it doesn't explicitly set any modes (so that Realtime will use the default modes)
-                expectedChannelModes: [.publish, .subscribe, .presence, .annotationPublish, .presenceSubscribe] as ARTChannelMode
+                expectedChannelModes: [.publish, .subscribe, .presence, .annotationPublish, .presenceSubscribe] as ARTChannelMode,
             ),
             (
                 enableEvents: false,
-                expectedChannelModes: [.publish, .subscribe, .presence, .annotationPublish] as ARTChannelMode
+                expectedChannelModes: [.publish, .subscribe, .presence, .annotationPublish] as ARTChannelMode,
             ),
-        ]
-    )
+        ])
     func presenceEnableEvents(enableEvents: Bool, expectedChannelModes: ARTChannelMode) async throws {
         // Given: A DefaultRoom instance, with the presence.enableEvents room option set per the test argument
         let channelsList = [
@@ -139,7 +137,7 @@ struct DefaultRoomTests {
         arguments: [
             .success(()),
             .failure(ARTErrorInfo.createUnknownError() /* arbitrary */ ),
-        ] as[Result<Void, ARTErrorInfo>]
+        ] as[Result<Void, ARTErrorInfo>],
     )
     func attach(managerAttachResult: Result<Void, ARTErrorInfo>) async throws {
         // Given: a DefaultRoom instance
@@ -175,7 +173,7 @@ struct DefaultRoomTests {
         arguments: [
             .success(()),
             .failure(ARTErrorInfo.createUnknownError() /* arbitrary */ ),
-        ] as[Result<Void, ARTErrorInfo>]
+        ] as[Result<Void, ARTErrorInfo>],
     )
     func detach(managerDetachResult: Result<Void, ARTErrorInfo>) async throws {
         // Given: a DefaultRoom instance

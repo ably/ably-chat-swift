@@ -52,12 +52,12 @@ struct MessageReactionsPicker: View {
             #if os(iOS)
                 .background(
                     BlurView(style: .systemUltraThinMaterial)
-                        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous)),
                 )
             #elseif os(macOS)
                 .background(
                     BlurView(material: .hudWindow, blendingMode: .withinWindow)
-                        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous)),
                 )
             #endif
                 .padding(.horizontal, 0)

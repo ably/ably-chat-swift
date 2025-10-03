@@ -1,2 +1,3 @@
 # To avoid clash with SwiftLint’s explicit_acl rule
 --disable redundantInternal
+--disable redundantPublic

@@ -18,7 +18,7 @@ enum Sandbox {
         let testAppSetupFileURL = Bundle.module.url(
             forResource: "test-app-setup",
             withExtension: "json",
-            subdirectory: "ably-common/test-resources"
+            subdirectory: "ably-common/test-resources",
         )!
 
         let (data, _) = try await URLSession.shared.data(for: .init(url: testAppSetupFileURL))

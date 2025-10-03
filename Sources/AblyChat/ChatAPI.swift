@@ -1,7 +1,7 @@
 import Ably
 
 @MainActor
-internal final class ChatAPI: Sendable {
+internal final class ChatAPI {
     internal enum RequestBody {
         case jsonObject([String: JSONValue])
         /// Contains an object that can be used the same way as a value returned from `JSONValue.object(…).toAblyCocoaData`. Workaround for JSONValue not being able to indicate to ably-cocoa that a property should be serialized as a MessagePack integer type; TODO revisit in (create an issue for this)
@@ -18,8 +18,7 @@ internal final class ChatAPI: Sendable {
     // (CHA-M6) Messages should be queryable from a paginated REST API.
     internal func getMessages(roomName: String, params: QueryOptions) async throws(InternalError) -> any PaginatedResult<Message> {
         let endpoint = "\(apiVersionV4)/rooms/\(roomName)/messages"
-        let result: Result<PaginatedResultWrapper<Message>, InternalError> = await makePaginatedRequest(endpoint, params: params.asQueryItems())
-        return try result.get()
+        return try await makePaginatedRequest(endpoint, params: params.asQueryItems())
     }
 
     internal struct SendMessageResponse: JSONObjectDecodable {
@@ -98,9 +97,9 @@ internal final class ChatAPI: Sendable {
             version: .init(
                 serial: response.serial,
                 timestamp: timestampInSeconds,
-                clientID: clientID
+                clientID: clientID,
             ),
-            timestamp: timestampInSeconds
+            timestamp: timestampInSeconds,
         )
         return message
     }
@@ -139,7 +138,7 @@ internal final class ChatAPI: Sendable {
             metadata: modifiedMessage.metadata,
             headers: modifiedMessage.headers,
             version: response.version,
-            timestamp: modifiedMessage.timestamp
+            timestamp: modifiedMessage.timestamp,
         )
         return message
     }
@@ -172,7 +171,7 @@ internal final class ChatAPI: Sendable {
             metadata: [:], // CHA-M9b
             headers: [:], // CHA-M9b
             version: response.version,
-            timestamp: Date(timeIntervalSince1970: timestampInSeconds)
+            timestamp: Date(timeIntervalSince1970: timestampInSeconds),
         )
         return message
     }
@@ -240,21 +239,16 @@ internal final class ChatAPI: Sendable {
         return try Response(jsonValue: jsonValue)
     }
 
-    // TODO: (https://github.com/ably/ably-chat-swift/issues/267) switch this back to use `throws` once Xcode 16.3 typed throw crashes are fixed
     private func makePaginatedRequest<Response: JSONDecodable & Sendable & Equatable>(
         _ url: String,
-        params: [String: String]? = nil
-    ) async -> Result<PaginatedResultWrapper<Response>, InternalError> {
-        do {
-            let paginatedResponse = try await realtime.request("GET", path: url, params: params, body: nil, headers: [:])
-            let jsonValues = paginatedResponse.items.map { JSONValue(ablyCocoaData: $0) }
-            let items = try jsonValues.map { jsonValue throws(InternalError) in
-                try Response(jsonValue: jsonValue)
-            }
-            return .success(paginatedResponse.toPaginatedResult(items: items))
-        } catch {
-            return .failure(error)
+        params: [String: String]? = nil,
+    ) async throws(InternalError) -> any PaginatedResult<Response> {
+        let paginatedResponse = try await realtime.request("GET", path: url, params: params, body: nil, headers: [:])
+        let jsonValues = paginatedResponse.items.map { JSONValue(ablyCocoaData: $0) }
+        let items = try jsonValues.map { jsonValue throws(InternalError) in
+            try Response(jsonValue: jsonValue)
         }
+        return paginatedResponse.toPaginatedResult(items: items)
     }
 
     internal enum ChatError: Error {

@@ -31,7 +31,7 @@ internal protocol RoomLifecycleManagerFactory: Sendable {
 
     func createManager(
         channel: any InternalRealtimeChannelProtocol,
-        logger: InternalLogger
+        logger: InternalLogger,
     ) -> Manager
 }
 
@@ -40,12 +40,12 @@ internal final class DefaultRoomLifecycleManagerFactory: RoomLifecycleManagerFac
 
     internal func createManager(
         channel: any InternalRealtimeChannelProtocol,
-        logger: InternalLogger
+        logger: InternalLogger,
     ) -> DefaultRoomLifecycleManager {
         .init(
             channel: channel,
             logger: logger,
-            clock: clock
+            clock: clock,
         )
     }
 }
@@ -113,7 +113,7 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
     internal convenience init(
         channel: any InternalRealtimeChannelProtocol,
         logger: InternalLogger,
-        clock: SimpleClock
+        clock: SimpleClock,
     ) {
         self.init(
             roomStatus: nil,
@@ -121,7 +121,7 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
             isExplicitlyDetached: nil,
             channel: channel,
             logger: logger,
-            clock: clock
+            clock: clock,
         )
     }
 
@@ -132,7 +132,7 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
             testsOnly_isExplicitlyDetached isExplicitlyDetached: Bool? = nil,
             channel: any InternalRealtimeChannelProtocol,
             logger: InternalLogger,
-            clock: SimpleClock
+            clock: SimpleClock,
         ) {
             self.init(
                 roomStatus: roomStatus,
@@ -140,7 +140,7 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
                 isExplicitlyDetached: isExplicitlyDetached,
                 channel: channel,
                 logger: logger,
-                clock: clock
+                clock: clock,
             )
         }
     #endif
@@ -151,7 +151,7 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
         isExplicitlyDetached: Bool?,
         channel: any InternalRealtimeChannelProtocol,
         logger: InternalLogger,
-        clock: SimpleClock
+        clock: SimpleClock,
     ) {
         self.roomStatus = roomStatus ?? .initialized
         self.hasAttachedOnce = hasAttachedOnce ?? false
@@ -304,7 +304,7 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
     ///   - requester: A description of who is awaiting this result. Only used for logging.
     private func waitForCompletionOfOperationWithID(
         _ waitedOperationID: UUID,
-        requester: OperationWaitRequester
+        requester: OperationWaitRequester,
     ) async throws(InternalError) {
         logger.log(message: "\(requester.loggingDescription) started waiting for result of operation \(waitedOperationID)", level: .debug)
 
@@ -349,7 +349,7 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
     ///   - body: The implementation of the operation to be performed. Once this function returns or throws an error, the operation is considered to have completed, and any waits for this operation’s completion initiated via ``waitForCompletionOfOperationWithID(_:waitingOperationID:)`` will complete.
     private func performAnOperation(
         forcingOperationID forcedOperationID: UUID?,
-        _ body: (UUID) async throws(InternalError) -> Void
+        _ body: (UUID) async throws(InternalError) -> Void,
     ) async throws(InternalError) {
         let operationID = forcedOperationID ?? UUID()
         logger.log(message: "Performing operation \(operationID)", level: .debug)

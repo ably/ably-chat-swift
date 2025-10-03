@@ -111,7 +111,7 @@ extension OccupancyData: JSONObjectDecodable {
     internal init(jsonObject: [String: JSONValue]) throws(InternalError) {
         try self.init(
             connections: Int(jsonObject.numberValueForKey("connections")),
-            presenceMembers: Int(jsonObject.numberValueForKey("presenceMembers"))
+            presenceMembers: Int(jsonObject.numberValueForKey("presenceMembers")),
         )
     }
 }

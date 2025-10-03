@@ -134,9 +134,9 @@ class MockMessages: Messages {
                     headers: [:],
                     version: .init(
                         serial: "",
-                        timestamp: Date()
+                        timestamp: Date(),
                     ),
-                    timestamp: Date()
+                    timestamp: Date(),
                 )
                 if byChance(30) { /* 30% of the messages will get the reaction */
                     self.mockReactions.messageSerials.append(message.serial)
@@ -148,7 +148,7 @@ class MockMessages: Messages {
                 MockMessagesPaginatedResult(clientID: self.clientID, roomName: self.roomName)
             },
             interval: 3.0,
-            callback: callback
+            callback: callback,
         )
     }
 
@@ -166,9 +166,9 @@ class MockMessages: Messages {
             headers: params.headers ?? [:],
             version: .init(
                 serial: "",
-                timestamp: Date()
+                timestamp: Date(),
             ),
-            timestamp: Date()
+            timestamp: Date(),
         )
         mockSubscriptions.emit(ChatMessageEvent(message: message))
         return message
@@ -183,7 +183,7 @@ class MockMessages: Messages {
             metadata: newMessage.metadata,
             headers: newMessage.headers,
             version: .init(serial: "\(Date().timeIntervalSince1970)", timestamp: Date(), clientID: clientID),
-            timestamp: Date()
+            timestamp: Date(),
         )
         mockSubscriptions.emit(ChatMessageEvent(message: message))
         return message
@@ -200,9 +200,9 @@ class MockMessages: Messages {
             version: .init(
                 serial: "\(Date().timeIntervalSince1970)",
                 timestamp: Date(),
-                clientID: clientID
+                clientID: clientID,
             ),
-            timestamp: Date()
+            timestamp: Date(),
         )
         mockSubscriptions.emit(ChatMessageEvent(message: message))
         return message
@@ -235,7 +235,7 @@ class MockMessageReactions: MessageReactions {
                     dict[newItem.name] = MessageReactionSummary.ClientIdList(total: 1, clientIds: [newItem.clientID], clipped: false)
                 }
             },
-            multiple: [:]
+            multiple: [:],
         )
     }
 
@@ -252,14 +252,14 @@ class MockMessageReactions: MessageReactions {
                 messageSerial: messageSerial,
                 count: params.count,
                 clientID: clientID,
-                isSelf: true
-            )
+                isSelf: true,
+            ),
         )
         mockSubscriptions.emit(
             MessageReactionSummaryEvent(
                 type: MessageReactionEvent.summary,
-                summary: getUniqueReactionsSummaryForMessage(messageSerial)
-            )
+                summary: getUniqueReactionsSummaryForMessage(messageSerial),
+            ),
         )
     }
 
@@ -270,8 +270,8 @@ class MockMessageReactions: MessageReactions {
         mockSubscriptions.emit(
             MessageReactionSummaryEvent(
                 type: MessageReactionEvent.summary,
-                summary: getUniqueReactionsSummaryForMessage(messageSerial)
-            )
+                summary: getUniqueReactionsSummaryForMessage(messageSerial),
+            ),
         )
     }
 
@@ -288,16 +288,16 @@ class MockMessageReactions: MessageReactions {
                         messageSerial: messageSerial,
                         count: 1,
                         clientID: senderClientID,
-                        isSelf: senderClientID == self.clientID
-                    )
+                        isSelf: senderClientID == self.clientID,
+                    ),
                 )
                 return MessageReactionSummaryEvent(
                     type: MessageReactionEvent.summary,
-                    summary: self.getUniqueReactionsSummaryForMessage(messageSerial)
+                    summary: self.getUniqueReactionsSummaryForMessage(messageSerial),
                 )
             },
             interval: Double([Int](1 ... 10).randomElement()!) / 10.0,
-            callback: callback
+            callback: callback,
         )
     }
 
@@ -324,7 +324,7 @@ class MockRoomReactions: RoomReactions {
             headers: [:],
             createdAt: Date(),
             clientID: clientID,
-            isSelf: false
+            isSelf: false,
         )
         let event = RoomReactionEvent(type: .reaction, reaction: reaction)
         mockSubscriptions.emit(event)
@@ -340,12 +340,12 @@ class MockRoomReactions: RoomReactions {
                     headers: [:],
                     createdAt: Date(),
                     clientID: self.clientID,
-                    isSelf: false
+                    isSelf: false,
                 )
                 return RoomReactionEvent(type: .reaction, reaction: reaction)
             },
             interval: 0.5,
-            callback: callback
+            callback: callback,
         )
     }
 }
@@ -371,11 +371,11 @@ class MockTyping: Typing {
                         MockStrings.names.randomElement()!,
                         MockStrings.names.randomElement()!,
                     ],
-                    change: .init(clientId: MockStrings.names.randomElement()!, type: .started)
+                    change: .init(clientId: MockStrings.names.randomElement()!, type: .started),
                 )
             },
             interval: 2,
-            callback: callback
+            callback: callback,
         )
     }
 
@@ -388,8 +388,8 @@ class MockTyping: Typing {
             TypingSetEvent(
                 type: .setChanged,
                 currentlyTyping: [clientID],
-                change: .init(clientId: clientID, type: .started)
-            )
+                change: .init(clientId: clientID, type: .started),
+            ),
         )
     }
 
@@ -398,8 +398,8 @@ class MockTyping: Typing {
             TypingSetEvent(
                 type: .setChanged,
                 currentlyTyping: [],
-                change: .init(clientId: clientID, type: .stopped)
-            )
+                change: .init(clientId: clientID, type: .stopped),
+            ),
         )
     }
 }
@@ -422,15 +422,15 @@ class MockPresence: Presence {
                     clientID: MockStrings.names.randomElement()!,
                     data: nil,
                     extras: nil,
-                    updatedAt: Date()
+                    updatedAt: Date(),
                 )
                 return PresenceEvent(
                     type: [.enter, .leave].randomElement()!,
-                    member: member
+                    member: member,
                 )
             },
             interval: 5,
-            callback: callback
+            callback: callback,
         )
     }
 
@@ -440,7 +440,7 @@ class MockPresence: Presence {
                 clientID: name,
                 data: nil,
                 extras: nil,
-                updatedAt: Date()
+                updatedAt: Date(),
             )
         }
     }
@@ -451,7 +451,7 @@ class MockPresence: Presence {
                 clientID: name,
                 data: nil,
                 extras: nil,
-                updatedAt: Date()
+                updatedAt: Date(),
             )
         }
     }
@@ -473,13 +473,13 @@ class MockPresence: Presence {
             clientID: clientID,
             data: dataForEvent,
             extras: nil,
-            updatedAt: Date()
+            updatedAt: Date(),
         )
         mockSubscriptions.emit(
             PresenceEvent(
                 type: .enter,
-                member: member
-            )
+                member: member,
+            ),
         )
     }
 
@@ -496,13 +496,13 @@ class MockPresence: Presence {
             clientID: clientID,
             data: dataForEvent,
             extras: nil,
-            updatedAt: Date()
+            updatedAt: Date(),
         )
         mockSubscriptions.emit(
             PresenceEvent(
                 type: .update,
-                member: member
-            )
+                member: member,
+            ),
         )
     }
 
@@ -519,13 +519,13 @@ class MockPresence: Presence {
             clientID: clientID,
             data: dataForEvent,
             extras: nil,
-            updatedAt: Date()
+            updatedAt: Date(),
         )
         mockSubscriptions.emit(
             PresenceEvent(
                 type: .leave,
-                member: member
-            )
+                member: member,
+            ),
         )
     }
 
@@ -558,7 +558,7 @@ class MockOccupancy: Occupancy {
                 return OccupancyEvent(type: .updated, occupancy: occupancyData)
             },
             interval: 2,
-            callback: callback
+            callback: callback,
         )
     }
 
@@ -589,11 +589,11 @@ class MockConnection: Connection {
                 ConnectionStatusChange(
                     current: [.connected, .connecting].randomElement()!,
                     previous: [.suspended, .disconnected].randomElement()!,
-                    retryIn: 1
+                    retryIn: 1,
                 )
             },
             interval: 5,
-            callback: callback
+            callback: callback,
         )
     }
 }

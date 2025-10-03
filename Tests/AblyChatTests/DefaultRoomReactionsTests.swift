@@ -17,7 +17,7 @@ struct DefaultRoomReactionsTests {
         let sendReactionParams = SendReactionParams(
             name: "like",
             metadata: ["someMetadataKey": "someMetadataValue"],
-            headers: ["someHeadersKey": "someHeadersValue"]
+            headers: ["someHeadersKey": "someHeadersValue"],
         )
 
         // When
@@ -48,7 +48,7 @@ struct DefaultRoomReactionsTests {
         }
 
         let channel = MockRealtimeChannel(
-            messageToEmitOnSubscribe: generateMessage(serial: "1", reaction: ":like:")
+            messageToEmitOnSubscribe: generateMessage(serial: "1", reaction: ":like:"),
         )
         let defaultRoomReactions = DefaultRoomReactions(channel: channel, clientID: "mockClientId", roomName: "basketball", logger: TestLogger())
 
@@ -67,7 +67,7 @@ struct DefaultRoomReactionsTests {
         // will not be received (because unsubscribed) and expectations above will not fail
         channel.simulateIncomingMessage(
             generateMessage(serial: "2", reaction: ":dislike:"),
-            for: RoomReactionEvents.reaction.rawValue
+            for: RoomReactionEvents.reaction.rawValue,
         )
     }
 
@@ -96,7 +96,7 @@ struct DefaultRoomReactionsTests {
                 ] as any ARTJsonCompatible
                 message.timestamp = Date(timeIntervalSinceReferenceDate: 0) // arbitrary
                 return message
-            }()
+            }(),
         )
         let defaultRoomReactions = DefaultRoomReactions(channel: channel, clientID: "mockClientId", roomName: "basketball", logger: TestLogger())
 
@@ -123,7 +123,7 @@ struct DefaultRoomReactionsTests {
         }
         channel.simulateIncomingMessage(
             ARTMessage(), // malformed message
-            for: RoomReactionEvents.reaction.rawValue
+            for: RoomReactionEvents.reaction.rawValue,
         )
         #expect(callbackCalls == 2)
     }

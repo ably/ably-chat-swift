@@ -21,7 +21,7 @@ final class MockSuppliedRealtime: NSObject, SuppliedRealtimeClientProtocol, @unc
     }
 
     init(
-        createWrapperSDKProxyReturnValue: MockSuppliedRealtime? = nil
+        createWrapperSDKProxyReturnValue: MockSuppliedRealtime? = nil,
     ) {
         self.createWrapperSDKProxyReturnValue = createWrapperSDKProxyReturnValue
     }

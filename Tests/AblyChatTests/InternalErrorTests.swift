@@ -13,7 +13,7 @@ struct InternalErrorTests {
     }
 
     @Test
-    func testToARTErrorInfo_whenUnderlyingErrorIsNotARTErrorInfo() {
+    func toARTErrorInfo_whenUnderlyingErrorIsNotARTErrorInfo() {
         let internalError = InternalError.other(.chatAPIChatError(.noItemInResponse))
 
         let convertedToErrorInfo = internalError.toARTErrorInfo()

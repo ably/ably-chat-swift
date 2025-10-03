@@ -98,7 +98,7 @@ internal class DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
             // A task that will return the result of this room fetch request.
             creationTask: Task<Result<RoomFactory.Room, InternalError>, Never>,
             // Calling this function will cause `creationTask` to fail with the given error.
-            failCreation: @Sendable (InternalError) -> Void
+            failCreation: @Sendable (InternalError) -> Void,
         )
 
         /// The room has been created.
@@ -114,14 +114,13 @@ internal class DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
             }
         }
 
-        // TODO: (https://github.com/ably/ably-chat-swift/issues/267) switch this back to use `throws` once Xcode 16.3 typed throw crashes are fixed
         /// Returns the room which this room map entry corresponds to. If the room map entry represents a pending request, it will return or throw with the result of this request.
-        func waitForRoom() async -> Result<RoomFactory.Room, InternalError> {
+        func waitForRoom() async throws(InternalError) -> RoomFactory.Room {
             switch self {
             case let .requestAwaitingRelease(_, _, creationTask: creationTask, _):
-                await creationTask.value
+                try await creationTask.value.get()
             case let .created(room):
-                .success(room)
+                room
             }
         }
     }
@@ -173,7 +172,7 @@ internal class DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
                     // CHA-RC1f1
                     if existingRoomMapEntry.roomOptions != options {
                         throw ARTErrorInfo(
-                            chatError: .inconsistentRoomOptions(requested: options, existing: existingRoomMapEntry.roomOptions)
+                            chatError: .inconsistentRoomOptions(requested: options, existing: existingRoomMapEntry.roomOptions),
                         ).toInternalError()
                     }
 
@@ -185,7 +184,7 @@ internal class DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
                     #endif
 
                     do {
-                        let room = try await existingRoomMapEntry.waitForRoom().get()
+                        let room = try await existingRoomMapEntry.waitForRoom()
                         logger.log(message: "Completed waiting for room from existing room map entry \(existingRoomMapEntry)", level: .debug)
                         return room
                     } catch {
@@ -259,8 +258,8 @@ internal class DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
                             releaseTask: releaseTask,
                             requestedOptions: options,
                             creationTask: creationTask,
-                            failCreation: creationFailureFunctions.failCreation
-                        )
+                            failCreation: creationFailureFunctions.failCreation,
+                        ),
                     )
 
                     return try await creationTask.value.get()
@@ -292,7 +291,7 @@ internal class DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
                     throw error
                 }
                 logger.log(message: "Wait for room creation failure request completed without error", level: .debug)
-            }
+            },
         )
     }
 
@@ -341,8 +340,8 @@ internal class DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
                 releaseTask: releaseTask,
                 _,
                 _,
-                failCreation: failCreation
-            )
+                failCreation: failCreation,
+            ),
         ):
             // CHA-RC1g4
             logger.log(message: "Release operation requesting failure of in-progress room creation request", level: .debug)

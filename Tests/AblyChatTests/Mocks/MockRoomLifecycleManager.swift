@@ -65,7 +65,7 @@ class MockRoomLifecycleManager: RoomLifecycleManager {
         }
         callRecorder.addRecord(
             signature: "waitToBeAbleToPerformPresenceOperations(requestedByFeature:)",
-            arguments: ["requestedByFeature": "\(requestedByFeature)"]
+            arguments: ["requestedByFeature": "\(requestedByFeature)"],
         )
         do {
             try resultOfWaitToBeAbleToPerformPresenceOperations.get()

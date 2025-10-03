@@ -108,7 +108,7 @@ public struct Message: Sendable, Identifiable, Equatable {
         text: String? = nil,
         metadata: MessageMetadata? = nil,
         headers: MessageHeaders? = nil,
-        reactions: MessageReactionSummary? = nil
+        reactions: MessageReactionSummary? = nil,
     ) -> Message {
         Message(
             serial: serial,
@@ -119,7 +119,7 @@ public struct Message: Sendable, Identifiable, Equatable {
             headers: headers ?? self.headers,
             version: version,
             timestamp: timestamp,
-            reactions: reactions ?? self.reactions
+            reactions: reactions ?? self.reactions,
         )
     }
 }
@@ -166,7 +166,7 @@ extension Message: JSONObjectDecodable {
         if let summaryJson = try? jsonObject.objectValueForKey("reactions"), !summaryJson.isEmpty {
             reactionSummary = MessageReactionSummary(
                 messageSerial: serial,
-                values: summaryJson
+                values: summaryJson,
             )
         }
         let rawAction = try jsonObject.stringValueForKey("action")
@@ -185,7 +185,7 @@ extension Message: JSONObjectDecodable {
             },
             version: .init(jsonObject: jsonObject.objectValueForKey("version"), defaultTimestamp: timestamp),
             timestamp: timestamp,
-            reactions: reactionSummary
+            reactions: reactionSummary,
         )
     }
 }
@@ -199,7 +199,7 @@ extension MessageVersion {
             timestamp: jsonObject.optionalAblyProtocolDateValueForKey("timestamp") ?? defaultTimestamp,
             clientID: jsonObject.optionalStringValueForKey("clientId"),
             description: jsonObject.optionalStringValueForKey("description"),
-            metadata: jsonObject.optionalObjectValueForKey("metadata")
+            metadata: jsonObject.optionalObjectValueForKey("metadata"),
         )
     }
 }

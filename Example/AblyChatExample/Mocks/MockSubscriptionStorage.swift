@@ -13,7 +13,7 @@ class MockSubscriptionStorage<Element: Sendable> {
             randomElement: @escaping @MainActor @Sendable () -> Element?,
             interval: @escaping @MainActor @Sendable () -> Double,
             callback: @escaping @MainActor (Element) -> Void,
-            onTerminate: @escaping @MainActor () -> Void
+            onTerminate: @escaping @MainActor () -> Void,
         ) {
             self.callback = callback
 
@@ -38,7 +38,7 @@ class MockSubscriptionStorage<Element: Sendable> {
     func create(
         randomElement: @escaping @MainActor @Sendable () -> Element?,
         interval: @autoclosure @escaping @MainActor @Sendable () -> Double,
-        callback: @escaping @MainActor (Element) -> Void
+        callback: @escaping @MainActor (Element) -> Void,
     ) -> SubscriptionProtocol {
         let id = UUID()
         let subscriptionItem = SubscriptionItem(randomElement: randomElement, interval: interval, callback: callback) { [weak self] in
@@ -71,7 +71,7 @@ class MockStatusSubscriptionStorage<Element: Sendable> {
             randomElement: @escaping @MainActor @Sendable () -> Element?,
             interval: @escaping @MainActor @Sendable () -> Double,
             callback: @escaping @MainActor (Element) -> Void,
-            onTerminate: @escaping @MainActor () -> Void
+            onTerminate: @escaping @MainActor () -> Void,
         ) {
             self.callback = callback
 
@@ -96,7 +96,7 @@ class MockStatusSubscriptionStorage<Element: Sendable> {
     func create(
         randomElement: @escaping @MainActor @Sendable () -> Element?,
         interval: @autoclosure @escaping @MainActor @Sendable () -> Double,
-        callback: @escaping @MainActor (Element) -> Void
+        callback: @escaping @MainActor (Element) -> Void,
     ) -> StatusSubscriptionProtocol {
         let id = UUID()
         let subscriptionItem = SubscriptionItem(randomElement: randomElement, interval: interval, callback: callback) { [weak self] in
@@ -130,7 +130,7 @@ class MockMessageSubscriptionStorage<Element: Sendable> {
             previousMessages: @escaping @MainActor @Sendable (QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message>,
             interval: @escaping @MainActor @Sendable () -> Double,
             callback: @escaping @MainActor (Element) -> Void,
-            onTerminate: @escaping () -> Void
+            onTerminate: @escaping () -> Void,
         ) {
             self.callback = callback
 
@@ -154,14 +154,14 @@ class MockMessageSubscriptionStorage<Element: Sendable> {
         randomElement: @escaping @MainActor @Sendable () -> Element,
         previousMessages: @escaping @MainActor @Sendable (QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message>,
         interval: @autoclosure @escaping @MainActor @Sendable () -> Double,
-        callback: @escaping @MainActor (Element) -> Void
+        callback: @escaping @MainActor (Element) -> Void,
     ) -> MessageSubscriptionResponseProtocol {
         let id = UUID()
         let subscriptionItem = SubscriptionItem(
             randomElement: randomElement,
             previousMessages: previousMessages,
             interval: interval,
-            callback: callback
+            callback: callback,
         ) { [weak self] in
             self?.subscriptionDidTerminate(id: id)
         }
@@ -218,7 +218,7 @@ struct MockMessageSubscriptionResponse: MessageSubscriptionResponseProtocol {
 
     init(
         previousMessages: @escaping @MainActor @Sendable (QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message>,
-        unsubscribe: @MainActor @Sendable @escaping () -> Void
+        unsubscribe: @MainActor @Sendable @escaping () -> Void,
     ) {
         self.previousMessages = previousMessages
         _unsubscribe = unsubscribe
