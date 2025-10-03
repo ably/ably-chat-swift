@@ -23,7 +23,7 @@ struct JSONValueTests {
         // null
         (ablyCocoaPresenceData: NSNull(), expectedResult: .null),
     ] as[(ablyCocoaPresenceData: Sendable, expectedResult: JSONValue?)])
-    func initWithAblyCocoaPresenceData(ablyCocoaData: Sendable, expectedResult: JSONValue?) {
+    func initWithAblyCocoaPresenceData(ablyCocoaData: any Sendable, expectedResult: JSONValue?) {
         #expect(JSONValue(ablyCocoaData: ablyCocoaData) == expectedResult)
     }
 
@@ -95,7 +95,7 @@ struct JSONValueTests {
         // null
         (value: .null, expectedResult: NSNull()),
     ] as[(value: JSONValue, expectedResult: Sendable)])
-    func toAblyCocoaData(value: JSONValue, expectedResult: Sendable) throws {
+    func toAblyCocoaData(value: JSONValue, expectedResult: any Sendable) throws {
         let resultAsNSObject = try #require(value.toAblyCocoaData as? NSObject)
         let expectedResultAsNSObject = try #require(expectedResult as? NSObject)
         #expect(resultAsNSObject == expectedResultAsNSObject)

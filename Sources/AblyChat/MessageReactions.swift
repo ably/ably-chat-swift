@@ -36,7 +36,7 @@ public protocol MessageReactions: AnyObject, Sendable {
      * - Returns: A subscription handle object that should be used to unsubscribe.
      */
     @discardableResult
-    func subscribe(_ callback: @escaping @MainActor (MessageReactionSummaryEvent) -> Void) -> SubscriptionProtocol
+    func subscribe(_ callback: @escaping @MainActor (MessageReactionSummaryEvent) -> Void) -> any SubscriptionProtocol
 
     /**
      * Subscribe to individual reaction events.
@@ -49,7 +49,7 @@ public protocol MessageReactions: AnyObject, Sendable {
      * - Note: If you only need to keep track of reaction counts and clients, use ``subscribe(_:)`` instead.
      */
     @discardableResult
-    func subscribeRaw(_ callback: @escaping @MainActor (MessageReactionRawEvent) -> Void) -> SubscriptionProtocol
+    func subscribeRaw(_ callback: @escaping @MainActor (MessageReactionRawEvent) -> Void) -> any SubscriptionProtocol
 }
 
 /// `AsyncSequence` variant of receiving message reactions events.

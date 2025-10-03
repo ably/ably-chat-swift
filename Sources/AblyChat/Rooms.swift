@@ -78,7 +78,7 @@ internal class DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
 
     internal nonisolated let clientOptions: ChatClientOptions
 
-    private let logger: InternalLogger
+    private let logger: any InternalLogger
     private let roomFactory: RoomFactory
 
     /// All the state that a `DefaultRooms` instance might hold for a given room name.
@@ -131,7 +131,7 @@ internal class DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
     /// The value for a given room name is the state that corresponds to that room name.
     private var roomStates: [String: RoomState] = [:]
 
-    internal init(realtime: RoomFactory.Realtime, clientOptions: ChatClientOptions, logger: InternalLogger, roomFactory: RoomFactory) {
+    internal init(realtime: RoomFactory.Realtime, clientOptions: ChatClientOptions, logger: any InternalLogger, roomFactory: RoomFactory) {
         self.realtime = realtime
         self.clientOptions = clientOptions
         self.logger = logger
@@ -157,7 +157,7 @@ internal class DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
         private let operationWaitEventSubscriptions = SubscriptionStorage<OperationWaitEvent>()
 
         /// Returns a subscription which emits an event each time one operation is going to wait for another to complete.
-        internal func testsOnly_subscribeToOperationWaitEvents(_ callback: @escaping @MainActor (OperationWaitEvent) -> Void) -> SubscriptionProtocol {
+        internal func testsOnly_subscribeToOperationWaitEvents(_ callback: @escaping @MainActor (OperationWaitEvent) -> Void) -> any SubscriptionProtocol {
             operationWaitEventSubscriptions.create(callback)
         }
 

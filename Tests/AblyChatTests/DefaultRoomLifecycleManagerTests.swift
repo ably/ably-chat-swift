@@ -1,5 +1,6 @@
 import Ably
 @testable import AblyChat
+import AsyncAlgorithms
 import Testing
 
 @MainActor
@@ -33,7 +34,7 @@ struct DefaultRoomLifecycleManagerTests {
         forTestingWhatHappensWhenHasHasAttachedOnce hasAttachedOnce: Bool? = nil,
         forTestingWhatHappensWhenHasIsExplicitlyDetached isExplicitlyDetached: Bool? = nil,
         channel: MockRealtimeChannel? = nil,
-        clock: SimpleClock = MockSimpleClock(),
+        clock: any SimpleClock = MockSimpleClock(),
     ) -> DefaultRoomLifecycleManager {
         .init(
             testsOnly_roomStatus: roomStatus,
@@ -1014,7 +1015,7 @@ struct DefaultRoomLifecycleManagerTests {
         channelAttachOperation.complete(behavior: .completeAndChangeState(.failure(channelAttachError), newState: .failed))
 
         // Then: The call to `waitToBeAbleToPerformPresenceOperations(requestedByFeature:)` fails with a `roomInInvalidState` error with status code 500, whose cause is the error associated with the room status change
-        var caughtError: Error?
+        var caughtError: (any Error)?
         do {
             try await waitToBeAbleToPerformPresenceOperationsResult
         } catch {
@@ -1053,7 +1054,7 @@ struct DefaultRoomLifecycleManagerTests {
         // (Note: I wanted to use #expect(…, throws:) below, but for some reason it made the compiler _crash_! No idea why. So, gave up on that.)
 
         // When: `waitToBeAbleToPerformPresenceOperations(requestedByFeature:)` is called on the lifecycle manager
-        var caughtError: Error?
+        var caughtError: (any Error)?
         do {
             try await manager.waitToBeAbleToPerformPresenceOperations(requestedByFeature: .messages /* arbitrary */ )
         } catch {

@@ -219,7 +219,7 @@ internal extension JSONObject {
     }
 
     /// Creates an ably-cocoa `ARTJsonCompatible` object from a dictionary that has string keys and `JSONValue` values.
-    var toARTJsonCompatible: ARTJsonCompatible {
-        toAblyCocoaDataDictionary as ARTJsonCompatible
+    var toARTJsonCompatible: any ARTJsonCompatible {
+        toAblyCocoaDataDictionary as (any ARTJsonCompatible)
     }
 }

@@ -8,7 +8,7 @@ internal final class DefaultMessages: Messages {
     private let roomName: String
     private let chatAPI: ChatAPI
     private let clientID: String
-    private let logger: InternalLogger
+    private let logger: any InternalLogger
 
     private var currentSubscriptionPoint: String?
     private var subscriptionPoints: [UUID: String] = [:]
@@ -26,7 +26,7 @@ internal final class DefaultMessages: Messages {
         }
     }
 
-    internal init(channel: any InternalRealtimeChannelProtocol, chatAPI: ChatAPI, roomName: String, options: MessagesOptions = .init(), clientID: String, logger: InternalLogger) {
+    internal init(channel: any InternalRealtimeChannelProtocol, chatAPI: ChatAPI, roomName: String, options: MessagesOptions = .init(), clientID: String, logger: any InternalLogger) {
         self.channel = channel
         self.chatAPI = chatAPI
         self.roomName = roomName
@@ -36,7 +36,7 @@ internal final class DefaultMessages: Messages {
         updateCurrentSubscriptionPoint()
     }
 
-    internal func subscribe(_ callback: @escaping @MainActor (ChatMessageEvent) -> Void) -> MessageSubscriptionResponseProtocol {
+    internal func subscribe(_ callback: @escaping @MainActor (ChatMessageEvent) -> Void) -> any MessageSubscriptionResponseProtocol {
         logger.log(message: "Subscribing to messages", level: .debug)
         // (CHA-M4c) When a realtime message with name set to message.created is received, it is translated into a message event, which contains a type field with the event type as well as a message field containing the Message Struct. This event is then broadcast to all subscribers.
         // (CHA-M4d) If a realtime message with an unknown name is received, the SDK shall silently discard the message, though it may log at DEBUG or TRACE level.

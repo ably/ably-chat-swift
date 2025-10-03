@@ -73,7 +73,7 @@ public protocol Room: AnyObject, Sendable {
      * - Returns: A subscription that can be used to unsubscribe from ``RoomStatusChange`` events.
      */
     @discardableResult
-    func onStatusChange(_ callback: @escaping @MainActor (RoomStatusChange) -> Void) -> StatusSubscriptionProtocol
+    func onStatusChange(_ callback: @escaping @MainActor (RoomStatusChange) -> Void) -> any StatusSubscriptionProtocol
 
     /**
      * Subscribes a given listener to a detected discontinuity.
@@ -84,7 +84,7 @@ public protocol Room: AnyObject, Sendable {
      * - Returns: A subscription that can be used to unsubscribe from ``DiscontinuityEvent``.
      */
     @discardableResult
-    func onDiscontinuity(_ callback: @escaping @MainActor (DiscontinuityEvent) -> Void) -> StatusSubscriptionProtocol
+    func onDiscontinuity(_ callback: @escaping @MainActor (DiscontinuityEvent) -> Void) -> any StatusSubscriptionProtocol
 
     /**
      * Attaches to the room to receive events in realtime.
@@ -212,13 +212,13 @@ internal protocol RoomFactory: Sendable {
     associatedtype Realtime: InternalRealtimeClientProtocol where Realtime.Channels.Channel.Proxied == Room.Channel
     associatedtype Room: AblyChat.InternalRoom
 
-    func createRoom(realtime: Realtime, chatAPI: ChatAPI, name: String, options: RoomOptions, logger: InternalLogger) throws(InternalError) -> Room
+    func createRoom(realtime: Realtime, chatAPI: ChatAPI, name: String, options: RoomOptions, logger: any InternalLogger) throws(InternalError) -> Room
 }
 
 internal final class DefaultRoomFactory<Realtime: InternalRealtimeClientProtocol>: Sendable, RoomFactory {
     private let lifecycleManagerFactory = DefaultRoomLifecycleManagerFactory()
 
-    internal func createRoom(realtime: Realtime, chatAPI: ChatAPI, name: String, options: RoomOptions, logger: InternalLogger) throws(InternalError) -> DefaultRoom<Realtime> {
+    internal func createRoom(realtime: Realtime, chatAPI: ChatAPI, name: String, options: RoomOptions, logger: any InternalLogger) throws(InternalError) -> DefaultRoom<Realtime> {
         try DefaultRoom(
             realtime: realtime,
             chatAPI: chatAPI,
@@ -258,9 +258,9 @@ internal class DefaultRoom<Realtime: InternalRealtimeClientProtocol>: InternalRo
         }
     #endif
 
-    private let logger: InternalLogger
+    private let logger: any InternalLogger
 
-    internal init(realtime: Realtime, chatAPI: ChatAPI, name: String, options: RoomOptions, logger: InternalLogger, lifecycleManagerFactory: any RoomLifecycleManagerFactory) throws(InternalError) {
+    internal init(realtime: Realtime, chatAPI: ChatAPI, name: String, options: RoomOptions, logger: any InternalLogger, lifecycleManagerFactory: any RoomLifecycleManagerFactory) throws(InternalError) {
         self.realtime = realtime
         self.name = name
         self.options = options
@@ -376,7 +376,7 @@ internal class DefaultRoom<Realtime: InternalRealtimeClientProtocol>: InternalRo
     // MARK: - Room status
 
     @discardableResult
-    internal func onStatusChange(_ callback: @escaping @MainActor (RoomStatusChange) -> Void) -> StatusSubscriptionProtocol {
+    internal func onStatusChange(_ callback: @escaping @MainActor (RoomStatusChange) -> Void) -> any StatusSubscriptionProtocol {
         lifecycleManager.onRoomStatusChange(callback)
     }
 
@@ -387,7 +387,7 @@ internal class DefaultRoom<Realtime: InternalRealtimeClientProtocol>: InternalRo
     // MARK: - Discontinuities
 
     @discardableResult
-    internal func onDiscontinuity(_ callback: @escaping @MainActor (DiscontinuityEvent) -> Void) -> StatusSubscriptionProtocol {
+    internal func onDiscontinuity(_ callback: @escaping @MainActor (DiscontinuityEvent) -> Void) -> any StatusSubscriptionProtocol {
         lifecycleManager.onDiscontinuity(callback)
     }
 }

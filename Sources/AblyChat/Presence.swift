@@ -81,7 +81,7 @@ public protocol Presence: AnyObject, Sendable {
      * - Returns: A subscription that can be used to unsubscribe from ``PresenceEvent`` events.
      */
     @discardableResult
-    func subscribe(event: PresenceEventType, _ callback: @escaping @MainActor (PresenceEvent) -> Void) -> SubscriptionProtocol
+    func subscribe(event: PresenceEventType, _ callback: @escaping @MainActor (PresenceEvent) -> Void) -> any SubscriptionProtocol
 
     /**
      * Subscribes a given listener to different presence events in the chat room.
@@ -95,7 +95,7 @@ public protocol Presence: AnyObject, Sendable {
      * - Returns: A subscription that can be used to unsubscribe from ``PresenceEvent`` events.
      */
     @discardableResult
-    func subscribe(events: [PresenceEventType], _ callback: @escaping @MainActor (PresenceEvent) -> Void) -> SubscriptionProtocol
+    func subscribe(events: [PresenceEventType], _ callback: @escaping @MainActor (PresenceEvent) -> Void) -> any SubscriptionProtocol
 
     /**
      * Method to join room presence, will emit an enter event to all subscribers. Repeat calls will trigger more enter events.

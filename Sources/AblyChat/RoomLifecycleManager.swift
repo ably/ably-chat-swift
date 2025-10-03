@@ -7,7 +7,7 @@ internal protocol RoomLifecycleManager: Sendable {
     func performReleaseOperation() async
     var roomStatus: RoomStatus { get }
     @discardableResult
-    func onRoomStatusChange(_ callback: @escaping @MainActor (RoomStatusChange) -> Void) -> StatusSubscriptionProtocol
+    func onRoomStatusChange(_ callback: @escaping @MainActor (RoomStatusChange) -> Void) -> any StatusSubscriptionProtocol
 
     /// Waits until we can perform presence operations on this room's channel without triggering an implicit attach.
     ///
@@ -22,7 +22,7 @@ internal protocol RoomLifecycleManager: Sendable {
     func waitToBeAbleToPerformPresenceOperations(requestedByFeature requester: RoomFeature) async throws(InternalError)
 
     @discardableResult
-    func onDiscontinuity(_ callback: @escaping @MainActor (DiscontinuityEvent) -> Void) -> StatusSubscriptionProtocol
+    func onDiscontinuity(_ callback: @escaping @MainActor (DiscontinuityEvent) -> Void) -> any StatusSubscriptionProtocol
 }
 
 @MainActor
@@ -31,7 +31,7 @@ internal protocol RoomLifecycleManagerFactory: Sendable {
 
     func createManager(
         channel: any InternalRealtimeChannelProtocol,
-        logger: InternalLogger,
+        logger: any InternalLogger,
     ) -> Manager
 }
 
@@ -40,7 +40,7 @@ internal final class DefaultRoomLifecycleManagerFactory: RoomLifecycleManagerFac
 
     internal func createManager(
         channel: any InternalRealtimeChannelProtocol,
-        logger: InternalLogger,
+        logger: any InternalLogger,
     ) -> DefaultRoomLifecycleManager {
         .init(
             channel: channel,
@@ -82,8 +82,8 @@ private extension RoomStatus {
 internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
     // MARK: - Constant properties
 
-    private let logger: InternalLogger
-    private let clock: SimpleClock
+    private let logger: any InternalLogger
+    private let clock: any SimpleClock
     private let channel: any InternalRealtimeChannelProtocol
 
     // MARK: - Variable properties
@@ -112,8 +112,8 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
 
     internal convenience init(
         channel: any InternalRealtimeChannelProtocol,
-        logger: InternalLogger,
-        clock: SimpleClock,
+        logger: any InternalLogger,
+        clock: any SimpleClock,
     ) {
         self.init(
             roomStatus: nil,
@@ -131,8 +131,8 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
             testsOnly_hasAttachedOnce hasAttachedOnce: Bool? = nil,
             testsOnly_isExplicitlyDetached isExplicitlyDetached: Bool? = nil,
             channel: any InternalRealtimeChannelProtocol,
-            logger: InternalLogger,
-            clock: SimpleClock,
+            logger: any InternalLogger,
+            clock: any SimpleClock,
         ) {
             self.init(
                 roomStatus: roomStatus,
@@ -150,8 +150,8 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
         hasAttachedOnce: Bool?,
         isExplicitlyDetached: Bool?,
         channel: any InternalRealtimeChannelProtocol,
-        logger: InternalLogger,
-        clock: SimpleClock,
+        logger: any InternalLogger,
+        clock: any SimpleClock,
     ) {
         self.roomStatus = roomStatus ?? .initialized
         self.hasAttachedOnce = hasAttachedOnce ?? false
@@ -178,7 +178,7 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
     // MARK: - Room status and its changes
 
     @discardableResult
-    internal func onRoomStatusChange(_ callback: @escaping @MainActor (RoomStatusChange) -> Void) -> StatusSubscriptionProtocol {
+    internal func onRoomStatusChange(_ callback: @escaping @MainActor (RoomStatusChange) -> Void) -> any StatusSubscriptionProtocol {
         roomStatusChangeSubscriptions.create(callback)
     }
 
@@ -222,7 +222,7 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
     }
 
     @discardableResult
-    internal func onDiscontinuity(_ callback: @escaping @MainActor (DiscontinuityEvent) -> Void) -> StatusSubscriptionProtocol {
+    internal func onDiscontinuity(_ callback: @escaping @MainActor (DiscontinuityEvent) -> Void) -> any StatusSubscriptionProtocol {
         discontinuitySubscriptions.create(callback)
     }
 
@@ -265,7 +265,7 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
         private let operationWaitEventSubscriptions = SubscriptionStorage<OperationWaitEvent>()
 
         /// Returns a subscription which emits an event each time one room lifecycle operation is going to wait for another to complete.
-        internal func testsOnly_subscribeToOperationWaitEvents(_ callback: @escaping @MainActor (OperationWaitEvent) -> Void) -> SubscriptionProtocol {
+        internal func testsOnly_subscribeToOperationWaitEvents(_ callback: @escaping @MainActor (OperationWaitEvent) -> Void) -> any SubscriptionProtocol {
             operationWaitEventSubscriptions.create(callback)
         }
     #endif
@@ -593,7 +593,7 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
             // CHA-RL9, which is invoked by CHA-PR3d, CHA-PR10d, CHA-PR6c
 
             // CHA-RL9a
-            var nextRoomStatusSubscription: StatusSubscriptionProtocol!
+            var nextRoomStatusSubscription: (any StatusSubscriptionProtocol)!
             var nextRoomStatusChange: RoomStatusChange!
             await withCheckedContinuation { (continuation: CheckedContinuation<Void, _>) in
                 self.logger.log(message: "waitToBeAbleToPerformPresenceOperations waiting for status change", level: .debug)
@@ -631,7 +631,7 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
         private let statusChangeWaitEventSubscriptions = SubscriptionStorage<StatusChangeWaitEvent>()
 
         /// Returns a subscription which emits an event each time ``waitToBeAbleToPerformPresenceOperations(requestedByFeature:)`` is going to wait for a room status change.
-        internal func testsOnly_subscribeToStatusChangeWaitEvents(_ callback: @escaping @MainActor (StatusChangeWaitEvent) -> Void) -> SubscriptionProtocol {
+        internal func testsOnly_subscribeToStatusChangeWaitEvents(_ callback: @escaping @MainActor (StatusChangeWaitEvent) -> Void) -> any SubscriptionProtocol {
             statusChangeWaitEventSubscriptions.create(callback)
         }
     #endif

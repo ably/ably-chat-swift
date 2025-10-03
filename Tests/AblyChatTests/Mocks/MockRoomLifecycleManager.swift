@@ -75,12 +75,12 @@ class MockRoomLifecycleManager: RoomLifecycleManager {
     }
 
     @discardableResult
-    func onRoomStatusChange(_ callback: @escaping @MainActor (RoomStatusChange) -> Void) -> StatusSubscriptionProtocol {
+    func onRoomStatusChange(_ callback: @escaping @MainActor (RoomStatusChange) -> Void) -> any StatusSubscriptionProtocol {
         roomStatusSubscriptions.create(callback)
     }
 
     @discardableResult
-    func onDiscontinuity(_ callback: @escaping @MainActor (DiscontinuityEvent) -> Void) -> StatusSubscriptionProtocol {
+    func onDiscontinuity(_ callback: @escaping @MainActor (DiscontinuityEvent) -> Void) -> any StatusSubscriptionProtocol {
         discontinuitySubscriptions.create(callback)
     }
 

@@ -43,7 +43,7 @@ struct DefaultRoomReactionsTests {
                 "name": reaction,
             ]
             message.version = .init(serial: "0")
-            message.extras = [String: String]() as ARTJsonCompatible
+            message.extras = [String: String]() as (any ARTJsonCompatible)
             return message
         }
 
