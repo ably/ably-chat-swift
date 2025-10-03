@@ -73,8 +73,7 @@ struct DefaultRoomsTests {
         let room = try await rooms.get(name: name, options: options)
 
         // Then: It returns a room that uses the same Realtime instance, with the given name and options, and it creates a room map entry for that name
-        let mockRoom = try #require(room as? MockRoom)
-        #expect(mockRoom === roomToReturn)
+        #expect(room === roomToReturn)
 
         #expect(rooms.testsOnly_hasRoomMapEntryWithName(name))
 

@@ -4,6 +4,20 @@ import Testing
 
 @MainActor
 struct DefaultRoomTests {
+    // MARK: - Retrieving underlying channel
+
+    @Test
+    func channel() async throws {
+        // Given: a DefaultRoom instance
+        let channel = MockRealtimeChannel(name: "basketball::$chat")
+        let channels = MockChannels(channels: [channel])
+        let realtime = MockRealtime(channels: channels)
+        let room = try DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), name: "basketball", options: .init(), logger: TestLogger(), lifecycleManagerFactory: MockRoomLifecycleManagerFactory())
+
+        // Then: Its `channel` property returns the user-facing ably-cocoa channel (i.e. as opposed to the proxy client created by `createWrapperSDKProxy(with:)` that the SDK uses internally)
+        #expect(room.channel === channel.proxied)
+    }
+
     // MARK: - Fetching channels
 
     // @spec CHA-RC3c

@@ -1,3 +1,4 @@
+import Ably
 @testable import AblyChat
 import Testing
 
@@ -6,10 +7,12 @@ struct DefaultChatClientTests {
     @Test
     func init_withoutClientOptions() {
         // Given: An instance of DefaultChatClient is created with nil clientOptions
+        let proxyClient = MockConcreteAblyCocoaRealtime.ProxyHelper.createProxy()
+        let internalRealtime = InternalRealtimeClientAdapter(underlying: proxyClient)
         let client = DefaultChatClient(
-            realtime: MockSuppliedRealtime(createWrapperSDKProxyReturnValue: .init()),
+            realtime: MockConcreteAblyCocoaRealtime(createWrapperSDKProxyReturnValue: proxyClient),
             clientOptions: nil,
-            internalRealtimeClientFactory: MockInternalRealtimeClientFactory(createInternalRealtimeClientReturnValue: MockRealtime()),
+            internalRealtimeClientFactory: MockInternalRealtimeClientFactory(createInternalRealtimeClientReturnValue: internalRealtime),
         )
 
         // Then: It uses the default client options
@@ -20,28 +23,42 @@ struct DefaultChatClientTests {
     @Test
     func test_realtime() {
         // Given: An instance of DefaultChatClient
-        let realtime = MockSuppliedRealtime(createWrapperSDKProxyReturnValue: .init())
+        let proxyClient = MockConcreteAblyCocoaRealtime.ProxyHelper.createProxy()
+        let realtime = MockConcreteAblyCocoaRealtime(createWrapperSDKProxyReturnValue: proxyClient)
+        let internalRealtime = InternalRealtimeClientAdapter(underlying: proxyClient)
         let options = ChatClientOptions()
         let client = DefaultChatClient(
             realtime: realtime,
             clientOptions: options,
-            internalRealtimeClientFactory: MockInternalRealtimeClientFactory(createInternalRealtimeClientReturnValue: MockRealtime()),
+            internalRealtimeClientFactory: MockInternalRealtimeClientFactory(createInternalRealtimeClientReturnValue: internalRealtime),
         )
 
         // Then: Its `realtime` property returns the client that was passed to the initializer (i.e. as opposed to the proxy client created by `createWrapperSDKProxy(with:)`
         #expect(client.realtime === realtime)
     }
 
+    @Test
+    func preservesStaticTypeInformation() {
+        // This test doesn't have any assertions; it's just to test that the type system gives you ARTRealtime and ARTRealtimeChannel
+        func withChatClient(_ chatClient: DefaultChatClient) async throws {
+            let _: ARTRealtime = chatClient.realtime
+            let room = try await chatClient.rooms.get(name: "room")
+            let _: ARTRealtimeChannel = room.channel
+        }
+    }
+
     // @spec CHA-IN1a
     // @spec CHA-IN1b
     @Test
     func createsWrapperSDKProxyRealtimeClientWithAgents() throws {
-        let realtime = MockSuppliedRealtime(createWrapperSDKProxyReturnValue: .init())
+        let proxyClient = MockConcreteAblyCocoaRealtime.ProxyHelper.createProxy()
+        let realtime = MockConcreteAblyCocoaRealtime(createWrapperSDKProxyReturnValue: proxyClient)
+        let internalRealtine = InternalRealtimeClientAdapter(underlying: proxyClient)
         let options = ChatClientOptions()
         _ = DefaultChatClient(
             realtime: realtime,
             clientOptions: options,
-            internalRealtimeClientFactory: MockInternalRealtimeClientFactory(createInternalRealtimeClientReturnValue: MockRealtime()),
+            internalRealtimeClientFactory: MockInternalRealtimeClientFactory(createInternalRealtimeClientReturnValue: internalRealtine),
         )
 
         #expect(realtime.createWrapperSDKProxyOptionsArgument?.agents == ["chat-swift": AblyChat.version])
@@ -51,9 +68,9 @@ struct DefaultChatClientTests {
     @Test
     func rooms() throws {
         // Given: An instance of DefaultChatClient
-        let proxyClient = MockSuppliedRealtime()
-        let realtime = MockSuppliedRealtime(createWrapperSDKProxyReturnValue: proxyClient)
-        let internalRealtime = MockRealtime()
+        let proxyClient = MockConcreteAblyCocoaRealtime.ProxyHelper.createProxy()
+        let realtime = MockConcreteAblyCocoaRealtime(createWrapperSDKProxyReturnValue: proxyClient)
+        let internalRealtime = InternalRealtimeClientAdapter(underlying: proxyClient)
         let internalRealtimeClientFactory = MockInternalRealtimeClientFactory(createInternalRealtimeClientReturnValue: internalRealtime)
         let options = ChatClientOptions()
         let client = DefaultChatClient(
@@ -67,7 +84,7 @@ struct DefaultChatClientTests {
 
         let rooms = client.rooms
 
-        let defaultRooms = try #require(rooms as? DefaultRooms<DefaultRoomFactory>)
+        let defaultRooms = try #require(rooms as? DefaultRooms<DefaultRoomFactory<InternalRealtimeClientAdapter<ARTWrapperSDKProxyRealtime>>>)
         #expect(defaultRooms.testsOnly_realtime === internalRealtime)
         #expect(defaultRooms.clientOptions.isEqualForTestPurposes(options))
     }

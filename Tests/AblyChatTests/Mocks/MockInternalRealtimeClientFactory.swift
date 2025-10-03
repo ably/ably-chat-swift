@@ -1,15 +1,16 @@
+import Ably
 @testable import AblyChat
 import Foundation
 
 final class MockInternalRealtimeClientFactory: InternalRealtimeClientFactory {
-    private let createInternalRealtimeClientReturnValue: any InternalRealtimeClientProtocol
-    private(set) var createInternalRealtimeClientArgument: (any RealtimeClientProtocol)?
+    private let createInternalRealtimeClientReturnValue: InternalRealtimeClientAdapter<ARTWrapperSDKProxyRealtime>
+    private(set) var createInternalRealtimeClientArgument: ARTWrapperSDKProxyRealtime?
 
-    init(createInternalRealtimeClientReturnValue: any InternalRealtimeClientProtocol) {
+    init(createInternalRealtimeClientReturnValue: InternalRealtimeClientAdapter<ARTWrapperSDKProxyRealtime>) {
         self.createInternalRealtimeClientReturnValue = createInternalRealtimeClientReturnValue
     }
 
-    func createInternalRealtimeClient(_ ablyCocoaRealtime: any RealtimeClientProtocol) -> any InternalRealtimeClientProtocol {
+    func createInternalRealtimeClient(_ ablyCocoaRealtime: ARTWrapperSDKProxyRealtime) -> InternalRealtimeClientAdapter<ARTWrapperSDKProxyRealtime> {
         createInternalRealtimeClientArgument = ablyCocoaRealtime
         return createInternalRealtimeClientReturnValue
     }

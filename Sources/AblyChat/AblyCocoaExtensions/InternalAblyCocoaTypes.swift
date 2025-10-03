@@ -42,13 +42,14 @@ internal protocol InternalRealtimeChannelsProtocol: AnyObject, Sendable {
 /// We choose to mark the channel’s mutable state as `async`. This is a way of highlighting at the call site of accessing this state that, since `ARTRealtimeChannel` mutates this state on a separate thread, it’s possible for this state to have changed since the last time you checked it, or since the last time you performed an operation that might have mutated it, or since the last time you recieved an event informing you that it changed. To be clear, marking these as `async` doesn’t _solve_ these issues; it just makes them a bit more visible. We’ll decide how to address them in https://github.com/ably-labs/ably-chat-swift/issues/49.
 @MainActor
 internal protocol InternalRealtimeChannelProtocol: AnyObject, Sendable {
+    associatedtype Proxied: RealtimeChannelProtocol
     associatedtype Presence: InternalRealtimePresenceProtocol
     associatedtype Annotations: InternalRealtimeAnnotationsProtocol
 
-    /// The ably-cocoa realtime channel that this channel wraps.
+    /// The ably-cocoa realtime channel wrapped by the proxy channel wrapped by this channel (e.g. the `ARTRealtimeChannel` that underlies the `ARTWrapperSDKProxyRealtimeChannel` that underlies this `InternalRealtimeChannelProtocol`).
     ///
     /// We need to be able to access this so that we can return it from the `channel` methods in the SDK's public API, which allow users of the SDK to access the realtime channels that the SDK uses.
-    nonisolated var underlying: any RealtimeChannelProtocol { get }
+    nonisolated var proxied: Proxied { get }
 
     nonisolated var presence: Presence { get }
 
@@ -130,12 +131,12 @@ private final class UnsafeSendingBox<T>: @unchecked Sendable {
     }
 }
 
-internal final class InternalRealtimeClientAdapter: InternalRealtimeClientProtocol {
-    private let underlying: any RealtimeClientProtocol
-    internal let channels: InternalRealtimeChannelsAdapter
-    internal let connection: InternalConnectionAdapter
+internal final class InternalRealtimeClientAdapter<Underlying: ProxyRealtimeClientProtocol>: InternalRealtimeClientProtocol {
+    private let underlying: Underlying
+    internal let channels: InternalRealtimeChannelsAdapter<Underlying.Channels>
+    internal let connection: InternalConnectionAdapter<Underlying.Connection>
 
-    internal init(underlying: any RealtimeClientProtocol) {
+    internal init(underlying: Underlying) {
         self.underlying = underlying
         channels = .init(underlying: underlying.channels)
         connection = .init(underlying: underlying.connection)
@@ -169,10 +170,10 @@ internal final class InternalRealtimeClientAdapter: InternalRealtimeClientProtoc
     }
 }
 
-internal final class InternalConnectionAdapter: InternalConnectionProtocol {
-    private let underlying: any CoreConnectionProtocol
+internal final class InternalConnectionAdapter<Underlying: CoreConnectionProtocol>: InternalConnectionProtocol {
+    private let underlying: Underlying
 
-    internal init(underlying: any CoreConnectionProtocol) {
+    internal init(underlying: Underlying) {
         self.underlying = underlying
     }
 
@@ -193,10 +194,10 @@ internal final class InternalConnectionAdapter: InternalConnectionProtocol {
     }
 }
 
-internal final class InternalRealtimeAnnotationsAdapter: InternalRealtimeAnnotationsProtocol {
-    private let underlying: any RealtimeAnnotationsProtocol
+internal final class InternalRealtimeAnnotationsAdapter<Underlying: RealtimeAnnotationsProtocol>: InternalRealtimeAnnotationsProtocol {
+    private let underlying: Underlying
 
-    internal init(underlying: any RealtimeAnnotationsProtocol) {
+    internal init(underlying: Underlying) {
         self.underlying = underlying
     }
 
@@ -213,10 +214,10 @@ internal final class InternalRealtimeAnnotationsAdapter: InternalRealtimeAnnotat
     }
 }
 
-internal final class InternalRealtimePresenceAdapter: InternalRealtimePresenceProtocol {
-    private let underlying: any RealtimePresenceProtocol
+internal final class InternalRealtimePresenceAdapter<Underlying: RealtimePresenceProtocol>: InternalRealtimePresenceProtocol {
+    private let underlying: Underlying
 
-    internal init(underlying: any RealtimePresenceProtocol) {
+    internal init(underlying: Underlying) {
         self.underlying = underlying
     }
 
@@ -333,13 +334,15 @@ internal final class InternalRealtimePresenceAdapter: InternalRealtimePresencePr
     }
 }
 
-internal final class InternalRealtimeChannelAdapter: InternalRealtimeChannelProtocol {
-    internal let underlying: any RealtimeChannelProtocol
-    internal let presence: InternalRealtimePresenceAdapter
-    internal let annotations: InternalRealtimeAnnotationsAdapter
+internal final class InternalRealtimeChannelAdapter<Underlying: ProxyRealtimeChannelProtocol>: InternalRealtimeChannelProtocol {
+    internal let underlying: Underlying
+    internal let proxied: Underlying.Proxied
+    internal let presence: InternalRealtimePresenceAdapter<Underlying.Presence>
+    internal let annotations: InternalRealtimeAnnotationsAdapter<Underlying.Annotations>
 
-    internal init(underlying: any RealtimeChannelProtocol) {
+    internal init(underlying: Underlying) {
         self.underlying = underlying
+        proxied = underlying.underlyingChannel
         presence = .init(underlying: underlying.presence)
         annotations = .init(underlying: underlying.annotations)
     }
@@ -441,14 +444,14 @@ internal final class InternalRealtimeChannelAdapter: InternalRealtimeChannelProt
     }
 }
 
-internal final class InternalRealtimeChannelsAdapter: InternalRealtimeChannelsProtocol {
-    private let underlying: any RealtimeChannelsProtocol
+internal final class InternalRealtimeChannelsAdapter<Underlying: ProxyRealtimeChannelsProtocol>: InternalRealtimeChannelsProtocol {
+    private let underlying: Underlying
 
-    internal init(underlying: any RealtimeChannelsProtocol) {
+    internal init(underlying: Underlying) {
         self.underlying = underlying
     }
 
-    internal func get(_ name: String, options: ARTRealtimeChannelOptions) -> some InternalRealtimeChannelProtocol {
+    internal func get(_ name: String, options: ARTRealtimeChannelOptions) -> InternalRealtimeChannelAdapter<Underlying.Channel> {
         let underlyingChannel = underlying.get(name, options: options)
         return InternalRealtimeChannelAdapter(underlying: underlyingChannel)
     }

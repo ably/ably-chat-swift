@@ -9,10 +9,8 @@ final class MockRealtime: InternalRealtimeClientProtocol {
     let connection: MockConnection
     let channels: MockChannels
     let paginatedCallback: (@Sendable () throws(ARTErrorInfo) -> ARTHTTPPaginatedResponse)?
-    let createWrapperSDKProxyReturnValue: MockSuppliedRealtime?
 
     private(set) var requestArguments: [(method: String, path: String, params: [String: String]?, body: Any?, headers: [String: String]?)] = []
-    private(set) var createWrapperSDKProxyOptionsArgument: ARTWrapperSDKProxyOptions?
 
     var clientId: String? {
         "mockClientId"
@@ -22,12 +20,10 @@ final class MockRealtime: InternalRealtimeClientProtocol {
         channels: MockChannels = .init(channels: []),
         connection: MockConnection = .init(),
         paginatedCallback: (@Sendable () throws(ARTErrorInfo) -> ARTHTTPPaginatedResponse)? = nil,
-        createWrapperSDKProxyReturnValue: MockSuppliedRealtime? = nil,
     ) {
         self.channels = channels
         self.paginatedCallback = paginatedCallback
         self.connection = connection
-        self.createWrapperSDKProxyReturnValue = createWrapperSDKProxyReturnValue
     }
 
     func request(_ method: String, path: String, params: [String: String]?, body: Any?, headers: [String: String]?) async throws(InternalError) -> ARTHTTPPaginatedResponse {
@@ -50,15 +46,5 @@ final class MockRealtime: InternalRealtimeClientProtocol {
         } catch {
             throw error.toInternalError()
         }
-    }
-
-    func createWrapperSDKProxy(with options: ARTWrapperSDKProxyOptions) -> some RealtimeClientProtocol {
-        guard let createWrapperSDKProxyReturnValue else {
-            fatalError("createWrapperSDKProxyReturnValue must be set in order to call createWrapperSDKProxy(with:)")
-        }
-
-        createWrapperSDKProxyOptionsArgument = options
-
-        return createWrapperSDKProxyReturnValue
     }
 }

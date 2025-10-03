@@ -2,12 +2,15 @@ import Ably
 
 @MainActor
 public protocol ChatClient: AnyObject, Sendable {
+    associatedtype Realtime
+    associatedtype Rooms: AblyChat.Rooms
+
     /**
      * Returns the rooms object, which provides access to chat rooms.
      *
      * - Returns: The rooms object.
      */
-    nonisolated var rooms: any Rooms { get }
+    nonisolated var rooms: Rooms { get }
 
     /**
      * Returns the underlying connection to Ably, which can be used to monitor the clients
@@ -29,7 +32,7 @@ public protocol ChatClient: AnyObject, Sendable {
      *
      * - Returns: The Ably Realtime client.
      */
-    nonisolated var realtime: any RealtimeClientProtocol { get }
+    nonisolated var realtime: Realtime { get }
 
     /**
      * Returns the resolved client options for the client, including any defaults that have been set.
@@ -41,12 +44,14 @@ public protocol ChatClient: AnyObject, Sendable {
 
 @MainActor
 internal protocol InternalRealtimeClientFactory {
-    func createInternalRealtimeClient(_ ablyCocoaRealtime: any RealtimeClientProtocol) -> any InternalRealtimeClientProtocol
+    associatedtype Underlying: RealtimeClientProtocol
+    associatedtype Output: InternalRealtimeClientProtocol
+    func createInternalRealtimeClient(_ ablyCocoaRealtime: Underlying) -> Output
 }
 
-internal final class DefaultInternalRealtimeClientFactory: InternalRealtimeClientFactory {
-    internal func createInternalRealtimeClient(_ ablyCocoaRealtime: any RealtimeClientProtocol) -> any InternalRealtimeClientProtocol {
-        InternalRealtimeClientAdapter(underlying: ablyCocoaRealtime)
+internal final class DefaultInternalRealtimeClientFactory<Underlying: ProxyRealtimeClientProtocol>: InternalRealtimeClientFactory {
+    internal func createInternalRealtimeClient(_ ablyCocoaRealtime: Underlying) -> InternalRealtimeClientAdapter<Underlying> {
+        .init(underlying: ablyCocoaRealtime)
     }
 }
 
@@ -54,9 +59,13 @@ internal final class DefaultInternalRealtimeClientFactory: InternalRealtimeClien
  * This is the core client for Ably chat. It provides access to chat rooms.
  */
 public class DefaultChatClient: ChatClient {
-    public nonisolated let realtime: any RealtimeClientProtocol
+    public nonisolated let realtime: ARTRealtime
     public nonisolated let clientOptions: ChatClientOptions
-    public let rooms: Rooms
+    private let _rooms: DefaultRooms<DefaultRoomFactory<InternalRealtimeClientAdapter<ARTWrapperSDKProxyRealtime>>>
+    public var rooms: some Rooms<ARTRealtimeChannel> {
+        _rooms
+    }
+
     private let logger: InternalLogger
 
     // (CHA-CS1) Every chat client has a status, which describes the current status of the connection.
@@ -67,14 +76,22 @@ public class DefaultChatClient: ChatClient {
      * Constructor for Chat
      *
      * - Parameters:
-     *   - realtime: The Ably Realtime client. If this is an instance of `ARTRealtime` from the ably-cocoa SDK, then its `dispatchQueue` option must be the main queue (this is its default behaviour).
+     *   - realtime: The Ably Realtime client. Its `dispatchQueue` option must be the main queue (this is its default behaviour).
      *   - clientOptions: The client options.
      */
-    public convenience init(realtime suppliedRealtime: any SuppliedRealtimeClientProtocol, clientOptions: ChatClientOptions?) {
-        self.init(realtime: suppliedRealtime, clientOptions: clientOptions, internalRealtimeClientFactory: DefaultInternalRealtimeClientFactory())
+    public convenience init(realtime: ARTRealtime, clientOptions: ChatClientOptions?) {
+        self.init(
+            realtime: realtime,
+            clientOptions: clientOptions,
+            internalRealtimeClientFactory: DefaultInternalRealtimeClientFactory<ARTWrapperSDKProxyRealtime>(),
+        )
     }
 
-    internal init(realtime suppliedRealtime: any SuppliedRealtimeClientProtocol, clientOptions: ChatClientOptions?, internalRealtimeClientFactory: any InternalRealtimeClientFactory) {
+    internal init<RealtimeClientFactory: InternalRealtimeClientFactory>(
+        realtime suppliedRealtime: ARTRealtime,
+        clientOptions: ChatClientOptions?,
+        internalRealtimeClientFactory: RealtimeClientFactory,
+    ) where RealtimeClientFactory.Underlying == ARTWrapperSDKProxyRealtime, RealtimeClientFactory.Output == InternalRealtimeClientAdapter<ARTWrapperSDKProxyRealtime> {
         self.realtime = suppliedRealtime
         self.clientOptions = clientOptions ?? .init()
 
@@ -82,8 +99,8 @@ public class DefaultChatClient: ChatClient {
         let internalRealtime = internalRealtimeClientFactory.createInternalRealtimeClient(realtime)
 
         logger = DefaultInternalLogger(logHandler: self.clientOptions.logHandler, logLevel: self.clientOptions.logLevel)
-        let roomFactory = DefaultRoomFactory()
-        rooms = DefaultRooms(realtime: internalRealtime, clientOptions: self.clientOptions, logger: logger, roomFactory: roomFactory)
+        let roomFactory = DefaultRoomFactory<InternalRealtimeClientAdapter<ARTWrapperSDKProxyRealtime>>()
+        _rooms = DefaultRooms(realtime: internalRealtime, clientOptions: self.clientOptions, logger: logger, roomFactory: roomFactory)
         connection = DefaultConnection(realtime: internalRealtime)
     }
 
