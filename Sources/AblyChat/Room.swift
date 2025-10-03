@@ -222,7 +222,7 @@ internal final class DefaultRoomFactory: Sendable, RoomFactory {
             name: name,
             options: options,
             logger: logger,
-            lifecycleManagerFactory: lifecycleManagerFactory
+            lifecycleManagerFactory: lifecycleManagerFactory,
         )
     }
 }
@@ -272,7 +272,7 @@ internal class DefaultRoom: InternalRoom {
 
         lifecycleManager = lifecycleManagerFactory.createManager(
             channel: internalChannel,
-            logger: logger
+            logger: logger,
         )
 
         messages = DefaultMessages(
@@ -281,14 +281,14 @@ internal class DefaultRoom: InternalRoom {
             roomName: name,
             options: options.messages,
             clientID: clientId,
-            logger: logger
+            logger: logger,
         )
 
         reactions = DefaultRoomReactions(
             channel: internalChannel,
             clientID: clientId,
             roomName: name,
-            logger: logger
+            logger: logger,
         )
 
         presence = DefaultPresence(
@@ -297,7 +297,7 @@ internal class DefaultRoom: InternalRoom {
             roomName: name,
             clientID: clientId,
             logger: logger,
-            options: options.presence
+            options: options.presence,
         )
 
         occupancy = DefaultOccupancy(
@@ -305,7 +305,7 @@ internal class DefaultRoom: InternalRoom {
             chatAPI: chatAPI,
             roomName: name,
             logger: logger,
-            options: options.occupancy
+            options: options.occupancy,
         )
 
         typing = DefaultTyping(
@@ -314,7 +314,7 @@ internal class DefaultRoom: InternalRoom {
             clientID: clientId,
             logger: logger,
             heartbeatThrottle: options.typing.heartbeatThrottle,
-            clock: SystemClock()
+            clock: SystemClock(),
         )
     }
 

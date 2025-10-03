@@ -26,7 +26,7 @@ struct ChatAPITests {
                 } else {
                     false
                 }
-            }
+            },
         )
     }
 
@@ -52,7 +52,7 @@ struct ChatAPITests {
             metadata: [:],
             headers: [:],
             version: .init(serial: "3446456", timestamp: Date()),
-            timestamp: Date(timeIntervalSince1970: 1_631_840_000)
+            timestamp: Date(timeIntervalSince1970: 1_631_840_000),
         )
         #expect(message == expectedMessage)
     }
@@ -71,8 +71,8 @@ struct ChatAPITests {
             params: .init(
                 text: "", // arbitrary
                 // The exact value here is arbitrary, just want to check it gets serialized
-                headers: ["numberKey": 10, "stringKey": "hello"]
-            )
+                headers: ["numberKey": 10, "stringKey": "hello"],
+            ),
         )
 
         // Then
@@ -94,8 +94,8 @@ struct ChatAPITests {
             params: .init(
                 text: "", // arbitrary
                 // The exact value here is arbitrary, just want to check it gets serialized
-                metadata: ["numberKey": 10, "stringKey": "hello"]
-            )
+                metadata: ["numberKey": 10, "stringKey": "hello"],
+            ),
         )
 
         // Then
@@ -117,7 +117,7 @@ struct ChatAPITests {
         let roomName = "basketball"
         let expectedPaginatedResult = PaginatedResultWrapper<Message>(
             paginatedResponse: paginatedResponse,
-            items: []
+            items: [],
         )
 
         // When
@@ -148,7 +148,7 @@ struct ChatAPITests {
                     metadata: [:],
                     headers: [:],
                     version: .init(serial: "3446456", timestamp: Date(timeIntervalSince1970: 1_730_943_051.269)), // from successGetMessagesWithItems
-                    timestamp: Date(timeIntervalSince1970: 1_730_943_049.269)
+                    timestamp: Date(timeIntervalSince1970: 1_730_943_049.269),
                 ),
                 Message(
                     serial: "3446457",
@@ -158,9 +158,9 @@ struct ChatAPITests {
                     metadata: [:],
                     headers: [:],
                     version: .init(serial: "3446457", timestamp: Date(timeIntervalSince1970: 1_730_943_051.269)),
-                    timestamp: Date(timeIntervalSince1970: 1_730_943_051.269)
+                    timestamp: Date(timeIntervalSince1970: 1_730_943_051.269),
                 ),
-            ]
+            ],
         )
 
         // When
@@ -188,7 +188,7 @@ struct ChatAPITests {
             }, throws: { error in
                 // Then
                 isInternalErrorWrappingErrorInfo(error, artError)
-            }
+            },
         )
     }
 }

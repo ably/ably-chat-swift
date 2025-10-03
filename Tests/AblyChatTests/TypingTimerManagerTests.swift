@@ -14,14 +14,14 @@ final class TypingTimerManagerTests {
             heartbeatThrottle: 1.0,
             gracePeriod: 0.5,
             logger: mockLogger,
-            clock: testClock
+            clock: testClock,
         )
     }
 
     // @specOneOf(1/3) CHA-T4a4 - Tests the heartbeat timer initialization and state management
     @Test
     @available(iOS 16.0, tvOS 16, *)
-    func testHeartbeatTimerLifecycle() async {
+    func heartbeatTimerLifecycle() async {
         let mockClock = MockTestClock()
         let timerManager = createTypingTimerManager(with: mockClock)
         #expect(!timerManager.isHeartbeatTimerActive)
@@ -36,7 +36,7 @@ final class TypingTimerManagerTests {
     // @specOneOf(2/3) CHA-T4a4 - Tests heartbeat timer expiration behavior
     @Test
     @available(iOS 16.0, tvOS 16, *)
-    func testHeartbeatTimerExpiration() async {
+    func heartbeatTimerExpiration() async {
         let mockClock = MockTestClock()
         let timerManager = createTypingTimerManager(with: mockClock)
 
@@ -65,7 +65,7 @@ final class TypingTimerManagerTests {
     // @spec CHA-T13b4 - Tests canceling typing timer to remove client from typing set
     @Test
     @available(iOS 16.0, tvOS 16, *)
-    func testMultipleClientTyping() {
+    func multipleClientTyping() {
         let mockClock = MockTestClock()
         let timerManager = createTypingTimerManager(with: mockClock)
 
@@ -83,7 +83,7 @@ final class TypingTimerManagerTests {
     // @spec CHA-T13b3 - Tests timeout expiration removing client from typing set and calling the onCancelled handler.
     @Test
     @available(iOS 16.0, tvOS 16, *)
-    func testTypingTimerExpiration() async {
+    func typingTimerExpiration() async {
         let mockClock = MockTestClock()
         let timerManager = createTypingTimerManager(with: mockClock)
 
@@ -107,7 +107,7 @@ final class TypingTimerManagerTests {
     // @spec CHA-T4b - Tests extending the timeout when typing is already in progress
     @Test
     @available(iOS 16.0, tvOS 16, *)
-    func testTimerReset() async {
+    func timerReset() async {
         let mockClock = MockTestClock()
         let timerManager = createTypingTimerManager(with: mockClock)
 
@@ -143,7 +143,7 @@ final class TypingTimerManagerTests {
     // @spec CHA-T10a1 - Tests that grace period is correctly applied to prevent flickering
     @Test
     @available(iOS 16.0, tvOS 16, *)
-    func testGracePeriodTiming() async {
+    func gracePeriodTiming() async {
         let mockClock = MockTestClock()
         let timerManager = createTypingTimerManager(with: mockClock)
 

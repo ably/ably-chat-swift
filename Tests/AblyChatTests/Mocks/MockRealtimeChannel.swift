@@ -32,7 +32,7 @@ final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
         detachBehavior: AttachOrDetachBehavior? = nil,
         messageToEmitOnSubscribe: ARTMessage? = nil,
         annotationToEmitOnSubscribe: ARTAnnotation? = nil,
-        stateChangeToEmitForListener: ARTChannelStateChange? = nil
+        stateChangeToEmitForListener: ARTChannelStateChange? = nil,
     ) {
         _name = name
         _state = initialState

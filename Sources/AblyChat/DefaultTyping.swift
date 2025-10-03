@@ -29,7 +29,7 @@ internal final class DefaultTyping: Typing {
             heartbeatThrottle: heartbeatThrottle,
             gracePeriod: gracePeriod,
             logger: logger,
-            clock: clock
+            clock: clock,
         )
     }
 
@@ -47,7 +47,7 @@ internal final class DefaultTyping: Typing {
             if !typingTimerManager.isCurrentlyTyping(clientID: messageClientID) {
                 // (CHA-T13b1) If the event represents a new client typing, then the chat client shall add the typer to the typing set and a emit the updated set to any subscribers. It shall also begin a timeout that is the sum of the CHA-T10 heartbeat interval and the CHA-T10a graсe period.
                 typingTimerManager.startTypingTimer(
-                    for: messageClientID
+                    for: messageClientID,
                 ) { [weak self] in
                     guard let self else {
                         return
@@ -57,8 +57,8 @@ internal final class DefaultTyping: Typing {
                         TypingSetEvent(
                             type: .setChanged,
                             currentlyTyping: typingTimerManager.currentlyTypingClientIDs(),
-                            change: .init(clientId: messageClientID, type: .stopped)
-                        )
+                            change: .init(clientId: messageClientID, type: .stopped),
+                        ),
                     )
                 }
 
@@ -67,8 +67,8 @@ internal final class DefaultTyping: Typing {
                     TypingSetEvent(
                         type: .setChanged,
                         currentlyTyping: typingTimerManager.currentlyTypingClientIDs(),
-                        change: .init(clientId: messageClientID, type: .started)
-                    )
+                        change: .init(clientId: messageClientID, type: .started),
+                    ),
                 )
             }
         }
@@ -90,8 +90,8 @@ internal final class DefaultTyping: Typing {
                     TypingSetEvent(
                         type: .setChanged,
                         currentlyTyping: typingTimerManager.currentlyTypingClientIDs(),
-                        change: .init(clientId: messageClientID, type: .stopped)
-                    )
+                        change: .init(clientId: messageClientID, type: .stopped),
+                    ),
                 )
             }
         }
@@ -141,7 +141,7 @@ internal final class DefaultTyping: Typing {
         try await channel.publish(
             TypingEventType.started.rawValue,
             data: nil,
-            extras: ["ephemeral": true]
+            extras: ["ephemeral": true],
         )
 
         // (CHA-T4a4) Upon successful publish, a heartbeat timer shall be set according to the CHA-T10 timeout interval.
@@ -162,7 +162,7 @@ internal final class DefaultTyping: Typing {
                     try await channel.publish(
                         TypingEventType.stopped.rawValue,
                         data: nil,
-                        extras: ["ephemeral": true]
+                        extras: ["ephemeral": true],
                     )
 
                     // (CHA-T5e) On successfully publishing the message in (CHA-T5d), the CHA-T10 timer shall be unset.

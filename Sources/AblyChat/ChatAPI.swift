@@ -1,7 +1,7 @@
 import Ably
 
 @MainActor
-internal final class ChatAPI: Sendable {
+internal final class ChatAPI {
     internal enum RequestBody {
         case jsonObject([String: JSONValue])
         /// Contains an object that can be used the same way as a value returned from `JSONValue.object(…).toAblyCocoaData`. Workaround for JSONValue not being able to indicate to ably-cocoa that a property should be serialized as a MessagePack integer type; TODO revisit in (create an issue for this)
@@ -97,9 +97,9 @@ internal final class ChatAPI: Sendable {
             version: .init(
                 serial: response.serial,
                 timestamp: timestampInSeconds,
-                clientID: clientID
+                clientID: clientID,
             ),
-            timestamp: timestampInSeconds
+            timestamp: timestampInSeconds,
         )
         return message
     }
@@ -138,7 +138,7 @@ internal final class ChatAPI: Sendable {
             metadata: modifiedMessage.metadata,
             headers: modifiedMessage.headers,
             version: response.version,
-            timestamp: modifiedMessage.timestamp
+            timestamp: modifiedMessage.timestamp,
         )
         return message
     }
@@ -171,7 +171,7 @@ internal final class ChatAPI: Sendable {
             metadata: [:], // CHA-M9b
             headers: [:], // CHA-M9b
             version: response.version,
-            timestamp: Date(timeIntervalSince1970: timestampInSeconds)
+            timestamp: Date(timeIntervalSince1970: timestampInSeconds),
         )
         return message
     }
@@ -241,7 +241,7 @@ internal final class ChatAPI: Sendable {
 
     private func makePaginatedRequest<Response: JSONDecodable & Sendable & Equatable>(
         _ url: String,
-        params: [String: String]? = nil
+        params: [String: String]? = nil,
     ) async throws(InternalError) -> any PaginatedResult<Response> {
         let paginatedResponse = try await realtime.request("GET", path: url, params: params, body: nil, headers: [:])
         let jsonValues = paginatedResponse.items.map { JSONValue(ablyCocoaData: $0) }

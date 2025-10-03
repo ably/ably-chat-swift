@@ -76,8 +76,8 @@ struct IntegrationTests {
                 presence: .init(),
                 typing: .init(heartbeatThrottle: 2),
                 reactions: .init(),
-                occupancy: .init()
-            )
+                occupancy: .init(),
+            ),
         )
         let rxRoom = try await rxClient.rooms.get(
             name: roomName,
@@ -86,8 +86,8 @@ struct IntegrationTests {
                 presence: .init(),
                 typing: .init(heartbeatThrottle: 2),
                 reactions: .init(),
-                occupancy: .init(enableEvents: true)
-            )
+                occupancy: .init(enableEvents: true),
+            ),
         )
 
         // (3) Subscribe to room status
@@ -112,8 +112,8 @@ struct IntegrationTests {
         // (3) Send the message
         let txMessageBeforeRxSubscribe = try await txRoom.messages.send(
             params: .init(
-                text: "Hello from txRoom, before rxRoom subscribe"
-            )
+                text: "Hello from txRoom, before rxRoom subscribe",
+            ),
         )
 
         // (4) Wait for rxRoom to see the message we just sent
@@ -128,8 +128,8 @@ struct IntegrationTests {
             params: .init(
                 text: "Hello from txRoom, after rxRoom subscribe",
                 metadata: ["someMetadataKey": 123, "someOtherMetadataKey": "foo"],
-                headers: ["someHeadersKey": 456, "someOtherHeadersKey": "bar"]
-            )
+                headers: ["someHeadersKey": 456, "someOtherHeadersKey": "bar"],
+            ),
         )
         let rxEventFromSubscription = try #require(await rxMessageSubscription.first { @Sendable _ in true })
         #expect(rxEventFromSubscription.message == txMessageAfterRxSubscribe)
@@ -274,10 +274,10 @@ struct IntegrationTests {
             newMessage: messageToEditDelete.copy(
                 text: "edited message",
                 metadata: ["someEditedKey": 123, "someOtherEditedKey": "foo"],
-                headers: nil
+                headers: nil,
             ),
             description: "random",
-            metadata: nil
+            metadata: nil,
         )
 
         // (2) Check that we received the edited message on the subscription
@@ -300,8 +300,8 @@ struct IntegrationTests {
             message: rxEditedMessageFromSubscription,
             params: .init(
                 description: "deleted in testing",
-                metadata: nil // TODO: Setting as nil for now as a metadata with any non-string value causes a decoding error atm... https://github.com/ably/ably-chat-swift/issues/226
-            )
+                metadata: nil, // TODO: Setting as nil for now as a metadata with any non-string value causes a decoding error atm... https://github.com/ably/ably-chat-swift/issues/226
+            ),
         )
 
         // (4) Check that we received the deleted message on the subscription
@@ -326,8 +326,8 @@ struct IntegrationTests {
             params: .init(
                 name: "heart",
                 metadata: ["someMetadataKey": 123, "someOtherMetadataKey": "foo"],
-                headers: ["someHeadersKey": 456, "someOtherHeadersKey": "bar"]
-            )
+                headers: ["someHeadersKey": 456, "someOtherHeadersKey": "bar"],
+            ),
         )
         let rxReactionFromSubscription = try #require(await rxReactionSubscription.first { @Sendable _ in true })
         #expect(rxReactionFromSubscription.reaction.name == "heart")

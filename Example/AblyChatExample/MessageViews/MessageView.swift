@@ -40,7 +40,7 @@ struct MessageView: View {
                             showReactionPicker = true
                         },
                         onAddReaction: onAddReaction,
-                        onDeleteReaction: onDeleteReaction
+                        onDeleteReaction: onDeleteReaction,
                     )
                     .padding(left: 2)
                 }
@@ -52,11 +52,11 @@ struct MessageView: View {
                         isEditing = true
                     }, onDelete: {
                         isDeleteConfirmationPresented = true
-                    }
+                    },
                 )
                 .confirmationDialog(
                     "Are you sure?",
-                    isPresented: $isDeleteConfirmationPresented
+                    isPresented: $isDeleteConfirmationPresented,
                 ) {
                     Button("Delete message", role: .destructive) {
                         onDeleteMessage()

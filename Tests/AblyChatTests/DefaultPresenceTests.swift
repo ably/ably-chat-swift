@@ -18,7 +18,7 @@ struct DefaultPresenceTests {
             roomName: "basketball",
             clientID: "client1",
             logger: logger,
-            options: .init()
+            options: .init(),
         )
 
         // When
@@ -27,9 +27,8 @@ struct DefaultPresenceTests {
         // Then
         #expect(channel.presence.callRecorder.hasRecord(
             matching: "enterClient(_:data:)",
-            arguments: ["name": "client1", "data": ["status": JSONValue.string("Online")]]
-        )
-        )
+            arguments: ["name": "client1", "data": ["status": JSONValue.string("Online")]],
+        ))
     }
 
     // @spec CHA-PR3a
@@ -44,7 +43,7 @@ struct DefaultPresenceTests {
             roomName: "basketball",
             clientID: "client1",
             logger: logger,
-            options: .init()
+            options: .init(),
         )
 
         // When
@@ -53,9 +52,8 @@ struct DefaultPresenceTests {
         // Then
         #expect(channel.presence.callRecorder.hasRecord(
             matching: "enterClient(_:data:)",
-            arguments: ["data": nil, "name": "client1"]
-        )
-        )
+            arguments: ["data": nil, "name": "client1"],
+        ))
     }
 
     // @specOneOf(3/4) CHA-PR3d
@@ -71,7 +69,7 @@ struct DefaultPresenceTests {
             roomName: "basketball",
             clientID: "client1",
             logger: logger,
-            options: .init()
+            options: .init(),
         )
 
         // When
@@ -80,9 +78,8 @@ struct DefaultPresenceTests {
         // Then
         #expect(roomLifecycleManager.callRecorder.hasRecord(
             matching: "waitToBeAbleToPerformPresenceOperations(requestedByFeature:)",
-            arguments: ["requestedByFeature": "presence"]
-        )
-        )
+            arguments: ["requestedByFeature": "presence"],
+        ))
     }
 
     // @specOneOf(4/4) CHA-PR3d
@@ -101,7 +98,7 @@ struct DefaultPresenceTests {
             roomName: "basketball",
             clientID: "client1",
             logger: logger,
-            options: .init()
+            options: .init(),
         )
 
         // TODO: avoids compiler crash (https://github.com/ably/ably-chat-swift/issues/233), revert once Xcode 16.3 released
@@ -118,9 +115,8 @@ struct DefaultPresenceTests {
         // Then
         #expect(roomLifecycleManager.callRecorder.hasRecord(
             matching: "waitToBeAbleToPerformPresenceOperations(requestedByFeature:)",
-            arguments: ["requestedByFeature": "presence"]
-        )
-        )
+            arguments: ["requestedByFeature": "presence"],
+        ))
     }
 
     // @specOneOf(2/2) CHA-PR3h
@@ -137,7 +133,7 @@ struct DefaultPresenceTests {
             roomName: "basketball",
             clientID: "client1",
             logger: logger,
-            options: .init()
+            options: .init(),
         )
 
         // Then
@@ -168,7 +164,7 @@ struct DefaultPresenceTests {
             roomName: "basketball",
             clientID: "client1",
             logger: logger,
-            options: .init()
+            options: .init(),
         )
         // When
         try await defaultPresence.update(data: ["status": "Online"])
@@ -176,9 +172,8 @@ struct DefaultPresenceTests {
         // Then
         #expect(channel.presence.callRecorder.hasRecord(
             matching: "update(_:)",
-            arguments: ["data": ["status": JSONValue.string("Online")]]
-        )
-        )
+            arguments: ["data": ["status": JSONValue.string("Online")]],
+        ))
     }
 
     // @specOneOf(3/4) CHA-PR10d
@@ -194,7 +189,7 @@ struct DefaultPresenceTests {
             roomName: "basketball",
             clientID: "client1",
             logger: logger,
-            options: .init()
+            options: .init(),
         )
 
         // When
@@ -203,9 +198,8 @@ struct DefaultPresenceTests {
         // Then
         #expect(roomLifecycleManager.callRecorder.hasRecord(
             matching: "waitToBeAbleToPerformPresenceOperations(requestedByFeature:)",
-            arguments: ["requestedByFeature": "presence"]
-        )
-        )
+            arguments: ["requestedByFeature": "presence"],
+        ))
     }
 
     // @specOneOf(4/4) CHA-PR10d
@@ -224,7 +218,7 @@ struct DefaultPresenceTests {
             roomName: "basketball",
             clientID: "client1",
             logger: logger,
-            options: .init()
+            options: .init(),
         )
 
         // TODO: avoids compiler crash (https://github.com/ably/ably-chat-swift/issues/233), revert once Xcode 16.3 released
@@ -241,9 +235,8 @@ struct DefaultPresenceTests {
         // Then
         #expect(roomLifecycleManager.callRecorder.hasRecord(
             matching: "waitToBeAbleToPerformPresenceOperations(requestedByFeature:)",
-            arguments: ["requestedByFeature": "presence"]
-        )
-        )
+            arguments: ["requestedByFeature": "presence"],
+        ))
     }
 
     // @specOneOf(2/2) CHA-PR10h
@@ -260,7 +253,7 @@ struct DefaultPresenceTests {
             roomName: "basketball",
             clientID: "client1",
             logger: logger,
-            options: .init()
+            options: .init(),
         )
 
         // Then
@@ -290,7 +283,7 @@ struct DefaultPresenceTests {
             roomName: "basketball",
             clientID: "client1",
             logger: logger,
-            options: .init()
+            options: .init(),
         )
 
         // When
@@ -299,9 +292,8 @@ struct DefaultPresenceTests {
         // Then
         #expect(channel.presence.callRecorder.hasRecord(
             matching: "leave(_:)",
-            arguments: ["data": ["status": JSONValue.string("Online")]]
-        )
-        )
+            arguments: ["data": ["status": JSONValue.string("Online")]],
+        ))
     }
 
     // MARK: CHA-PR5
@@ -319,7 +311,7 @@ struct DefaultPresenceTests {
             roomName: "basketball",
             clientID: "client1",
             logger: logger,
-            options: .init()
+            options: .init(),
         )
 
         // When
@@ -328,9 +320,8 @@ struct DefaultPresenceTests {
         // Then
         #expect(channel.presence.callRecorder.hasRecord(
             matching: "get(_:)",
-            arguments: ["query": "\(ARTRealtimePresenceQuery(clientId: "client1", connectionId: "").callRecorderDescription)"]
-        )
-        )
+            arguments: ["query": "\(ARTRealtimePresenceQuery(clientId: "client1", connectionId: "").callRecorderDescription)"],
+        ))
     }
 
     // MARK: CHA-PR6
@@ -349,7 +340,7 @@ struct DefaultPresenceTests {
             roomName: "basketball",
             clientID: "client1",
             logger: logger,
-            options: .init()
+            options: .init(),
         )
 
         // When
@@ -358,9 +349,8 @@ struct DefaultPresenceTests {
         // Then
         #expect(channel.presence.callRecorder.hasRecord(
             matching: "get()",
-            arguments: [:]
-        )
-        )
+            arguments: [:],
+        ))
     }
 
     // @specOneOf(2/2) CHA-PR6h
@@ -377,7 +367,7 @@ struct DefaultPresenceTests {
             roomName: "basketball",
             clientID: "client1",
             logger: logger,
-            options: .init()
+            options: .init(),
         )
 
         // Then
@@ -405,7 +395,7 @@ struct DefaultPresenceTests {
             roomName: "basketball",
             clientID: "client1",
             logger: logger,
-            options: .init()
+            options: .init(),
         )
 
         // When
@@ -414,9 +404,8 @@ struct DefaultPresenceTests {
         // Then
         #expect(roomLifecycleManager.callRecorder.hasRecord(
             matching: "waitToBeAbleToPerformPresenceOperations(requestedByFeature:)",
-            arguments: ["requestedByFeature": "presence"]
-        )
-        )
+            arguments: ["requestedByFeature": "presence"],
+        ))
     }
 
     // @specOneOf(4/4) CHA-PR6c
@@ -435,7 +424,7 @@ struct DefaultPresenceTests {
             roomName: "basketball",
             clientID: "client1",
             logger: logger,
-            options: .init()
+            options: .init(),
         )
 
         // TODO: avoids compiler crash (https://github.com/ably/ably-chat-swift/issues/233), revert once Xcode 16.3 released
@@ -452,9 +441,8 @@ struct DefaultPresenceTests {
         // Then
         #expect(roomLifecycleManager.callRecorder.hasRecord(
             matching: "waitToBeAbleToPerformPresenceOperations(requestedByFeature:)",
-            arguments: ["requestedByFeature": "presence"]
-        )
-        )
+            arguments: ["requestedByFeature": "presence"],
+        ))
     }
 
     // MARK: CHA-PR7
@@ -473,7 +461,7 @@ struct DefaultPresenceTests {
             roomName: "basketball",
             clientID: "client1",
             logger: logger,
-            options: .init()
+            options: .init(),
         )
 
         // Given

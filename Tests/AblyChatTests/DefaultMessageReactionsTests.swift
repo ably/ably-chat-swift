@@ -40,9 +40,8 @@ struct DefaultMessageReactionsTests {
                 ],
                 "params": [:],
                 "headers": [:],
-            ]
-        )
-        )
+            ],
+        ))
         #expect(realtime.callRecorder.hasRecord(
             matching: "request(_:path:params:body:headers:)",
             arguments: [
@@ -54,9 +53,8 @@ struct DefaultMessageReactionsTests {
                     "type": "reaction:multiple.v1",
                 ],
                 "headers": [:],
-            ]
-        )
-        )
+            ],
+        ))
     }
 
     // @spec CHA-MR4a1
@@ -136,10 +134,10 @@ struct DefaultMessageReactionsTests {
                             "like": ["total": 5, "clientIds": ["userOne": 3, "userTwo": 2]],
                             "love": ["total": 10, "clientIds": ["userOne": 10]],
                         ],
-                    ]
+                    ],
                 )
                 return message
-            }()
+            }(),
         )
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", clientID: "clientId", logger: TestLogger())
 
@@ -183,7 +181,7 @@ struct DefaultMessageReactionsTests {
                 message.serial = "001"
                 message.action = .messageSummary
                 return message
-            }()
+            }(),
         )
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", clientID: "clientId", logger: TestLogger())
 
@@ -219,8 +217,8 @@ struct DefaultMessageReactionsTests {
                 serial: "",
                 messageSerial: "0LHQtdC70YvQtSDRgNC+0LfRiw",
                 type: "reaction:multiple.v1",
-                extras: nil
-            )
+                extras: nil,
+            ),
         )
         let channels = MockChannels(channels: [channel])
         let realtime = MockRealtime(channels: channels) {
@@ -266,8 +264,8 @@ struct DefaultMessageReactionsTests {
                 serial: "",
                 messageSerial: "",
                 type: "reaction:multiple.v1",
-                extras: nil
-            )
+                extras: nil,
+            ),
         )
         let channels = MockChannels(channels: [channel])
         let realtime = MockRealtime(channels: channels) {
@@ -308,8 +306,8 @@ struct DefaultMessageReactionsTests {
                 serial: "",
                 messageSerial: "",
                 type: "not-a-reaction", // invalid type
-                extras: nil
-            )
+                extras: nil,
+            ),
         )
         let channels = MockChannels(channels: [channel])
         let realtime = MockRealtime(channels: channels) {
@@ -335,7 +333,7 @@ struct DefaultMessageReactionsTests {
         // Given
         let channel = MockRealtimeChannel(
             name: "basketball::$chat",
-            initialState: .attached
+            initialState: .attached,
         )
         let channels = MockChannels(channels: [channel])
         let realtime = MockRealtime(channels: channels) {
@@ -363,9 +361,8 @@ struct DefaultMessageReactionsTests {
                 ],
                 "params": [:],
                 "headers": [:],
-            ]
-        )
-        )
+            ],
+        ))
     }
 
     // @specOneOf(2/2) CHA-MR5
@@ -374,7 +371,7 @@ struct DefaultMessageReactionsTests {
         // Given: a DefaultRoom instance
         let channel = MockRealtimeChannel(
             name: "basketball::$chat",
-            initialState: .attached
+            initialState: .attached,
         )
         let channels = MockChannels(channels: [channel])
         let realtime = MockRealtime(channels: channels) {
@@ -403,9 +400,8 @@ struct DefaultMessageReactionsTests {
                 ],
                 "params": [:],
                 "headers": [:],
-            ]
-        )
-        )
+            ],
+        ))
     }
 
     // @specNotApplicable CHA-MR7a - It's a programmer error to call `Room.messages.reactions.subscribeRaw` without `MessageOptions.rawMessageReactions` being set to `true`.

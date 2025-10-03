@@ -79,9 +79,9 @@ internal final class DefaultMessages: Messages {
                     timestamp: version.timestamp ?? timestamp, // CHA-M4k7
                     clientID: version.clientId ?? "", // CHA-M4k1
                     description: version.descriptionText,
-                    metadata: version.metadata?.mapValues { .string($0) } ?? [:] // CHA-M4k2
+                    metadata: version.metadata?.mapValues { .string($0) } ?? [:], // CHA-M4k2
                 ),
-                timestamp: timestamp
+                timestamp: timestamp,
             )
 
             let event = ChatMessageEvent(message: message)
@@ -109,7 +109,7 @@ internal final class DefaultMessages: Messages {
             unsubscribe: { [weak self, channel] in
                 channel.unsubscribe(eventListener)
                 self?.subscriptionPoints.removeValue(forKey: uuid)
-            }
+            },
         )
         return subscription
     }

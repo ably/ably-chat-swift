@@ -9,7 +9,7 @@ struct DefaultChatClientTests {
         let client = DefaultChatClient(
             realtime: MockSuppliedRealtime(createWrapperSDKProxyReturnValue: .init()),
             clientOptions: nil,
-            internalRealtimeClientFactory: MockInternalRealtimeClientFactory(createInternalRealtimeClientReturnValue: MockRealtime())
+            internalRealtimeClientFactory: MockInternalRealtimeClientFactory(createInternalRealtimeClientReturnValue: MockRealtime()),
         )
 
         // Then: It uses the default client options
@@ -25,7 +25,7 @@ struct DefaultChatClientTests {
         let client = DefaultChatClient(
             realtime: realtime,
             clientOptions: options,
-            internalRealtimeClientFactory: MockInternalRealtimeClientFactory(createInternalRealtimeClientReturnValue: MockRealtime())
+            internalRealtimeClientFactory: MockInternalRealtimeClientFactory(createInternalRealtimeClientReturnValue: MockRealtime()),
         )
 
         // Then: Its `realtime` property returns the client that was passed to the initializer (i.e. as opposed to the proxy client created by `createWrapperSDKProxy(with:)`
@@ -41,7 +41,7 @@ struct DefaultChatClientTests {
         _ = DefaultChatClient(
             realtime: realtime,
             clientOptions: options,
-            internalRealtimeClientFactory: MockInternalRealtimeClientFactory(createInternalRealtimeClientReturnValue: MockRealtime())
+            internalRealtimeClientFactory: MockInternalRealtimeClientFactory(createInternalRealtimeClientReturnValue: MockRealtime()),
         )
 
         #expect(realtime.createWrapperSDKProxyOptionsArgument?.agents == ["chat-swift": AblyChat.version])
@@ -59,7 +59,7 @@ struct DefaultChatClientTests {
         let client = DefaultChatClient(
             realtime: realtime,
             clientOptions: options,
-            internalRealtimeClientFactory: internalRealtimeClientFactory
+            internalRealtimeClientFactory: internalRealtimeClientFactory,
         )
 
         // Then: Its `rooms` property returns an instance of DefaultRooms with the wrapper SDK proxy realtime client and same client options

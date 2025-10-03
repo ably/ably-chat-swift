@@ -33,7 +33,7 @@ struct DefaultRoomLifecycleManagerTests {
         forTestingWhatHappensWhenHasHasAttachedOnce hasAttachedOnce: Bool? = nil,
         forTestingWhatHappensWhenHasIsExplicitlyDetached isExplicitlyDetached: Bool? = nil,
         channel: MockRealtimeChannel? = nil,
-        clock: SimpleClock = MockSimpleClock()
+        clock: SimpleClock = MockSimpleClock(),
     ) -> DefaultRoomLifecycleManager {
         .init(
             testsOnly_roomStatus: roomStatus,
@@ -41,7 +41,7 @@ struct DefaultRoomLifecycleManagerTests {
             testsOnly_isExplicitlyDetached: isExplicitlyDetached,
             channel: channel ?? createChannel(),
             logger: TestLogger(),
-            clock: clock
+            clock: clock,
         )
     }
 
@@ -49,13 +49,13 @@ struct DefaultRoomLifecycleManagerTests {
         initialState: ARTRealtimeChannelState = .initialized,
         initialErrorReason: ARTErrorInfo? = nil,
         attachBehavior: MockRealtimeChannel.AttachOrDetachBehavior? = nil,
-        detachBehavior: MockRealtimeChannel.AttachOrDetachBehavior? = nil
+        detachBehavior: MockRealtimeChannel.AttachOrDetachBehavior? = nil,
     ) -> MockRealtimeChannel {
         .init(
             initialState: initialState,
             initialErrorReason: initialErrorReason,
             attachBehavior: attachBehavior,
-            detachBehavior: detachBehavior
+            detachBehavior: detachBehavior,
         )
     }
 
@@ -91,7 +91,7 @@ struct DefaultRoomLifecycleManagerTests {
     func attach_whenReleasing() async throws {
         // Given: A DefaultRoomLifecycleManager in the RELEASING status
         let manager = createManager(
-            forTestingWhatHappensWhenCurrentlyIn: .releasing
+            forTestingWhatHappensWhenCurrentlyIn: .releasing,
         )
 
         // When: `performAttachOperation()` is called on the lifecycle manager
@@ -128,8 +128,8 @@ struct DefaultRoomLifecycleManagerTests {
                 // Arbitrary, allows the ATTACH to eventually complete
                 attachBehavior: .success,
                 // This allows us to prolong the execution of the DETACH triggered in (1)
-                detachBehavior: channelDetachOperation.behavior
-            )
+                detachBehavior: channelDetachOperation.behavior,
+            ),
         )
 
         let detachOperationID = UUID()
@@ -171,7 +171,7 @@ struct DefaultRoomLifecycleManagerTests {
         let channelAttachOperation = SignallableChannelOperation()
 
         let manager = createManager(
-            channel: createChannel(attachBehavior: channelAttachOperation.behavior)
+            channel: createChannel(attachBehavior: channelAttachOperation.behavior),
         )
         let statusChangeSubscription = manager.onRoomStatusChange(bufferingPolicy: .unbounded)
         async let statusChange = statusChangeSubscription.first { _ in true }
@@ -198,7 +198,7 @@ struct DefaultRoomLifecycleManagerTests {
             // These two flags are being set just so that we can verify they get unset per CHA-RL1k1
             forTestingWhatHappensWhenHasHasAttachedOnce: true,
             forTestingWhatHappensWhenHasIsExplicitlyDetached: true,
-            channel: channel
+            channel: channel,
         )
 
         let statusChangeSubscription = manager.onRoomStatusChange(bufferingPolicy: .unbounded)
@@ -224,7 +224,7 @@ struct DefaultRoomLifecycleManagerTests {
         // Given: A DefaultRoomLifecycleManager, whose channel's call to `attach` fails causing it to enter the FAILED state (arbitrarily chosen)
         let channelAttachError = ARTErrorInfo(domain: "SomeDomain", code: 123)
         let channel = createChannel(
-            attachBehavior: .completeAndChangeState(.failure(channelAttachError), newState: .failed)
+            attachBehavior: .completeAndChangeState(.failure(channelAttachError), newState: .failed),
         )
 
         let manager = createManager(channel: channel)
@@ -274,7 +274,7 @@ struct DefaultRoomLifecycleManagerTests {
     func detach_whenReleasing() async throws {
         // Given: A DefaultRoomLifecycleManager in the RELEASING status
         let manager = createManager(
-            forTestingWhatHappensWhenCurrentlyIn: .releasing
+            forTestingWhatHappensWhenCurrentlyIn: .releasing,
         )
 
         // When: `performDetachOperation()` is called on the lifecycle manager
@@ -307,8 +307,8 @@ struct DefaultRoomLifecycleManagerTests {
         // Given: A DefaultRoomLifecycleManager in the FAILED status
         let manager = createManager(
             forTestingWhatHappensWhenCurrentlyIn: .failed(
-                error: .createUnknownError() /* arbitrary */
-            )
+                error: .createUnknownError(), /* arbitrary */
+            ),
         )
 
         // When: `performAttachOperation()` is called on the lifecycle manager
@@ -330,8 +330,8 @@ struct DefaultRoomLifecycleManagerTests {
                 // This allows us to prolong the execution of the ATTACH triggered in (1)
                 attachBehavior: channelAttachOperation.behavior,
                 // Arbitrary, allows the DETACH to eventually complete
-                detachBehavior: .success
-            )
+                detachBehavior: .success,
+            ),
         )
 
         let attachOperationID = UUID()
@@ -396,7 +396,7 @@ struct DefaultRoomLifecycleManagerTests {
         // Given: A DefaultRoomLifecycleManager, whose channel's call to `detach` succeeds
         let channel = createChannel(detachBehavior: .success)
         let manager = createManager(
-            channel: channel
+            channel: channel,
         )
 
         // Double-check the initial value of this flag, so that we can verify it gets set per CHA-RL2k1
@@ -424,7 +424,7 @@ struct DefaultRoomLifecycleManagerTests {
         // Given: A DefaultRoomLifecycleManager, whose channel's call to `detach` fails causing it to enter the FAILED state (arbitrarily chosen)
         let channelDetachError = ARTErrorInfo(domain: "SomeDomain", code: 123)
         let channel = createChannel(
-            detachBehavior: .completeAndChangeState(.failure(channelDetachError), newState: .failed)
+            detachBehavior: .completeAndChangeState(.failure(channelDetachError), newState: .failed),
         )
 
         let manager = createManager(channel: channel)
@@ -475,7 +475,7 @@ struct DefaultRoomLifecycleManagerTests {
             .detached(error: nil),
             // @spec CHA-RL3j
             .initialized,
-        ] as[RoomStatus]
+        ] as[RoomStatus],
     )
     func release_whenDetachedOrInitialized(status: RoomStatus) async throws {
         // Given: A DefaultRoomLifecycleManager in the DETACHED or INITIALIZED status
@@ -505,8 +505,8 @@ struct DefaultRoomLifecycleManagerTests {
                 // This allows us to prolong the execution of the ATTACH triggered in (1)
                 attachBehavior: channelAttachOperation.behavior,
                 // Arbitrary, allows the RELEASE to eventually complete
-                detachBehavior: .success
-            )
+                detachBehavior: .success,
+            ),
         )
 
         let attachOperationID = UUID()
@@ -551,7 +551,7 @@ struct DefaultRoomLifecycleManagerTests {
 
         let manager = createManager(
             forTestingWhatHappensWhenCurrentlyIn: .attached(error: nil), // arbitrary non-{RELEASED, DETACHED, INITIALIZED} status, so that we get as far as CHA-RL3n
-            channel: channel
+            channel: channel,
         )
         let statusChangeSubscription = manager.onRoomStatusChange(bufferingPolicy: .unbounded)
         async let statusChange = statusChangeSubscription.first { _ in true }
@@ -576,7 +576,7 @@ struct DefaultRoomLifecycleManagerTests {
 
         let manager = createManager(
             forTestingWhatHappensWhenCurrentlyIn: .attached(error: nil), // arbitrary non-{RELEASED, DETACHED, INITIALIZED} status, so that we get as far as CHA-RL3n
-            channel: channel
+            channel: channel,
         )
 
         let statusChangeSubscription = manager.onRoomStatusChange(bufferingPolicy: .unbounded)
@@ -605,7 +605,7 @@ struct DefaultRoomLifecycleManagerTests {
 
         let manager = createManager(
             forTestingWhatHappensWhenCurrentlyIn: .attached(error: nil), // arbitrary non-{RELEASED, DETACHED, INITIALIZED} status, so that we get as far as CHA-RL3n
-            channel: channel
+            channel: channel,
         )
 
         let statusChangeSubscription = manager.onRoomStatusChange(bufferingPolicy: .unbounded)
@@ -646,7 +646,7 @@ struct DefaultRoomLifecycleManagerTests {
         let manager = createManager(
             forTestingWhatHappensWhenCurrentlyIn: .attached(error: nil), // arbitrary non-{RELEASED, DETACHED, INITIALIZED} status, so that we get as far as CHA-RL3n
             channel: channel,
-            clock: clock
+            clock: clock,
         )
 
         // Then: When `performReleaseOperation()` is called on the manager
@@ -670,7 +670,7 @@ struct DefaultRoomLifecycleManagerTests {
         let manager = createManager(
             forTestingWhatHappensWhenCurrentlyIn: .attached(error: nil), // arbitrary non-{RELEASED, DETACHED, INITIALIZED} status, so that we get as far as CHA-RL3n
             channel: channel,
-            clock: clock
+            clock: clock,
         )
 
         let statusChangeSubscription = manager.onRoomStatusChange(bufferingPolicy: .unbounded)
@@ -702,10 +702,10 @@ struct DefaultRoomLifecycleManagerTests {
         // Given: A DefaultRoomLifecycleManager, with a room lifecycle operation in progress
         let channelAttachBehavior = SignallableChannelOperation()
         let channel = createChannel(
-            attachBehavior: channelAttachBehavior.behavior
+            attachBehavior: channelAttachBehavior.behavior,
         )
         let manager = createManager(
-            channel: channel
+            channel: channel,
         )
 
         let roomStatusSubscription = manager.onRoomStatusChange(bufferingPolicy: .unbounded)
@@ -721,7 +721,7 @@ struct DefaultRoomLifecycleManagerTests {
             previous: .attached, // arbitrary
             event: .detaching,
             reason: ARTErrorInfo(domain: "SomeDomain", code: 123), // arbitrary
-            resumed: false
+            resumed: false,
         )
 
         channel.emitEvent(channelStateChange)
@@ -749,7 +749,7 @@ struct DefaultRoomLifecycleManagerTests {
             previous: .attached, // arbitrary
             event: .attaching,
             reason: ARTErrorInfo(domain: "SomeDomain", code: 123), // arbitrary
-            resumed: false
+            resumed: false,
         )
 
         channel.emitEvent(channelStateChange)
@@ -768,7 +768,7 @@ struct DefaultRoomLifecycleManagerTests {
         let channel = createChannel()
         let manager = createManager(
             forTestingWhatHappensWhenCurrentlyIn: .detached(error: nil), // arbitrary value different to the ATTACHED in the UPDATE event emitted below
-            channel: channel
+            channel: channel,
         )
 
         let initialRoomStatus = manager.roomStatus
@@ -781,7 +781,7 @@ struct DefaultRoomLifecycleManagerTests {
             previous: .attached, // arbitrary
             event: .update,
             reason: ARTErrorInfo(domain: "SomeDomain", code: 123), // arbitrary
-            resumed: false
+            resumed: false,
         )
 
         channel.emitEvent(channelUpdateEvent)
@@ -807,10 +807,10 @@ struct DefaultRoomLifecycleManagerTests {
                 previous: .attaching, // arbitrary
                 event: .attached,
                 reason: ARTErrorInfo(domain: "SomeDomain", code: 123), // arbitrary
-                resumed: false
+                resumed: false,
             ),
 
-            expectDiscontinuity: true
+            expectDiscontinuity: true,
         ),
         (
             hasAttachedOnce: true,
@@ -822,10 +822,10 @@ struct DefaultRoomLifecycleManagerTests {
                 previous: .attached,
                 event: .update,
                 reason: ARTErrorInfo(domain: "SomeDomain", code: 123), // arbitrary
-                resumed: false
+                resumed: false,
             ),
 
-            expectDiscontinuity: true
+            expectDiscontinuity: true,
         ),
         (
             hasAttachedOnce: true,
@@ -837,10 +837,10 @@ struct DefaultRoomLifecycleManagerTests {
                 previous: .attached,
                 event: .update,
                 reason: nil,
-                resumed: true
+                resumed: true,
             ),
 
-            expectDiscontinuity: false
+            expectDiscontinuity: false,
         ),
         (
             hasAttachedOnce: true,
@@ -852,10 +852,10 @@ struct DefaultRoomLifecycleManagerTests {
                 previous: .attached,
                 event: .attaching,
                 reason: nil,
-                resumed: false
+                resumed: false,
             ),
 
-            expectDiscontinuity: false
+            expectDiscontinuity: false,
         ),
         (
             hasAttachedOnce: false,
@@ -867,10 +867,10 @@ struct DefaultRoomLifecycleManagerTests {
                 previous: .attached,
                 event: .attached,
                 reason: ARTErrorInfo(domain: "SomeDomain", code: 123), // arbitrary
-                resumed: false
+                resumed: false,
             ),
 
-            expectDiscontinuity: false
+            expectDiscontinuity: false,
         ),
         (
             hasAttachedOnce: true,
@@ -882,18 +882,17 @@ struct DefaultRoomLifecycleManagerTests {
                 previous: .attached,
                 event: .attached,
                 reason: ARTErrorInfo(domain: "SomeDomain", code: 123), // arbitrary
-                resumed: false
+                resumed: false,
             ),
 
-            expectDiscontinuity: false
+            expectDiscontinuity: false,
         ),
-    ]
-    )
+    ])
     func channelStateEvent_discontinuity(
         hasAttachedOnce: Bool,
         isExplicitlyDetached: Bool,
         channelEvent: ARTChannelStateChange,
-        expectDiscontinuity: Bool
+        expectDiscontinuity: Bool,
     ) async throws {
         // Given: A DefaultRoomLifecycleManager, whose hasAttachedOnce and isExplicitlyDetached internal state is set per test arguments
         let channelAttachBehavior = hasAttachedOnce ? MockRealtimeChannel.AttachOrDetachBehavior.complete(.success) : nil
@@ -929,8 +928,8 @@ struct DefaultRoomLifecycleManagerTests {
                 isChatError(
                     discontinuityEvent.error,
                     withCodeAndStatusCode: .fixedStatusCode(.roomDiscontinuity),
-                    cause: channelEvent.reason
-                )
+                    cause: channelEvent.reason,
+                ),
             )
         } else {
             #expect(emittedDiscontinuities.isEmpty)
@@ -953,7 +952,7 @@ struct DefaultRoomLifecycleManagerTests {
         let channel = createChannel(attachBehavior: channelAttachOperation.behavior)
 
         let manager = createManager(
-            channel: channel
+            channel: channel,
         )
 
         let roomStatusSubscription = manager.onRoomStatusChange(bufferingPolicy: .unbounded)
@@ -992,7 +991,7 @@ struct DefaultRoomLifecycleManagerTests {
         let channel = createChannel(attachBehavior: channelAttachOperation.behavior)
 
         let manager = createManager(
-            channel: channel
+            channel: channel,
         )
 
         let roomStatusSubscription = manager.onRoomStatusChange(bufferingPolicy: .unbounded)
@@ -1033,7 +1032,7 @@ struct DefaultRoomLifecycleManagerTests {
     func waitToBeAbleToPerformPresenceOperations_whenAttached() async throws {
         // Given: A DefaultRoomLifecycleManager in the ATTACHED status
         let manager = createManager(
-            forTestingWhatHappensWhenCurrentlyIn: .attached(error: nil)
+            forTestingWhatHappensWhenCurrentlyIn: .attached(error: nil),
         )
 
         // When: `waitToBeAbleToPerformPresenceOperations(requestedByFeature:)` is called on the lifecycle manager
@@ -1048,7 +1047,7 @@ struct DefaultRoomLifecycleManagerTests {
     func waitToBeAbleToPerformPresenceOperations_whenAnyOtherStatus() async throws {
         // Given: A DefaultRoomLifecycleManager in a status other than ATTACHING or ATTACHED
         let manager = createManager(
-            forTestingWhatHappensWhenCurrentlyIn: .detached(error: nil) // arbitrary given the above constraints
+            forTestingWhatHappensWhenCurrentlyIn: .detached(error: nil), // arbitrary given the above constraints
         )
 
         // (Note: I wanted to use #expect(…, throws:) below, but for some reason it made the compiler _crash_! No idea why. So, gave up on that.)

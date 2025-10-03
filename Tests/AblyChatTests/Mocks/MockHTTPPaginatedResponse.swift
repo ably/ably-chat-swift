@@ -10,7 +10,7 @@ final class MockHTTPPaginatedResponse: ARTHTTPPaginatedResponse, @unchecked Send
         items: [NSDictionary],
         statusCode: Int = 200,
         headers: [String: String] = [:],
-        hasNext: Bool = false
+        hasNext: Bool = false,
     ) {
         _items = items
         _statusCode = statusCode
@@ -68,19 +68,19 @@ extension MockHTTPPaginatedResponse {
             ],
         ],
         statusCode: 200,
-        headers: [:]
+        headers: [:],
     )
 
     static let failedSendMessage = MockHTTPPaginatedResponse(
         items: [],
         statusCode: 400,
-        headers: [:]
+        headers: [:],
     )
 
     static let successSendMessageWithNoItems = MockHTTPPaginatedResponse(
         items: [],
         statusCode: 200,
-        headers: [:]
+        headers: [:],
     )
 }
 
@@ -90,7 +90,7 @@ extension MockHTTPPaginatedResponse {
     static let successGetMessagesWithNoItems = MockHTTPPaginatedResponse(
         items: [],
         statusCode: 200,
-        headers: [:]
+        headers: [:],
     )
 
     static let successGetMessagesWithItems = MockHTTPPaginatedResponse(
@@ -122,7 +122,7 @@ extension MockHTTPPaginatedResponse {
         ],
         statusCode: 200,
         headers: [:],
-        hasNext: true
+        hasNext: true,
     )
 }
 
@@ -158,6 +158,6 @@ extension MockHTTPPaginatedResponse {
         ],
         statusCode: 200,
         headers: [:],
-        hasNext: false
+        hasNext: false,
     )
 }

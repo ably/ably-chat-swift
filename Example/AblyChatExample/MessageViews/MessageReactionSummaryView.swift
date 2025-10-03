@@ -58,7 +58,7 @@ struct MessageReactionSummaryView: View {
         .confirmationDialog(
             "Reaction Options",
             isPresented: $showReactionMenu,
-            titleVisibility: .visible
+            titleVisibility: .visible,
         ) {
             Button("Show who reacted") {
                 showAllReactionsSheet = true

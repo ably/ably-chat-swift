@@ -16,7 +16,7 @@ struct DefaultRoomOccupancyTests {
                         "connections": 5,
                         "presenceMembers": 2,
                     ],
-                ]
+                ],
             )
         }
         let chatAPI = ChatAPI(realtime: realtime)
@@ -26,7 +26,7 @@ struct DefaultRoomOccupancyTests {
             chatAPI: chatAPI,
             roomName: "basketball",
             logger: TestLogger(),
-            options: .init(enableEvents: true)
+            options: .init(enableEvents: true),
         )
 
         // When
@@ -65,14 +65,14 @@ struct DefaultRoomOccupancyTests {
                 ]
                 message.version = .init(serial: "0") // arbitrary
                 return message
-            }()
+            }(),
         )
         let defaultOccupancy = DefaultOccupancy(
             channel: channel,
             chatAPI: chatAPI,
             roomName: "basketball",
             logger: TestLogger(),
-            options: .init(enableEvents: true)
+            options: .init(enableEvents: true),
         )
 
         // CHA-O4a, CHA-O4c, CHA-O7a
@@ -101,14 +101,14 @@ struct DefaultRoomOccupancyTests {
             messageToEmitOnSubscribe: {
                 let message = ARTMessage()
                 return message
-            }()
+            }(),
         )
         let defaultOccupancy = DefaultOccupancy(
             channel: channel,
             chatAPI: chatAPI,
             roomName: "basketball",
             logger: TestLogger(),
-            options: .init(enableEvents: true)
+            options: .init(enableEvents: true),
         )
 
         // CHA-O4a, CHA-O4c
@@ -135,7 +135,7 @@ struct DefaultRoomOccupancyTests {
             roomName: "basketball",
             logger: TestLogger(),
             // Wnen
-            options: .init() // enableEvents: false
+            options: .init(), // enableEvents: false
         )
 
         // Then

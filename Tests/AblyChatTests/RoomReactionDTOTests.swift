@@ -37,7 +37,7 @@ enum RoomReactionDTOTests {
                         "someStringKey": "someStringValue",
                         "someNumberKey": 123,
                     ],
-                ]
+                ],
             )
 
             #expect(data == .init(name: "someName", metadata: ["someStringKey": "someStringValue", "someNumberKey": 123]))
@@ -90,7 +90,7 @@ enum RoomReactionDTOTests {
                         "someStringKey": "someStringValue",
                         "someNumberKey": 123,
                     ],
-                ]
+                ],
             )
 
             #expect(data == .init(headers: ["someStringKey": "someStringValue", "someNumberKey": 123]))

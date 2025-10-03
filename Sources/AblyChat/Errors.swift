@@ -326,7 +326,7 @@ internal extension ARTErrorInfo {
         self.init(
             domain: errorDomain,
             code: chatError.codeAndStatusCode.code.rawValue,
-            userInfo: userInfo
+            userInfo: userInfo,
         )
     }
 }
