@@ -303,7 +303,7 @@ internal extension QueryOptions {
 }
 
 /// Event type for chat message subscription.
-public enum ChatMessageEventType: String, Sendable {
+public enum ChatMessageEventType: Sendable {
     case created
     case updated
     case deleted

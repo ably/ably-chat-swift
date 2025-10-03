@@ -94,7 +94,7 @@ public struct OccupancyData: Sendable {
     }
 }
 
-public enum OccupancyEventType: String, Sendable {
+public enum OccupancyEventType: Sendable {
     case updated
 }
 
