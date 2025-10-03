@@ -2,6 +2,10 @@
 
 import PackageDescription
 
+let commonSwiftSettings: [SwiftSetting] = [
+    .enableUpcomingFeature("MemberImportVisibility"),
+]
+
 let package = Package(
     name: "AblyChat",
     platforms: [
@@ -57,6 +61,7 @@ let package = Package(
                     package: "ably-cocoa",
                 ),
             ],
+            swiftSettings: commonSwiftSettings,
         ),
         .testTarget(
             name: "AblyChatTests",
@@ -78,6 +83,7 @@ let package = Package(
             resources: [
                 .copy("ably-common"),
             ],
+            swiftSettings: commonSwiftSettings,
         ),
         .executableTarget(
             name: "BuildTool",
@@ -95,6 +101,7 @@ let package = Package(
                     package: "Table",
                 ),
             ],
+            swiftSettings: commonSwiftSettings,
         ),
     ],
 )

@@ -1,5 +1,6 @@
 import Ably
 @testable import AblyChat
+import AsyncAlgorithms
 import Testing
 
 @MainActor
