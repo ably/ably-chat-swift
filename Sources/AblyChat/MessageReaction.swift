@@ -175,6 +175,12 @@ public struct MessageReactionSummary: Sendable, Equatable {
          * clients.
          */
         public var clipped: Bool // TM7c1c
+
+        public init(total: Int, clientIDs: [String], clipped: Bool) {
+            self.total = total
+            self.clientIDs = clientIDs
+            self.clipped = clipped
+        }
     }
 
     /**
@@ -207,6 +213,14 @@ public struct MessageReactionSummary: Sendable, Equatable {
          * The total number of distinct clientIDs in the map (equal to length of map if clipped is false).
          */
         public var totalClientIDs: Int // TM7d1e
+
+        public init(total: Int, clientIDs: [String: Int], totalUnidentified: Int, clipped: Bool, totalClientIDs: Int) {
+            self.total = total
+            self.clientIDs = clientIDs
+            self.totalUnidentified = totalUnidentified
+            self.clipped = clipped
+            self.totalClientIDs = totalClientIDs
+        }
     }
 
     /**
@@ -228,6 +242,13 @@ public struct MessageReactionSummary: Sendable, Equatable {
      * Map of multiple-type reactions summaries.
      */
     public var multiple: [String: ClientIDCounts]
+
+    public init(messageSerial: String, unique: [String: MessageReactionSummary.ClientIDList], distinct: [String: MessageReactionSummary.ClientIDList], multiple: [String: MessageReactionSummary.ClientIDCounts]) {
+        self.messageSerial = messageSerial
+        self.unique = unique
+        self.distinct = distinct
+        self.multiple = multiple
+    }
 }
 
 /**
@@ -244,6 +265,11 @@ public struct MessageReactionSummaryEvent: Sendable, Equatable {
      * The message reactions summary.
      */
     public var summary: MessageReactionSummary
+
+    public init(type: MessageReactionEvent, summary: MessageReactionSummary) {
+        self.type = type
+        self.summary = summary
+    }
 }
 
 /**
@@ -264,4 +290,10 @@ public struct MessageReactionRawEvent: Sendable {
      * The message reaction that was received.
      */
     public var reaction: MessageReaction
+
+    public init(type: MessageReactionEvent, timestamp: Date? = nil, reaction: MessageReaction) {
+        self.type = type
+        self.timestamp = timestamp
+        self.reaction = reaction
+    }
 }
