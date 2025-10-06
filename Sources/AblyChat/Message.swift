@@ -105,19 +105,22 @@ public struct Message: Sendable, Equatable {
         text: String? = nil,
         metadata: MessageMetadata? = nil,
         headers: MessageHeaders? = nil,
-        reactions: MessageReactionSummary? = nil,
     ) -> Message {
-        Message(
-            serial: serial,
-            action: action,
-            clientID: clientID,
-            text: text ?? self.text,
-            metadata: metadata ?? self.metadata,
-            headers: headers ?? self.headers,
-            version: version,
-            timestamp: timestamp,
-            reactions: reactions ?? self.reactions,
-        )
+        var copied = self
+
+        if let text {
+            copied.text = text
+        }
+
+        if let metadata {
+            copied.metadata = metadata
+        }
+
+        if let headers {
+            copied.headers = headers
+        }
+
+        return copied
     }
 }
 
@@ -217,6 +220,9 @@ public extension Message {
         guard serial == summaryEvent.summary.messageSerial else {
             throw ARTErrorInfo(chatError: .cannotApplyEventForDifferentMessage)
         }
-        return copy(reactions: summaryEvent.summary)
+
+        var newMessage = self
+        newMessage.reactions = summaryEvent.summary
+        return newMessage
     }
 }
