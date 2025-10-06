@@ -319,7 +319,7 @@ public struct ChatMessageEvent: Sendable, Equatable {
         self.message = message
     }
 
-    public init(message: Message) {
+    internal init(message: Message) {
         switch message.action {
         case .create:
             type = .created
