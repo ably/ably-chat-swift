@@ -10,7 +10,7 @@ final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
     private let channelSerial: String?
     private let _name: String?
 
-    nonisolated var properties: ARTChannelProperties { .init(attachSerial: attachSerial, channelSerial: channelSerial) }
+    var properties: ARTChannelProperties { .init(attachSerial: attachSerial, channelSerial: channelSerial) }
 
     private var _state: ARTRealtimeChannelState?
     private let stateChangeToEmitForListener: ARTChannelStateChange?
@@ -54,7 +54,7 @@ final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
         return state
     }
 
-    nonisolated var underlying: any RealtimeChannelProtocol {
+    var underlying: any RealtimeChannelProtocol {
         fatalError("Not implemented")
     }
 
@@ -198,7 +198,7 @@ final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
         // no-op; revisit if we need to test something that depends on this method actually stopping `on` from emitting more events
     }
 
-    nonisolated var name: String {
+    var name: String {
         guard let name = _name else {
             fatalError("Channel name not set")
         }

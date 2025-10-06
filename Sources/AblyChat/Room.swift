@@ -20,14 +20,14 @@ public protocol Room: AnyObject, Sendable {
      *
      * - Returns: The room identifier.
      */
-    nonisolated var name: String { get }
+    var name: String { get }
 
     /**
      * Allows you to send, subscribe-to and query messages in the room.
      *
      * - Returns: The messages instance for the room.
      */
-    nonisolated var messages: Messages { get }
+    var messages: Messages { get }
 
     /**
      * Allows you to subscribe to presence events in the room.
@@ -36,7 +36,7 @@ public protocol Room: AnyObject, Sendable {
      *
      * - Returns: The presence instance for the room.
      */
-    nonisolated var presence: Presence { get }
+    var presence: Presence { get }
 
     /**
      * Allows you to interact with room-level reactions.
@@ -45,7 +45,7 @@ public protocol Room: AnyObject, Sendable {
      *
      * - Returns: The room reactions instance for the room.
      */
-    nonisolated var reactions: Reactions { get }
+    var reactions: Reactions { get }
 
     /**
      * Allows you to interact with typing events in the room.
@@ -54,7 +54,7 @@ public protocol Room: AnyObject, Sendable {
      *
      * - Returns: The typing instance for the room.
      */
-    nonisolated var typing: Typing { get }
+    var typing: Typing { get }
 
     /**
      * Allows you to interact with occupancy metrics for the room.
@@ -63,7 +63,7 @@ public protocol Room: AnyObject, Sendable {
      *
      * - Returns: The occupancy instance for the room.
      */
-    nonisolated var occupancy: Occupancy { get }
+    var occupancy: Occupancy { get }
 
     /**
      * The current status of the room.
@@ -120,14 +120,14 @@ public protocol Room: AnyObject, Sendable {
      *
      * - Returns: A copy of the options used to create the room.
      */
-    nonisolated var options: RoomOptions { get }
+    var options: RoomOptions { get }
 
     /**
      * Get the underlying Ably realtime channel used for the room.
      *
      * - Returns: The realtime channel.
      */
-    nonisolated var channel: Channel { get }
+    var channel: Channel { get }
 }
 
 /// `AsyncSequence` variant of `Room` status changes.
@@ -239,29 +239,29 @@ internal final class DefaultRoomFactory<Realtime: InternalRealtimeClientProtocol
 }
 
 internal class DefaultRoom<Realtime: InternalRealtimeClientProtocol, LifecycleManager: RoomLifecycleManager>: InternalRoom {
-    internal nonisolated let name: String
-    internal nonisolated let options: RoomOptions
+    internal let name: String
+    internal let options: RoomOptions
     private let chatAPI: ChatAPI
 
-    internal nonisolated let messages: DefaultMessages
-    internal nonisolated let reactions: DefaultRoomReactions
-    internal nonisolated let presence: DefaultPresence
-    internal nonisolated let occupancy: DefaultOccupancy
-    internal nonisolated let typing: DefaultTyping
+    internal let messages: DefaultMessages
+    internal let reactions: DefaultRoomReactions
+    internal let presence: DefaultPresence
+    internal let occupancy: DefaultOccupancy
+    internal let typing: DefaultTyping
 
     // Exposed for testing.
-    private nonisolated let realtime: Realtime
+    private let realtime: Realtime
 
     private let lifecycleManager: LifecycleManager
     private let internalChannel: Realtime.Channels.Channel
 
     // Note: This property only exists to satisfy the `Room` interface. Do not use this property inside this class; use `internalChannel`.
-    internal nonisolated var channel: Realtime.Channels.Channel.Proxied {
+    internal var channel: Realtime.Channels.Channel.Proxied {
         internalChannel.proxied
     }
 
     #if DEBUG
-        internal nonisolated var testsOnly_internalChannel: Realtime.Channels.Channel {
+        internal var testsOnly_internalChannel: Realtime.Channels.Channel {
             internalChannel
         }
     #endif
