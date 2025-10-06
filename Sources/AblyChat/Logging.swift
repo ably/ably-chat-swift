@@ -9,7 +9,7 @@ public struct LogHandler: Sendable {
         }
     #endif
 
-    /// Creates a simple logger that logs `String` messages.
+    /// Creates a simple log handler that logs `String` messages.
     ///
     /// - Note: This is the only type of `LogHandler` supported at the moment, but future versions of the SDK may add additional types which accept richer logging metadata.
     public static func simple(_ simple: any Simple) -> LogHandler {
@@ -17,7 +17,7 @@ public struct LogHandler: Sendable {
     }
 
     /// A simple log handler that logs `String` messages.
-    public protocol Simple: AnyObject, Sendable {
+    public protocol Simple: Sendable {
         /**
          * A function that can be used to handle log messages.
          *

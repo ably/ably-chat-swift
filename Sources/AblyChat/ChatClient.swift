@@ -140,7 +140,11 @@ public struct ChatClientOptions: Sendable {
     }
 
     /// Used for comparing these instances in tests without having to make this Equatable, which I’m not yet sure makes sense (we’ll decide in https://github.com/ably-labs/ably-chat-swift/issues/10)
+    ///
+    /// - Warning: Both set of options must have a `nil` `logHandler` (we can't compare `LogHandler` for equality because its underlying logger is not class-bound).
     internal func isEqualForTestPurposes(_ other: ChatClientOptions) -> Bool {
-        logHandler?.testsOnly_simple === other.logHandler?.testsOnly_simple && logLevel == other.logLevel
+        precondition(logHandler == nil && other.logHandler == nil)
+
+        return logLevel == other.logLevel
     }
 }
