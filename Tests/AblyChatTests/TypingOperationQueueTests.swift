@@ -1,7 +1,29 @@
 import Ably
 @testable import AblyChat
-import Semaphore
 import Testing
+
+/// A very simple semaphore that can be waited for and signalled.
+///
+/// We were previously using https://github.com/groue/Semaphore, which is a lot more capable, but removed it so as not to have a dependency on a pre-v1 package.
+@MainActor
+private final class AsyncSemaphore {
+    private let futureValue = FutureValue<Void>()
+
+    init() {}
+
+    /// If `signal()` has already been called, this returns. Else it returns once `signal()` is called.
+    ///
+    /// - Note: This is not intended to handle `Task` failure; if the current task is cancelled during the wait then this will trigger a precondition failure.
+    func wait() async {
+        let value: Void? = await futureValue.value
+        precondition(value != nil)
+    }
+
+    /// Makes all pending and future calls to `wait()` return.
+    func signal() {
+        futureValue.resolve(with: ())
+    }
+}
 
 @MainActor
 struct TypingOperationQueueTests {
@@ -34,7 +56,7 @@ struct TypingOperationQueueTests {
         let queue = TypingOperationQueue<Never>()
 
         // Start operation1
-        let semaphoreAwaitedByOperation1 = AsyncSemaphore(value: 0)
+        let semaphoreAwaitedByOperation1 = AsyncSemaphore()
         var operation1Completed = false
         Task {
             await queue.enqueue { @MainActor in
@@ -44,7 +66,7 @@ struct TypingOperationQueueTests {
         }
 
         // Now, whilst operation1 is still in progress, enqueue operation2
-        let semaphoreSignalledByOperation2 = AsyncSemaphore(value: 0)
+        let semaphoreSignalledByOperation2 = AsyncSemaphore()
         var valueOfOperation1CompletedAtStartOfExecutionOfOperation2: Bool?
         Task {
             await queue.enqueue {
@@ -67,7 +89,7 @@ struct TypingOperationQueueTests {
         let queue = TypingOperationQueue<Never>()
 
         // Start operation1
-        let semaphoreAwaitedByOperation1 = AsyncSemaphore(value: 0)
+        let semaphoreAwaitedByOperation1 = AsyncSemaphore()
         Task {
             await queue.enqueue { @MainActor in
                 await semaphoreAwaitedByOperation1.wait()
@@ -101,7 +123,7 @@ struct TypingOperationQueueTests {
         let queue = TypingOperationQueue<Never>()
 
         // Start operation1
-        let semaphoreAwaitedByOperation1 = AsyncSemaphore(value: 0)
+        let semaphoreAwaitedByOperation1 = AsyncSemaphore()
         Task {
             await queue.enqueue {
                 await semaphoreAwaitedByOperation1.wait()
@@ -109,8 +131,8 @@ struct TypingOperationQueueTests {
         }
 
         // Whilst operation1 is still running, enqueue operation2
-        let semaphoreAwaitedByOperation2 = AsyncSemaphore(value: 0)
-        let semaphoreSignalledByOperation2 = AsyncSemaphore(value: 0)
+        let semaphoreAwaitedByOperation2 = AsyncSemaphore()
+        let semaphoreSignalledByOperation2 = AsyncSemaphore()
         Task {
             await queue.enqueue {
                 semaphoreSignalledByOperation2.signal()
@@ -126,7 +148,7 @@ struct TypingOperationQueueTests {
 
         // Now, whilst operation2 is still running, enqueue operation3. This is the core of our test scenario — operation2 is the "previously-pending operation" mentioned by the test name. We want to test that operation3 gets executed.
         var operation3Executed = false
-        let semaphoreSignalledByOperation3 = AsyncSemaphore(value: 0)
+        let semaphoreSignalledByOperation3 = AsyncSemaphore()
         Task {
             await queue.enqueue {
                 operation3Executed = true
@@ -160,7 +182,7 @@ struct TypingOperationQueueTests {
         let queue = TypingOperationQueue<TestError>()
 
         // Start operation1
-        let semaphoreAwaitedByOperation1 = AsyncSemaphore(value: 0)
+        let semaphoreAwaitedByOperation1 = AsyncSemaphore()
         async let _ = queue.enqueue {
             await semaphoreAwaitedByOperation1.wait()
         }
@@ -191,14 +213,14 @@ struct TypingOperationQueueTests {
         let queue = TypingOperationQueue<TestError>()
 
         // Start operation1, which will eventually complete by throwing an error
-        let semaphoreAwaitedByOperation1 = AsyncSemaphore(value: 0)
+        let semaphoreAwaitedByOperation1 = AsyncSemaphore()
         async let _ = queue.enqueue { () throws(TestError) in
             await semaphoreAwaitedByOperation1.wait()
             throw TestError.badThing
         }
 
         // Now, whilst operation1 is still in progress, enqueue operation2
-        let semaphoreSignalledByOperation2 = AsyncSemaphore(value: 0)
+        let semaphoreSignalledByOperation2 = AsyncSemaphore()
         var operation2Executed = false
         let operation2Task = Task {
             try await queue.enqueue {

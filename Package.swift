@@ -45,10 +45,6 @@ let package = Package(
             from: "1.0.0",
         ),
         .package(
-            url: "https://github.com/groue/Semaphore",
-            from: "0.1.0",
-        ),
-        .package(
             url: "https://github.com/pointfreeco/swift-clocks",
             from: "1.0.0",
         ),
@@ -75,10 +71,6 @@ let package = Package(
                 .product(
                     name: "Clocks",
                     package: "swift-clocks",
-                ),
-                .product(
-                    name: "Semaphore",
-                    package: "Semaphore",
                 ),
             ],
             resources: [

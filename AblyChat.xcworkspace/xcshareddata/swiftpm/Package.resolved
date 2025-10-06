@@ -1,5 +1,5 @@
 {
-  "originHash" : "ebe9b207d8803c853612cdb18155be08af736afc304eea033541820a1312fc77",
+  "originHash" : "b0db8e3e1b279adc451c3ad0243ce0dfcbda51b2e68f124ba4675ce662ef77e8",
   "pins" : [
     {
       "identity" : "ably-cocoa",
@@ -34,15 +34,6 @@
       "state" : {
         "revision" : "3e36b48e04ecd756cb927bd5f5b9bf6d45e475f9",
         "version" : "0.4.0"
-      }
-    },
-    {
-      "identity" : "semaphore",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/groue/Semaphore",
-      "state" : {
-        "revision" : "2543679282aa6f6c8ecf2138acd613ed20790bc2",
-        "version" : "0.1.0"
       }
     },
     {
