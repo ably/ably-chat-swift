@@ -49,11 +49,11 @@ internal protocol InternalRealtimeChannelProtocol: AnyObject, Sendable {
     /// The ably-cocoa realtime channel wrapped by the proxy channel wrapped by this channel (e.g. the `ARTRealtimeChannel` that underlies the `ARTWrapperSDKProxyRealtimeChannel` that underlies this `InternalRealtimeChannelProtocol`).
     ///
     /// We need to be able to access this so that we can return it from the `channel` methods in the SDK's public API, which allow users of the SDK to access the realtime channels that the SDK uses.
-    nonisolated var proxied: Proxied { get }
+    var proxied: Proxied { get }
 
-    nonisolated var presence: Presence { get }
+    var presence: Presence { get }
 
-    nonisolated var annotations: Annotations { get }
+    var annotations: Annotations { get }
 
     func attach() async throws(InternalError)
     func detach() async throws(InternalError)

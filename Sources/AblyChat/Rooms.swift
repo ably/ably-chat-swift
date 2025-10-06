@@ -56,7 +56,7 @@ public protocol Rooms<Channel>: AnyObject, Sendable {
      *
      * - Returns: ``ClientOptions`` object.
      */
-    nonisolated var clientOptions: ChatClientOptions { get }
+    var clientOptions: ChatClientOptions { get }
 }
 
 public extension Rooms {
@@ -67,16 +67,16 @@ public extension Rooms {
 }
 
 internal class DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
-    private nonisolated let realtime: RoomFactory.Realtime
+    private let realtime: RoomFactory.Realtime
     private let chatAPI: ChatAPI
 
     #if DEBUG
-        internal nonisolated var testsOnly_realtime: RoomFactory.Realtime {
+        internal var testsOnly_realtime: RoomFactory.Realtime {
             realtime
         }
     #endif
 
-    internal nonisolated let clientOptions: ChatClientOptions
+    internal let clientOptions: ChatClientOptions
 
     private let logger: any InternalLogger
     private let roomFactory: RoomFactory
@@ -108,7 +108,7 @@ internal class DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
         case created(room: RoomFactory.Room)
 
         /// The room options that correspond to this room map entry (either the options that were passed to the pending room fetch request, or the options of the created room).
-        var roomOptions: RoomOptions {
+        @MainActor var roomOptions: RoomOptions {
             switch self {
             case let .requestAwaitingRelease(_, requestedOptions: options, _, _):
                 options

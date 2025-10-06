@@ -11,7 +11,7 @@ public protocol ChatClientProtocol: AnyObject, Sendable {
      *
      * - Returns: The rooms object.
      */
-    nonisolated var rooms: Rooms { get }
+    var rooms: Rooms { get }
 
     /**
      * Returns the underlying connection to Ably, which can be used to monitor the clients
@@ -19,7 +19,7 @@ public protocol ChatClientProtocol: AnyObject, Sendable {
      *
      * - Returns: The connection object.
      */
-    nonisolated var connection: Connection { get }
+    var connection: Connection { get }
 
     /**
      * Returns the clientId of the current client.
@@ -33,14 +33,14 @@ public protocol ChatClientProtocol: AnyObject, Sendable {
      *
      * - Returns: The Ably Realtime client.
      */
-    nonisolated var realtime: Realtime { get }
+    var realtime: Realtime { get }
 
     /**
      * Returns the resolved client options for the client, including any defaults that have been set.
      *
      * - Returns: The client options.
      */
-    nonisolated var clientOptions: ChatClientOptions { get }
+    var clientOptions: ChatClientOptions { get }
 }
 
 @MainActor
@@ -60,8 +60,8 @@ internal final class DefaultInternalRealtimeClientFactory<Underlying: ProxyRealt
  * This is the core client for Ably chat. It provides access to chat rooms.
  */
 public class ChatClient: ChatClientProtocol {
-    public nonisolated let realtime: ARTRealtime
-    public nonisolated let clientOptions: ChatClientOptions
+    public let realtime: ARTRealtime
+    public let clientOptions: ChatClientOptions
     private let _rooms: DefaultRooms<DefaultRoomFactory<InternalRealtimeClientAdapter<ARTWrapperSDKProxyRealtime>>>
     public var rooms: some Rooms<ARTRealtimeChannel> {
         _rooms
@@ -108,7 +108,7 @@ public class ChatClient: ChatClientProtocol {
         _connection = DefaultConnection(realtime: internalRealtime)
     }
 
-    public nonisolated var clientID: String {
+    public var clientID: String {
         guard let clientID = realtime.clientId else {
             fatalError("Ensure your Realtime instance is initialized with a clientId.")
         }
