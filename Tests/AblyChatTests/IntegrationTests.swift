@@ -25,16 +25,16 @@ struct IntegrationTests {
         }
     }
 
-    private final class ChatLogger: LogHandler {
+    private final class ChatLogger: LogHandler.Simple {
         private let label: String
-        private let defaultLogHandler = DefaultLogHandler()
+        private let defaultLogHandler = DefaultSimpleLogHandler()
 
         init(label: String) {
             self.label = label
         }
 
-        func log(message: String, level: LogLevel, context: LogContext?) {
-            defaultLogHandler.log(message: "\(label): \(message)", level: level, context: context)
+        func log(message: String, level: LogLevel) {
+            defaultLogHandler.log(message: "\(label): \(message)", level: level)
         }
     }
 
@@ -53,7 +53,7 @@ struct IntegrationTests {
 
     private static func createSandboxChatClient(apiKey: String, loggingLabel: String) -> ChatClient {
         let realtime = createSandboxRealtime(apiKey: apiKey, loggingLabel: loggingLabel)
-        let clientOptions = TestLogger.loggingEnabled ? ChatClientOptions(logHandler: ChatLogger(label: loggingLabel), logLevel: .trace) : nil
+        let clientOptions = TestLogger.loggingEnabled ? ChatClientOptions(logHandler: .simple(ChatLogger(label: loggingLabel)), logLevel: .trace) : nil
 
         return ChatClient(realtime: realtime, clientOptions: clientOptions)
     }

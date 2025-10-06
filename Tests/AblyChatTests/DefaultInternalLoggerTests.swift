@@ -6,15 +6,14 @@ struct DefaultInternalLoggerTests {
     func defaults() {
         let logger = DefaultInternalLogger(logHandler: nil, logLevel: nil)
 
-        #expect(logger.testsOnly_logHandler is DefaultLogHandler)
-        #expect(logger.testsOnly_logLevel == .error)
+        #expect(logger.testsOnly_logHandler.testsOnly_simple is DefaultSimpleLogHandler)
     }
 
     @Test
     func log() throws {
         // Given: A DefaultInternalLogger instance
         let logHandler = MockLogHandler()
-        let logger = DefaultInternalLogger(logHandler: logHandler, logLevel: nil)
+        let logger = DefaultInternalLogger(logHandler: .simple(logHandler), logLevel: .error /* arbitrary */ )
 
         // When: `log(message:level:codeLocation:)` is called on it
         logger.log(
@@ -27,7 +26,6 @@ struct DefaultInternalLoggerTests {
         let logArguments = try #require(logHandler.logArguments)
         #expect(logArguments.message == "(Ably/Room.swift:123) Hello")
         #expect(logArguments.level == .error)
-        #expect(logArguments.context == nil)
     }
 
     @Test
@@ -35,7 +33,7 @@ struct DefaultInternalLoggerTests {
         // Given: A DefaultInternalLogger instance
         let logHandler = MockLogHandler()
         let logger = DefaultInternalLogger(
-            logHandler: logHandler,
+            logHandler: .simple(logHandler),
             logLevel: .info, // arbitrary
         )
 
@@ -43,6 +41,26 @@ struct DefaultInternalLoggerTests {
         logger.log(
             message: "Hello",
             level: .debug,
+            codeLocation: .init(fileID: "", line: 0),
+        )
+
+        // Then: It does not call `log(…)` on the underlying logger
+        #expect(logHandler.logArguments == nil)
+    }
+
+    @Test
+    func log_whenLogLevelArgumentIsNil_itDoesNotLog() {
+        // Given: A DefaultInternalLogger instance
+        let logHandler = MockLogHandler()
+        let logger = DefaultInternalLogger(
+            logHandler: .simple(logHandler),
+            logLevel: nil,
+        )
+
+        // When: `log(message:level:codeLocation:)` is called on it, with `level` less severe than that of the instance
+        logger.log(
+            message: "Hello",
+            level: .error,
             codeLocation: .init(fileID: "", line: 0),
         )
 
