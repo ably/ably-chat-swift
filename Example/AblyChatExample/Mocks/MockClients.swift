@@ -246,7 +246,7 @@ class MockMessageReactions: MessageReactions {
         self.roomName = roomName
     }
 
-    func send(to messageSerial: String, params: SendMessageReactionParams) async throws(ARTErrorInfo) {
+    func send(messageSerial: String, params: SendMessageReactionParams) async throws(ARTErrorInfo) {
         reactions.append(
             MessageReaction(
                 type: .distinct,
@@ -265,7 +265,7 @@ class MockMessageReactions: MessageReactions {
         )
     }
 
-    func delete(from messageSerial: String, params: DeleteMessageReactionParams) async throws(ARTErrorInfo) {
+    func delete(messageSerial: String, params: DeleteMessageReactionParams) async throws(ARTErrorInfo) {
         reactions.removeAll { reaction in
             reaction.messageSerial == messageSerial && reaction.name == params.name && reaction.clientID == clientID
         }

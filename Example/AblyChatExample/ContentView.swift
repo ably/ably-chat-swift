@@ -423,13 +423,13 @@ struct ContentView: View {
 
     func addMessageReaction(_ reaction: String, messageSerial: String) {
         Task {
-            try await room().messages.reactions.send(to: messageSerial, params: .init(name: reaction, type: .distinct))
+            try await room().messages.reactions.send(messageSerial: messageSerial, params: .init(name: reaction, type: .distinct))
         }
     }
 
     func deleteMessageReaction(_ reaction: String, messageSerial: String) {
         Task {
-            try await room().messages.reactions.delete(from: messageSerial, params: .init(name: reaction, type: .distinct))
+            try await room().messages.reactions.delete(messageSerial: messageSerial, params: .init(name: reaction, type: .distinct))
         }
     }
 

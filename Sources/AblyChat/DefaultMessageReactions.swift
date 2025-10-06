@@ -19,7 +19,7 @@ internal final class DefaultMessageReactions: MessageReactions {
     }
 
     // (CHA-MR4) Users should be able to send a reaction to a message via the `send` method of the `MessagesReactions` object
-    internal func send(to messageSerial: String, params: SendMessageReactionParams) async throws(ARTErrorInfo) {
+    internal func send(messageSerial: String, params: SendMessageReactionParams) async throws(ARTErrorInfo) {
         do {
             var count = params.count
             if params.type == .multiple, params.count == nil {
@@ -40,7 +40,7 @@ internal final class DefaultMessageReactions: MessageReactions {
     }
 
     // (CHA-MR11) Users should be able to delete a reaction from a message via the `delete` method of the `MessagesReactions` object
-    internal func delete(from messageSerial: String, params: DeleteMessageReactionParams) async throws(ARTErrorInfo) {
+    internal func delete(messageSerial: String, params: DeleteMessageReactionParams) async throws(ARTErrorInfo) {
         let reactionType = params.type ?? options.defaultMessageReactionType
         if reactionType != .unique, params.name == nil {
             throw ARTErrorInfo(chatError: .unableDeleteReactionWithoutName(reactionType: reactionType.rawValue))
