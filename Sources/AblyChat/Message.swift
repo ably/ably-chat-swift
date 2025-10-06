@@ -97,9 +97,9 @@ public struct Message: Sendable, Equatable {
     }
 
     /**
-      * Helper function to copy a message with updated values. This is useful when updating a message e.g. `room().messages.update(newMessage: messageCopy...)`.
-      * If metadata/headers are not provided, it keeps the metadata/headers from the original message.
-      * If metadata/headers are explicitly passed in, the new `Message` will have these values. You can set them to `[:]` if you wish to remove them.
+      * Helper function to copy a message with its properties replaced per the parameters. This is useful when updating a message e.g. `room().messages.update(newMessage: message.copy(text: "The updated text")`.
+      *
+      * If an argument is omitted or `nil`, then the current value of that property will be preserved.
      */
     public func copy(
         text: String? = nil,
