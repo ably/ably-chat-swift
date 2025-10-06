@@ -36,7 +36,7 @@ struct DefaultRoomOccupancyTests {
         #expect(occupancyInfo.connections == 5)
         #expect(occupancyInfo.presenceMembers == 2)
 
-        let currentOccupancy = try defaultOccupancy.current()
+        let currentOccupancy = defaultOccupancy.current
         #expect(currentOccupancy == nil)
     }
 
@@ -85,7 +85,7 @@ struct DefaultRoomOccupancyTests {
         #expect(occupancyEvent.occupancy.connections == 5)
         #expect(occupancyEvent.occupancy.presenceMembers == 2)
 
-        let currentOccupancy = try defaultOccupancy.current()
+        let currentOccupancy = defaultOccupancy.current
         #expect(currentOccupancy?.connections == 5)
         #expect(currentOccupancy?.presenceMembers == 2)
     }
@@ -122,31 +122,5 @@ struct DefaultRoomOccupancyTests {
         #expect(occupancyEvent.occupancy.presenceMembers == 0)
     }
 
-    // @spec CHA-O7c
-    @Test
-    func occupancyCurrentThrowsError() async throws {
-        // Given
-        let realtime = MockRealtime()
-        let chatAPI = ChatAPI(realtime: realtime)
-        let channel = MockRealtimeChannel(name: "basketball::$chat")
-        let defaultOccupancy = DefaultOccupancy(
-            channel: channel,
-            chatAPI: chatAPI,
-            roomName: "basketball",
-            logger: TestLogger(),
-            // Wnen
-            options: .init(), // enableEvents: false
-        )
-
-        // Then
-        // TODO: avoids compiler crash (https://github.com/ably/ably-chat-swift/issues/233), revert once Xcode 16.3 released
-        let doIt = {
-            _ = try defaultOccupancy.current()
-        }
-        #expect {
-            try doIt()
-        } throws: { error in
-            error as? ARTErrorInfo == ARTErrorInfo(chatError: .occupancyEventsNotEnabled)
-        }
-    }
+    // @specUntested CHA-O7c - We chose to implement this failure with an idiomatic fatalError instead of throwing, but we can’t test this.
 }

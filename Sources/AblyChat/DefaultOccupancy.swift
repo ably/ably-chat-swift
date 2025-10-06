@@ -68,11 +68,12 @@ internal final class DefaultOccupancy: Occupancy {
     }
 
     // (CHA-O7a) The current method should return the latest occupancy numbers received over the realtime connection in a [meta]occupancy event.
-    internal func current() throws(ARTErrorInfo) -> OccupancyData? {
-        // CHA-O7c
-        if !options.enableEvents {
-            throw ARTErrorInfo(chatError: .occupancyEventsNotEnabled)
+    internal var current: OccupancyData? {
+        // CHA-O7c (we use a fatalError for this programmer error, which is the idiomatic thing to do for Swift)
+        guard options.enableEvents else {
+            fatalError("In order to be able to fetch the last received occupancy event, please set enableEvents to true in the room's occupancy options.")
         }
+
         // CHA-07a
         // CHA-07b
         return lastOccupancyData

@@ -568,7 +568,7 @@ class MockOccupancy: Occupancy {
         OccupancyData(connections: 10, presenceMembers: 5)
     }
 
-    func current() throws(ARTErrorInfo) -> AblyChat.OccupancyData? {
+    var current: AblyChat.OccupancyData? {
         OccupancyData(connections: 10, presenceMembers: 5)
     }
 }
