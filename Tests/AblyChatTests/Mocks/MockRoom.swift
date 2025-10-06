@@ -12,27 +12,27 @@ class MockRoom: InternalRoom {
         _releaseCallsAsyncSequence = AsyncStream<Void>.makeStream()
     }
 
-    nonisolated var name: String {
+    var name: String {
         fatalError("Not implemented")
     }
 
-    nonisolated var messages: DefaultMessages {
+    var messages: DefaultMessages {
         fatalError("Not implemented")
     }
 
-    nonisolated var presence: DefaultPresence {
+    var presence: DefaultPresence {
         fatalError("Not implemented")
     }
 
-    nonisolated var reactions: DefaultRoomReactions {
+    var reactions: DefaultRoomReactions {
         fatalError("Not implemented")
     }
 
-    nonisolated var typing: DefaultTyping {
+    var typing: DefaultTyping {
         fatalError("Not implemented")
     }
 
-    nonisolated var occupancy: DefaultOccupancy {
+    var occupancy: DefaultOccupancy {
         fatalError("Not implemented")
     }
 
@@ -74,7 +74,7 @@ class MockRoom: InternalRoom {
         fatalError("Not implemented")
     }
 
-    nonisolated var channel: MockAblyCocoaRealtime.Channel {
+    var channel: MockAblyCocoaRealtime.Channel {
         fatalError("Not implemented")
     }
 }

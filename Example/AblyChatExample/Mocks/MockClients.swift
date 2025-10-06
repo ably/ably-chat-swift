@@ -7,9 +7,9 @@ class MockChatClient: ChatClientProtocol {
     }
 
     let realtime = Realtime()
-    nonisolated let clientOptions: ChatClientOptions
-    nonisolated let rooms: MockRooms
-    nonisolated let connection: MockConnection
+    let clientOptions: ChatClientOptions
+    let rooms: MockRooms
+    let connection: MockConnection
 
     init(clientOptions: ChatClientOptions?) {
         self.clientOptions = clientOptions ?? .init()
@@ -17,7 +17,7 @@ class MockChatClient: ChatClientProtocol {
         rooms = MockRooms(clientOptions: self.clientOptions)
     }
 
-    nonisolated var clientID: String {
+    var clientID: String {
         "AblyTest"
     }
 }
@@ -51,13 +51,13 @@ class MockRoom: Room {
 
     private let clientID = "AblyTest"
 
-    nonisolated let name: String
-    nonisolated let options: RoomOptions
-    nonisolated let messages: MockMessages
-    nonisolated let presence: MockPresence
-    nonisolated let reactions: MockRoomReactions
-    nonisolated let typing: MockTyping
-    nonisolated let occupancy: MockOccupancy
+    let name: String
+    let options: RoomOptions
+    let messages: MockMessages
+    let presence: MockPresence
+    let reactions: MockRoomReactions
+    let typing: MockTyping
+    let occupancy: MockOccupancy
 
     let channel = Channel()
 

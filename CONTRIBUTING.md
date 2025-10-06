@@ -104,10 +104,10 @@ When writing unit tests, there are times that we need to access internal state o
 So, when writing an API which has `internal` access level purely to enable it to be called by the tests, prefix this API’s name with `testOnly_`. For example:
 
 ```swift
-private nonisolated let realtime: any RealtimeClientProtocol
+private let realtime: any RealtimeClientProtocol
 
 #if DEBUG
-    internal nonisolated var testsOnly_realtime: any RealtimeClientProtocol {
+    internal var testsOnly_realtime: any RealtimeClientProtocol {
         realtime
     }
 #endif
