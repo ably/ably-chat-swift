@@ -9,6 +9,8 @@ public let errorDomain = "AblyChatErrorDomain"
 
 /**
  The error codes for errors in the ``errorDomain`` error domain.
+
+ - Note: Future minor version updates of the library may add new values to this enum. Bear this in mind if you wish to switch exhaustively over it.
  */
 public enum ErrorCode: Int {
     /// The user attempted to perform an invalid action.
