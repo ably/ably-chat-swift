@@ -10,7 +10,7 @@ import Foundation
 
 /// A non-throwing `AsyncSequence`. The Chat SDK uses this type as the return value of the `AsyncSequence` convenience variants of methods that allow you to find out about events such as typing events, connection status changes, discontinuity events etc.
 ///
-/// You should only iterate over a given `Subscription` once; the results of iterating more than once are undefined.
+/// You should only iterate over a given `SubscriptionAsyncSequence` once; the results of iterating more than once are undefined.
 public final class SubscriptionAsyncSequence<Element: Sendable>: Sendable, AsyncSequence {
     private enum Mode: Sendable {
         case `default`(stream: AsyncStream<Element>, continuation: AsyncStream<Element>.Continuation)
