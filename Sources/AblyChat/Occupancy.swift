@@ -100,8 +100,8 @@ public enum OccupancyEventType: String, Sendable {
 
 // (CHA-O2) The occupancy event format is shown here (https://sdk.ably.com/builds/ably/specification/main/chat-features/#chat-structs-occupancy-event)
 public struct OccupancyEvent: Sendable {
-    public let type: OccupancyEventType
-    public let occupancy: OccupancyData
+    public var type: OccupancyEventType
+    public var occupancy: OccupancyData
 
     public init(type: OccupancyEventType, occupancy: OccupancyData) {
         self.type = type

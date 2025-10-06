@@ -311,8 +311,8 @@ public enum ChatMessageEventType: String, Sendable {
 
 /// Event emitted by message subscriptions, containing the type and the message.
 public struct ChatMessageEvent: Sendable, Equatable {
-    public let type: ChatMessageEventType
-    public let message: Message
+    public var type: ChatMessageEventType
+    public var message: Message
 
     public init(type: ChatMessageEventType, message: Message) {
         self.type = type
