@@ -57,7 +57,7 @@ internal final class DefaultTyping: Typing {
                         TypingSetEvent(
                             type: .setChanged,
                             currentlyTyping: typingTimerManager.currentlyTypingClientIDs(),
-                            change: .init(clientId: messageClientID, type: .stopped),
+                            change: .init(clientID: messageClientID, type: .stopped),
                         ),
                     )
                 }
@@ -67,7 +67,7 @@ internal final class DefaultTyping: Typing {
                     TypingSetEvent(
                         type: .setChanged,
                         currentlyTyping: typingTimerManager.currentlyTypingClientIDs(),
-                        change: .init(clientId: messageClientID, type: .started),
+                        change: .init(clientID: messageClientID, type: .started),
                     ),
                 )
             }
@@ -90,7 +90,7 @@ internal final class DefaultTyping: Typing {
                     TypingSetEvent(
                         type: .setChanged,
                         currentlyTyping: typingTimerManager.currentlyTypingClientIDs(),
-                        change: .init(clientId: messageClientID, type: .stopped),
+                        change: .init(clientID: messageClientID, type: .stopped),
                     ),
                 )
             }

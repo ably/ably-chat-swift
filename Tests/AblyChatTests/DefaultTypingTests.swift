@@ -95,14 +95,14 @@ struct DefaultTypingTests {
             TypingSetEvent(
                 type: .setChanged,
                 currentlyTyping: [clientId],
-                change: .init(clientId: clientId, type: .started),
+                change: .init(clientID: clientId, type: .started),
             ),
         )
 
         // Then
         let typingEvent = try #require(await subscription.first { @Sendable _ in true })
         #expect(typingEvent.change.type == .started)
-        #expect(typingEvent.change.clientId == clientId)
+        #expect(typingEvent.change.clientID == clientId)
         #expect(typingEvent.currentlyTyping == [clientId])
     }
 
@@ -120,14 +120,14 @@ struct DefaultTypingTests {
             TypingSetEvent(
                 type: .setChanged,
                 currentlyTyping: [],
-                change: .init(clientId: clientId, type: .stopped),
+                change: .init(clientID: clientId, type: .stopped),
             ),
         )
 
         // Then
         let typingEvent = try #require(await subscription.first { @Sendable _ in true })
         #expect(typingEvent.change.type == .stopped)
-        #expect(typingEvent.change.clientId == clientId)
+        #expect(typingEvent.change.clientID == clientId)
         #expect(typingEvent.currentlyTyping.isEmpty)
     }
 
@@ -284,7 +284,7 @@ struct DefaultTypingTests {
 
         // Then - should receive stopped event due to timeout
         async let stoppedEvent = await subscription.first { event in
-            event.change.type == .stopped && event.change.clientId == "test-client"
+            event.change.type == .stopped && event.change.clientID == "test-client"
         }
 
         await #expect(stoppedEvent != nil)

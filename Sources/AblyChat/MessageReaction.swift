@@ -159,7 +159,7 @@ public struct MessageReactionSummary: Sendable, Equatable {
     /**
      * Map of reaction to the summary (total and clients) for reactions of type ``MessageReactionType/unique`` and ``MessageReactionType/distinct``.
      */
-    public struct ClientIdList: Sendable, Equatable {
+    public struct ClientIDList: Sendable, Equatable {
         /**
          * Total amount of reactions of a given type.
          */
@@ -168,10 +168,10 @@ public struct MessageReactionSummary: Sendable, Equatable {
         /**
          * List of clients who left given reaction type.
          */
-        public var clientIds: [String]
+        public var clientIDs: [String]
 
         /**
-         * Whether the list of clientIds has been clipped due to exceeding the maximum number of
+         * Whether the list of clientIDs has been clipped due to exceeding the maximum number of
          * clients.
          */
         public var clipped: Bool // TM7c1c
@@ -180,7 +180,7 @@ public struct MessageReactionSummary: Sendable, Equatable {
     /**
      * Map of reaction to the summary (total and clients) for reactions of type ``MessageReactionType/multiple``.
      */
-    public struct ClientIdCounts: Sendable, Equatable {
+    public struct ClientIDCounts: Sendable, Equatable {
         /**
          * Total amount of reactions of a given type.
          */
@@ -189,24 +189,24 @@ public struct MessageReactionSummary: Sendable, Equatable {
         /**
          * Map of clients who left given reaction type number of times.
          */
-        public var clientIds: [String: Int]
+        public var clientIDs: [String: Int]
 
         /**
          * The sum of the counts from all unidentified clients who have published an annotation with this
-         * name, and so who are not included in the clientIds list
+         * name, and so who are not included in the clientIDs list
          */
         public var totalUnidentified: Int // TM7d1d
 
         /**
-         * Whether the list of clientIds has been clipped due to exceeding the maximum number of
+         * Whether the list of clientIDs has been clipped due to exceeding the maximum number of
          * clients.
          */
         public var clipped: Bool // TM7d1c
 
         /**
-         * The total number of distinct clientIds in the map (equal to length of map if clipped is false).
+         * The total number of distinct clientIDs in the map (equal to length of map if clipped is false).
          */
-        public var totalClientIds: Int // TM7d1e
+        public var totalClientIDs: Int // TM7d1e
     }
 
     /**
@@ -217,17 +217,17 @@ public struct MessageReactionSummary: Sendable, Equatable {
     /**
      * Map of unique-type reactions summaries.
      */
-    public var unique: [String: ClientIdList]
+    public var unique: [String: ClientIDList]
 
     /**
      * Map of distinct-type reactions summaries.
      */
-    public var distinct: [String: ClientIdList]
+    public var distinct: [String: ClientIDList]
 
     /**
      * Map of multiple-type reactions summaries.
      */
-    public var multiple: [String: ClientIdCounts]
+    public var multiple: [String: ClientIDCounts]
 }
 
 /**

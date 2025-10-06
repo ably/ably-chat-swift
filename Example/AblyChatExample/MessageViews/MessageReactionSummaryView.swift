@@ -15,7 +15,7 @@ struct MessageReactionSummaryView: View {
 
     private let maxReactionsCount = 5
 
-    var reactions: [String: MessageReactionSummary.ClientIdList] {
+    var reactions: [String: MessageReactionSummary.ClientIDList] {
         summary.distinct
     }
 
@@ -64,7 +64,7 @@ struct MessageReactionSummaryView: View {
                 showAllReactionsSheet = true
             }
             if let emoji = selectedEmoji {
-                if reactions[emoji]?.clientIds.contains(currentClientID) ?? false {
+                if reactions[emoji]?.clientIDs.contains(currentClientID) ?? false {
                     Button("Remove my \(emoji)", role: .destructive) {
                         onDeleteReaction(emoji)
                     }

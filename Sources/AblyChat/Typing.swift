@@ -105,11 +105,11 @@ public struct TypingSetEvent: Sendable {
     }
 
     public struct Change: Sendable {
-        public var clientId: String
+        public var clientID: String
         public var type: TypingEventType
 
-        public init(clientId: String, type: TypingEventType) {
-            self.clientId = clientId
+        public init(clientID: String, type: TypingEventType) {
+            self.clientID = clientID
             self.type = type
         }
     }

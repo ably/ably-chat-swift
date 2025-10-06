@@ -226,15 +226,15 @@ class MockMessageReactions: MessageReactions {
         MessageReactionSummary(
             messageSerial: messageSerial,
             unique: [:],
-            distinct: reactions.filter { $0.messageSerial == messageSerial }.reduce(into: [String: MessageReactionSummary.ClientIdList]()) { dict, newItem in
+            distinct: reactions.filter { $0.messageSerial == messageSerial }.reduce(into: [String: MessageReactionSummary.ClientIDList]()) { dict, newItem in
                 if var oldItem = dict[newItem.name] {
-                    if !oldItem.clientIds.contains(newItem.clientID) {
-                        oldItem.clientIds.append(newItem.clientID)
+                    if !oldItem.clientIDs.contains(newItem.clientID) {
+                        oldItem.clientIDs.append(newItem.clientID)
                         oldItem.total += 1
                     }
                     dict[newItem.name] = oldItem
                 } else {
-                    dict[newItem.name] = MessageReactionSummary.ClientIdList(total: 1, clientIds: [newItem.clientID], clipped: false)
+                    dict[newItem.name] = MessageReactionSummary.ClientIDList(total: 1, clientIDs: [newItem.clientID], clipped: false)
                 }
             },
             multiple: [:],
@@ -373,7 +373,7 @@ class MockTyping: Typing {
                         MockStrings.names.randomElement()!,
                         MockStrings.names.randomElement()!,
                     ],
-                    change: .init(clientId: MockStrings.names.randomElement()!, type: .started),
+                    change: .init(clientID: MockStrings.names.randomElement()!, type: .started),
                 )
             },
             interval: 2,
@@ -390,7 +390,7 @@ class MockTyping: Typing {
             TypingSetEvent(
                 type: .setChanged,
                 currentlyTyping: [clientID],
-                change: .init(clientId: clientID, type: .started),
+                change: .init(clientID: clientID, type: .started),
             ),
         )
     }
@@ -400,7 +400,7 @@ class MockTyping: Typing {
             TypingSetEvent(
                 type: .setChanged,
                 currentlyTyping: [],
-                change: .init(clientId: clientID, type: .stopped),
+                change: .init(clientID: clientID, type: .stopped),
             ),
         )
     }

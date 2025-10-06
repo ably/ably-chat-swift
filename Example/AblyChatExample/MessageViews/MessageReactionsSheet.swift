@@ -17,9 +17,9 @@ struct MessageReactionsSheet: View {
     @Environment(\.dismiss)
     private var dismiss
 
-    init(uniqueOrDistinct: [String: MessageReactionSummary.ClientIdList]) {
+    init(uniqueOrDistinct: [String: MessageReactionSummary.ClientIDList]) {
         for (emoji, clientList) in uniqueOrDistinct {
-            for clientId in clientList.clientIds {
+            for clientId in clientList.clientIDs {
                 let key = "\(clientId)-\(emoji)"
                 reactions[key] = ReactionItem(
                     emoji: emoji,

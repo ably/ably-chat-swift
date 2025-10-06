@@ -21,7 +21,7 @@ internal extension MessageReactionSummary {
                     guard let uniqueJsonItem = value.objectValue else {
                         throw JSONValueDecodingError.noValueForKey("unique.<key>").toInternalError()
                     }
-                    return try MessageReactionSummary.ClientIdList(jsonObject: uniqueJsonItem)
+                    return try MessageReactionSummary.ClientIDList(jsonObject: uniqueJsonItem)
                 }
             } catch {
                 unique = [:] // CHA-MR6a
@@ -38,7 +38,7 @@ internal extension MessageReactionSummary {
                     guard let distinctJsonItem = value.objectValue else {
                         throw JSONValueDecodingError.noValueForKey("distinct.<key>").toInternalError()
                     }
-                    return try MessageReactionSummary.ClientIdList(jsonObject: distinctJsonItem)
+                    return try MessageReactionSummary.ClientIDList(jsonObject: distinctJsonItem)
                 }
             } catch {
                 distinct = [:] // CHA-MR6a
@@ -55,7 +55,7 @@ internal extension MessageReactionSummary {
                     guard let multipleJsonItem = value.objectValue else {
                         throw JSONValueDecodingError.noValueForKey("multiple.<key>").toInternalError()
                     }
-                    return try MessageReactionSummary.ClientIdCounts(jsonObject: multipleJsonItem)
+                    return try MessageReactionSummary.ClientIDCounts(jsonObject: multipleJsonItem)
                 }
             } catch {
                 multiple = [:] // CHA-MR6a
@@ -66,7 +66,7 @@ internal extension MessageReactionSummary {
     }
 }
 
-extension MessageReactionSummary.ClientIdList: JSONObjectDecodable {
+extension MessageReactionSummary.ClientIDList: JSONObjectDecodable {
     internal enum JSONKey: String {
         case total
         case clientIds
@@ -75,12 +75,12 @@ extension MessageReactionSummary.ClientIdList: JSONObjectDecodable {
 
     internal init(jsonObject: [String: JSONValue]) throws(InternalError) {
         total = try Int(jsonObject.numberValueForKey(JSONKey.total.rawValue))
-        clientIds = try jsonObject.arrayValueForKey(JSONKey.clientIds.rawValue).compactMap(\.stringValue)
+        clientIDs = try jsonObject.arrayValueForKey(JSONKey.clientIds.rawValue).compactMap(\.stringValue)
         clipped = try jsonObject.optionalBoolValueForKey(JSONKey.clipped.rawValue) ?? false
     }
 }
 
-extension MessageReactionSummary.ClientIdCounts: JSONObjectDecodable {
+extension MessageReactionSummary.ClientIDCounts: JSONObjectDecodable {
     internal enum JSONKey: String {
         case total
         case clientIds
@@ -91,9 +91,9 @@ extension MessageReactionSummary.ClientIdCounts: JSONObjectDecodable {
 
     internal init(jsonObject: [String: JSONValue]) throws(InternalError) {
         total = try Int(jsonObject.numberValueForKey(JSONKey.total.rawValue))
-        clientIds = try jsonObject.objectValueForKey(JSONKey.clientIds.rawValue).mapValues { Int($0.numberValue ?? 0) }
+        clientIDs = try jsonObject.objectValueForKey(JSONKey.clientIds.rawValue).mapValues { Int($0.numberValue ?? 0) }
         totalUnidentified = try jsonObject.optionalNumberValueForKey(JSONKey.totalUnidentified.rawValue).map(Int.init) ?? 0
         clipped = try jsonObject.optionalBoolValueForKey(JSONKey.clipped.rawValue) ?? false
-        totalClientIds = try jsonObject.optionalNumberValueForKey(JSONKey.totalClientIds.rawValue).map(Int.init) ?? total
+        totalClientIDs = try jsonObject.optionalNumberValueForKey(JSONKey.totalClientIds.rawValue).map(Int.init) ?? total
     }
 }

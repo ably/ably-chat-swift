@@ -161,7 +161,7 @@ struct IntegrationTests {
         _ = reactionSummaryEvents[0].summary.distinct.map { key, value in
             #expect(key == "👍")
             #expect(value.total == 1)
-            #expect(value.clientIds == [messageToReact.clientID])
+            #expect(value.clientIDs == [messageToReact.clientID])
         }
 
         #expect(reactionSummaryEvents[1].summary.messageSerial == messageToReact.serial)
@@ -176,7 +176,7 @@ struct IntegrationTests {
         _ = reactionSummaryEvents[2].summary.distinct.map { key, value in
             #expect(key == "🎉")
             #expect(value.total == 1)
-            #expect(value.clientIds == [messageToReact.clientID])
+            #expect(value.clientIDs == [messageToReact.clientID])
         }
 
         #expect(reactionSummaryEvents[3].summary.messageSerial == messageToReact.serial)
@@ -260,7 +260,7 @@ struct IntegrationTests {
         _ = rxMessageFromHistoryReactions.distinct.map { key, value in
             #expect(key == "🔥")
             #expect(value.total == 1)
-            #expect(value.clientIds == [messageToReact.clientID])
+            #expect(value.clientIDs == [messageToReact.clientID])
         }
 
         // MARK: - Editing and Deleting Messages
