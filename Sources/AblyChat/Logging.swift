@@ -23,7 +23,6 @@ public enum LogLevel: Sendable, Comparable {
     case info
     case warn
     case error
-    case silent
 }
 
 /// A reference to a line within a source code file.
@@ -63,21 +62,25 @@ internal final class DefaultInternalLogger: InternalLogger {
         }
     #endif
 
-    private let logLevel: LogLevel
+    private let logLevel: LogLevel?
 
     #if DEBUG
-        internal var testsOnly_logLevel: LogLevel {
+        internal var testsOnly_logLevel: LogLevel? {
             logLevel
         }
     #endif
 
+    /// Creates a `DefaultInternalLogger`.
+    ///
+    /// - Parameters:
+    ///   - logLevel: Any log messages below this level should be discarded. `nil` means "do not log anything".
     internal init(logHandler: (any LogHandler)?, logLevel: LogLevel?) {
         self.logHandler = logHandler ?? DefaultLogHandler()
-        self.logLevel = logLevel ?? .error
+        self.logLevel = logLevel
     }
 
     internal func log(message: String, level: LogLevel, codeLocation: CodeLocation) {
-        guard level >= logLevel else {
+        guard let logLevel, level >= logLevel else {
             return
         }
 
@@ -91,17 +94,12 @@ internal final class DefaultLogHandler: LogHandler {
     private let logger = Logger()
 
     internal func log(message: String, level: LogLevel, context _: LogContext?) {
-        guard let osLogType = level.toOSLogType else {
-            // Treating .silent as meaning "don’t log it", will figure out the meaning of .silent in https://github.com/ably-labs/ably-chat-swift/issues/8
-            return
-        }
-
-        logger.log(level: osLogType, "\(message)")
+        logger.log(level: level.toOSLogType, "\(message)")
     }
 }
 
 private extension LogLevel {
-    var toOSLogType: OSLogType? {
+    var toOSLogType: OSLogType {
         switch self {
         case .debug, .trace:
             .debug
@@ -109,8 +107,6 @@ private extension LogLevel {
             .info
         case .warn, .error:
             .error
-        case .silent:
-            nil
         }
     }
 }

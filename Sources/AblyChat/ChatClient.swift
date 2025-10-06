@@ -130,11 +130,11 @@ public struct ChatClientOptions: Sendable {
     /**
      * The minimum log level at which messages will be logged.
      *
-     * By default, ``LogLevel/error`` will be used.
+     * By default, ``LogLevel/error`` will be used. Set this property to `nil` to disable logging.
      */
-    public var logLevel: LogLevel?
+    public var logLevel: LogLevel? = .error
 
-    public init(logHandler: (any LogHandler)? = nil, logLevel: LogLevel? = nil) {
+    public init(logHandler: (any LogHandler)? = nil, logLevel: LogLevel? = .error) {
         self.logHandler = logHandler
         self.logLevel = logLevel
     }
