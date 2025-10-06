@@ -7,8 +7,9 @@ struct DefaultRoomsTests {
     // MARK: - Test helpers
 
     /// A mock implementation of an `InternalRoom`’s `release` operation. Its ``complete()`` method allows you to signal to the mock that the release should complete.
-    final class SignallableReleaseOperation: Sendable {
-        private let continuation: AsyncStream<Void>.Continuation
+    @MainActor
+    final class SignallableReleaseOperation {
+        private let futureValue: FutureValue<Void>
 
         /// When this function is set as a ``MockRoom``’s `releaseImplementation`, calling ``complete()`` will cause the corresponding `release()` to complete with the result passed to that method.
         ///
@@ -16,17 +17,17 @@ struct DefaultRoomsTests {
         let releaseImplementation: @Sendable () async -> Void
 
         init() {
-            let (stream, continuation) = AsyncStream.makeStream(of: Void.self)
-            self.continuation = continuation
+            let futureValue = FutureValue<Void>()
+            self.futureValue = futureValue
 
             releaseImplementation = { @Sendable () async in
-                await (stream.first { _ in true }) // this will return if we yield to the continuation or if the Task is cancelled
+                await futureValue.value
             }
         }
 
         /// Causes the async function embedded in ``releaseImplementation`` to return.
         func complete() {
-            continuation.yield(())
+            futureValue.resolve(with: ())
         }
     }
 

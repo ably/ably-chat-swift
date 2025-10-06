@@ -8,24 +8,25 @@ struct DefaultRoomLifecycleManagerTests {
     // MARK: - Test helpers
 
     /// A mock implementation of a realtime channel’s `attach` or `detach` operation. Its ``complete(behavior:)`` method allows you to signal to the mock that the mocked operation should perform a given behavior (e.g. complete with a given result).
-    final class SignallableChannelOperation: Sendable {
-        private let continuation: AsyncStream<MockRealtimeChannel.AttachOrDetachBehavior>.Continuation
+    @MainActor
+    final class SignallableChannelOperation {
+        private let futureValue: FutureValue<MockRealtimeChannel.AttachOrDetachBehavior>
 
         /// When this behavior is set as a ``MockRealtimeChannel``’s `attachBehavior` or `detachBehavior`, calling ``complete(behavior:)`` will cause the corresponding channel operation to perform the behavior passed to that method.
         let behavior: MockRealtimeChannel.AttachOrDetachBehavior
 
         init() {
-            let (stream, continuation) = AsyncStream.makeStream(of: MockRealtimeChannel.AttachOrDetachBehavior.self)
-            self.continuation = continuation
+            let futureValue = FutureValue<MockRealtimeChannel.AttachOrDetachBehavior>()
+            self.futureValue = futureValue
 
             behavior = .fromFunction { _ in
-                await stream.first { _ in true }!
+                await futureValue.value!
             }
         }
 
         /// Causes the async function embedded in ``behavior`` to return with the given behavior.
         func complete(behavior: MockRealtimeChannel.AttachOrDetachBehavior) {
-            continuation.yield(behavior)
+            futureValue.resolve(with: behavior)
         }
     }
 
