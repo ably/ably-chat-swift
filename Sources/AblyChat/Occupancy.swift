@@ -8,7 +8,7 @@ import Ably
  */
 @MainActor
 public protocol Occupancy: AnyObject, Sendable {
-    associatedtype Subscription: SubscriptionProtocol
+    associatedtype Subscription: AblyChat.Subscription
 
     /**
      * Subscribes a given listener to occupancy updates of the chat room.

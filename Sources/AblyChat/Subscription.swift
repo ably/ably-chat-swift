@@ -6,7 +6,7 @@ import Ably
  * are no longer needed.
  */
 @MainActor
-public protocol SubscriptionProtocol: Sendable {
+public protocol Subscription: Sendable {
     /**
      * This method should be called when the subscription is no longer needed,
      * it will make sure no further events will be sent to the subscriber and
@@ -20,7 +20,7 @@ public protocol SubscriptionProtocol: Sendable {
  * interface provides a way to clean up and remove subscriptions when they are no longer needed.
  */
 @MainActor
-public protocol StatusSubscriptionProtocol: Sendable {
+public protocol StatusSubscription: Sendable {
     /**
      * Unsubscribes from the status change events. It will ensure that no
      * further status change events will be sent to the subscriber and
@@ -33,7 +33,7 @@ public protocol StatusSubscriptionProtocol: Sendable {
  * A response object that allows you to control a message subscription.
  */
 @MainActor
-public protocol MessageSubscriptionResponseProtocol: SubscriptionProtocol, Sendable {
+public protocol MessageSubscriptionResponse: Subscription, Sendable {
     associatedtype HistoryResult: PaginatedResult<Message>
 
     /**
@@ -56,7 +56,7 @@ public protocol MessageSubscriptionResponseProtocol: SubscriptionProtocol, Senda
     func historyBeforeSubscribe(_ params: QueryOptions) async throws(ARTErrorInfo) -> HistoryResult
 }
 
-internal struct DefaultSubscription: SubscriptionProtocol, Sendable {
+internal struct DefaultSubscription: Subscription, Sendable {
     private let _unsubscribe: () -> Void
 
     internal func unsubscribe() {
@@ -68,7 +68,7 @@ internal struct DefaultSubscription: SubscriptionProtocol, Sendable {
     }
 }
 
-internal struct DefaultStatusSubscription: StatusSubscriptionProtocol, Sendable {
+internal struct DefaultStatusSubscription: StatusSubscription, Sendable {
     private let _off: () -> Void
 
     internal func off() {
@@ -80,7 +80,7 @@ internal struct DefaultStatusSubscription: StatusSubscriptionProtocol, Sendable 
     }
 }
 
-internal struct DefaultMessageSubscriptionResponse: MessageSubscriptionResponseProtocol, Sendable {
+internal struct DefaultMessageSubscriptionResponse: MessageSubscriptionResponse, Sendable {
     private let chatAPI: ChatAPI
     private let roomName: String
     private let subscriptionStartSerial: @MainActor @Sendable () async throws(InternalError) -> String
