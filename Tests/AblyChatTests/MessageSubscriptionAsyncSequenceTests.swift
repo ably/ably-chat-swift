@@ -52,8 +52,6 @@ struct MessageSubscriptionAsyncSequenceTests {
         let subscription = MessageSubscriptionAsyncSequence(mockAsyncSequence: [].async) { _ in mockPaginatedResult }
 
         let result = try await subscription.getPreviousMessages(params: .init())
-        // This dance is to avoid the compiler error "Runtime support for parameterized protocol types is only available in iOS 16.0.0 or newer" — casting back to a concrete type seems to avoid this
-        let resultAsConcreteType = try #require(result as? MockPaginatedResult<Message>)
-        #expect(resultAsConcreteType === mockPaginatedResult)
+        #expect(result === mockPaginatedResult)
     }
 }

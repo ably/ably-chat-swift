@@ -143,8 +143,8 @@ struct DefaultRoomOccupancyTests {
         let doIt = {
             _ = try defaultOccupancy.current()
         }
-        await #expect {
-            try await doIt()
+        #expect {
+            try doIt()
         } throws: { error in
             error as? ARTErrorInfo == ARTErrorInfo(chatError: .occupancyEventsNotEnabled)
         }
