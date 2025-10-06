@@ -125,7 +125,7 @@ public struct ChatClientOptions: Sendable {
      *
      * By default, the client will log messages to the console.
      */
-    public var logHandler: (any LogHandler)?
+    public var logHandler: LogHandler?
 
     /**
      * The minimum log level at which messages will be logged.
@@ -134,13 +134,13 @@ public struct ChatClientOptions: Sendable {
      */
     public var logLevel: LogLevel? = .error
 
-    public init(logHandler: (any LogHandler)? = nil, logLevel: LogLevel? = .error) {
+    public init(logHandler: LogHandler? = nil, logLevel: LogLevel? = .error) {
         self.logHandler = logHandler
         self.logLevel = logLevel
     }
 
     /// Used for comparing these instances in tests without having to make this Equatable, which I’m not yet sure makes sense (we’ll decide in https://github.com/ably-labs/ably-chat-swift/issues/10)
     internal func isEqualForTestPurposes(_ other: ChatClientOptions) -> Bool {
-        logHandler === other.logHandler && logLevel == other.logLevel
+        logHandler?.testsOnly_simple === other.logHandler?.testsOnly_simple && logLevel == other.logLevel
     }
 }

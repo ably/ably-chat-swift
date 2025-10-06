@@ -6,14 +6,14 @@ struct DefaultInternalLoggerTests {
     func defaults() {
         let logger = DefaultInternalLogger(logHandler: nil, logLevel: nil)
 
-        #expect(logger.testsOnly_logHandler is DefaultLogHandler)
+        #expect(logger.testsOnly_logHandler.testsOnly_simple is DefaultSimpleLogHandler)
     }
 
     @Test
     func log() throws {
         // Given: A DefaultInternalLogger instance
         let logHandler = MockLogHandler()
-        let logger = DefaultInternalLogger(logHandler: logHandler, logLevel: .error /* arbitrary */ )
+        let logger = DefaultInternalLogger(logHandler: .simple(logHandler), logLevel: .error /* arbitrary */ )
 
         // When: `log(message:level:codeLocation:)` is called on it
         logger.log(
@@ -26,7 +26,6 @@ struct DefaultInternalLoggerTests {
         let logArguments = try #require(logHandler.logArguments)
         #expect(logArguments.message == "(Ably/Room.swift:123) Hello")
         #expect(logArguments.level == .error)
-        #expect(logArguments.context == nil)
     }
 
     @Test
@@ -34,7 +33,7 @@ struct DefaultInternalLoggerTests {
         // Given: A DefaultInternalLogger instance
         let logHandler = MockLogHandler()
         let logger = DefaultInternalLogger(
-            logHandler: logHandler,
+            logHandler: .simple(logHandler),
             logLevel: .info, // arbitrary
         )
 
@@ -54,7 +53,7 @@ struct DefaultInternalLoggerTests {
         // Given: A DefaultInternalLogger instance
         let logHandler = MockLogHandler()
         let logger = DefaultInternalLogger(
-            logHandler: logHandler,
+            logHandler: .simple(logHandler),
             logLevel: nil,
         )
 

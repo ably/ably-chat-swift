@@ -1,17 +1,32 @@
 import os
 
-public typealias LogContext = [String: JSONValue]
+public struct LogHandler: Sendable {
+    fileprivate let simple: any Simple
 
-public protocol LogHandler: AnyObject, Sendable {
-    /**
-     * A function that can be used to handle log messages.
-     *
-     * - Parameters:
-     *   - message: The message to log.
-     *   - level: The log level of the message.
-     *   - context: The context of the log message as key-value pairs.
-     */
-    func log(message: String, level: LogLevel, context: LogContext?)
+    #if DEBUG
+        internal var testsOnly_simple: any Simple {
+            simple
+        }
+    #endif
+
+    /// Creates a simple logger that logs `String` messages.
+    ///
+    /// - Note: This is the only type of `LogHandler` supported at the moment, but future versions of the SDK may add additional types which accept richer logging metadata.
+    public static func simple(_ simple: any Simple) -> LogHandler {
+        .init(simple: simple)
+    }
+
+    /// A simple log handler that logs `String` messages.
+    public protocol Simple: AnyObject, Sendable {
+        /**
+         * A function that can be used to handle log messages.
+         *
+         * - Parameters:
+         *   - message: The message to log.
+         *   - level: The log level of the message.
+         */
+        func log(message: String, level: LogLevel)
+    }
 }
 
 /**
@@ -54,10 +69,10 @@ extension InternalLogger {
 }
 
 internal final class DefaultInternalLogger: InternalLogger {
-    private let logHandler: any LogHandler
+    private let logHandler: LogHandler
 
     #if DEBUG
-        internal var testsOnly_logHandler: any LogHandler {
+        internal var testsOnly_logHandler: LogHandler {
             logHandler
         }
     #endif
@@ -74,8 +89,8 @@ internal final class DefaultInternalLogger: InternalLogger {
     ///
     /// - Parameters:
     ///   - logLevel: Any log messages below this level should be discarded. `nil` means "do not log anything".
-    internal init(logHandler: (any LogHandler)?, logLevel: LogLevel?) {
-        self.logHandler = logHandler ?? DefaultLogHandler()
+    internal init(logHandler: LogHandler?, logLevel: LogLevel?) {
+        self.logHandler = logHandler ?? .simple(DefaultSimpleLogHandler())
         self.logLevel = logLevel
     }
 
@@ -85,15 +100,15 @@ internal final class DefaultInternalLogger: InternalLogger {
         }
 
         // I don’t yet know what `context` is for (will figure out in https://github.com/ably-labs/ably-chat-swift/issues/8) so passing nil for now
-        logHandler.log(message: "(\(codeLocation.fileID):\(codeLocation.line)) \(message)", level: level, context: nil)
+        logHandler.simple.log(message: "(\(codeLocation.fileID):\(codeLocation.line)) \(message)", level: level)
     }
 }
 
 /// The logging backend used by ``DefaultInternalLogHandler`` if the user has not provided their own. Uses Swift’s `Logger` type for logging.
-internal final class DefaultLogHandler: LogHandler {
+internal final class DefaultSimpleLogHandler: LogHandler.Simple {
     private let logger = Logger()
 
-    internal func log(message: String, level: LogLevel, context _: LogContext?) {
+    internal func log(message: String, level: LogLevel) {
         logger.log(level: level.toOSLogType, "\(message)")
     }
 }
