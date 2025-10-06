@@ -122,4 +122,20 @@ public enum RoomStatus: Sendable {
             false
         }
     }
+
+    public var isReleasing: Bool {
+        if case .releasing = self {
+            true
+        } else {
+            false
+        }
+    }
+
+    public var isReleased: Bool {
+        if case .released = self {
+            true
+        } else {
+            false
+        }
+    }
 }
