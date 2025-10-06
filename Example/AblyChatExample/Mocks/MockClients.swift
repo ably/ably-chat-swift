@@ -9,7 +9,7 @@ class MockChatClient: ChatClient {
     let realtime = Realtime()
     nonisolated let clientOptions: ChatClientOptions
     nonisolated let rooms: MockRooms
-    nonisolated let connection: Connection
+    nonisolated let connection: MockConnection
 
     init(clientOptions: ChatClientOptions?) {
         self.clientOptions = clientOptions ?? .init()
@@ -53,11 +53,11 @@ class MockRoom: Room {
 
     nonisolated let name: String
     nonisolated let options: RoomOptions
-    nonisolated let messages: any Messages
-    nonisolated let presence: any Presence
-    nonisolated let reactions: any RoomReactions
-    nonisolated let typing: any Typing
-    nonisolated let occupancy: any Occupancy
+    nonisolated let messages: MockMessages
+    nonisolated let presence: MockPresence
+    nonisolated let reactions: MockRoomReactions
+    nonisolated let typing: MockTyping
+    nonisolated let occupancy: MockOccupancy
 
     let channel = Channel()
 
@@ -88,7 +88,7 @@ class MockRoom: Room {
     }
 
     @discardableResult
-    func onStatusChange(_ callback: @escaping @MainActor (RoomStatusChange) -> Void) -> StatusSubscriptionProtocol {
+    func onStatusChange(_ callback: @escaping @MainActor (RoomStatusChange) -> Void) -> DefaultStatusSubscription {
         var needNext = true
         periodic(with: randomStatusInterval) { [weak self] in
             guard let self else {
@@ -99,13 +99,13 @@ class MockRoom: Room {
             }
             return needNext
         }
-        return StatusSubscription {
+        return DefaultStatusSubscription {
             needNext = false
         }
     }
 
     @discardableResult
-    func onDiscontinuity(_: @escaping @MainActor (DiscontinuityEvent) -> Void) -> StatusSubscriptionProtocol {
+    func onDiscontinuity(_: @escaping @MainActor (DiscontinuityEvent) -> Void) -> DefaultStatusSubscription {
         fatalError("Not yet implemented")
     }
 }
@@ -114,14 +114,9 @@ class MockMessages: Messages {
     let clientID: String
     let roomName: String
 
-    var reactions: any MessageReactions
+    var reactions: MockMessageReactions
 
-    var mockReactions: MockMessageReactions {
-        // swiftlint:disable:next force_cast
-        reactions as! MockMessageReactions
-    }
-
-    private let mockSubscriptions = MockMessageSubscriptionStorage<ChatMessageEvent>()
+    private let mockSubscriptions = MockMessageSubscriptionStorage<ChatMessageEvent, MockMessagesPaginatedResult>()
 
     init(clientID: String, roomName: String) {
         self.clientID = clientID
@@ -129,7 +124,7 @@ class MockMessages: Messages {
         reactions = MockMessageReactions(clientID: clientID, roomName: roomName)
     }
 
-    func subscribe(_ callback: @escaping @MainActor (ChatMessageEvent) -> Void) -> MessageSubscriptionResponseProtocol {
+    func subscribe(_ callback: @escaping @MainActor (ChatMessageEvent) -> Void) -> some MessageSubscriptionResponseProtocol {
         mockSubscriptions.create(
             randomElement: {
                 let message = Message(
@@ -146,9 +141,9 @@ class MockMessages: Messages {
                     timestamp: Date(),
                 )
                 if byChance(30) { /* 30% of the messages will get the reaction */
-                    self.mockReactions.messageSerials.append(message.serial)
+                    self.reactions.messageSerials.append(message.serial)
                 }
-                self.mockReactions.clientIDs.insert(message.clientID)
+                self.reactions.clientIDs.insert(message.clientID)
                 return ChatMessageEvent(message: message)
             },
             previousMessages: { _ in
@@ -159,7 +154,7 @@ class MockMessages: Messages {
         )
     }
 
-    func history(options _: QueryOptions) async throws(ARTErrorInfo) -> any PaginatedResult<Message> {
+    func history(options _: QueryOptions) async throws(ARTErrorInfo) -> some PaginatedResult<Message> {
         MockMessagesPaginatedResult(clientID: clientID, roomName: roomName)
     }
 
@@ -282,7 +277,7 @@ class MockMessageReactions: MessageReactions {
         )
     }
 
-    func subscribe(_ callback: @escaping @MainActor @Sendable (MessageReactionSummaryEvent) -> Void) -> SubscriptionProtocol {
+    func subscribe(_ callback: @escaping @MainActor @Sendable (MessageReactionSummaryEvent) -> Void) -> MockSubscription {
         mockSubscriptions.create(
             randomElement: {
                 guard let senderClientID = self.clientIDs.randomElement(), let messageSerial = self.messageSerials.randomElement() else {
@@ -308,7 +303,7 @@ class MockMessageReactions: MessageReactions {
         )
     }
 
-    func subscribeRaw(_: @escaping @MainActor @Sendable (MessageReactionRawEvent) -> Void) -> SubscriptionProtocol {
+    func subscribeRaw(_: @escaping @MainActor @Sendable (MessageReactionRawEvent) -> Void) -> MockSubscription {
         fatalError("Not implemented")
     }
 }
@@ -338,7 +333,7 @@ class MockRoomReactions: RoomReactions {
     }
 
     @discardableResult
-    func subscribe(_ callback: @escaping @MainActor (RoomReactionEvent) -> Void) -> SubscriptionProtocol {
+    func subscribe(_ callback: @escaping @MainActor (RoomReactionEvent) -> Void) -> some SubscriptionProtocol {
         mockSubscriptions.create(
             randomElement: {
                 let reaction = RoomReaction(
@@ -369,7 +364,7 @@ class MockTyping: Typing {
     }
 
     @discardableResult
-    func subscribe(_ callback: @escaping @MainActor (TypingSetEvent) -> Void) -> SubscriptionProtocol {
+    func subscribe(_ callback: @escaping @MainActor (TypingSetEvent) -> Void) -> some SubscriptionProtocol {
         mockSubscriptions.create(
             randomElement: {
                 TypingSetEvent(
@@ -422,7 +417,7 @@ class MockPresence: Presence {
         self.roomName = roomName
     }
 
-    private func createSubscription(callback: @escaping @MainActor (PresenceEvent) -> Void) -> SubscriptionProtocol {
+    private func createSubscription(callback: @escaping @MainActor (PresenceEvent) -> Void) -> MockSubscription {
         mockSubscriptions.create(
             randomElement: {
                 let member = PresenceMember(
@@ -536,11 +531,11 @@ class MockPresence: Presence {
         )
     }
 
-    func subscribe(event _: PresenceEventType, _ callback: @escaping @MainActor (PresenceEvent) -> Void) -> SubscriptionProtocol {
+    func subscribe(event _: PresenceEventType, _ callback: @escaping @MainActor (PresenceEvent) -> Void) -> MockSubscription {
         createSubscription(callback: callback)
     }
 
-    func subscribe(events _: [PresenceEventType], _ callback: @escaping @MainActor (PresenceEvent) -> Void) -> SubscriptionProtocol {
+    func subscribe(events _: [PresenceEventType], _ callback: @escaping @MainActor (PresenceEvent) -> Void) -> MockSubscription {
         createSubscription(callback: callback)
     }
 }
@@ -557,7 +552,7 @@ class MockOccupancy: Occupancy {
     }
 
     @discardableResult
-    func subscribe(_ callback: @escaping @MainActor (OccupancyEvent) -> Void) -> SubscriptionProtocol {
+    func subscribe(_ callback: @escaping @MainActor (OccupancyEvent) -> Void) -> MockSubscription {
         mockSubscriptions.create(
             randomElement: {
                 let random = Int.random(in: 1 ... 10)
@@ -590,7 +585,7 @@ class MockConnection: Connection {
     }
 
     @discardableResult
-    func onStatusChange(_ callback: @escaping @MainActor (ConnectionStatusChange) -> Void) -> StatusSubscriptionProtocol {
+    func onStatusChange(_ callback: @escaping @MainActor (ConnectionStatusChange) -> Void) -> some StatusSubscriptionProtocol {
         mockSubscriptions.create(
             randomElement: {
                 ConnectionStatusChange(
