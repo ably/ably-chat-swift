@@ -46,6 +46,9 @@ public struct RoomReaction: Sendable {
      */
     public var isSelf: Bool
 
+    /// Memberwise initializer to create a `RoomReaction`.
+    ///
+    /// - Note: You should not need to use this initializer when using the Chat SDK. It is exposed only to allow users to create mock versions of the SDK's protocols.
     public init(name: String, metadata: ReactionMetadata, headers: ReactionHeaders, createdAt: Date, clientID: String, isSelf: Bool) {
         self.name = name
         self.metadata = metadata

@@ -5,6 +5,7 @@ import Ably
  */
 @MainActor
 public protocol Connection: AnyObject, Sendable {
+    // swiftlint:disable:next missing_docs
     associatedtype StatusSubscription: AblyChat.StatusSubscription
 
     /**
@@ -154,6 +155,9 @@ public struct ConnectionStatusChange: Sendable {
      */
     public var retryIn: TimeInterval
 
+    /// Memberwise initializer to create a `ConnectionStatusChange`.
+    ///
+    /// - Note: You should not need to use this initializer when using the Chat SDK. It is exposed only to allow users to create mock versions of the SDK's protocols.
     public init(current: ConnectionStatus, previous: ConnectionStatus, error: ARTErrorInfo? = nil, retryIn: TimeInterval) {
         self.current = current
         self.previous = previous

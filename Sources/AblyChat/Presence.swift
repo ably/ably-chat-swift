@@ -1,5 +1,6 @@
 import Ably
 
+// swiftlint:disable:next missing_docs
 public typealias PresenceData = JSONObject
 
 /**
@@ -10,6 +11,7 @@ public typealias PresenceData = JSONObject
  */
 @MainActor
 public protocol Presence: AnyObject, Sendable {
+    // swiftlint:disable:next missing_docs
     associatedtype Subscription: AblyChat.Subscription
 
     /**
@@ -124,6 +126,7 @@ public protocol Presence: AnyObject, Sendable {
     func leave() async throws(ARTErrorInfo)
 }
 
+// swiftlint:disable:next missing_docs
 public extension Presence {
     /**
      * Subscribes a given listener to a particular presence event in the chat room.
@@ -194,6 +197,9 @@ public extension Presence {
  * Type for PresenceMember
  */
 public struct PresenceMember: Sendable {
+    /// Memberwise initializer to create a `PresenceMember`.
+    ///
+    /// - Note: You should not need to use this initializer when using the Chat SDK. It is exposed only to allow users to create mock versions of the SDK's protocols.
     public init(clientID: String, data: PresenceData?, extras: [String: JSONValue]?, updatedAt: Date) {
         self.clientID = clientID
         self.data = data
@@ -216,6 +222,7 @@ public struct PresenceMember: Sendable {
      * The extras associated with the presence member.
      */
     public var extras: [String: JSONValue]?
+    // swiftlint:disable:next missing_docs
     public var updatedAt: Date
 }
 
@@ -271,6 +278,9 @@ public struct PresenceEvent: Sendable {
      */
     public var member: PresenceMember
 
+    /// Memberwise initializer to create a `PresenceEvent`.
+    ///
+    /// - Note: You should not need to use this initializer when using the Chat SDK. It is exposed only to allow users to create mock versions of the SDK's protocols.
     public init(type: PresenceEventType, member: PresenceMember) {
         self.type = type
         self.member = member
@@ -288,6 +298,7 @@ public struct PresenceParams: Sendable {
     /// Sets whether to wait for a full presence set synchronization between Ably and the clients on the room to complete before returning the results. Synchronization begins as soon as the room is ``RoomStatus/attached``. When set to `true` the results will be returned as soon as the sync is complete. When set to `false` the current list of members will be returned without the sync completing. The default is `true`.
     public var waitForSync = true
 
+    // swiftlint:disable:next missing_docs
     public init(clientID: String? = nil, connectionID: String? = nil, waitForSync: Bool = true) {
         self.clientID = clientID
         self.connectionID = connectionID

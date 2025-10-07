@@ -8,6 +8,7 @@ import Ably
  */
 @MainActor
 public protocol Occupancy: AnyObject, Sendable {
+    // swiftlint:disable:next missing_docs
     associatedtype Subscription: AblyChat.Subscription
 
     /**
@@ -88,21 +89,32 @@ public struct OccupancyData: Sendable {
      */
     public var presenceMembers: Int
 
+    /// Memberwise initializer to create a `OccupancyData`.
+    ///
+    /// - Note: You should not need to use this initializer when using the Chat SDK. It is exposed only to allow users to create mock versions of the SDK's protocols.
     public init(connections: Int, presenceMembers: Int) {
         self.connections = connections
         self.presenceMembers = presenceMembers
     }
 }
 
+// swiftlint:disable:next missing_docs
 public enum OccupancyEventType: Sendable {
+    // swiftlint:disable:next missing_docs
     case updated
 }
 
 // (CHA-O2) The occupancy event format is shown here (https://sdk.ably.com/builds/ably/specification/main/chat-features/#chat-structs-occupancy-event)
+// swiftlint:disable:next missing_docs
 public struct OccupancyEvent: Sendable {
+    // swiftlint:disable:next missing_docs
     public var type: OccupancyEventType
+    // swiftlint:disable:next missing_docs
     public var occupancy: OccupancyData
 
+    /// Memberwise initializer to create a `OccupancyEvent`.
+    ///
+    /// - Note: You should not need to use this initializer when using the Chat SDK. It is exposed only to allow users to create mock versions of the SDK's protocols.
     public init(type: OccupancyEventType, occupancy: OccupancyData) {
         self.type = type
         self.occupancy = occupancy

@@ -8,7 +8,9 @@ public enum MessageAction: Sendable {
      * Action applied to a new message.
      */
     case create
+    // swiftlint:disable:next missing_docs
     case update
+    // swiftlint:disable:next missing_docs
     case delete
 
     internal static func fromRealtimeAction(_ action: ARTMessageAction) -> Self? {
@@ -79,7 +81,9 @@ internal enum OccupancyEvents: String {
 
 /// Enum representing the typing event types.
 public enum TypingEventType: Sendable {
+    // swiftlint:disable:next missing_docs
     case started
+    // swiftlint:disable:next missing_docs
     case stopped
 
     internal var rawValue: String {
@@ -94,6 +98,7 @@ public enum TypingEventType: Sendable {
 
 /// Enum representing the typing set event types.
 public enum TypingSetEventType: Sendable {
+    // swiftlint:disable:next missing_docs
     case setChanged
 
     internal var rawValue: String {

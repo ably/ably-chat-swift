@@ -5,7 +5,9 @@ import Ably
  */
 @MainActor
 public protocol Rooms<Channel>: AnyObject, Sendable {
+    // swiftlint:disable:next missing_docs
     associatedtype Channel
+    // swiftlint:disable:next missing_docs
     associatedtype Room: AblyChat.Room where Room.Channel == Channel
 
     /**
@@ -59,7 +61,9 @@ public protocol Rooms<Channel>: AnyObject, Sendable {
     var clientOptions: ChatClientOptions { get }
 }
 
+// swiftlint:disable:next missing_docs
 public extension Rooms {
+    // swiftlint:disable:next missing_docs
     func get(name: String) async throws(ARTErrorInfo) -> Room {
         // CHA-RC4a
         try await get(name: name, options: .init())

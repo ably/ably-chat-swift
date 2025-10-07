@@ -36,6 +36,7 @@ public enum ErrorCode: Int {
      */
     case roomReleasedBeforeOperationCompleted = 102_106
 
+    // swiftlint:disable:next missing_docs
     case roomInInvalidState = 102_107
 
     /**

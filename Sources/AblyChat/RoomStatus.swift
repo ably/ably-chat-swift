@@ -75,6 +75,7 @@ public enum RoomStatus: Sendable {
     // 1. testing (e.g.  `#expect(status.isFailed)`)
     // 2. testing that a status does _not_ have a particular case (e.g. if !status.isFailed), which a `case` statement cannot succinctly express
 
+    // swiftlint:disable:next missing_docs
     public var isAttaching: Bool {
         if case .attaching = self {
             true
@@ -83,6 +84,7 @@ public enum RoomStatus: Sendable {
         }
     }
 
+    // swiftlint:disable:next missing_docs
     public var isAttached: Bool {
         if case .attached = self {
             true
@@ -91,6 +93,7 @@ public enum RoomStatus: Sendable {
         }
     }
 
+    // swiftlint:disable:next missing_docs
     public var isDetaching: Bool {
         if case .detaching = self {
             true
@@ -99,6 +102,7 @@ public enum RoomStatus: Sendable {
         }
     }
 
+    // swiftlint:disable:next missing_docs
     public var isDetached: Bool {
         if case .detached = self {
             true
@@ -107,6 +111,7 @@ public enum RoomStatus: Sendable {
         }
     }
 
+    // swiftlint:disable:next missing_docs
     public var isSuspended: Bool {
         if case .suspended = self {
             true
@@ -115,6 +120,7 @@ public enum RoomStatus: Sendable {
         }
     }
 
+    // swiftlint:disable:next missing_docs
     public var isFailed: Bool {
         if case .failed = self {
             true
@@ -123,6 +129,7 @@ public enum RoomStatus: Sendable {
         }
     }
 
+    // swiftlint:disable:next missing_docs
     public var isReleasing: Bool {
         if case .releasing = self {
             true
@@ -131,6 +138,7 @@ public enum RoomStatus: Sendable {
         }
     }
 
+    // swiftlint:disable:next missing_docs
     public var isReleased: Bool {
         if case .released = self {
             true

@@ -29,6 +29,7 @@ public struct RoomOptions: Sendable {
      */
     public var messages = MessagesOptions()
 
+    // swiftlint:disable:next missing_docs
     public init(messages: MessagesOptions = MessagesOptions(), presence: PresenceOptions = PresenceOptions(), typing: TypingOptions = TypingOptions(), reactions: RoomReactionsOptions = RoomReactionsOptions(), occupancy: OccupancyOptions = OccupancyOptions()) {
         self.messages = messages
         self.presence = presence
@@ -51,6 +52,7 @@ public struct PresenceOptions: Sendable {
      */
     public var enableEvents = true
 
+    // swiftlint:disable:next missing_docs
     public init(enableEvents: Bool = true) {
         self.enableEvents = enableEvents
     }
@@ -80,6 +82,7 @@ public struct MessagesOptions: Sendable {
      */
     public var defaultMessageReactionType = MessageReactionType.distinct
 
+    // swiftlint:disable:next missing_docs
     public init(rawMessageReactions: Bool = false, defaultMessageReactionType: MessageReactionType = .distinct) {
         self.rawMessageReactions = rawMessageReactions
         self.defaultMessageReactionType = defaultMessageReactionType
@@ -102,6 +105,7 @@ public struct TypingOptions: Sendable {
      */
     public var heartbeatThrottle: TimeInterval = 10
 
+    // swiftlint:disable:next missing_docs
     public init(heartbeatThrottle: TimeInterval = 10) {
         self.heartbeatThrottle = heartbeatThrottle
     }
@@ -111,6 +115,7 @@ public struct TypingOptions: Sendable {
  * Represents the reactions options for a chat room.
  */
 public struct RoomReactionsOptions: Sendable {
+    // swiftlint:disable:next missing_docs
     public init() {}
 }
 
@@ -127,6 +132,7 @@ public struct OccupancyOptions: Sendable {
      */
     public var enableEvents = false
 
+    // swiftlint:disable:next missing_docs
     public init(enableEvents: Bool = false) {
         self.enableEvents = enableEvents
     }
