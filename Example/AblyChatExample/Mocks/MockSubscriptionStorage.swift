@@ -208,7 +208,7 @@ struct MockMessageSubscriptionResponse<PaginatedResult: AblyChat.PaginatedResult
     private let _unsubscribe: () -> Void
     private let previousMessages: @MainActor @Sendable (QueryOptions) async throws(ARTErrorInfo) -> PaginatedResult
 
-    func historyBeforeSubscribe(_ params: QueryOptions) async throws(ARTErrorInfo) -> PaginatedResult {
+    func historyBeforeSubscribe(withParams params: QueryOptions) async throws(ARTErrorInfo) -> PaginatedResult {
         try await previousMessages(params)
     }
 

@@ -23,9 +23,9 @@ struct DefaultMessageReactionsTests {
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", clientID: "clientId", logger: TestLogger())
 
         // When
-        let message = try await defaultMessages.send(params: .init(text: "a joke"))
-        try await defaultMessages.reactions.send(messageSerial: message.serial, params: .init(name: "😆", type: .multiple, count: 10))
-        try await defaultMessages.reactions.delete(messageSerial: message.serial, params: .init(name: "😆", type: .multiple))
+        let message = try await defaultMessages.send(withParams: .init(text: "a joke"))
+        try await defaultMessages.reactions.send(forMessageWithSerial: message.serial, params: .init(name: "😆", type: .multiple, count: 10))
+        try await defaultMessages.reactions.delete(forMessageWithSerial: message.serial, params: .init(name: "😆", type: .multiple))
 
         // Then
         #expect(realtime.callRecorder.hasRecord(
@@ -70,7 +70,7 @@ struct DefaultMessageReactionsTests {
 
         let doIt = {
             // When
-            try await defaultMessages.reactions.send(messageSerial: "", params: .init(name: "😐", type: .distinct))
+            try await defaultMessages.reactions.send(forMessageWithSerial: "", params: .init(name: "😐", type: .distinct))
         }
         await #expect {
             try await doIt()
@@ -93,7 +93,7 @@ struct DefaultMessageReactionsTests {
 
         let doIt = {
             // When
-            try await defaultMessages.reactions.delete(messageSerial: "", params: .init(name: "😐", type: .distinct))
+            try await defaultMessages.reactions.delete(forMessageWithSerial: "", params: .init(name: "😐", type: .distinct))
         }
         await #expect {
             try await doIt()
@@ -345,8 +345,8 @@ struct DefaultMessageReactionsTests {
         let defaultMessages = room.messages
 
         // When
-        let message = try await defaultMessages.send(params: .init(text: "a joke"))
-        try await defaultMessages.reactions.send(messageSerial: message.serial, params: .init(name: "😆"))
+        let message = try await defaultMessages.send(withParams: .init(text: "a joke"))
+        try await defaultMessages.reactions.send(forMessageWithSerial: message.serial, params: .init(name: "😆"))
 
         // Then
         #expect(realtime.callRecorder.hasRecord(
@@ -384,8 +384,8 @@ struct DefaultMessageReactionsTests {
         let defaultMessages = room.messages
 
         // When
-        let message = try await defaultMessages.send(params: .init(text: "a joke"))
-        try await defaultMessages.reactions.send(messageSerial: message.serial, params: .init(name: "😆"))
+        let message = try await defaultMessages.send(withParams: .init(text: "a joke"))
+        try await defaultMessages.reactions.send(forMessageWithSerial: message.serial, params: .init(name: "😆"))
 
         // Then
         #expect(realtime.callRecorder.hasRecord(

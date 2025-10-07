@@ -224,7 +224,7 @@ struct ContentView: View {
 
                 try await room.attach()
                 try await showOccupancy(room: room)
-                try await room.presence.enter(data: ["status": "📱 Online"])
+                try await room.presence.enter(withData: ["status": "📱 Online"])
 
                 try await showMessages(room: room)
             } catch {
@@ -275,7 +275,7 @@ struct ContentView: View {
                 }
             }
         }
-        let previousMessages = try await subscription.historyBeforeSubscribe(.init())
+        let previousMessages = try await subscription.historyBeforeSubscribe(withParams: .init())
 
         for message in previousMessages.items {
             switch message.action {
@@ -387,7 +387,7 @@ struct ContentView: View {
         guard !newMessage.isEmpty else {
             return
         }
-        _ = try await room().messages.send(params: .init(text: newMessage))
+        _ = try await room().messages.send(withParams: .init(text: newMessage))
         newMessage = ""
     }
 
@@ -417,19 +417,19 @@ struct ContentView: View {
 
     func sendRoomReaction(_ reaction: String) {
         Task {
-            try await room().reactions.send(params: .init(name: reaction))
+            try await room().reactions.send(withParams: .init(name: reaction))
         }
     }
 
     func addMessageReaction(_ reaction: String, messageSerial: String) {
         Task {
-            try await room().messages.reactions.send(messageSerial: messageSerial, params: .init(name: reaction, type: .distinct))
+            try await room().messages.reactions.send(forMessageWithSerial: messageSerial, params: .init(name: reaction, type: .distinct))
         }
     }
 
     func deleteMessageReaction(_ reaction: String, messageSerial: String) {
         Task {
-            try await room().messages.reactions.delete(messageSerial: messageSerial, params: .init(name: reaction, type: .distinct))
+            try await room().messages.reactions.delete(forMessageWithSerial: messageSerial, params: .init(name: reaction, type: .distinct))
         }
     }
 

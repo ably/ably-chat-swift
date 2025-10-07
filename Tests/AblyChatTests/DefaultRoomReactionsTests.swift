@@ -21,7 +21,7 @@ struct DefaultRoomReactionsTests {
         )
 
         // When
-        try await defaultRoomReactions.send(params: sendReactionParams)
+        try await defaultRoomReactions.send(withParams: sendReactionParams)
 
         // Then
         #expect(channel.publishedMessages.last?.name == RoomReactionEvents.reaction.rawValue)

@@ -15,7 +15,7 @@ internal final class DefaultRoomReactions: RoomReactions {
 
     // (CHA-ER3) Ephemeral room reactions are sent to Ably via the Realtime connection via a send method.
     // (CHA-ER3d) Reactions are sent on the channel using a message in a particular format - see spec for format.
-    internal func send(params: SendReactionParams) async throws(ARTErrorInfo) {
+    internal func send(withParams params: SendReactionParams) async throws(ARTErrorInfo) {
         do {
             logger.log(message: "Sending reaction with params: \(params)", level: .debug)
 
