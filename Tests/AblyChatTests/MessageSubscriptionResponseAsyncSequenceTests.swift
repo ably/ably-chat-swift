@@ -52,7 +52,7 @@ struct MessageSubscriptionResponseAsyncSequenceTests {
         let mockPaginatedResult = MockPaginatedResult<Message>()
         let subscription = MessageSubscriptionResponseAsyncSequence(mockAsyncSequence: [].async) { _ in mockPaginatedResult }
 
-        let result = try await subscription.getPreviousMessages(withParams: .init())
+        let result = try await subscription.historyBeforeSubscribe(withParams: .init())
         #expect(result === mockPaginatedResult)
     }
 }

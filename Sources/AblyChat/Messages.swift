@@ -104,7 +104,7 @@ public extension Messages {
 
         let subscriptionAsyncSequence = MessageSubscriptionResponseAsyncSequence(
             bufferingPolicy: bufferingPolicy,
-            getPreviousMessages: subscription.historyBeforeSubscribe,
+            historyBeforeSubscribe: subscription.historyBeforeSubscribe,
         )
         emitEvent = { [weak subscriptionAsyncSequence] event in
             subscriptionAsyncSequence?.emit(event)
@@ -363,22 +363,22 @@ public final class MessageSubscriptionResponseAsyncSequence<HistoryResult: Pagin
     private let subscription: SubscriptionAsyncSequence<Element>
 
     // can be set by either initialiser
-    private let getPreviousMessages: @Sendable (HistoryParams) async throws(ARTErrorInfo) -> HistoryResult
+    private let historyBeforeSubscribe: @Sendable (HistoryParams) async throws(ARTErrorInfo) -> HistoryResult
 
     // used internally
     internal init(
         bufferingPolicy: BufferingPolicy,
-        getPreviousMessages: @escaping @Sendable (HistoryParams) async throws(ARTErrorInfo) -> HistoryResult,
+        historyBeforeSubscribe: @escaping @Sendable (HistoryParams) async throws(ARTErrorInfo) -> HistoryResult,
     ) {
         subscription = .init(bufferingPolicy: bufferingPolicy)
-        self.getPreviousMessages = getPreviousMessages
+        self.historyBeforeSubscribe = historyBeforeSubscribe
     }
 
     // used for testing
     // swiftlint:disable:next missing_docs
-    public init<Underlying: AsyncSequence & Sendable>(mockAsyncSequence: Underlying, mockGetPreviousMessages: @escaping @Sendable (HistoryParams) async throws(ARTErrorInfo) -> HistoryResult) where Underlying.Element == Element {
+    public init<Underlying: AsyncSequence & Sendable>(mockAsyncSequence: Underlying, mockHistoryBeforeSubscribe: @escaping @Sendable (HistoryParams) async throws(ARTErrorInfo) -> HistoryResult) where Underlying.Element == Element {
         subscription = .init(mockAsyncSequence: mockAsyncSequence)
-        getPreviousMessages = mockGetPreviousMessages
+        historyBeforeSubscribe = mockHistoryBeforeSubscribe
     }
 
     internal func emit(_ element: Element) {
@@ -391,8 +391,8 @@ public final class MessageSubscriptionResponseAsyncSequence<HistoryResult: Pagin
     }
 
     // swiftlint:disable:next missing_docs
-    public func getPreviousMessages(withParams params: HistoryParams) async throws(ARTErrorInfo) -> HistoryResult {
-        try await getPreviousMessages(params)
+    public func historyBeforeSubscribe(withParams params: HistoryParams) async throws(ARTErrorInfo) -> HistoryResult {
+        try await historyBeforeSubscribe(params)
     }
 
     // swiftlint:disable:next missing_docs
