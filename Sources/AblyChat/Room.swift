@@ -4,7 +4,7 @@ import Ably
  * Represents a chat room.
  */
 @MainActor
-public protocol Room: AnyObject, Sendable {
+public protocol Room<Channel>: AnyObject, Sendable {
     // swiftlint:disable:next missing_docs
     associatedtype Channel
 
