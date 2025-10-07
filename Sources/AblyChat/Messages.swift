@@ -96,13 +96,13 @@ public extension Messages {
      *
      * - Returns: A subscription ``MessageSubscription`` that can be used to iterate through new messages.
      */
-    func subscribe(bufferingPolicy: BufferingPolicy) -> MessageSubscriptionAsyncSequence<SubscribeResponse.HistoryResult> {
+    func subscribe(bufferingPolicy: BufferingPolicy) -> MessageSubscriptionResponseAsyncSequence<SubscribeResponse.HistoryResult> {
         var emitEvent: ((ChatMessageEvent) -> Void)?
         let subscription = subscribe { event in
             emitEvent?(event)
         }
 
-        let subscriptionAsyncSequence = MessageSubscriptionAsyncSequence(
+        let subscriptionAsyncSequence = MessageSubscriptionResponseAsyncSequence(
             bufferingPolicy: bufferingPolicy,
             getPreviousMessages: subscription.historyBeforeSubscribe,
         )
@@ -120,7 +120,7 @@ public extension Messages {
     }
 
     /// Same as calling ``subscribe(bufferingPolicy:)`` with ``BufferingPolicy/unbounded``.
-    func subscribe() -> MessageSubscriptionAsyncSequence<SubscribeResponse.HistoryResult> {
+    func subscribe() -> MessageSubscriptionResponseAsyncSequence<SubscribeResponse.HistoryResult> {
         subscribe(bufferingPolicy: .unbounded)
     }
 }
@@ -355,8 +355,8 @@ public struct ChatMessageEvent: Sendable {
 
 /// A non-throwing `AsyncSequence` whose element is ``ChatMessageEvent``. The Chat SDK uses this type as the return value of the `AsyncSequence` convenience variants of the ``Messages`` methods that allow you to find out about received chat messages.
 ///
-/// You should only iterate over a given `MessageSubscriptionAsyncSequence` once; the results of iterating more than once are undefined.
-public final class MessageSubscriptionAsyncSequence<HistoryResult: PaginatedResult<Message>>: Sendable, AsyncSequence {
+/// You should only iterate over a given `MessageSubscriptionResponseAsyncSequence` once; the results of iterating more than once are undefined.
+public final class MessageSubscriptionResponseAsyncSequence<HistoryResult: PaginatedResult<Message>>: Sendable, AsyncSequence {
     // swiftlint:disable:next missing_docs
     public typealias Element = ChatMessageEvent
 
