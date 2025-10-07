@@ -154,7 +154,7 @@ class MockMessages: Messages {
         )
     }
 
-    func history(withOptions _: QueryOptions) async throws(ARTErrorInfo) -> some PaginatedResult<Message> {
+    func history(withParams _: HistoryParams) async throws(ARTErrorInfo) -> some PaginatedResult<Message> {
         MockMessagesPaginatedResult(clientID: clientID, roomName: roomName)
     }
 

@@ -16,7 +16,7 @@ internal final class ChatAPI {
     }
 
     // (CHA-M6) Messages should be queryable from a paginated REST API.
-    internal func getMessages(roomName: String, params: QueryOptions) async throws(InternalError) -> some PaginatedResult<Message> {
+    internal func getMessages(roomName: String, params: HistoryParams) async throws(InternalError) -> some PaginatedResult<Message> {
         let endpoint = "\(apiVersionV4)/rooms/\(roomName)/messages"
         return try await makePaginatedRequest(endpoint, params: params.asQueryItems())
     }
