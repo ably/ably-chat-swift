@@ -1,5 +1,5 @@
 {
-  "originHash" : "ebe9b207d8803c853612cdb18155be08af736afc304eea033541820a1312fc77",
+  "originHash" : "d451b59984ba015c0df6eb5226ae73dcf802e8f22e1ef91b0d7dd52908677f6a",
   "pins" : [
     {
       "identity" : "ably-cocoa",
@@ -34,15 +34,6 @@
       "state" : {
         "revision" : "3e36b48e04ecd756cb927bd5f5b9bf6d45e475f9",
         "version" : "0.4.0"
-      }
-    },
-    {
-      "identity" : "semaphore",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/groue/Semaphore",
-      "state" : {
-        "revision" : "2543679282aa6f6c8ecf2138acd613ed20790bc2",
-        "version" : "0.1.0"
       }
     },
     {
@@ -106,6 +97,15 @@
       "state" : {
         "revision" : "b45d1f2ed151d057b54504d653e0da5552844e34",
         "version" : "1.0.0"
+      }
+    },
+    {
+      "identity" : "swift-semaphore",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/ably-forks/swift-semaphore",
+      "state" : {
+        "revision" : "2543679282aa6f6c8ecf2138acd613ed20790bc2",
+        "version" : "0.1.0"
       }
     },
     {

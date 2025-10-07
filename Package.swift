@@ -45,9 +45,14 @@ let package = Package(
             url: "https://github.com/apple/swift-docc-plugin",
             from: "1.0.0",
         ),
+        // This is a fork of https://github.com/groue/Semaphore.
+        //
+        // We only use this package in our tests. We need to pin its version
+        // because it's 0.x, but we don't want to clash with users who are using
+        // the same library. Thus we have our own fork.
         .package(
-            url: "https://github.com/groue/Semaphore",
-            from: "0.1.0",
+            url: "https://github.com/ably-forks/swift-semaphore",
+            exact: "0.1.0",
         ),
         .package(
             url: "https://github.com/pointfreeco/swift-clocks",
@@ -79,7 +84,7 @@ let package = Package(
                 ),
                 .product(
                     name: "Semaphore",
-                    package: "Semaphore",
+                    package: "swift-semaphore",
                 ),
             ],
             resources: [
