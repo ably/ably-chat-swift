@@ -2,8 +2,8 @@
 
 // Implementations of Equatable that we don't want in the public API but which are helpful for testing. It's unfortunate that we can't make use of the compiler's built-in synthesising of these conformances. (TODO: Use something like Sourcery to generate these, https://github.com/ably/ably-chat-swift/pull/310)
 
-extension RoomStatus: Equatable {
-    public static func == (lhs: RoomStatus, rhs: RoomStatus) -> Bool {
+extension InternalRoomStatus: Equatable {
+    public static func == (lhs: InternalRoomStatus, rhs: InternalRoomStatus) -> Bool {
         switch lhs {
         case .initialized:
             if case .initialized = rhs {

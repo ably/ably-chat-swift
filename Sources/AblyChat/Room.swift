@@ -401,7 +401,7 @@ internal class DefaultRoom<Realtime: InternalRealtimeClientProtocol, LifecycleMa
     }
 
     internal var status: RoomStatus {
-        lifecycleManager.roomStatus
+        lifecycleManager.roomStatus.toPublicRoomStatus
     }
 
     // MARK: - Discontinuities

@@ -255,7 +255,7 @@ struct DefaultRoomTests {
         let channels = MockChannels(channels: channelsList)
         let realtime = MockRealtime(channels: channels)
 
-        let lifecycleManagerRoomStatus = RoomStatus.attached(error: nil) // arbitrary
+        let lifecycleManagerRoomStatus = InternalRoomStatus.attached(error: nil) // arbitrary
 
         let lifecycleManager = MockRoomLifecycleManager(roomStatus: lifecycleManagerRoomStatus)
         let lifecycleManagerFactory = MockRoomLifecycleManagerFactory(manager: lifecycleManager)

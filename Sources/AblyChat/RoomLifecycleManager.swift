@@ -7,7 +7,7 @@ internal protocol RoomLifecycleManager: Sendable {
     func performAttachOperation() async throws(InternalError)
     func performDetachOperation() async throws(InternalError)
     func performReleaseOperation() async
-    var roomStatus: RoomStatus { get }
+    var roomStatus: InternalRoomStatus { get }
     @discardableResult
     func onRoomStatusChange(_ callback: @escaping @MainActor (RoomStatusChange) -> Void) -> StatusSubscription
 
@@ -52,7 +52,7 @@ internal final class DefaultRoomLifecycleManagerFactory: RoomLifecycleManagerFac
     }
 }
 
-private extension RoomStatus {
+private extension InternalRoomStatus {
     init(channelState: ARTRealtimeChannelState, error: ARTErrorInfo?) {
         switch channelState {
         case .initialized:
@@ -90,7 +90,7 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
 
     // MARK: - Variable properties
 
-    internal private(set) var roomStatus: RoomStatus
+    internal private(set) var roomStatus: InternalRoomStatus
     private var currentOperationID: UUID?
 
     // CHA-RL13
@@ -129,7 +129,7 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
 
     #if DEBUG
         internal convenience init(
-            testsOnly_roomStatus roomStatus: RoomStatus? = nil,
+            testsOnly_roomStatus roomStatus: InternalRoomStatus? = nil,
             testsOnly_hasAttachedOnce hasAttachedOnce: Bool? = nil,
             testsOnly_isExplicitlyDetached isExplicitlyDetached: Bool? = nil,
             channel: any InternalRealtimeChannelProtocol,
@@ -148,7 +148,7 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
     #endif
 
     private init(
-        roomStatus: RoomStatus?,
+        roomStatus: InternalRoomStatus?,
         hasAttachedOnce: Bool?,
         isExplicitlyDetached: Bool?,
         channel: any InternalRealtimeChannelProtocol,
@@ -185,12 +185,12 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
     }
 
     /// Updates ``roomStatus`` and emits a status change event.
-    private func changeStatus(to new: RoomStatus) {
+    private func changeStatus(to new: InternalRoomStatus) {
         logger.log(message: "Transitioning from \(roomStatus) to \(new)", level: .info)
         let previous = roomStatus
         roomStatus = new
 
-        let statusChange = RoomStatusChange(current: roomStatus, previous: previous)
+        let statusChange = RoomStatusChange(current: roomStatus.toPublicRoomStatus, previous: previous.toPublicRoomStatus)
         roomStatusChangeSubscriptions.emit(statusChange)
     }
 

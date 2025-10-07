@@ -30,7 +30,7 @@ struct DefaultRoomLifecycleManagerTests {
     }
 
     private func createManager(
-        forTestingWhatHappensWhenCurrentlyIn roomStatus: RoomStatus? = nil,
+        forTestingWhatHappensWhenCurrentlyIn roomStatus: InternalRoomStatus? = nil,
         forTestingWhatHappensWhenHasHasAttachedOnce hasAttachedOnce: Bool? = nil,
         forTestingWhatHappensWhenHasIsExplicitlyDetached isExplicitlyDetached: Bool? = nil,
         channel: MockRealtimeChannel? = nil,
@@ -476,9 +476,9 @@ struct DefaultRoomLifecycleManagerTests {
             .detached(error: nil),
             // @spec CHA-RL3j
             .initialized,
-        ] as[RoomStatus],
+        ] as[InternalRoomStatus],
     )
-    func release_whenDetachedOrInitialized(status: RoomStatus) async throws {
+    func release_whenDetachedOrInitialized(status: InternalRoomStatus) async throws {
         // Given: A DefaultRoomLifecycleManager in the DETACHED or INITIALIZED status
         let channel = createChannel()
         let manager = createManager(forTestingWhatHappensWhenCurrentlyIn: status, channel: channel)
@@ -758,7 +758,7 @@ struct DefaultRoomLifecycleManagerTests {
         // Then: The manager changes room status to match that informed by the channel event
         let roomStatusChange = try #require(await roomStatusSubscription.first { @Sendable _ in true })
         for roomStatus in [roomStatusChange.current, manager.roomStatus] {
-            #expect(roomStatus == RoomStatus.attaching(error: channelStateChange.reason))
+            #expect(roomStatus == InternalRoomStatus.attaching(error: channelStateChange.reason))
         }
     }
 

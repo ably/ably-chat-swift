@@ -8,12 +8,12 @@ class MockRoomLifecycleManager: RoomLifecycleManager {
     private let detachResult: Result<Void, ARTErrorInfo>?
     private(set) var detachCallCount = 0
     private(set) var releaseCallCount = 0
-    private let _roomStatus: RoomStatus?
+    private let _roomStatus: InternalRoomStatus?
     private let roomStatusSubscriptions = StatusSubscriptionStorage<RoomStatusChange>()
     private let discontinuitySubscriptions = StatusSubscriptionStorage<DiscontinuityEvent>()
     private let resultOfWaitToBeAbleToPerformPresenceOperations: Result<Void, ARTErrorInfo>?
 
-    init(attachResult: Result<Void, ARTErrorInfo>? = nil, detachResult: Result<Void, ARTErrorInfo>? = nil, roomStatus: RoomStatus? = nil, resultOfWaitToBeAbleToPerformPresenceOperations: Result<Void, ARTErrorInfo> = .success(())) {
+    init(attachResult: Result<Void, ARTErrorInfo>? = nil, detachResult: Result<Void, ARTErrorInfo>? = nil, roomStatus: InternalRoomStatus? = nil, resultOfWaitToBeAbleToPerformPresenceOperations: Result<Void, ARTErrorInfo> = .success(())) {
         self.attachResult = attachResult
         self.detachResult = detachResult
         self.resultOfWaitToBeAbleToPerformPresenceOperations = resultOfWaitToBeAbleToPerformPresenceOperations
@@ -48,7 +48,7 @@ class MockRoomLifecycleManager: RoomLifecycleManager {
         releaseCallCount += 1
     }
 
-    var roomStatus: RoomStatus {
+    var roomStatus: InternalRoomStatus {
         guard let roomStatus = _roomStatus else {
             fatalError("In order to call roomStatus, roomStatus must be passed to the initializer")
         }

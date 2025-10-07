@@ -12,32 +12,32 @@ public enum RoomStatus: Sendable {
     /**
      * The library is currently attempting to attach the room.
      */
-    case attaching(error: ARTErrorInfo?)
+    case attaching
 
     /**
      * The room is currently attached and receiving events.
      */
-    case attached(error: ARTErrorInfo?)
+    case attached
 
     /**
      * The room is currently detaching and will not receive events.
      */
-    case detaching(error: ARTErrorInfo?)
+    case detaching
 
     /**
      * The room is currently detached and will not receive events.
      */
-    case detached(error: ARTErrorInfo?)
+    case detached
 
     /**
      * The room is in an extended state of detachment, but will attempt to re-attach when able.
      */
-    case suspended(error: ARTErrorInfo)
+    case suspended
 
     /**
      * The room is currently detached and will not attempt to re-attach. User intervention is required.
      */
-    case failed(error: ARTErrorInfo)
+    case failed
 
     /**
      * The room is in the process of releasing. Attempting to use a room in this state may result in undefined behavior.
@@ -48,6 +48,41 @@ public enum RoomStatus: Sendable {
      * The room has been released and is no longer usable.
      */
     case released
+}
+
+internal enum InternalRoomStatus: Sendable {
+    case initialized
+    case attaching(error: ARTErrorInfo?)
+    case attached(error: ARTErrorInfo?)
+    case detaching(error: ARTErrorInfo?)
+    case detached(error: ARTErrorInfo?)
+    case suspended(error: ARTErrorInfo)
+    case failed(error: ARTErrorInfo)
+    case releasing
+    case released
+
+    internal var toPublicRoomStatus: RoomStatus {
+        switch self {
+        case .initialized:
+            .initialized
+        case .attaching:
+            .attaching
+        case .attached:
+            .attached
+        case .detaching:
+            .detaching
+        case .detached:
+            .detached
+        case .suspended:
+            .suspended
+        case .failed:
+            .failed
+        case .releasing:
+            .releasing
+        case .released:
+            .released
+        }
+    }
 
     internal var error: ARTErrorInfo? {
         switch self {
@@ -75,8 +110,7 @@ public enum RoomStatus: Sendable {
     // 1. testing (e.g.  `#expect(status.isFailed)`)
     // 2. testing that a status does _not_ have a particular case (e.g. if !status.isFailed), which a `case` statement cannot succinctly express
 
-    // swiftlint:disable:next missing_docs
-    public var isAttaching: Bool {
+    internal var isAttaching: Bool {
         if case .attaching = self {
             true
         } else {
@@ -84,8 +118,7 @@ public enum RoomStatus: Sendable {
         }
     }
 
-    // swiftlint:disable:next missing_docs
-    public var isAttached: Bool {
+    internal var isAttached: Bool {
         if case .attached = self {
             true
         } else {
@@ -93,8 +126,7 @@ public enum RoomStatus: Sendable {
         }
     }
 
-    // swiftlint:disable:next missing_docs
-    public var isDetaching: Bool {
+    internal var isDetaching: Bool {
         if case .detaching = self {
             true
         } else {
@@ -102,8 +134,7 @@ public enum RoomStatus: Sendable {
         }
     }
 
-    // swiftlint:disable:next missing_docs
-    public var isDetached: Bool {
+    internal var isDetached: Bool {
         if case .detached = self {
             true
         } else {
@@ -111,8 +142,7 @@ public enum RoomStatus: Sendable {
         }
     }
 
-    // swiftlint:disable:next missing_docs
-    public var isSuspended: Bool {
+    internal var isSuspended: Bool {
         if case .suspended = self {
             true
         } else {
@@ -120,8 +150,7 @@ public enum RoomStatus: Sendable {
         }
     }
 
-    // swiftlint:disable:next missing_docs
-    public var isFailed: Bool {
+    internal var isFailed: Bool {
         if case .failed = self {
             true
         } else {
@@ -129,8 +158,7 @@ public enum RoomStatus: Sendable {
         }
     }
 
-    // swiftlint:disable:next missing_docs
-    public var isReleasing: Bool {
+    internal var isReleasing: Bool {
         if case .releasing = self {
             true
         } else {
@@ -138,8 +166,7 @@ public enum RoomStatus: Sendable {
         }
     }
 
-    // swiftlint:disable:next missing_docs
-    public var isReleased: Bool {
+    internal var isReleased: Bool {
         if case .released = self {
             true
         } else {
