@@ -1,5 +1,6 @@
 import os
 
+// swiftlint:disable:next missing_docs
 public struct LogHandler: Sendable {
     fileprivate let simple: any Simple
 
@@ -33,10 +34,15 @@ public struct LogHandler: Sendable {
  * Represents the different levels of logging that can be used.
  */
 public enum LogLevel: Sendable, Comparable {
+    // swiftlint:disable:next missing_docs
     case trace
+    // swiftlint:disable:next missing_docs
     case debug
+    // swiftlint:disable:next missing_docs
     case info
+    // swiftlint:disable:next missing_docs
     case warn
+    // swiftlint:disable:next missing_docs
     case error
 }
 

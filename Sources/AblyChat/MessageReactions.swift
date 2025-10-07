@@ -7,6 +7,7 @@ import Ably
  */
 @MainActor
 public protocol MessageReactions: AnyObject, Sendable {
+    // swiftlint:disable:next missing_docs
     associatedtype Subscription: AblyChat.Subscription
 
     /**
@@ -136,6 +137,9 @@ public struct SendMessageReactionParams: Sendable {
      */
     public var count: Int?
 
+    /// Memberwise initializer to create a `SendMessageReactionParams`.
+    ///
+    /// - Note: You should not need to use this initializer when using the Chat SDK. It is exposed only to allow users to create mock versions of the SDK's protocols.
     public init(name: String, type: MessageReactionType? = nil, count: Int? = nil) {
         self.name = name
         self.type = type
@@ -158,6 +162,9 @@ public struct DeleteMessageReactionParams: Sendable {
      */
     public var name: String?
 
+    /// Memberwise initializer to create a `DeleteMessageReactionParams`.
+    ///
+    /// - Note: You should not need to use this initializer when using the Chat SDK. It is exposed only to allow users to create mock versions of the SDK's protocols.
     public init(name: String? = nil, type: MessageReactionType? = nil) {
         self.name = name
         self.type = type

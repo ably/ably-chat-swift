@@ -8,6 +8,7 @@ import Ably
  */
 @MainActor
 public protocol Typing: AnyObject, Sendable {
+    // swiftlint:disable:next missing_docs
     associatedtype Subscription: AblyChat.Subscription
 
     /**
@@ -86,6 +87,7 @@ public extension Typing {
  * Represents a typing event.
  */
 public struct TypingSetEvent: Sendable {
+    // swiftlint:disable:next missing_docs
     public var type: TypingSetEventType
 
     /**
@@ -98,16 +100,25 @@ public struct TypingSetEvent: Sendable {
       */
     public var change: Change
 
+    /// Memberwise initializer to create a `TypingSetEvent`.
+    ///
+    /// - Note: You should not need to use this initializer when using the Chat SDK. It is exposed only to allow users to create mock versions of the SDK's protocols.
     public init(type: TypingSetEventType, currentlyTyping: Set<String>, change: Change) {
         self.type = type
         self.currentlyTyping = currentlyTyping
         self.change = change
     }
 
+    // swiftlint:disable:next missing_docs
     public struct Change: Sendable {
+        // swiftlint:disable:next missing_docs
         public var clientID: String
+        // swiftlint:disable:next missing_docs
         public var type: TypingEventType
 
+        /// Memberwise initializer to create a `Change`.
+        ///
+        /// - Note: You should not need to use this initializer when using the Chat SDK. It is exposed only to allow users to create mock versions of the SDK's protocols.
         public init(clientID: String, type: TypingEventType) {
             self.clientID = clientID
             self.type = type

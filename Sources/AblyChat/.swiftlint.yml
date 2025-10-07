@@ -1,3 +1,12 @@
 opt_in_rules:
   # Opt-in rules of type "idiomatic" that we’ve decided we want:
   - explicit_acl
+
+  # Opt-in rules of type "lint" that we’ve decided we want:
+  - missing_docs
+
+missing_docs:
+  # Not sure why we'd want to exclude extensions, so turn this off.
+  excludes_extensions: false
+  # Without this, it doesn't take any of our protocols into account
+  excludes_inherited_types: false

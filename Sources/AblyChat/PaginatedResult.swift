@@ -1,16 +1,28 @@
 import Ably
 
+// This disable of attributes can be removed once missing_docs fixed here
+// swiftlint:disable attributes
 @MainActor
+// swiftlint:disable:next missing_docs
 public protocol PaginatedResult<Item>: AnyObject, Sendable {
+    // swiftlint:enable attributes
+
+    // swiftlint:disable:next missing_docs
     associatedtype Item
 
+    // swiftlint:disable:next missing_docs
     var items: [Item] { get }
+    // swiftlint:disable:next missing_docs
     var hasNext: Bool { get }
+    // swiftlint:disable:next missing_docs
     var isLast: Bool { get }
     // TODO: (https://github.com/ably-labs/ably-chat-swift/issues/11): consider how to avoid the need for an unwrap
     // Note that there seems to be a compiler bug (https://github.com/swiftlang/swift/issues/79992) that means that the compiler does not enforce the access level of the error type for property getters. I accidentally originally wrote these as throws(InternalError), which the compiler should have rejected since InternalError is internal and this protocol is public, but it did not reject it and this mistake was only noticed in code review.
+    // swiftlint:disable:next missing_docs
     var next: Self? { get async throws(ARTErrorInfo) }
+    // swiftlint:disable:next missing_docs
     var first: Self { get async throws(ARTErrorInfo) }
+    // swiftlint:disable:next missing_docs
     var current: Self { get async throws(ARTErrorInfo) }
 }
 

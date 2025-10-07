@@ -29,11 +29,17 @@ public typealias JSONObject = [String: JSONValue]
 ///
 /// > Note: To write a `JSONValue` that corresponds to the `null` JSON value, you must explicitly write `.null`. `JSONValue` deliberately does not implement the `ExpressibleByNilLiteral` protocol in order to avoid confusion between a value of type `JSONValue?` and a `JSONValue` with case `.null`.
 public indirect enum JSONValue: Sendable, Equatable {
+    // swiftlint:disable:next missing_docs
     case object(JSONObject)
+    // swiftlint:disable:next missing_docs
     case array([JSONValue])
+    // swiftlint:disable:next missing_docs
     case string(String)
+    // swiftlint:disable:next missing_docs
     case number(Double)
+    // swiftlint:disable:next missing_docs
     case bool(Bool)
+    // swiftlint:disable:next missing_docs
     case null
 
     // MARK: - Convenience getters for associated values
@@ -94,36 +100,42 @@ public indirect enum JSONValue: Sendable, Equatable {
 }
 
 extension JSONValue: ExpressibleByDictionaryLiteral {
+    // swiftlint:disable:next missing_docs
     public init(dictionaryLiteral elements: (String, JSONValue)...) {
         self = .object(.init(uniqueKeysWithValues: elements))
     }
 }
 
 extension JSONValue: ExpressibleByArrayLiteral {
+    // swiftlint:disable:next missing_docs
     public init(arrayLiteral elements: JSONValue...) {
         self = .array(elements)
     }
 }
 
 extension JSONValue: ExpressibleByStringLiteral {
+    // swiftlint:disable:next missing_docs
     public init(stringLiteral value: String) {
         self = .string(value)
     }
 }
 
 extension JSONValue: ExpressibleByIntegerLiteral {
+    // swiftlint:disable:next missing_docs
     public init(integerLiteral value: Int) {
         self = .number(Double(value))
     }
 }
 
 extension JSONValue: ExpressibleByFloatLiteral {
+    // swiftlint:disable:next missing_docs
     public init(floatLiteral value: Double) {
         self = .number(value)
     }
 }
 
 extension JSONValue: ExpressibleByBooleanLiteral {
+    // swiftlint:disable:next missing_docs
     public init(booleanLiteral value: Bool) {
         self = .bool(value)
     }

@@ -75,6 +75,9 @@ public struct MessageReaction: Sendable {
      */
     public var isSelf: Bool
 
+    /// Memberwise initializer to create a `MessageReaction`.
+    ///
+    /// - Note: You should not need to use this initializer when using the Chat SDK. It is exposed only to allow users to create mock versions of the SDK's protocols.
     public init(type: MessageReactionType, name: String, messageSerial: String, count: Int? = nil, clientID: String, isSelf: Bool) {
         self.type = type
         self.name = name
@@ -176,6 +179,7 @@ public struct MessageReactionSummary: Sendable, Equatable {
          */
         public var clipped: Bool // TM7c1c
 
+        // swiftlint:disable:next missing_docs
         public init(total: Int, clientIDs: [String], clipped: Bool) {
             self.total = total
             self.clientIDs = clientIDs
@@ -214,6 +218,7 @@ public struct MessageReactionSummary: Sendable, Equatable {
          */
         public var totalClientIDs: Int // TM7d1e
 
+        // swiftlint:disable:next missing_docs
         public init(total: Int, clientIDs: [String: Int], totalUnidentified: Int, clipped: Bool, totalClientIDs: Int) {
             self.total = total
             self.clientIDs = clientIDs
@@ -243,6 +248,9 @@ public struct MessageReactionSummary: Sendable, Equatable {
      */
     public var multiple: [String: ClientIDCounts]
 
+    /// Memberwise initializer to create a `MessageReactionSummary`.
+    ///
+    /// - Note: You should not need to use this initializer when using the Chat SDK. It is exposed only to allow users to create mock versions of the SDK's protocols.
     public init(messageSerial: String, unique: [String: MessageReactionSummary.ClientIDList], distinct: [String: MessageReactionSummary.ClientIDList], multiple: [String: MessageReactionSummary.ClientIDCounts]) {
         self.messageSerial = messageSerial
         self.unique = unique
@@ -266,6 +274,9 @@ public struct MessageReactionSummaryEvent: Sendable, Equatable {
      */
     public var summary: MessageReactionSummary
 
+    /// Memberwise initializer to create a `MessageReactionSummaryEvent`.
+    ///
+    /// - Note: You should not need to use this initializer when using the Chat SDK. It is exposed only to allow users to create mock versions of the SDK's protocols.
     public init(type: MessageReactionEvent, summary: MessageReactionSummary) {
         self.type = type
         self.summary = summary
@@ -291,6 +302,9 @@ public struct MessageReactionRawEvent: Sendable {
      */
     public var reaction: MessageReaction
 
+    /// Memberwise initializer to create a `MessageReactionRawEvent`.
+    ///
+    /// - Note: You should not need to use this initializer when using the Chat SDK. It is exposed only to allow users to create mock versions of the SDK's protocols.
     public init(type: MessageReactionEvent, timestamp: Date? = nil, reaction: MessageReaction) {
         self.type = type
         self.timestamp = timestamp

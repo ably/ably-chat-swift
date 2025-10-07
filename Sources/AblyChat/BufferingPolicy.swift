@@ -3,8 +3,11 @@
  * (This is the same as `AsyncStream<Element>.Continuation.BufferingPolicy` but with the generic type parameter `Element` removed.)
  */
 public enum BufferingPolicy: Sendable {
+    // swiftlint:disable:next missing_docs
     case unbounded
+    // swiftlint:disable:next missing_docs
     case bufferingOldest(Int)
+    // swiftlint:disable:next missing_docs
     case bufferingNewest(Int)
 
     internal func asAsyncStreamBufferingPolicy<Element>() -> AsyncStream<Element>.Continuation.BufferingPolicy {

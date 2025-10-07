@@ -5,14 +5,21 @@ import Ably
  */
 @MainActor
 public protocol Room: AnyObject, Sendable {
+    // swiftlint:disable:next missing_docs
     associatedtype Channel
 
+    // swiftlint:disable:next missing_docs
     associatedtype Messages: AblyChat.Messages
+    // swiftlint:disable:next missing_docs
     associatedtype Presence: AblyChat.Presence
+    // swiftlint:disable:next missing_docs
     associatedtype Reactions: AblyChat.RoomReactions
+    // swiftlint:disable:next missing_docs
     associatedtype Typing: AblyChat.Typing
+    // swiftlint:disable:next missing_docs
     associatedtype Occupancy: AblyChat.Occupancy
 
+    // swiftlint:disable:next missing_docs
     associatedtype StatusSubscription: AblyChat.StatusSubscription
 
     /**
@@ -209,6 +216,9 @@ public struct RoomStatusChange: Sendable {
      */
     public var previous: RoomStatus
 
+    /// Memberwise initializer to create a `RoomStatusChange`.
+    ///
+    /// - Note: You should not need to use this initializer when using the Chat SDK. It is exposed only to allow users to create mock versions of the SDK's protocols.
     public init(current: RoomStatus, previous: RoomStatus) {
         self.current = current
         self.previous = previous
@@ -358,6 +368,7 @@ internal class DefaultRoom<Realtime: InternalRealtimeClientProtocol, LifecycleMa
         return realtime.channels.get("\(roomName)::$chat", options: channelOptions)
     }
 
+    // swiftlint:disable:next missing_docs
     public func attach() async throws(ARTErrorInfo) {
         do {
             try await lifecycleManager.performAttachOperation()
@@ -366,6 +377,7 @@ internal class DefaultRoom<Realtime: InternalRealtimeClientProtocol, LifecycleMa
         }
     }
 
+    // swiftlint:disable:next missing_docs
     public func detach() async throws(ARTErrorInfo) {
         do {
             try await lifecycleManager.performDetachOperation()

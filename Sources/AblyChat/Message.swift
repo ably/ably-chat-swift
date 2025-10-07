@@ -84,6 +84,9 @@ public struct Message: Sendable, Equatable {
      */
     public var reactions: MessageReactionSummary?
 
+    /// Memberwise initializer to create a `Message`.
+    ///
+    /// - Note: You should not need to use this initializer when using the Chat SDK. It is exposed only to allow users to create mock versions of the SDK's protocols.
     public init(serial: String, action: MessageAction, clientID: String, text: String, metadata: MessageMetadata, headers: MessageHeaders, version: MessageVersion, timestamp: Date, reactions: MessageReactionSummary? = nil) {
         self.serial = serial
         self.action = action
@@ -124,6 +127,7 @@ public struct Message: Sendable, Equatable {
     }
 }
 
+/// Represents the version information for a message.
 public struct MessageVersion: Sendable, Equatable {
     /**
      * A unique identifier for the latest version of this message.
@@ -150,6 +154,9 @@ public struct MessageVersion: Sendable, Equatable {
      */
     public var metadata: MessageMetadata?
 
+    /// Memberwise initializer to create a `MessageVersion`.
+    ///
+    /// - Note: You should not need to use this initializer when using the Chat SDK. It is exposed only to allow users to create mock versions of the SDK's protocols.
     public init(serial: String, timestamp: Date, clientID: String? = nil, description: String? = nil, metadata: MessageMetadata? = nil) {
         self.serial = serial
         self.timestamp = timestamp
@@ -204,6 +211,7 @@ extension MessageVersion {
     }
 }
 
+// swiftlint:disable:next missing_docs
 public extension Message {
     /**
      * Creates a new message instance with the event applied.

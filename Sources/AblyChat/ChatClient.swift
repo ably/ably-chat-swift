@@ -1,9 +1,17 @@
 import Ably
 
+// This disable of attributes can be removed once missing_docs fixed here
+// swiftlint:disable attributes
 @MainActor
+// swiftlint:disable:next missing_docs
 public protocol ChatClientProtocol: AnyObject, Sendable {
+    // swiftlint:enable attributes
+
+    // swiftlint:disable:next missing_docs
     associatedtype Realtime
+    // swiftlint:disable:next missing_docs
     associatedtype Connection: AblyChat.Connection
+    // swiftlint:disable:next missing_docs
     associatedtype Rooms: AblyChat.Rooms
 
     /**
@@ -60,9 +68,12 @@ internal final class DefaultInternalRealtimeClientFactory<Underlying: ProxyRealt
  * This is the core client for Ably chat. It provides access to chat rooms.
  */
 public class ChatClient: ChatClientProtocol {
+    // swiftlint:disable:next missing_docs
     public let realtime: ARTRealtime
+    // swiftlint:disable:next missing_docs
     public let clientOptions: ChatClientOptions
     private let _rooms: DefaultRooms<DefaultRoomFactory<InternalRealtimeClientAdapter<ARTWrapperSDKProxyRealtime>>>
+    // swiftlint:disable:next missing_docs
     public var rooms: some Rooms<ARTRealtimeChannel> {
         _rooms
     }
@@ -72,6 +83,7 @@ public class ChatClient: ChatClientProtocol {
     // (CHA-CS1) Every chat client has a status, which describes the current status of the connection.
     // (CHA-CS4) The chat client must allow its connection status to be observed by clients.
     private let _connection: DefaultConnection
+    // swiftlint:disable:next missing_docs
     public var connection: some Connection {
         _connection
     }
@@ -108,6 +120,7 @@ public class ChatClient: ChatClientProtocol {
         _connection = DefaultConnection(realtime: internalRealtime)
     }
 
+    // swiftlint:disable:next missing_docs
     public var clientID: String {
         guard let clientID = realtime.clientId else {
             fatalError("Ensure your Realtime instance is initialized with a clientId.")
@@ -134,6 +147,7 @@ public struct ChatClientOptions: Sendable {
      */
     public var logLevel: LogLevel? = .error
 
+    // swiftlint:disable:next missing_docs
     public init(logHandler: LogHandler? = nil, logLevel: LogLevel? = .error) {
         self.logHandler = logHandler
         self.logLevel = logLevel

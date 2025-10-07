@@ -7,6 +7,7 @@ import Ably
  */
 @MainActor
 public protocol RoomReactions: AnyObject, Sendable {
+    // swiftlint:disable:next missing_docs
     associatedtype Subscription: AblyChat.Subscription
 
     /**
@@ -100,6 +101,9 @@ public struct SendReactionParams: Sendable {
      */
     public var headers: ReactionHeaders?
 
+    /// Memberwise initializer to create a `SendReactionParams`.
+    ///
+    /// - Note: You should not need to use this initializer when using the Chat SDK. It is exposed only to allow users to create mock versions of the SDK's protocols.
     public init(name: String, metadata: ReactionMetadata? = nil, headers: ReactionHeaders? = nil) {
         self.name = name
         self.metadata = metadata
@@ -109,13 +113,20 @@ public struct SendReactionParams: Sendable {
 
 /// Event type for room reaction subscription.
 public enum RoomReactionEventType: Sendable {
+    // swiftlint:disable:next missing_docs
     case reaction
 }
 
 /// Event emitted by room reaction subscriptions, containing the type and the reaction.
 public struct RoomReactionEvent: Sendable {
+    // swiftlint:disable:next missing_docs
     public var type: RoomReactionEventType
+    // swiftlint:disable:next missing_docs
     public var reaction: RoomReaction
+
+    /// Memberwise initializer to create a `RoomReactionEvent`.
+    ///
+    /// - Note: You should not need to use this initializer when using the Chat SDK. It is exposed only to allow users to create mock versions of the SDK's protocols.
     public init(type: RoomReactionEventType = .reaction, reaction: RoomReaction) {
         self.type = type
         self.reaction = reaction

@@ -60,6 +60,7 @@ public final class SubscriptionAsyncSequence<Element: Sendable>: Sendable, Async
     }
 
     // This is a workaround for the fact that, as mentioned above, `Subscription` is a struct when I would have liked it to be a protocol. It allows people mocking our SDK to create a `Subscription` so that they can return it from their mocks. The intention of this initializer is that if you use it, then the created `Subscription` will just replay the sequence that you pass it. It is a programmer error to pass a throwing AsyncSequence.
+    // swiftlint:disable:next missing_docs
     public init<Underlying: AsyncSequence & Sendable>(mockAsyncSequence: Underlying) where Underlying.Element == Element {
         mode = .mockAsyncSequence(.init(asyncSequence: mockAsyncSequence))
     }
@@ -111,6 +112,7 @@ public final class SubscriptionAsyncSequence<Element: Sendable>: Sendable, Async
         }
     }
 
+    // swiftlint:disable:next missing_docs
     public struct AsyncIterator: AsyncIteratorProtocol {
         fileprivate enum Mode {
             case `default`(iterator: AsyncStream<Element>.AsyncIterator)
@@ -136,11 +138,13 @@ public final class SubscriptionAsyncSequence<Element: Sendable>: Sendable, Async
             self.mode = mode
         }
 
+        // swiftlint:disable:next missing_docs
         public mutating func next() async -> Element? {
             await mode.next()
         }
     }
 
+    // swiftlint:disable:next missing_docs
     public func makeAsyncIterator() -> AsyncIterator {
         let iteratorMode: AsyncIterator.Mode = switch mode {
         case let .default(stream: stream, continuation: _):
