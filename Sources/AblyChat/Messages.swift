@@ -33,7 +33,7 @@ public protocol Messages: AnyObject, Sendable {
      *
      * - Returns: A paginated result object that can be used to fetch more messages if available.
      */
-    func history(withOptions options: QueryOptions) async throws(ARTErrorInfo) -> HistoryResult
+    func history(withParams params: HistoryParams) async throws(ARTErrorInfo) -> HistoryResult
 
     /**
      * Send a message in the chat room.
@@ -230,7 +230,7 @@ public struct DeleteMessageParams: Sendable {
 /**
  * Options for querying messages in a chat room.
  */
-public struct QueryOptions: Sendable {
+public struct HistoryParams: Sendable {
     // swiftlint:disable:next missing_docs
     public enum OrderBy: Sendable {
         // swiftlint:disable:next missing_docs
@@ -274,7 +274,7 @@ public struct QueryOptions: Sendable {
     internal var fromSerial: String?
 
     // swiftlint:disable:next missing_docs
-    public init(start: Date? = nil, end: Date? = nil, limit: Int? = nil, orderBy: QueryOptions.OrderBy? = nil) {
+    public init(start: Date? = nil, end: Date? = nil, limit: Int? = nil, orderBy: HistoryParams.OrderBy? = nil) {
         self.start = start
         self.end = end
         self.limit = limit
@@ -282,7 +282,7 @@ public struct QueryOptions: Sendable {
     }
 }
 
-internal extension QueryOptions {
+internal extension HistoryParams {
     // Same as `ARTDataQuery.asQueryItems` from ably-cocoa.
     func asQueryItems() -> [String: String] {
         var dict: [String: String] = [:]
@@ -363,12 +363,12 @@ public final class MessageSubscriptionAsyncSequence<HistoryResult: PaginatedResu
     private let subscription: SubscriptionAsyncSequence<Element>
 
     // can be set by either initialiser
-    private let getPreviousMessages: @Sendable (QueryOptions) async throws(ARTErrorInfo) -> HistoryResult
+    private let getPreviousMessages: @Sendable (HistoryParams) async throws(ARTErrorInfo) -> HistoryResult
 
     // used internally
     internal init(
         bufferingPolicy: BufferingPolicy,
-        getPreviousMessages: @escaping @Sendable (QueryOptions) async throws(ARTErrorInfo) -> HistoryResult,
+        getPreviousMessages: @escaping @Sendable (HistoryParams) async throws(ARTErrorInfo) -> HistoryResult,
     ) {
         subscription = .init(bufferingPolicy: bufferingPolicy)
         self.getPreviousMessages = getPreviousMessages
@@ -376,7 +376,7 @@ public final class MessageSubscriptionAsyncSequence<HistoryResult: PaginatedResu
 
     // used for testing
     // swiftlint:disable:next missing_docs
-    public init<Underlying: AsyncSequence & Sendable>(mockAsyncSequence: Underlying, mockGetPreviousMessages: @escaping @Sendable (QueryOptions) async throws(ARTErrorInfo) -> HistoryResult) where Underlying.Element == Element {
+    public init<Underlying: AsyncSequence & Sendable>(mockAsyncSequence: Underlying, mockGetPreviousMessages: @escaping @Sendable (HistoryParams) async throws(ARTErrorInfo) -> HistoryResult) where Underlying.Element == Element {
         subscription = .init(mockAsyncSequence: mockAsyncSequence)
         getPreviousMessages = mockGetPreviousMessages
     }
@@ -391,7 +391,7 @@ public final class MessageSubscriptionAsyncSequence<HistoryResult: PaginatedResu
     }
 
     // swiftlint:disable:next missing_docs
-    public func getPreviousMessages(withParams params: QueryOptions) async throws(ARTErrorInfo) -> HistoryResult {
+    public func getPreviousMessages(withParams params: HistoryParams) async throws(ARTErrorInfo) -> HistoryResult {
         try await getPreviousMessages(params)
     }
 

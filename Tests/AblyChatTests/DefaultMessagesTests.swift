@@ -436,7 +436,7 @@ struct DefaultMessagesTests {
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", clientID: "clientId", logger: TestLogger())
 
         // When
-        let paginatedResult = try await defaultMessages.history(withOptions: .init())
+        let paginatedResult = try await defaultMessages.history(withParams: .init())
 
         // Then
         // CHA-M6a: The method return a PaginatedResult containing messages
@@ -467,7 +467,7 @@ struct DefaultMessagesTests {
         // When
         // TODO: avoids compiler crash (https://github.com/ably/ably-chat-swift/issues/233), revert once Xcode 16.3 released
         let doIt = {
-            _ = try await defaultMessages.history(withOptions: .init())
+            _ = try await defaultMessages.history(withParams: .init())
         }
         // Then
         await #expect {
