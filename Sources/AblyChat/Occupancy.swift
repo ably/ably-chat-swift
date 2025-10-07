@@ -33,11 +33,11 @@ public protocol Occupancy: AnyObject, Sendable {
     /**
      * Get the latest occupancy data received from realtime events.
      *
-     * - Returns: The latest occupancy data, or undefined if no realtime events have been received yet.
+     * Note that it is a programmer error to read this property if occupancy events are not enabled in the room options. Make sure to set `enableEvents: true` in your room's occupancy options to use this feature.
      *
-     * - Throws: ``ARTErrorInfo`` if occupancy events are not enabled for this room.
+     * - Returns: The latest occupancy data, or nil if no realtime events have been received yet.
      */
-    func current() throws(ARTErrorInfo) -> OccupancyData?
+    var current: OccupancyData? { get }
 }
 
 /// `AsyncSequence` variant of receiving room occupancy events.
@@ -94,14 +94,14 @@ public struct OccupancyData: Sendable {
     }
 }
 
-public enum OccupancyEventType: String, Sendable {
+public enum OccupancyEventType: Sendable {
     case updated
 }
 
 // (CHA-O2) The occupancy event format is shown here (https://sdk.ably.com/builds/ably/specification/main/chat-features/#chat-structs-occupancy-event)
 public struct OccupancyEvent: Sendable {
-    public let type: OccupancyEventType
-    public let occupancy: OccupancyData
+    public var type: OccupancyEventType
+    public var occupancy: OccupancyData
 
     public init(type: OccupancyEventType, occupancy: OccupancyData) {
         self.type = type

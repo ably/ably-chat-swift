@@ -24,8 +24,8 @@ struct DefaultMessageReactionsTests {
 
         // When
         let message = try await defaultMessages.send(params: .init(text: "a joke"))
-        try await defaultMessages.reactions.send(to: message.serial, params: .init(name: "😆", type: .multiple, count: 10))
-        try await defaultMessages.reactions.delete(from: message.serial, params: .init(name: "😆", type: .multiple))
+        try await defaultMessages.reactions.send(messageSerial: message.serial, params: .init(name: "😆", type: .multiple, count: 10))
+        try await defaultMessages.reactions.delete(messageSerial: message.serial, params: .init(name: "😆", type: .multiple))
 
         // Then
         #expect(realtime.callRecorder.hasRecord(
@@ -70,7 +70,7 @@ struct DefaultMessageReactionsTests {
 
         let doIt = {
             // When
-            try await defaultMessages.reactions.send(to: "", params: .init(name: "😐", type: .distinct))
+            try await defaultMessages.reactions.send(messageSerial: "", params: .init(name: "😐", type: .distinct))
         }
         await #expect {
             try await doIt()
@@ -93,7 +93,7 @@ struct DefaultMessageReactionsTests {
 
         let doIt = {
             // When
-            try await defaultMessages.reactions.delete(from: "", params: .init(name: "😐", type: .distinct))
+            try await defaultMessages.reactions.delete(messageSerial: "", params: .init(name: "😐", type: .distinct))
         }
         await #expect {
             try await doIt()
@@ -146,21 +146,21 @@ struct DefaultMessageReactionsTests {
         defaultMessages.reactions.subscribe { event in
             // Then
             #expect(event.type == .summary)
-            #expect(type(of: event.summary.unique) == [String: MessageReactionSummary.ClientIdList].self)
+            #expect(type(of: event.summary.unique) == [String: MessageReactionSummary.ClientIDList].self)
             #expect(event.summary.unique["like"]?.total == 2)
             #expect(event.summary.unique["love"]?.total == 1)
-            #expect(event.summary.unique["like"]?.clientIds.count == 2)
-            #expect(event.summary.unique["love"]?.clientIds.count == 1)
-            #expect(type(of: event.summary.distinct) == [String: MessageReactionSummary.ClientIdList].self)
+            #expect(event.summary.unique["like"]?.clientIDs.count == 2)
+            #expect(event.summary.unique["love"]?.clientIDs.count == 1)
+            #expect(type(of: event.summary.distinct) == [String: MessageReactionSummary.ClientIDList].self)
             #expect(event.summary.distinct["like"]?.total == 2)
             #expect(event.summary.distinct["love"]?.total == 1)
-            #expect(event.summary.distinct["like"]?.clientIds.count == 2)
-            #expect(event.summary.distinct["love"]?.clientIds.count == 1)
-            #expect(type(of: event.summary.multiple) == [String: MessageReactionSummary.ClientIdCounts].self)
+            #expect(event.summary.distinct["like"]?.clientIDs.count == 2)
+            #expect(event.summary.distinct["love"]?.clientIDs.count == 1)
+            #expect(type(of: event.summary.multiple) == [String: MessageReactionSummary.ClientIDCounts].self)
             #expect(event.summary.multiple["like"]?.total == 5)
             #expect(event.summary.multiple["love"]?.total == 10)
-            #expect(event.summary.multiple["like"]?.clientIds.count == 2)
-            #expect(event.summary.multiple["love"]?.clientIds.count == 1)
+            #expect(event.summary.multiple["like"]?.clientIDs.count == 2)
+            #expect(event.summary.multiple["love"]?.clientIDs.count == 1)
             callbackCalls += 1
         }
         #expect(callbackCalls == 1)
@@ -346,7 +346,7 @@ struct DefaultMessageReactionsTests {
 
         // When
         let message = try await defaultMessages.send(params: .init(text: "a joke"))
-        try await defaultMessages.reactions.send(to: message.serial, params: .init(name: "😆"))
+        try await defaultMessages.reactions.send(messageSerial: message.serial, params: .init(name: "😆"))
 
         // Then
         #expect(realtime.callRecorder.hasRecord(
@@ -385,7 +385,7 @@ struct DefaultMessageReactionsTests {
 
         // When
         let message = try await defaultMessages.send(params: .init(text: "a joke"))
-        try await defaultMessages.reactions.send(to: message.serial, params: .init(name: "😆"))
+        try await defaultMessages.reactions.send(messageSerial: message.serial, params: .init(name: "😆"))
 
         // Then
         #expect(realtime.callRecorder.hasRecord(

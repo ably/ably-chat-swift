@@ -1,6 +1,7 @@
 import Ably
 
-public protocol PaginatedResult<Item>: AnyObject, Sendable, Equatable {
+@MainActor
+public protocol PaginatedResult<Item>: AnyObject, Sendable {
     associatedtype Item
 
     var items: [Item] { get }
@@ -17,6 +18,7 @@ public protocol PaginatedResult<Item>: AnyObject, Sendable, Equatable {
 internal struct ARTHTTPPaginatedCallbackWrapper<Response: JSONDecodable & Sendable & Equatable> {
     internal let callbackResult: (ARTHTTPPaginatedResponse?, ARTErrorInfo?)
 
+    @MainActor
     internal func handleResponse(continuation: CheckedContinuation<Result<PaginatedResultWrapper<Response>, InternalError>, Never>) {
         let (paginatedResponse, error) = callbackResult
 
@@ -48,7 +50,7 @@ internal enum PaginatedResultError: Error {
 }
 
 /// `PaginatedResult` protocol implementation allowing access to the underlying items from a lower level paginated response object e.g. `ARTHTTPPaginatedResponse`, whilst succinctly handling errors through the use of `ARTHTTPPaginatedCallbackWrapper`.
-internal final class PaginatedResultWrapper<Item: JSONDecodable & Sendable & Equatable>: PaginatedResult {
+internal final class PaginatedResultWrapper<Item: JSONDecodable & Sendable & Equatable>: PaginatedResult, @MainActor Equatable {
     internal let items: [Item]
     internal let hasNext: Bool
     internal let isLast: Bool
@@ -106,6 +108,7 @@ internal final class PaginatedResultWrapper<Item: JSONDecodable & Sendable & Equ
 
 internal extension ARTHTTPPaginatedResponse {
     /// Converts an `ARTHTTPPaginatedResponse` to a `PaginatedResultWrapper` allowing for access to operations as per conformance to `PaginatedResult`.
+    @MainActor
     func toPaginatedResult<Item: JSONDecodable & Sendable>(items: [Item]) -> PaginatedResultWrapper<Item> {
         PaginatedResultWrapper(paginatedResponse: self, items: items)
     }

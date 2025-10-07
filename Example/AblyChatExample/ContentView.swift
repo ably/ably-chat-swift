@@ -60,7 +60,7 @@ struct ContentView: View {
         var id: String {
             switch self {
             case let .message(item):
-                item.message.id
+                item.message.serial
             case let .presence(item):
                 item.presence.member.updatedAt.description
             }
@@ -119,9 +119,9 @@ struct ContentView: View {
                                 currentClientID: currentClientID,
                                 item: messageItem,
                                 isEditing: Binding(get: {
-                                    editingItemID == messageItem.message.id
+                                    editingItemID == messageItem.message.serial
                                 }, set: { editing in
-                                    editingItemID = editing ? messageItem.message.id : nil
+                                    editingItemID = editing ? messageItem.message.serial : nil
                                     newMessage = editing ? messageItem.message.text : ""
                                 }),
                                 onDeleteMessage: {
@@ -265,7 +265,7 @@ struct ContentView: View {
                     )
                 }
             case .updated, .deleted:
-                if let index = listItems.firstIndex(where: { $0.id == message.id }) {
+                if let index = listItems.firstIndex(where: { $0.id == message.serial }) {
                     listItems[index] = .message(
                         .init(
                             message: message,
@@ -300,10 +300,10 @@ struct ContentView: View {
             do {
                 try withAnimation {
                     if let reactedMessageItem = listItemWithMessageSerial(summaryEvent.summary.messageSerial) {
-                        if let index = listItems.firstIndex(where: { $0.id == reactedMessageItem.message.id }) {
+                        if let index = listItems.firstIndex(where: { $0.id == reactedMessageItem.message.serial }) {
                             listItems[index] = try .message(
                                 .init(
-                                    message: reactedMessageItem.message.with(summaryEvent: summaryEvent),
+                                    message: reactedMessageItem.message.with(summaryEvent),
                                     isSender: reactedMessageItem.message.clientID == currentClientID,
                                 ),
                             )
@@ -397,7 +397,7 @@ struct ContentView: View {
         }
 
         if let editingMessageItem = listItems.compactMap({ listItem -> MessageListItem? in
-            if case let .message(message) = listItem, message.message.id == editingItemID {
+            if case let .message(message) = listItem, message.message.serial == editingItemID {
                 return message
             }
             return nil
@@ -423,13 +423,13 @@ struct ContentView: View {
 
     func addMessageReaction(_ reaction: String, messageSerial: String) {
         Task {
-            try await room().messages.reactions.send(to: messageSerial, params: .init(name: reaction, type: .distinct))
+            try await room().messages.reactions.send(messageSerial: messageSerial, params: .init(name: reaction, type: .distinct))
         }
     }
 
     func deleteMessageReaction(_ reaction: String, messageSerial: String) {
         Task {
-            try await room().messages.reactions.delete(from: messageSerial, params: .init(name: reaction, type: .distinct))
+            try await room().messages.reactions.delete(messageSerial: messageSerial, params: .init(name: reaction, type: .distinct))
         }
     }
 

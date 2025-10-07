@@ -19,10 +19,7 @@ public typealias OperationMetadata = Metadata
 /**
  * Represents a single message in a chat room.
  */
-public struct Message: Sendable, Identifiable, Equatable {
-    // id to meet Identifiable conformance. 2 messages in the same channel cannot have the same serial.
-    public var id: String { serial }
-
+public struct Message: Sendable, Equatable {
     /**
      * The unique identifier of the message.
      */
@@ -100,27 +97,30 @@ public struct Message: Sendable, Identifiable, Equatable {
     }
 
     /**
-      * Helper function to copy a message with updated values. This is useful when updating a message e.g. `room().messages.update(newMessage: messageCopy...)`.
-      * If metadata/headers are not provided, it keeps the metadata/headers from the original message.
-      * If metadata/headers are explicitly passed in, the new `Message` will have these values. You can set them to `[:]` if you wish to remove them.
+      * Helper function to copy a message with its properties replaced per the parameters. This is useful when updating a message e.g. `room().messages.update(newMessage: message.copy(text: "The updated text")`.
+      *
+      * If an argument is omitted or `nil`, then the current value of that property will be preserved.
      */
     public func copy(
         text: String? = nil,
         metadata: MessageMetadata? = nil,
         headers: MessageHeaders? = nil,
-        reactions: MessageReactionSummary? = nil,
     ) -> Message {
-        Message(
-            serial: serial,
-            action: action,
-            clientID: clientID,
-            text: text ?? self.text,
-            metadata: metadata ?? self.metadata,
-            headers: headers ?? self.headers,
-            version: version,
-            timestamp: timestamp,
-            reactions: reactions ?? self.reactions,
-        )
+        var copied = self
+
+        if let text {
+            copied.text = text
+        }
+
+        if let metadata {
+            copied.metadata = metadata
+        }
+
+        if let headers {
+            copied.headers = headers
+        }
+
+        return copied
     }
 }
 
@@ -204,12 +204,6 @@ extension MessageVersion {
     }
 }
 
-public extension MessageVersion {
-    static func == (lhs: Self, rhs: Self) -> Bool {
-        lhs.serial == rhs.serial
-    }
-}
-
 public extension Message {
     /**
      * Creates a new message instance with the event applied.
@@ -221,11 +215,14 @@ public extension Message {
      *
      * - Returns: A new message instance with the event applied.
      */
-    func with(summaryEvent: MessageReactionSummaryEvent) throws(ARTErrorInfo) -> Self {
+    func with(_ summaryEvent: MessageReactionSummaryEvent) throws(ARTErrorInfo) -> Self {
         // (CHA-M11e) For MessageReactionSummaryEvent, the method must verify that the summary.messageSerial in the event matches the message’s own serial. If they don’t match, an error with code 40000 and status code 400 must be thrown.
         guard serial == summaryEvent.summary.messageSerial else {
             throw ARTErrorInfo(chatError: .cannotApplyEventForDifferentMessage)
         }
-        return copy(reactions: summaryEvent.summary)
+
+        var newMessage = self
+        newMessage.reactions = summaryEvent.summary
+        return newMessage
     }
 }

@@ -51,7 +51,7 @@ struct ChatAPITests {
             text: "hello",
             metadata: [:],
             headers: [:],
-            version: .init(serial: "3446456", timestamp: Date()),
+            version: .init(serial: "3446456", timestamp: Date(timeIntervalSince1970: 1_631_840_000), clientID: "mockClientId"),
             timestamp: Date(timeIntervalSince1970: 1_631_840_000),
         )
         #expect(message == expectedMessage)
@@ -147,7 +147,7 @@ struct ChatAPITests {
                     text: "hello",
                     metadata: [:],
                     headers: [:],
-                    version: .init(serial: "3446456", timestamp: Date(timeIntervalSince1970: 1_730_943_051.269)), // from successGetMessagesWithItems
+                    version: .init(serial: "3446456", timestamp: Date(timeIntervalSince1970: 1_730_943_049.269)), // from successGetMessagesWithItems
                     timestamp: Date(timeIntervalSince1970: 1_730_943_049.269),
                 ),
                 Message(
@@ -167,7 +167,7 @@ struct ChatAPITests {
         let getMessagesResult = try #require(await chatAPI.getMessages(roomName: roomName, params: .init()) as? PaginatedResultWrapper<Message>)
 
         // Then
-        #expect(getMessagesResult == expectedPaginatedResult)
+        #expect(getMessagesResult.items == expectedPaginatedResult.items)
     }
 
     // @spec CHA-M5i

@@ -3,7 +3,7 @@ import Ably
 /**
  * The different states that a room can be in throughout its lifecycle.
  */
-public enum RoomStatus: Sendable, Equatable {
+public enum RoomStatus: Sendable {
     /**
      * A temporary state for when the room object is first initialized.
      */
@@ -117,6 +117,22 @@ public enum RoomStatus: Sendable, Equatable {
 
     public var isFailed: Bool {
         if case .failed = self {
+            true
+        } else {
+            false
+        }
+    }
+
+    public var isReleasing: Bool {
+        if case .releasing = self {
+            true
+        } else {
+            false
+        }
+    }
+
+    public var isReleased: Bool {
+        if case .released = self {
             true
         } else {
             false

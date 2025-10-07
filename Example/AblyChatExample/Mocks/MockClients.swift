@@ -226,15 +226,15 @@ class MockMessageReactions: MessageReactions {
         MessageReactionSummary(
             messageSerial: messageSerial,
             unique: [:],
-            distinct: reactions.filter { $0.messageSerial == messageSerial }.reduce(into: [String: MessageReactionSummary.ClientIdList]()) { dict, newItem in
+            distinct: reactions.filter { $0.messageSerial == messageSerial }.reduce(into: [String: MessageReactionSummary.ClientIDList]()) { dict, newItem in
                 if var oldItem = dict[newItem.name] {
-                    if !oldItem.clientIds.contains(newItem.clientID) {
-                        oldItem.clientIds.append(newItem.clientID)
+                    if !oldItem.clientIDs.contains(newItem.clientID) {
+                        oldItem.clientIDs.append(newItem.clientID)
                         oldItem.total += 1
                     }
                     dict[newItem.name] = oldItem
                 } else {
-                    dict[newItem.name] = MessageReactionSummary.ClientIdList(total: 1, clientIds: [newItem.clientID], clipped: false)
+                    dict[newItem.name] = MessageReactionSummary.ClientIDList(total: 1, clientIDs: [newItem.clientID], clipped: false)
                 }
             },
             multiple: [:],
@@ -246,7 +246,7 @@ class MockMessageReactions: MessageReactions {
         self.roomName = roomName
     }
 
-    func send(to messageSerial: String, params: SendMessageReactionParams) async throws(ARTErrorInfo) {
+    func send(messageSerial: String, params: SendMessageReactionParams) async throws(ARTErrorInfo) {
         reactions.append(
             MessageReaction(
                 type: .distinct,
@@ -265,7 +265,7 @@ class MockMessageReactions: MessageReactions {
         )
     }
 
-    func delete(from messageSerial: String, params: DeleteMessageReactionParams) async throws(ARTErrorInfo) {
+    func delete(messageSerial: String, params: DeleteMessageReactionParams) async throws(ARTErrorInfo) {
         reactions.removeAll { reaction in
             reaction.messageSerial == messageSerial && reaction.name == params.name && reaction.clientID == clientID
         }
@@ -373,7 +373,7 @@ class MockTyping: Typing {
                         MockStrings.names.randomElement()!,
                         MockStrings.names.randomElement()!,
                     ],
-                    change: .init(clientId: MockStrings.names.randomElement()!, type: .started),
+                    change: .init(clientID: MockStrings.names.randomElement()!, type: .started),
                 )
             },
             interval: 2,
@@ -390,7 +390,7 @@ class MockTyping: Typing {
             TypingSetEvent(
                 type: .setChanged,
                 currentlyTyping: [clientID],
-                change: .init(clientId: clientID, type: .started),
+                change: .init(clientID: clientID, type: .started),
             ),
         )
     }
@@ -400,7 +400,7 @@ class MockTyping: Typing {
             TypingSetEvent(
                 type: .setChanged,
                 currentlyTyping: [],
-                change: .init(clientId: clientID, type: .stopped),
+                change: .init(clientID: clientID, type: .stopped),
             ),
         )
     }
@@ -568,7 +568,7 @@ class MockOccupancy: Occupancy {
         OccupancyData(connections: 10, presenceMembers: 5)
     }
 
-    func current() throws(ARTErrorInfo) -> AblyChat.OccupancyData? {
+    var current: AblyChat.OccupancyData? {
         OccupancyData(connections: 10, presenceMembers: 5)
     }
 }

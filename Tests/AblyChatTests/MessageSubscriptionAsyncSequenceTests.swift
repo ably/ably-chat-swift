@@ -3,7 +3,7 @@ import AsyncAlgorithms
 import Foundation
 import Testing
 
-private final class MockPaginatedResult<Item: Equatable>: PaginatedResult {
+private final class MockPaginatedResult<Item: Equatable>: PaginatedResult, @MainActor Equatable {
     var items: [Item] { fatalError("Not implemented") }
 
     var hasNext: Bool { fatalError("Not implemented") }
@@ -47,6 +47,7 @@ struct MessageSubscriptionAsyncSequenceTests {
     }
 
     @Test
+    @MainActor
     func mockGetPreviousMessages() async throws {
         let mockPaginatedResult = MockPaginatedResult<Message>()
         let subscription = MessageSubscriptionAsyncSequence(mockAsyncSequence: [].async) { _ in mockPaginatedResult }
