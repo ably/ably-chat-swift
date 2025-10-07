@@ -1,0 +1,1 @@
+The section about primary associated types should read `some Rooms<ARTRealtimeChannel>`, not `some Room<ARTRealtimeChannel>`.
