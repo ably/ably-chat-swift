@@ -35,7 +35,7 @@ public protocol Occupancy: AnyObject, Sendable {
      *
      * Note that it is a programmer error to read this property if occupancy events are not enabled in the room options. Make sure to set `enableEvents: true` in your room's occupancy options to use this feature.
      *
-     * - Returns: The latest occupancy data, or undefined if no realtime events have been received yet.
+     * - Returns: The latest occupancy data, or nil if no realtime events have been received yet.
      */
     var current: OccupancyData? { get }
 }
