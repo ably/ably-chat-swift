@@ -75,7 +75,6 @@ struct IntegrationTests {
             options: .init(
                 presence: .init(),
                 typing: .init(heartbeatThrottle: 2),
-                reactions: .init(),
                 occupancy: .init(),
             ),
         )
@@ -85,7 +84,6 @@ struct IntegrationTests {
                 messages: .init(rawMessageReactions: true),
                 presence: .init(),
                 typing: .init(heartbeatThrottle: 2),
-                reactions: .init(),
                 occupancy: .init(enableEvents: true),
             ),
         )

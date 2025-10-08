@@ -15,11 +15,6 @@ public struct RoomOptions: Sendable {
     public var typing = TypingOptions()
 
     /**
-     * The reactions options for the room.
-     */
-    public var reactions = RoomReactionsOptions()
-
-    /**
      * The occupancy options for the room.
      */
     public var occupancy = OccupancyOptions()
@@ -30,11 +25,10 @@ public struct RoomOptions: Sendable {
     public var messages = MessagesOptions()
 
     // swiftlint:disable:next missing_docs
-    public init(messages: MessagesOptions = MessagesOptions(), presence: PresenceOptions = PresenceOptions(), typing: TypingOptions = TypingOptions(), reactions: RoomReactionsOptions = RoomReactionsOptions(), occupancy: OccupancyOptions = OccupancyOptions()) {
+    public init(messages: MessagesOptions = MessagesOptions(), presence: PresenceOptions = PresenceOptions(), typing: TypingOptions = TypingOptions(), occupancy: OccupancyOptions = OccupancyOptions()) {
         self.messages = messages
         self.presence = presence
         self.typing = typing
-        self.reactions = reactions
         self.occupancy = occupancy
     }
 }
@@ -112,14 +106,6 @@ public struct TypingOptions: Sendable {
 }
 
 /**
- * Represents the reactions options for a chat room.
- */
-public struct RoomReactionsOptions: Sendable {
-    // swiftlint:disable:next missing_docs
-    public init() {}
-}
-
-/**
  * Represents the occupancy options for a chat room.
  */
 public struct OccupancyOptions: Sendable {
@@ -148,14 +134,12 @@ internal extension RoomOptions {
         internal var messages: MessagesOptions.EquatableBox
         internal var presence: PresenceOptions.EquatableBox
         internal var typing: TypingOptions.EquatableBox
-        internal var reactions: RoomReactionsOptions.EquatableBox
         internal var occupancy: OccupancyOptions.EquatableBox
 
         internal init(_ options: RoomOptions) {
             messages = MessagesOptions.EquatableBox(options.messages)
             presence = PresenceOptions.EquatableBox(options.presence)
             typing = TypingOptions.EquatableBox(options.typing)
-            reactions = RoomReactionsOptions.EquatableBox(options.reactions)
             occupancy = OccupancyOptions.EquatableBox(options.occupancy)
         }
     }
@@ -202,16 +186,6 @@ internal extension TypingOptions {
         internal init(_ options: TypingOptions) {
             heartbeatThrottle = options.heartbeatThrottle
         }
-    }
-
-    var equatableBox: EquatableBox {
-        .init(self)
-    }
-}
-
-internal extension RoomReactionsOptions {
-    struct EquatableBox: Equatable {
-        internal init(_: RoomReactionsOptions) {}
     }
 
     var equatableBox: EquatableBox {
