@@ -84,7 +84,7 @@ public struct SendReactionParams: Sendable {
      * Do not use metadata for authoritative information. There is no server-side
      * validation. When reading the metadata treat it like user input.
      */
-    public var metadata: ReactionMetadata?
+    public var metadata: RoomReactionMetadata?
 
     /**
      * Optional headers of the room reaction.
@@ -99,10 +99,10 @@ public struct SendReactionParams: Sendable {
      * server-side validation. When reading the headers treat them like user
      * input.
      */
-    public var headers: ReactionHeaders?
+    public var headers: RoomReactionHeaders?
 
     /// Creates an instance with the given property values.
-    public init(name: String, metadata: ReactionMetadata? = nil, headers: ReactionHeaders? = nil) {
+    public init(name: String, metadata: RoomReactionMetadata? = nil, headers: RoomReactionHeaders? = nil) {
         self.name = name
         self.metadata = metadata
         self.headers = headers
