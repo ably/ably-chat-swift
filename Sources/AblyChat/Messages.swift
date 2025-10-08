@@ -33,7 +33,7 @@ public protocol Messages: AnyObject, Sendable {
      *
      * - Returns: A paginated result object that can be used to fetch more messages if available.
      */
-    func history(options: QueryOptions) async throws(ARTErrorInfo) -> HistoryResult
+    func history(withOptions options: QueryOptions) async throws(ARTErrorInfo) -> HistoryResult
 
     /**
      * Send a message in the chat room.
@@ -47,7 +47,7 @@ public protocol Messages: AnyObject, Sendable {
      *
      * - Note: It is possible to receive your own message via the messages subscription before this method returns.
      */
-    func send(params: SendMessageParams) async throws(ARTErrorInfo) -> Message
+    func send(withParams params: SendMessageParams) async throws(ARTErrorInfo) -> Message
 
     /**
      * Updates a message in the chat room.
@@ -391,7 +391,7 @@ public final class MessageSubscriptionAsyncSequence<HistoryResult: PaginatedResu
     }
 
     // swiftlint:disable:next missing_docs
-    public func getPreviousMessages(params: QueryOptions) async throws(ARTErrorInfo) -> HistoryResult {
+    public func getPreviousMessages(withParams params: QueryOptions) async throws(ARTErrorInfo) -> HistoryResult {
         try await getPreviousMessages(params)
     }
 

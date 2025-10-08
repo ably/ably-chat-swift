@@ -111,7 +111,7 @@ struct IntegrationTests {
 
         // (3) Send the message
         let txMessageBeforeRxSubscribe = try await txRoom.messages.send(
-            params: .init(
+            withParams: .init(
                 text: "Hello from txRoom, before rxRoom subscribe",
             ),
         )
@@ -125,7 +125,7 @@ struct IntegrationTests {
 
         // (6) Now that we're subscribed to messages, send a message on the other client and check that we receive it on the subscription
         let txMessageAfterRxSubscribe = try await txRoom.messages.send(
-            params: .init(
+            withParams: .init(
                 text: "Hello from txRoom, after rxRoom subscribe",
                 metadata: ["someMetadataKey": 123, "someOtherMetadataKey": "foo"],
                 headers: ["someHeadersKey": 456, "someOtherHeadersKey": "bar"],
@@ -140,10 +140,10 @@ struct IntegrationTests {
 
         let rxMessageReactionsSubscription = rxRoom.messages.reactions.subscribe()
 
-        try await txRoom.messages.reactions.send(messageSerial: messageToReact.serial, params: .init(name: "👍"))
-        try await txRoom.messages.reactions.send(messageSerial: messageToReact.serial, params: .init(name: "🎉"))
-        try await txRoom.messages.reactions.delete(messageSerial: messageToReact.serial, params: .init(name: "👍"))
-        try await txRoom.messages.reactions.delete(messageSerial: messageToReact.serial, params: .init(name: "🎉"))
+        try await txRoom.messages.reactions.send(forMessageWithSerial: messageToReact.serial, params: .init(name: "👍"))
+        try await txRoom.messages.reactions.send(forMessageWithSerial: messageToReact.serial, params: .init(name: "🎉"))
+        try await txRoom.messages.reactions.delete(forMessageWithSerial: messageToReact.serial, params: .init(name: "👍"))
+        try await txRoom.messages.reactions.delete(forMessageWithSerial: messageToReact.serial, params: .init(name: "🎉"))
 
         var reactionSummaryEvents = [MessageReactionSummaryEvent]()
 
@@ -188,9 +188,9 @@ struct IntegrationTests {
 
         let rxMessageRawReactionsSubscription = rxRoom.messages.reactions.subscribeRaw()
 
-        try await txRoom.messages.reactions.send(messageSerial: messageToReact.serial, params: .init(name: "🔥"))
-        try await txRoom.messages.reactions.send(messageSerial: messageToReact.serial, params: .init(name: "😆"))
-        try await txRoom.messages.reactions.delete(messageSerial: messageToReact.serial, params: .init(name: "😆")) // not deleting 🔥 to check it later in history request
+        try await txRoom.messages.reactions.send(forMessageWithSerial: messageToReact.serial, params: .init(name: "🔥"))
+        try await txRoom.messages.reactions.send(forMessageWithSerial: messageToReact.serial, params: .init(name: "😆"))
+        try await txRoom.messages.reactions.delete(forMessageWithSerial: messageToReact.serial, params: .init(name: "😆")) // not deleting 🔥 to check it later in history request
 
         var reactionRawEvents = [MessageReactionRawEvent]()
 
@@ -221,7 +221,7 @@ struct IntegrationTests {
         /*
          TODO: This line should just be
 
-         let messages = try await rxMessageSubscription.getPreviousMessages(params: .init())
+         let messages = try await rxMessageSubscription.getPreviousMessages(withParams: .init())
 
          but sometimes `messages.items` is coming back empty. Andy said in
          https://ably-real-time.slack.com/archives/C03JDBVM5MY/p1733220395208909
@@ -239,7 +239,7 @@ struct IntegrationTests {
          */
         let rxMessagesHistory = try await {
             while true {
-                let messages = try await rxMessageSubscription.getPreviousMessages(params: .init())
+                let messages = try await rxMessageSubscription.getPreviousMessages(withParams: .init())
                 if !messages.items.isEmpty {
                     return messages
                 }
@@ -323,7 +323,7 @@ struct IntegrationTests {
 
         // (2) Now that we're subscribed to reactions, send a reaction on the other client and check that we receive it on the subscription
         try await txRoom.reactions.send(
-            params: .init(
+            withParams: .init(
                 name: "heart",
                 metadata: ["someMetadataKey": 123, "someOtherMetadataKey": "foo"],
                 headers: ["someHeadersKey": 456, "someOtherHeadersKey": "bar"],
@@ -380,7 +380,7 @@ struct IntegrationTests {
         let rxPresenceSubscription = rxRoom.presence.subscribe(events: [.enter, .leave, .update])
 
         // (2) Send `.enter` presence event with custom data on the other client and check that we receive it on the subscription
-        try await txRoom.presence.enter(data: ["randomData": "randomValue"])
+        try await txRoom.presence.enter(withData: ["randomData": "randomValue"])
         let rxPresenceEnterTxEvent = try #require(await rxPresenceSubscription.first { @Sendable _ in true })
         #expect(rxPresenceEnterTxEvent.type == .enter)
         #expect(rxPresenceEnterTxEvent.member.data == ["randomData": "randomValue"])
@@ -391,31 +391,31 @@ struct IntegrationTests {
         #expect(rxPresenceMembers[0].data == ["randomData": "randomValue"])
 
         // (4) Send `.update` presence event with custom data on the other client and check that we receive it on the subscription
-        try await txRoom.presence.update(data: ["randomData": "randomValue"])
+        try await txRoom.presence.update(withData: ["randomData": "randomValue"])
         let rxPresenceUpdateTxEvent = try #require(await rxPresenceSubscription.first { @Sendable _ in true })
         #expect(rxPresenceUpdateTxEvent.type == .update)
         #expect(rxPresenceUpdateTxEvent.member.data == ["randomData": "randomValue"])
 
         // (5) Send `.leave` presence event with custom data on the other client and check that we receive it on the subscription
-        try await txRoom.presence.leave(data: ["randomData": "randomValue"])
+        try await txRoom.presence.leave(withData: ["randomData": "randomValue"])
         let rxPresenceLeaveTxEvent = try #require(await rxPresenceSubscription.first { @Sendable _ in true })
         #expect(rxPresenceLeaveTxEvent.type == .leave)
         #expect(rxPresenceLeaveTxEvent.member.data == ["randomData": "randomValue"])
 
         // (6) Send `.enter` presence event with custom data on our client and check that we receive it on the subscription
-        try await txRoom.presence.enter(data: ["randomData": "randomValue"])
+        try await txRoom.presence.enter(withData: ["randomData": "randomValue"])
         let rxPresenceEnterRxEvent = try #require(await rxPresenceSubscription.first { @Sendable _ in true })
         #expect(rxPresenceEnterRxEvent.type == .enter)
         #expect(rxPresenceEnterRxEvent.member.data == ["randomData": "randomValue"])
 
         // (7) Send `.update` presence event with custom data on our client and check that we receive it on the subscription
-        try await txRoom.presence.update(data: ["randomData": "randomValue"])
+        try await txRoom.presence.update(withData: ["randomData": "randomValue"])
         let rxPresenceUpdateRxEvent = try #require(await rxPresenceSubscription.first { @Sendable _ in true })
         #expect(rxPresenceUpdateRxEvent.type == .update)
         #expect(rxPresenceUpdateRxEvent.member.data == ["randomData": "randomValue"])
 
         // (8) Send `.leave` presence event with custom data on our client and check that we receive it on the subscription
-        try await txRoom.presence.leave(data: ["randomData": "randomValue"])
+        try await txRoom.presence.leave(withData: ["randomData": "randomValue"])
         let rxPresenceLeaveRxEvent = try #require(await rxPresenceSubscription.first { @Sendable _ in true })
         #expect(rxPresenceLeaveRxEvent.type == .leave)
         #expect(rxPresenceLeaveRxEvent.member.data == ["randomData": "randomValue"])

@@ -22,7 +22,7 @@ struct DefaultPresenceTests {
         )
 
         // When
-        try await defaultPresence.enter(data: ["status": "Online"])
+        try await defaultPresence.enter(withData: ["status": "Online"])
 
         // Then
         #expect(channel.presence.callRecorder.hasRecord(
@@ -167,7 +167,7 @@ struct DefaultPresenceTests {
             options: .init(),
         )
         // When
-        try await defaultPresence.update(data: ["status": "Online"])
+        try await defaultPresence.update(withData: ["status": "Online"])
 
         // Then
         #expect(channel.presence.callRecorder.hasRecord(
@@ -287,7 +287,7 @@ struct DefaultPresenceTests {
         )
 
         // When
-        try await defaultPresence.leave(data: ["status": "Online"])
+        try await defaultPresence.leave(withData: ["status": "Online"])
 
         // Then
         #expect(channel.presence.callRecorder.hasRecord(
@@ -315,7 +315,7 @@ struct DefaultPresenceTests {
         )
 
         // When
-        _ = try await defaultPresence.isUserPresent(clientID: "client1")
+        _ = try await defaultPresence.isUserPresent(withClientID: "client1")
 
         // Then
         #expect(channel.presence.callRecorder.hasRecord(

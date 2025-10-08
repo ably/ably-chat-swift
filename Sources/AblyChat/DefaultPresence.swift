@@ -42,7 +42,7 @@ internal final class DefaultPresence: Presence {
         }
     }
 
-    internal func get(params: PresenceParams) async throws(ARTErrorInfo) -> [PresenceMember] {
+    internal func get(withParams params: PresenceParams) async throws(ARTErrorInfo) -> [PresenceMember] {
         do throws(InternalError) {
             logger.log(message: "Getting presence with params: \(params)", level: .debug)
 
@@ -68,7 +68,7 @@ internal final class DefaultPresence: Presence {
     }
 
     // (CHA-PR5) It must be possible to query if a given clientId is in the presence set.
-    internal func isUserPresent(clientID: String) async throws(ARTErrorInfo) -> Bool {
+    internal func isUserPresent(withClientID clientID: String) async throws(ARTErrorInfo) -> Bool {
         do throws(InternalError) {
             logger.log(message: "Checking if user is present with clientID: \(clientID)", level: .debug)
 
@@ -94,7 +94,7 @@ internal final class DefaultPresence: Presence {
         }
     }
 
-    internal func enter(data: PresenceData) async throws(ARTErrorInfo) {
+    internal func enter(withData data: PresenceData) async throws(ARTErrorInfo) {
         try await enter(optionalData: data)
     }
 
@@ -126,7 +126,7 @@ internal final class DefaultPresence: Presence {
         }
     }
 
-    internal func update(data: PresenceData) async throws(ARTErrorInfo) {
+    internal func update(withData data: PresenceData) async throws(ARTErrorInfo) {
         try await update(optionalData: data)
     }
 
@@ -158,7 +158,7 @@ internal final class DefaultPresence: Presence {
         }
     }
 
-    internal func leave(data: PresenceData) async throws(ARTErrorInfo) {
+    internal func leave(withData data: PresenceData) async throws(ARTErrorInfo) {
         try await leave(optionalData: data)
     }
 

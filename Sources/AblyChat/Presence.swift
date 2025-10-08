@@ -29,7 +29,7 @@ public protocol Presence: AnyObject, Sendable {
      *
      * - Throws: An `ARTErrorInfo`.
      */
-    func get(params: PresenceParams) async throws(ARTErrorInfo) -> [PresenceMember]
+    func get(withParams params: PresenceParams) async throws(ARTErrorInfo) -> [PresenceMember]
 
     /**
      * Method to check if user with supplied clientId is online.
@@ -41,7 +41,7 @@ public protocol Presence: AnyObject, Sendable {
      *
      * - Throws: An `ARTErrorInfo`.
      */
-    func isUserPresent(clientID: String) async throws(ARTErrorInfo) -> Bool
+    func isUserPresent(withClientID clientID: String) async throws(ARTErrorInfo) -> Bool
 
     /**
      * Method to join room presence, will emit an enter event to all subscribers. Repeat calls will trigger more enter events.
@@ -51,7 +51,7 @@ public protocol Presence: AnyObject, Sendable {
      *
      * - Throws: An `ARTErrorInfo`.
      */
-    func enter(data: PresenceData) async throws(ARTErrorInfo)
+    func enter(withData data: PresenceData) async throws(ARTErrorInfo)
 
     /**
      * Method to update room presence, will emit an update event to all subscribers. If the user is not present, it will be treated as a join event.
@@ -61,7 +61,7 @@ public protocol Presence: AnyObject, Sendable {
      *
      * - Throws: An `ARTErrorInfo`.
      */
-    func update(data: PresenceData) async throws(ARTErrorInfo)
+    func update(withData data: PresenceData) async throws(ARTErrorInfo)
 
     /**
      * Method to leave room presence, will emit a leave event to all subscribers. If the user is not present, it will be treated as a no-op.
@@ -71,7 +71,7 @@ public protocol Presence: AnyObject, Sendable {
      *
      * - Throws: An `ARTErrorInfo`.
      */
-    func leave(data: PresenceData) async throws(ARTErrorInfo)
+    func leave(withData data: PresenceData) async throws(ARTErrorInfo)
 
     /**
      * Subscribes a given listener to a particular presence event in the chat room.

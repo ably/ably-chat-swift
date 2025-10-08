@@ -36,7 +36,7 @@ struct DefaultMessagesTests {
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", clientID: "clientId", logger: TestLogger())
 
         // When
-        let sentMessage = try await defaultMessages.send(params: .init(text: "hey", metadata: ["key1": "val1"], headers: ["key2": "val2"]))
+        let sentMessage = try await defaultMessages.send(withParams: .init(text: "hey", metadata: ["key1": "val1"], headers: ["key2": "val2"]))
 
         // Then
         #expect(sentMessage.serial == "0")
@@ -160,7 +160,7 @@ struct DefaultMessagesTests {
         // Then
         // TODO: avoids compiler crash (https://github.com/ably/ably-chat-swift/issues/233), revert once Xcode 16.3 released
         let doIt = {
-            _ = try await defaultMessages.send(params: .init(text: "hey"))
+            _ = try await defaultMessages.send(withParams: .init(text: "hey"))
         }
         await #expect {
             try await doIt()
@@ -232,7 +232,7 @@ struct DefaultMessagesTests {
         )
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", clientID: "clientId", logger: TestLogger())
         let subscription = defaultMessages.subscribe()
-        _ = try await subscription.getPreviousMessages(params: .init())
+        _ = try await subscription.getPreviousMessages(withParams: .init())
 
         // Then: subscription point is the current channelSerial of the realtime channel
         #expect(realtime.callRecorder.hasRecord(
@@ -259,7 +259,7 @@ struct DefaultMessagesTests {
 
         // When: subscription is added when the underlying realtime channel is ATTACHING
         let subscription = defaultMessages.subscribe()
-        _ = try await subscription.getPreviousMessages(params: .init())
+        _ = try await subscription.getPreviousMessages(withParams: .init())
 
         // Then: subscription point is the attachSerial of the realtime channel
         #expect(realtime.callRecorder.hasRecord(
@@ -286,7 +286,7 @@ struct DefaultMessagesTests {
 
         // When: subscription is added when the underlying realtime channel is ATTACHED
         let subscription = defaultMessages.subscribe()
-        _ = try await subscription.getPreviousMessages(params: .init())
+        _ = try await subscription.getPreviousMessages(withParams: .init())
 
         #expect(realtime.callRecorder.hasRecord(
             matching: "request(_:path:params:body:headers:)",
@@ -301,7 +301,7 @@ struct DefaultMessagesTests {
             ARTChannelStateChange(current: .attached, previous: .detached, event: .attached, reason: nil, resumed: false),
         )
 
-        _ = try await subscription.getPreviousMessages(params: .init())
+        _ = try await subscription.getPreviousMessages(withParams: .init())
 
         // Then: subscription point is the attachSerial of the realtime channel
         #expect(realtime.callRecorder.hasRecord(
@@ -328,7 +328,7 @@ struct DefaultMessagesTests {
 
         // When: subscription is added when the underlying realtime channel is ATTACHED
         let subscription = defaultMessages.subscribe()
-        _ = try await subscription.getPreviousMessages(params: .init())
+        _ = try await subscription.getPreviousMessages(withParams: .init())
 
         #expect(realtime.callRecorder.hasRecord(
             matching: "request(_:path:params:body:headers:)",
@@ -340,7 +340,7 @@ struct DefaultMessagesTests {
             ARTChannelStateChange(current: .attached, previous: .attached, event: .update, reason: nil, resumed: false),
         )
 
-        _ = try await subscription.getPreviousMessages(params: .init())
+        _ = try await subscription.getPreviousMessages(withParams: .init())
 
         // Then: subscription point is the attachSerial of the realtime channel
         #expect(realtime.callRecorder.hasRecord(
@@ -368,7 +368,7 @@ struct DefaultMessagesTests {
 
         // When: subscription is added when the underlying realtime channel is ATTACHED
         let subscription = defaultMessages.subscribe()
-        let paginatedResult = try await subscription.getPreviousMessages(params: .init(orderBy: .oldestFirst)) // CHA-M5f, try to set unsupported direction
+        let paginatedResult = try await subscription.getPreviousMessages(withParams: .init(orderBy: .oldestFirst)) // CHA-M5f, try to set unsupported direction
 
         let requestParams = try #require(realtime.requestArguments.first?.params)
 
@@ -410,7 +410,7 @@ struct DefaultMessagesTests {
         // Then
         // TODO: avoids compiler crash (https://github.com/ably/ably-chat-swift/issues/233), revert once Xcode 16.3 released
         let doIt = {
-            _ = try await subscription.getPreviousMessages(params: .init())
+            _ = try await subscription.getPreviousMessages(withParams: .init())
         }
         // Then
         await #expect {
@@ -436,7 +436,7 @@ struct DefaultMessagesTests {
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", clientID: "clientId", logger: TestLogger())
 
         // When
-        let paginatedResult = try await defaultMessages.history(options: .init())
+        let paginatedResult = try await defaultMessages.history(withOptions: .init())
 
         // Then
         // CHA-M6a: The method return a PaginatedResult containing messages
@@ -467,7 +467,7 @@ struct DefaultMessagesTests {
         // When
         // TODO: avoids compiler crash (https://github.com/ably/ably-chat-swift/issues/233), revert once Xcode 16.3 released
         let doIt = {
-            _ = try await defaultMessages.history(options: .init())
+            _ = try await defaultMessages.history(withOptions: .init())
         }
         // Then
         await #expect {

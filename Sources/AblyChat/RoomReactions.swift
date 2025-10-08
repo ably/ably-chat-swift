@@ -18,7 +18,7 @@ public protocol RoomReactions: AnyObject, Sendable {
      *
      * - Note: It is possible to receive your own reaction via the reactions subscription before this method returns.
      */
-    func send(params: SendReactionParams) async throws(ARTErrorInfo)
+    func send(withParams params: SendReactionParams) async throws(ARTErrorInfo)
 
     /**
      * Subscribes a given listener to the room reactions.
