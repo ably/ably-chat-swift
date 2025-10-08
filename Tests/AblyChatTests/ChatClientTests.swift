@@ -40,10 +40,35 @@ struct ChatClientTests {
     @Test
     func preservesStaticTypeInformation() {
         // This test doesn't have any assertions; it's just to test that the type system gives you ARTRealtime and ARTRealtimeChannel
+
         func withChatClient(_ chatClient: ChatClient) async throws {
             let _: ARTRealtime = chatClient.realtime
             let room = try await chatClient.rooms.get(name: "room")
             let _: ARTRealtimeChannel = room.channel
+        }
+
+        @available(iOS 16.0, tvOS 16.0, *)
+        func usingExistentials(_ chatClient: ChatClient) async throws {
+            // The compiler won't let you write `[some Room<ARTRealtimeChannel>]` here, which I guess isn't a surprise.
+            // Nor will it let you write `[ChatClient.Rooms.Room]`, which surprised me.
+            // But luckily we can still use existentials.
+            var rooms: [any Room<ARTRealtimeChannel>] = []
+            for roomName in ["foo", "bar"] {
+                try await rooms.append(chatClient.rooms.get(name: roomName))
+            }
+
+            // This crashes the compiler! (https://github.com/swiftlang/swift/issues/84744)
+            // let _: [ARTRealtimeChannel] = rooms.map(\.channel)
+
+            // Whereas this, which is functionally the same thing, does not.
+            // swiftformat:disable:next preferKeyPath
+            let _: [ARTRealtimeChannel] = rooms.map { $0.channel }
+
+            // Nor this.
+            var realtimeChannels: [ARTRealtimeChannel] = []
+            for room in rooms {
+                realtimeChannels.append(room.channel)
+            }
         }
     }
 
