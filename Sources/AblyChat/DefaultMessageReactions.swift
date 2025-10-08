@@ -82,7 +82,7 @@ internal final class DefaultMessageReactions: MessageReactions {
             }
 
             let summaryEvent = MessageReactionSummaryEvent(
-                type: MessageReactionEvent.summary,
+                type: MessageReactionEventType.summary,
                 summary: MessageReactionSummary(
                     messageSerial: messageSerial,
                     values: summaryJson ?? [:], // CHA-MR6a1
@@ -115,7 +115,7 @@ internal final class DefaultMessageReactions: MessageReactions {
             }
             logger.log(message: "Received reaction (message annotation): \(annotation)", level: .debug)
 
-            guard let reactionEventType = MessageReactionEvent.fromAnnotationAction(annotation.action) else {
+            guard let reactionEventType = MessageReactionEventType.fromAnnotationAction(annotation.action) else {
                 logger.log(message: "Received reaction with unknown action: \(annotation.action)", level: .info) // CHA-MR7b2
                 return
             }

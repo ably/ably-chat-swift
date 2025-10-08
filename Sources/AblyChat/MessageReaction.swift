@@ -3,7 +3,7 @@ import Ably
 /**
  * Enum representing different message reaction events in the chat system.
  */
-public enum MessageReactionEvent: Sendable {
+public enum MessageReactionEventType: Sendable {
     /**
      * A reaction was added to a message.
      */
@@ -29,7 +29,7 @@ public enum MessageReactionEvent: Sendable {
     }
 }
 
-internal extension MessageReactionEvent {
+internal extension MessageReactionEventType {
     static func fromAnnotationAction(_ annotationAction: ARTAnnotationAction) -> Self? {
         switch annotationAction {
         case .create:
@@ -267,7 +267,7 @@ public struct MessageReactionSummaryEvent: Sendable, Equatable {
     /**
      * The type of the event (should be equal to summary).
      */
-    public var type: MessageReactionEvent
+    public var type: MessageReactionEventType
 
     /**
      * The message reactions summary.
@@ -277,7 +277,7 @@ public struct MessageReactionSummaryEvent: Sendable, Equatable {
     /// Memberwise initializer to create a `MessageReactionSummaryEvent`.
     ///
     /// - Note: You should not need to use this initializer when using the Chat SDK. It is exposed only to allow users to create mock versions of the SDK's protocols.
-    public init(type: MessageReactionEvent, summary: MessageReactionSummary) {
+    public init(type: MessageReactionEventType, summary: MessageReactionSummary) {
         self.type = type
         self.summary = summary
     }
@@ -290,7 +290,7 @@ public struct MessageReactionRawEvent: Sendable {
     /**
      * Whether reaction was added or removed.
      */
-    public var type: MessageReactionEvent
+    public var type: MessageReactionEventType
 
     /**
      * The timestamp of this event.
@@ -305,7 +305,7 @@ public struct MessageReactionRawEvent: Sendable {
     /// Memberwise initializer to create a `MessageReactionRawEvent`.
     ///
     /// - Note: You should not need to use this initializer when using the Chat SDK. It is exposed only to allow users to create mock versions of the SDK's protocols.
-    public init(type: MessageReactionEvent, timestamp: Date? = nil, reaction: MessageReaction) {
+    public init(type: MessageReactionEventType, timestamp: Date? = nil, reaction: MessageReaction) {
         self.type = type
         self.timestamp = timestamp
         self.reaction = reaction
