@@ -221,7 +221,7 @@ struct IntegrationTests {
         /*
          TODO: This line should just be
 
-         let messages = try await rxMessageSubscription.getPreviousMessages(withParams: .init())
+         let messages = try await rxMessageSubscription.historyBeforeSubscribe(withParams: .init())
 
          but sometimes `messages.items` is coming back empty. Andy said in
          https://ably-real-time.slack.com/archives/C03JDBVM5MY/p1733220395208909
@@ -239,7 +239,7 @@ struct IntegrationTests {
          */
         let rxMessagesHistory = try await {
             while true {
-                let messages = try await rxMessageSubscription.getPreviousMessages(withParams: .init())
+                let messages = try await rxMessageSubscription.historyBeforeSubscribe(withParams: .init())
                 if !messages.items.isEmpty {
                     return messages
                 }
