@@ -381,7 +381,7 @@ class MockTyping: Typing {
         )
     }
 
-    func get() async throws(ARTErrorInfo) -> Set<String> {
+    var current: Set<String> {
         Set(MockStrings.names.shuffled().prefix(2))
     }
 

@@ -108,7 +108,7 @@ internal final class DefaultTyping: Typing {
     }
 
     // (CHA-T9) Users may retrieve a list of the currently typing client IDs.
-    internal func get() async throws(ARTErrorInfo) -> Set<String> {
+    internal var current: Set<String> {
         typingTimerManager.currentlyTypingClientIDs()
     }
 
