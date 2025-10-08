@@ -95,7 +95,7 @@ public class ChatClient: ChatClientProtocol {
      *   - realtime: The Ably Realtime client. Its `dispatchQueue` option must be the main queue (this is its default behaviour).
      *   - clientOptions: The client options.
      */
-    public convenience init(realtime: ARTRealtime, clientOptions: ChatClientOptions?) {
+    public convenience init(realtime: ARTRealtime, clientOptions: ChatClientOptions? = nil) {
         self.init(
             realtime: realtime,
             clientOptions: clientOptions,
