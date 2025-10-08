@@ -8,4 +8,4 @@
  * Do not use metadata for authoritative information. There is no server-side
  * validation. When reading the metadata treat it like user input.
  */
-public typealias Metadata = [String: JSONValue]
+public typealias Metadata = JSONObject
