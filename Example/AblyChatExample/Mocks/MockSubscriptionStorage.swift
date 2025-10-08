@@ -127,7 +127,7 @@ class MockMessageSubscriptionStorage<Element: Sendable, PaginatedResult: AblyCha
 
         init(
             randomElement: @escaping @MainActor @Sendable () -> Element,
-            previousMessages: @escaping @MainActor @Sendable (QueryOptions) async throws(ARTErrorInfo) -> PaginatedResult,
+            previousMessages: @escaping @MainActor @Sendable (HistoryParams) async throws(ARTErrorInfo) -> PaginatedResult,
             interval: @escaping @MainActor @Sendable () -> Double,
             callback: @escaping @MainActor (Element) -> Void,
             onTerminate: @escaping () -> Void,
@@ -152,7 +152,7 @@ class MockMessageSubscriptionStorage<Element: Sendable, PaginatedResult: AblyCha
 
     func create(
         randomElement: @escaping @MainActor @Sendable () -> Element,
-        previousMessages: @escaping @MainActor @Sendable (QueryOptions) async throws(ARTErrorInfo) -> PaginatedResult,
+        previousMessages: @escaping @MainActor @Sendable (HistoryParams) async throws(ARTErrorInfo) -> PaginatedResult,
         interval: @autoclosure @escaping @MainActor @Sendable () -> Double,
         callback: @escaping @MainActor (Element) -> Void,
     ) -> some MessageSubscriptionResponse {
@@ -206,9 +206,9 @@ struct MockStatusSubscription: StatusSubscription {
 
 struct MockMessageSubscriptionResponse<PaginatedResult: AblyChat.PaginatedResult<Message>>: MessageSubscriptionResponse {
     private let _unsubscribe: () -> Void
-    private let previousMessages: @MainActor @Sendable (QueryOptions) async throws(ARTErrorInfo) -> PaginatedResult
+    private let previousMessages: @MainActor @Sendable (HistoryParams) async throws(ARTErrorInfo) -> PaginatedResult
 
-    func historyBeforeSubscribe(withParams params: QueryOptions) async throws(ARTErrorInfo) -> PaginatedResult {
+    func historyBeforeSubscribe(withParams params: HistoryParams) async throws(ARTErrorInfo) -> PaginatedResult {
         try await previousMessages(params)
     }
 
@@ -217,7 +217,7 @@ struct MockMessageSubscriptionResponse<PaginatedResult: AblyChat.PaginatedResult
     }
 
     init(
-        previousMessages: @escaping @MainActor @Sendable (QueryOptions) async throws(ARTErrorInfo) -> PaginatedResult,
+        previousMessages: @escaping @MainActor @Sendable (HistoryParams) async throws(ARTErrorInfo) -> PaginatedResult,
         unsubscribe: @MainActor @Sendable @escaping () -> Void,
     ) {
         self.previousMessages = previousMessages

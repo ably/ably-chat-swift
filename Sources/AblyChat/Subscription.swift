@@ -50,11 +50,11 @@ public protocol MessageSubscriptionResponse: Subscription, Sendable {
      * fill any gaps in the message history.
      *
      * - Parameters:
-     *    - params: Options for the history query.
+     *    - params: Parameters for the history query.
      *
      * - Returns: A paginated result of messages, in newest-to-oldest order.
      */
-    func historyBeforeSubscribe(withParams params: QueryOptions) async throws(ARTErrorInfo) -> HistoryResult
+    func historyBeforeSubscribe(withParams params: HistoryParams) async throws(ARTErrorInfo) -> HistoryResult
 }
 
 internal struct DefaultSubscription: Subscription, Sendable {
@@ -91,7 +91,7 @@ internal struct DefaultMessageSubscriptionResponse: MessageSubscriptionResponse,
         _unsubscribe()
     }
 
-    internal func historyBeforeSubscribe(withParams params: QueryOptions) async throws(ARTErrorInfo) -> some PaginatedResult<Message> {
+    internal func historyBeforeSubscribe(withParams params: HistoryParams) async throws(ARTErrorInfo) -> some PaginatedResult<Message> {
         do {
             let fromSerial = try await subscriptionStartSerial()
 
