@@ -94,12 +94,12 @@ public protocol Room<Channel>: AnyObject, Sendable {
      * Subscribes a given listener to a detected discontinuity.
      *
      * - Parameters:
-     *   - callback: The listener closure for capturing ``DiscontinuityEvent``.
+     *   - callback: The listener closure for capturing discontinuity events.
      *
-     * - Returns: A subscription that can be used to unsubscribe from ``DiscontinuityEvent``.
+     * - Returns: A subscription that can be used to unsubscribe from discontinuity events.
      */
     @discardableResult
-    func onDiscontinuity(_ callback: @escaping @MainActor (DiscontinuityEvent) -> Void) -> StatusSubscription
+    func onDiscontinuity(_ callback: @escaping @MainActor (ARTErrorInfo) -> Void) -> StatusSubscription
 
     /**
      * Attaches to the room to receive events in realtime.
@@ -174,13 +174,13 @@ public extension Room {
      * - Parameters:
      *   - bufferingPolicy: The ``BufferingPolicy`` for the created subscription.
      *
-     * - Returns: A subscription `AsyncSequence` that can be used to iterate through ``DiscontinuityEvent`` events.
+     * - Returns: A subscription `AsyncSequence` that can be used to iterate through discontinuity events.
      */
-    func onDiscontinuity(bufferingPolicy: BufferingPolicy) -> SubscriptionAsyncSequence<DiscontinuityEvent> {
-        let subscriptionAsyncSequence = SubscriptionAsyncSequence<DiscontinuityEvent>(bufferingPolicy: bufferingPolicy)
+    func onDiscontinuity(bufferingPolicy: BufferingPolicy) -> SubscriptionAsyncSequence<ARTErrorInfo> {
+        let subscriptionAsyncSequence = SubscriptionAsyncSequence<ARTErrorInfo>(bufferingPolicy: bufferingPolicy)
 
-        let subscription = onDiscontinuity { statusChange in
-            subscriptionAsyncSequence.emit(statusChange)
+        let subscription = onDiscontinuity { error in
+            subscriptionAsyncSequence.emit(error)
         }
         subscriptionAsyncSequence.addTerminationHandler {
             Task { @MainActor in
@@ -192,7 +192,7 @@ public extension Room {
     }
 
     /// Same as calling ``onDiscontinuity(bufferingPolicy:)`` with ``BufferingPolicy/unbounded``.
-    func onDiscontinuity() -> SubscriptionAsyncSequence<DiscontinuityEvent> {
+    func onDiscontinuity() -> SubscriptionAsyncSequence<ARTErrorInfo> {
         onDiscontinuity(bufferingPolicy: .unbounded)
     }
 }
@@ -407,7 +407,7 @@ internal class DefaultRoom<Realtime: InternalRealtimeClientProtocol, LifecycleMa
     // MARK: - Discontinuities
 
     @discardableResult
-    internal func onDiscontinuity(_ callback: @escaping @MainActor (DiscontinuityEvent) -> Void) -> LifecycleManager.StatusSubscription {
+    internal func onDiscontinuity(_ callback: @escaping @MainActor (ARTErrorInfo) -> Void) -> LifecycleManager.StatusSubscription {
         lifecycleManager.onDiscontinuity(callback)
     }
 }

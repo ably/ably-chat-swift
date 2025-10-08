@@ -105,7 +105,7 @@ class MockRoom: Room {
     }
 
     @discardableResult
-    func onDiscontinuity(_: @escaping @MainActor (DiscontinuityEvent) -> Void) -> DefaultStatusSubscription {
+    func onDiscontinuity(_: @escaping @MainActor (ARTErrorInfo) -> Void) -> DefaultStatusSubscription {
         fatalError("Not yet implemented")
     }
 }

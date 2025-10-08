@@ -23,11 +23,11 @@ extension RoomLifecycleManager {
         onRoomStatusChange(bufferingPolicy: .unbounded)
     }
 
-    func onDiscontinuity(bufferingPolicy: BufferingPolicy) -> SubscriptionAsyncSequence<DiscontinuityEvent> {
-        let subscriptionAsyncSequence = SubscriptionAsyncSequence<DiscontinuityEvent>(bufferingPolicy: bufferingPolicy)
+    func onDiscontinuity(bufferingPolicy: BufferingPolicy) -> SubscriptionAsyncSequence<ARTErrorInfo> {
+        let subscriptionAsyncSequence = SubscriptionAsyncSequence<ARTErrorInfo>(bufferingPolicy: bufferingPolicy)
 
-        let subscription = onDiscontinuity { statusChange in
-            subscriptionAsyncSequence.emit(statusChange)
+        let subscription = onDiscontinuity { error in
+            subscriptionAsyncSequence.emit(error)
         }
         subscriptionAsyncSequence.addTerminationHandler {
             Task { @MainActor in

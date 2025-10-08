@@ -10,7 +10,7 @@ class MockRoomLifecycleManager: RoomLifecycleManager {
     private(set) var releaseCallCount = 0
     private let _roomStatus: RoomStatus?
     private let roomStatusSubscriptions = StatusSubscriptionStorage<RoomStatusChange>()
-    private let discontinuitySubscriptions = StatusSubscriptionStorage<DiscontinuityEvent>()
+    private let discontinuitySubscriptions = StatusSubscriptionStorage<ARTErrorInfo>()
     private let resultOfWaitToBeAbleToPerformPresenceOperations: Result<Void, ARTErrorInfo>?
 
     init(attachResult: Result<Void, ARTErrorInfo>? = nil, detachResult: Result<Void, ARTErrorInfo>? = nil, roomStatus: RoomStatus? = nil, resultOfWaitToBeAbleToPerformPresenceOperations: Result<Void, ARTErrorInfo> = .success(())) {
@@ -80,11 +80,11 @@ class MockRoomLifecycleManager: RoomLifecycleManager {
     }
 
     @discardableResult
-    func onDiscontinuity(_ callback: @escaping @MainActor (DiscontinuityEvent) -> Void) -> DefaultStatusSubscription {
+    func onDiscontinuity(_ callback: @escaping @MainActor (ARTErrorInfo) -> Void) -> DefaultStatusSubscription {
         discontinuitySubscriptions.create(callback)
     }
 
-    func emitDiscontinuity(_ discontinuity: DiscontinuityEvent) {
-        discontinuitySubscriptions.emit(discontinuity)
+    func emitDiscontinuity(_ error: ARTErrorInfo) {
+        discontinuitySubscriptions.emit(error)
     }
 }

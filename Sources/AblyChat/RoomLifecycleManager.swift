@@ -24,7 +24,7 @@ internal protocol RoomLifecycleManager: Sendable {
     func waitToBeAbleToPerformPresenceOperations(requestedByFeature requester: RoomFeature) async throws(InternalError)
 
     @discardableResult
-    func onDiscontinuity(_ callback: @escaping @MainActor (DiscontinuityEvent) -> Void) -> StatusSubscription
+    func onDiscontinuity(_ callback: @escaping @MainActor (ARTErrorInfo) -> Void) -> StatusSubscription
 }
 
 @MainActor
@@ -107,7 +107,7 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
 
     private var channelStateEventListener: ARTEventListener!
     private let roomStatusChangeSubscriptions = StatusSubscriptionStorage<RoomStatusChange>()
-    private let discontinuitySubscriptions = StatusSubscriptionStorage<DiscontinuityEvent>()
+    private let discontinuitySubscriptions = StatusSubscriptionStorage<ARTErrorInfo>()
     private var operationResultContinuations = OperationResultContinuations()
 
     // MARK: - Initializers and `deinit`
@@ -214,9 +214,8 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
             // Note that our mechanism for deciding whether a channel state event represents a discontinuity depends on the property that when we call attach() on a channel, the ATTACHED state change that this provokes is received before the call to attach() returns. This property is not in general guaranteed in ably-cocoa, which allows its callbacks to be dispatched to a user-provided queue as specified by the `dispatchQueue` client option. This is why we add the requirement that the ably-cocoa client be configured to use the main queue as its `dispatchQueue` (as enforced by toAblyCocoaCallback in InternalAblyCocoaTypes.swift).
             if !event.resumed, hasAttachedOnce, !isExplicitlyDetached {
                 let error = ARTErrorInfo(chatError: ChatError.roomDiscontinuity(cause: event.reason))
-                let discontinuity = DiscontinuityEvent(error: error)
-                logger.log(message: "Emitting discontinuity event \(discontinuity)", level: .info)
-                emitDiscontinuity(discontinuity)
+                logger.log(message: "Emitting discontinuity event \(error)", level: .info)
+                emitDiscontinuity(error)
             }
         default:
             break
@@ -224,12 +223,12 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
     }
 
     @discardableResult
-    internal func onDiscontinuity(_ callback: @escaping @MainActor (DiscontinuityEvent) -> Void) -> DefaultStatusSubscription {
+    internal func onDiscontinuity(_ callback: @escaping @MainActor (ARTErrorInfo) -> Void) -> DefaultStatusSubscription {
         discontinuitySubscriptions.create(callback)
     }
 
-    private func emitDiscontinuity(_ event: DiscontinuityEvent) {
-        discontinuitySubscriptions.emit(event)
+    private func emitDiscontinuity(_ error: ARTErrorInfo) {
+        discontinuitySubscriptions.emit(error)
     }
 
     // MARK: - Operation handling
