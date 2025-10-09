@@ -153,12 +153,12 @@ public struct ConnectionStatusChange: Sendable {
     /**
      * The time in milliseconds that the client will wait before attempting to reconnect.
      */
-    public var retryIn: TimeInterval
+    public var retryIn: TimeInterval?
 
     /// Memberwise initializer to create a `ConnectionStatusChange`.
     ///
     /// - Note: You should not need to use this initializer when using the Chat SDK. It is exposed only to allow users to create mock versions of the SDK's protocols.
-    public init(current: ConnectionStatus, previous: ConnectionStatus, error: ARTErrorInfo? = nil, retryIn: TimeInterval) {
+    public init(current: ConnectionStatus, previous: ConnectionStatus, error: ARTErrorInfo? = nil, retryIn: TimeInterval?) {
         self.current = current
         self.previous = previous
         self.error = error

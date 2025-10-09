@@ -37,6 +37,7 @@ internal final class DefaultConnection: Connection {
                 current: currentState,
                 previous: previousState,
                 error: stateChange.reason,
+                // TODO: Actually emit `nil` when appropriate (we can't currently since ably-cocoa's corresponding property is mis-typed): https://github.com/ably/ably-chat-swift/issues/394
                 retryIn: stateChange.retryIn,
             )
 
