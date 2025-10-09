@@ -45,7 +45,7 @@ internal final class DefaultMessages: Messages {
             guard let self else {
                 return
             }
-            guard let action = MessageAction.fromRealtimeAction(message.action) else {
+            guard let action = ChatMessageAction.fromRealtimeAction(message.action) else {
                 logger.log(message: "Received incoming message with unsupported action: \(message.action)", level: .info) // CHA-M4m5
                 return
             }

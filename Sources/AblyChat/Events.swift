@@ -3,7 +3,7 @@ import Ably
 /**
  * Chat Message Actions.
  */
-public enum MessageAction: Sendable {
+public enum ChatMessageAction: Sendable {
     /**
      * Action applied to a new message.
      */
@@ -31,7 +31,7 @@ public enum MessageAction: Sendable {
     }
 }
 
-extension MessageAction: InternalRawRepresentable {
+extension ChatMessageAction: InternalRawRepresentable {
     internal typealias RawValue = String
 
     internal enum Wire: String, Sendable {

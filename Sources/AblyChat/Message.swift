@@ -28,7 +28,7 @@ public struct Message: Sendable, Equatable {
     /**
      * The action type of the message. This can be used to determine if the message was created, updated, or deleted.
      */
-    public var action: MessageAction
+    public var action: ChatMessageAction
 
     /**
      * The clientId of the user who created the message.
@@ -87,7 +87,7 @@ public struct Message: Sendable, Equatable {
     /// Memberwise initializer to create a `Message`.
     ///
     /// - Note: You should not need to use this initializer when using the Chat SDK. It is exposed only to allow users to create mock versions of the SDK's protocols.
-    public init(serial: String, action: MessageAction, clientID: String, text: String, metadata: MessageMetadata, headers: MessageHeaders, version: MessageVersion, timestamp: Date, reactions: MessageReactionSummary? = nil) {
+    public init(serial: String, action: ChatMessageAction, clientID: String, text: String, metadata: MessageMetadata, headers: MessageHeaders, version: MessageVersion, timestamp: Date, reactions: MessageReactionSummary? = nil) {
         self.serial = serial
         self.action = action
         self.clientID = clientID
@@ -177,7 +177,7 @@ extension Message: JSONObjectDecodable {
             )
         }
         let rawAction = try jsonObject.stringValueForKey("action")
-        guard let action = MessageAction(rawValue: rawAction) else {
+        guard let action = ChatMessageAction(rawValue: rawAction) else {
             throw JSONValueDecodingError.failedToDecodeFromRawValue(rawAction).toInternalError()
         }
         let timestamp = try jsonObject.optionalAblyProtocolDateValueForKey("timestamp") ?? Date(timeIntervalSince1970: 0) // CHA-M4k5
