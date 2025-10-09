@@ -171,11 +171,10 @@ extension Message: JSONObjectDecodable {
         let serial = try jsonObject.stringValueForKey("serial")
         let reactionSummary: MessageReactionSummary = if let summaryJson = try? jsonObject.objectValueForKey("reactions"), !summaryJson.isEmpty {
             MessageReactionSummary(
-                messageSerial: serial,
                 values: summaryJson,
             )
         } else {
-            .empty(withMessageSerial: serial)
+            .empty
         }
         let rawAction = try jsonObject.stringValueForKey("action")
         guard let action = ChatMessageAction(rawValue: rawAction) else {
@@ -226,12 +225,12 @@ public extension Message {
      */
     func with(_ summaryEvent: MessageReactionSummaryEvent) throws(ARTErrorInfo) -> Self {
         // (CHA-M11e) For MessageReactionSummaryEvent, the method must verify that the summary.messageSerial in the event matches the message’s own serial. If they don’t match, an error with code 40000 and status code 400 must be thrown.
-        guard serial == summaryEvent.summary.messageSerial else {
+        guard serial == summaryEvent.messageSerial else {
             throw ARTErrorInfo(chatError: .cannotApplyEventForDifferentMessage)
         }
 
         var newMessage = self
-        newMessage.reactions = summaryEvent.summary
+        newMessage.reactions = summaryEvent.reactions
         return newMessage
     }
 }

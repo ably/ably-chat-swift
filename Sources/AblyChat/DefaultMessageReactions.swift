@@ -83,8 +83,8 @@ internal final class DefaultMessageReactions: MessageReactions {
 
             let summaryEvent = MessageReactionSummaryEvent(
                 type: MessageReactionSummaryEventType.summary,
-                summary: MessageReactionSummary(
-                    messageSerial: messageSerial,
+                messageSerial: messageSerial,
+                reactions: MessageReactionSummary(
                     values: summaryJson ?? [:], // CHA-MR6a1
                 ),
             )

@@ -83,7 +83,7 @@ internal final class DefaultMessages: Messages {
                 ),
                 timestamp: timestamp,
                 // TODO: Not sure of correct behaviour here, see https://github.com/ably/ably-chat-swift/issues/391
-                reactions: .empty(withMessageSerial: serial),
+                reactions: .empty,
             )
 
             let event = ChatMessageEvent(message: message)

@@ -233,11 +233,6 @@ public struct MessageReactionSummary: Sendable, Equatable {
     }
 
     /**
-     * Reference to the original message's serial.
-     */
-    public var messageSerial: String
-
-    /**
      * Map of unique-type reactions summaries.
      */
     public var unique: [String: ClientIDList]
@@ -255,22 +250,18 @@ public struct MessageReactionSummary: Sendable, Equatable {
     /// Memberwise initializer to create a `MessageReactionSummary`.
     ///
     /// - Note: You should not need to use this initializer when using the Chat SDK. It is exposed only to allow users to create mock versions of the SDK's protocols.
-    public init(messageSerial: String, unique: [String: MessageReactionSummary.ClientIDList], distinct: [String: MessageReactionSummary.ClientIDList], multiple: [String: MessageReactionSummary.ClientIDCounts]) {
-        self.messageSerial = messageSerial
+    public init(unique: [String: MessageReactionSummary.ClientIDList], distinct: [String: MessageReactionSummary.ClientIDList], multiple: [String: MessageReactionSummary.ClientIDCounts]) {
         self.unique = unique
         self.distinct = distinct
         self.multiple = multiple
     }
 
-    /// Create an empty `MessageReactionSummary` with the given `messageSerial`.
-    internal static func empty(withMessageSerial messageSerial: String) -> Self {
-        .init(
-            messageSerial: messageSerial,
-            unique: [:],
-            distinct: [:],
-            multiple: [:],
-        )
-    }
+    /// An empty `MessageReactionSummary`.
+    internal static let empty: Self = .init(
+        unique: [:],
+        distinct: [:],
+        multiple: [:],
+    )
 }
 
 /**
@@ -284,16 +275,22 @@ public struct MessageReactionSummaryEvent: Sendable, Equatable {
     public var type: MessageReactionSummaryEventType
 
     /**
+     * Reference to the original message's serial.
+     */
+    public var messageSerial: String
+
+    /**
      * The message reactions summary.
      */
-    public var summary: MessageReactionSummary
+    public var reactions: MessageReactionSummary
 
     /// Memberwise initializer to create a `MessageReactionSummaryEvent`.
     ///
     /// - Note: You should not need to use this initializer when using the Chat SDK. It is exposed only to allow users to create mock versions of the SDK's protocols.
-    public init(type: MessageReactionSummaryEventType, summary: MessageReactionSummary) {
+    public init(type: MessageReactionSummaryEventType, messageSerial: String, reactions: MessageReactionSummary) {
         self.type = type
-        self.summary = summary
+        self.messageSerial = messageSerial
+        self.reactions = reactions
     }
 }
 

@@ -54,7 +54,7 @@ struct ChatAPITests {
             headers: [:],
             version: .init(serial: "3446456", timestamp: Date(timeIntervalSince1970: 1_631_840_000)),
             timestamp: Date(timeIntervalSince1970: 1_631_840_000),
-            reactions: .empty(withMessageSerial: "3446456"),
+            reactions: .empty,
         )
         #expect(message == expectedMessage)
     }
@@ -151,7 +151,7 @@ struct ChatAPITests {
                     headers: [:],
                     version: .init(serial: "3446456", timestamp: Date(timeIntervalSince1970: 1_730_943_049.269)), // from successGetMessagesWithItems
                     timestamp: Date(timeIntervalSince1970: 1_730_943_049.269),
-                    reactions: .empty(withMessageSerial: "3446456"),
+                    reactions: .empty,
                 ),
                 Message(
                     serial: "3446457",
@@ -162,7 +162,7 @@ struct ChatAPITests {
                     headers: [:],
                     version: .init(serial: "3446457", timestamp: Date(timeIntervalSince1970: 1_730_943_051.269)),
                     timestamp: Date(timeIntervalSince1970: 1_730_943_051.269),
-                    reactions: .empty(withMessageSerial: "3446457"),
+                    reactions: .empty,
                 ),
             ],
         )

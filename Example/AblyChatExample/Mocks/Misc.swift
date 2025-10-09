@@ -22,7 +22,7 @@ final class MockMessagesPaginatedResult: PaginatedResult {
                     timestamp: Date(),
                 ),
                 timestamp: Date(),
-                reactions: .init(messageSerial: "", unique: [:], distinct: [:], multiple: [:]),
+                reactions: .init(unique: [:], distinct: [:], multiple: [:]),
             )
         }
     }

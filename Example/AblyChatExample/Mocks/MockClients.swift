@@ -139,7 +139,7 @@ class MockMessages: Messages {
                         timestamp: Date(),
                     ),
                     timestamp: Date(),
-                    reactions: .init(messageSerial: "", unique: [:], distinct: [:], multiple: [:]),
+                    reactions: .init(unique: [:], distinct: [:], multiple: [:]),
                 )
                 if byChance(30) { /* 30% of the messages will get the reaction */
                     self.reactions.messageSerials.append(message.serial)
@@ -172,7 +172,7 @@ class MockMessages: Messages {
                 timestamp: Date(),
             ),
             timestamp: Date(),
-            reactions: .init(messageSerial: "", unique: [:], distinct: [:], multiple: [:]),
+            reactions: .init(unique: [:], distinct: [:], multiple: [:]),
         )
         mockSubscriptions.emit(ChatMessageEvent(message: message))
         return message
@@ -188,7 +188,7 @@ class MockMessages: Messages {
             headers: newMessage.headers,
             version: .init(serial: "\(Date().timeIntervalSince1970)", timestamp: Date(), clientID: clientID),
             timestamp: Date(),
-            reactions: .init(messageSerial: "", unique: [:], distinct: [:], multiple: [:]),
+            reactions: .init(unique: [:], distinct: [:], multiple: [:]),
         )
         mockSubscriptions.emit(ChatMessageEvent(message: message))
         return message
@@ -208,7 +208,7 @@ class MockMessages: Messages {
                 clientID: clientID,
             ),
             timestamp: Date(),
-            reactions: .init(messageSerial: "", unique: [:], distinct: [:], multiple: [:]),
+            reactions: .init(unique: [:], distinct: [:], multiple: [:]),
         )
         mockSubscriptions.emit(ChatMessageEvent(message: message))
         return message
@@ -228,7 +228,6 @@ class MockMessageReactions: MessageReactions {
 
     private func getUniqueReactionsSummaryForMessage(_ messageSerial: String) -> MessageReactionSummary {
         MessageReactionSummary(
-            messageSerial: messageSerial,
             unique: [:],
             distinct: reactions.filter { $0.messageSerial == messageSerial }.reduce(into: [String: MessageReactionSummary.ClientIDList]()) { dict, newItem in
                 if var oldItem = dict[newItem.name] {
@@ -264,7 +263,8 @@ class MockMessageReactions: MessageReactions {
         mockSubscriptions.emit(
             MessageReactionSummaryEvent(
                 type: MessageReactionSummaryEventType.summary,
-                summary: getUniqueReactionsSummaryForMessage(messageSerial),
+                messageSerial: messageSerial,
+                reactions: getUniqueReactionsSummaryForMessage(messageSerial),
             ),
         )
     }
@@ -276,7 +276,8 @@ class MockMessageReactions: MessageReactions {
         mockSubscriptions.emit(
             MessageReactionSummaryEvent(
                 type: MessageReactionSummaryEventType.summary,
-                summary: getUniqueReactionsSummaryForMessage(messageSerial),
+                messageSerial: messageSerial,
+                reactions: getUniqueReactionsSummaryForMessage(messageSerial),
             ),
         )
     }
@@ -299,7 +300,8 @@ class MockMessageReactions: MessageReactions {
                 )
                 return MessageReactionSummaryEvent(
                     type: MessageReactionSummaryEventType.summary,
-                    summary: self.getUniqueReactionsSummaryForMessage(messageSerial),
+                    messageSerial: messageSerial,
+                    reactions: self.getUniqueReactionsSummaryForMessage(messageSerial),
                 )
             },
             interval: Double([Int](1 ... 10).randomElement()!) / 10.0,
