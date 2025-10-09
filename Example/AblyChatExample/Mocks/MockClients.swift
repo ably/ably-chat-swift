@@ -263,7 +263,7 @@ class MockMessageReactions: MessageReactions {
         )
         mockSubscriptions.emit(
             MessageReactionSummaryEvent(
-                type: MessageReactionEventType.summary,
+                type: MessageReactionSummaryEventType.summary,
                 summary: getUniqueReactionsSummaryForMessage(messageSerial),
             ),
         )
@@ -275,7 +275,7 @@ class MockMessageReactions: MessageReactions {
         }
         mockSubscriptions.emit(
             MessageReactionSummaryEvent(
-                type: MessageReactionEventType.summary,
+                type: MessageReactionSummaryEventType.summary,
                 summary: getUniqueReactionsSummaryForMessage(messageSerial),
             ),
         )
@@ -298,7 +298,7 @@ class MockMessageReactions: MessageReactions {
                     ),
                 )
                 return MessageReactionSummaryEvent(
-                    type: MessageReactionEventType.summary,
+                    type: MessageReactionSummaryEventType.summary,
                     summary: self.getUniqueReactionsSummaryForMessage(messageSerial),
                 )
             },

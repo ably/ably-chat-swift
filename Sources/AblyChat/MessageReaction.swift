@@ -1,9 +1,9 @@
 import Ably
 
 /**
- * Enum representing different message reaction events in the chat system.
+ * Enum representing different raw message reaction events in the chat system.
  */
-public enum MessageReactionEventType: Sendable {
+public enum MessageReactionRawEventType: Sendable {
     /**
      * A reaction was added to a message.
      */
@@ -12,10 +12,6 @@ public enum MessageReactionEventType: Sendable {
      * A reaction was removed from a message.
      */
     case delete
-    /**
-     * A reactions summary was updated for a message.
-     */
-    case summary
 
     internal var rawValue: String {
         switch self {
@@ -23,13 +19,11 @@ public enum MessageReactionEventType: Sendable {
             "reaction.create"
         case .delete:
             "reaction.delete"
-        case .summary:
-            "reaction.summary"
         }
     }
 }
 
-internal extension MessageReactionEventType {
+internal extension MessageReactionRawEventType {
     static func fromAnnotationAction(_ annotationAction: ARTAnnotationAction) -> Self? {
         switch annotationAction {
         case .create:
@@ -40,6 +34,16 @@ internal extension MessageReactionEventType {
             nil
         }
     }
+}
+
+/**
+ * Enum representing different message reaction summary events in the chat system.
+ */
+public enum MessageReactionSummaryEventType: Sendable {
+    /**
+     * A reactions summary was updated for a message.
+     */
+    case summary
 }
 
 /**
@@ -277,7 +281,7 @@ public struct MessageReactionSummaryEvent: Sendable, Equatable {
     /**
      * The type of the event (should be equal to summary).
      */
-    public var type: MessageReactionEventType
+    public var type: MessageReactionSummaryEventType
 
     /**
      * The message reactions summary.
@@ -287,7 +291,7 @@ public struct MessageReactionSummaryEvent: Sendable, Equatable {
     /// Memberwise initializer to create a `MessageReactionSummaryEvent`.
     ///
     /// - Note: You should not need to use this initializer when using the Chat SDK. It is exposed only to allow users to create mock versions of the SDK's protocols.
-    public init(type: MessageReactionEventType, summary: MessageReactionSummary) {
+    public init(type: MessageReactionSummaryEventType, summary: MessageReactionSummary) {
         self.type = type
         self.summary = summary
     }
@@ -300,7 +304,7 @@ public struct MessageReactionRawEvent: Sendable {
     /**
      * Whether reaction was added or removed.
      */
-    public var type: MessageReactionEventType
+    public var type: MessageReactionRawEventType
 
     /**
      * The timestamp of this event.
@@ -315,7 +319,7 @@ public struct MessageReactionRawEvent: Sendable {
     /// Memberwise initializer to create a `MessageReactionRawEvent`.
     ///
     /// - Note: You should not need to use this initializer when using the Chat SDK. It is exposed only to allow users to create mock versions of the SDK's protocols.
-    public init(type: MessageReactionEventType, timestamp: Date? = nil, reaction: MessageReaction) {
+    public init(type: MessageReactionRawEventType, timestamp: Date? = nil, reaction: MessageReaction) {
         self.type = type
         self.timestamp = timestamp
         self.reaction = reaction

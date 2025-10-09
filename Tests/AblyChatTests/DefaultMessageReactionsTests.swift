@@ -233,7 +233,7 @@ struct DefaultMessageReactionsTests {
         var callbackCalls = 0
         defaultMessages.reactions.subscribeRaw { event in
             // Then
-            #expect(event.type == MessageReactionEventType.create)
+            #expect(event.type == MessageReactionRawEventType.create)
             #expect(event.reaction.type == .multiple)
             #expect(event.reaction.name == "🔥")
             #expect(event.reaction.clientID == "U3BpZGVyd2Vi")
