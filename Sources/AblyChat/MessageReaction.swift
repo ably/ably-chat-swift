@@ -309,7 +309,7 @@ public struct MessageReactionRawEvent: Sendable {
     /**
      * The timestamp of this event.
      */
-    public var timestamp: Date?
+    public var timestamp: Date
 
     /**
      * The message reaction that was received.
@@ -319,7 +319,7 @@ public struct MessageReactionRawEvent: Sendable {
     /// Memberwise initializer to create a `MessageReactionRawEvent`.
     ///
     /// - Note: You should not need to use this initializer when using the Chat SDK. It is exposed only to allow users to create mock versions of the SDK's protocols.
-    public init(type: MessageReactionRawEventType, timestamp: Date? = nil, reaction: MessageReaction) {
+    public init(type: MessageReactionRawEventType, timestamp: Date, reaction: MessageReaction) {
         self.type = type
         self.timestamp = timestamp
         self.reaction = reaction
