@@ -82,6 +82,8 @@ internal final class DefaultMessages: Messages {
                     metadata: version.metadata?.mapValues { .string($0) } ?? [:], // CHA-M4k2
                 ),
                 timestamp: timestamp,
+                // TODO: Not sure of correct behaviour here, see https://github.com/ably/ably-chat-swift/issues/391
+                reactions: .empty(withMessageSerial: serial),
             )
 
             let event = ChatMessageEvent(message: message)

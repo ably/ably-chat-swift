@@ -27,7 +27,7 @@ private final class MockPaginatedResult<Item: Equatable>: PaginatedResult, @Main
 
 struct MessageSubscriptionResponseAsyncSequenceTests {
     let messages = ["First", "Second"].map { text in
-        Message(serial: "", action: .messageCreate, clientID: "", text: text, metadata: [:], headers: [:], version: .init(serial: "", timestamp: Date()), timestamp: Date())
+        Message(serial: "", action: .messageCreate, clientID: "", text: text, metadata: [:], headers: [:], version: .init(serial: "", timestamp: Date()), timestamp: Date(), reactions: .empty(withMessageSerial: ""))
     }
 
     @Test

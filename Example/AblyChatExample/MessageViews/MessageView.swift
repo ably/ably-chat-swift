@@ -32,18 +32,16 @@ struct MessageView: View {
                         .foregroundStyle(.gray)
                         .font(.footnote)
                 }
-                if let reactionsSummary = item.message.reactions {
-                    MessageReactionSummaryView(
-                        summary: reactionsSummary,
-                        currentClientID: currentClientID,
-                        onPickReaction: {
-                            showReactionPicker = true
-                        },
-                        onAddReaction: onAddReaction,
-                        onDeleteReaction: onDeleteReaction,
-                    )
-                    .padding(left: 2)
-                }
+                MessageReactionSummaryView(
+                    summary: item.message.reactions,
+                    currentClientID: currentClientID,
+                    onPickReaction: {
+                        showReactionPicker = true
+                    },
+                    onAddReaction: onAddReaction,
+                    onDeleteReaction: onDeleteReaction,
+                )
+                .padding(left: 2)
             }
             Spacer()
             if item.isSender {

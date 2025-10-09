@@ -82,12 +82,12 @@ public struct Message: Sendable, Equatable {
     /**
      * The reactions summary for this message.
      */
-    public var reactions: MessageReactionSummary?
+    public var reactions: MessageReactionSummary
 
     /// Memberwise initializer to create a `Message`.
     ///
     /// - Note: You should not need to use this initializer when using the Chat SDK. It is exposed only to allow users to create mock versions of the SDK's protocols.
-    public init(serial: String, action: ChatMessageAction, clientID: String, text: String, metadata: MessageMetadata, headers: MessageHeaders, version: MessageVersion, timestamp: Date, reactions: MessageReactionSummary? = nil) {
+    public init(serial: String, action: ChatMessageAction, clientID: String, text: String, metadata: MessageMetadata, headers: MessageHeaders, version: MessageVersion, timestamp: Date, reactions: MessageReactionSummary) {
         self.serial = serial
         self.action = action
         self.clientID = clientID
@@ -169,12 +169,13 @@ public struct MessageVersion: Sendable, Equatable {
 extension Message: JSONObjectDecodable {
     internal init(jsonObject: [String: JSONValue]) throws(InternalError) {
         let serial = try jsonObject.stringValueForKey("serial")
-        var reactionSummary: MessageReactionSummary?
-        if let summaryJson = try? jsonObject.objectValueForKey("reactions"), !summaryJson.isEmpty {
-            reactionSummary = MessageReactionSummary(
+        let reactionSummary: MessageReactionSummary = if let summaryJson = try? jsonObject.objectValueForKey("reactions"), !summaryJson.isEmpty {
+            MessageReactionSummary(
                 messageSerial: serial,
                 values: summaryJson,
             )
+        } else {
+            .empty(withMessageSerial: serial)
         }
         let rawAction = try jsonObject.stringValueForKey("action")
         guard let action = ChatMessageAction(rawValue: rawAction) else {

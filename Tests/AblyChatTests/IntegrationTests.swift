@@ -252,7 +252,7 @@ struct IntegrationTests {
         let rxMessageFromHistory = rxMessagesHistory.items[0]
         #expect(rxMessageFromHistory.serial == txMessageBeforeRxSubscribe.serial) // rxMessageFromHistory contains reactions and txMessageBeforeRxSubscribe doesn't, so we only compare serials
 
-        let rxMessageFromHistoryReactions = try #require(rxMessageFromHistory.reactions)
+        let rxMessageFromHistoryReactions = rxMessageFromHistory.reactions
         #expect(rxMessageFromHistoryReactions.messageSerial == messageToReact.serial)
         #expect(rxMessageFromHistoryReactions.unique.isEmpty)
         #expect(rxMessageFromHistoryReactions.multiple.isEmpty)

@@ -139,6 +139,7 @@ class MockMessages: Messages {
                         timestamp: Date(),
                     ),
                     timestamp: Date(),
+                    reactions: .init(messageSerial: "", unique: [:], distinct: [:], multiple: [:]),
                 )
                 if byChance(30) { /* 30% of the messages will get the reaction */
                     self.reactions.messageSerials.append(message.serial)
@@ -171,6 +172,7 @@ class MockMessages: Messages {
                 timestamp: Date(),
             ),
             timestamp: Date(),
+            reactions: .init(messageSerial: "", unique: [:], distinct: [:], multiple: [:]),
         )
         mockSubscriptions.emit(ChatMessageEvent(message: message))
         return message
@@ -186,6 +188,7 @@ class MockMessages: Messages {
             headers: newMessage.headers,
             version: .init(serial: "\(Date().timeIntervalSince1970)", timestamp: Date(), clientID: clientID),
             timestamp: Date(),
+            reactions: .init(messageSerial: "", unique: [:], distinct: [:], multiple: [:]),
         )
         mockSubscriptions.emit(ChatMessageEvent(message: message))
         return message
@@ -205,6 +208,7 @@ class MockMessages: Messages {
                 clientID: clientID,
             ),
             timestamp: Date(),
+            reactions: .init(messageSerial: "", unique: [:], distinct: [:], multiple: [:]),
         )
         mockSubscriptions.emit(ChatMessageEvent(message: message))
         return message

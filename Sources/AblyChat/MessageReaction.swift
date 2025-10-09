@@ -257,6 +257,16 @@ public struct MessageReactionSummary: Sendable, Equatable {
         self.distinct = distinct
         self.multiple = multiple
     }
+
+    /// Create an empty `MessageReactionSummary` with the given `messageSerial`.
+    internal static func empty(withMessageSerial messageSerial: String) -> Self {
+        .init(
+            messageSerial: messageSerial,
+            unique: [:],
+            distinct: [:],
+            multiple: [:],
+        )
+    }
 }
 
 /**
