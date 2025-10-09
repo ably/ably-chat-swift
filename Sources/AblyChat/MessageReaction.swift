@@ -280,21 +280,15 @@ public struct MessageReactionRawEvent: Sendable {
          */
         public var clientID: String
 
-        /**
-         * Whether the reaction was sent by the current user.
-         */
-        public var isSelf: Bool
-
         /// Memberwise initializer to create a `Reaction`.
         ///
         /// - Note: You should not need to use this initializer when using the Chat SDK. It is exposed only to allow users to create mock versions of the SDK's protocols.
-        public init(type: MessageReactionType, name: String, messageSerial: String, count: Int? = nil, clientID: String, isSelf: Bool) {
+        public init(type: MessageReactionType, name: String, messageSerial: String, count: Int? = nil, clientID: String) {
             self.type = type
             self.name = name
             self.messageSerial = messageSerial
             self.count = count
             self.clientID = clientID
-            self.isSelf = isSelf
         }
     }
 

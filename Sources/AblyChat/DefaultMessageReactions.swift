@@ -136,7 +136,6 @@ internal final class DefaultMessageReactions: MessageReactions {
                     messageSerial: annotation.messageSerial,
                     count: annotation.count?.intValue ?? (annotation.action == .create && reactionType == .multiple ? 1 : nil),
                     clientID: annotationClientID,
-                    isSelf: annotationClientID == clientID,
                 ),
             )
 

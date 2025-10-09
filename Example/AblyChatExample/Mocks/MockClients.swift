@@ -257,7 +257,6 @@ class MockMessageReactions: MessageReactions {
                 messageSerial: messageSerial,
                 count: params.count,
                 clientID: clientID,
-                isSelf: true,
             ),
         )
         mockSubscriptions.emit(
@@ -295,7 +294,6 @@ class MockMessageReactions: MessageReactions {
                         messageSerial: messageSerial,
                         count: 1,
                         clientID: senderClientID,
-                        isSelf: senderClientID == self.clientID,
                     ),
                 )
                 return MessageReactionSummaryEvent(
