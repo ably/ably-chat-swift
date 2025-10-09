@@ -111,7 +111,7 @@ struct ContentView: View {
                 List(listItems, id: \.id) { item in
                     switch item {
                     case let .message(messageItem):
-                        if messageItem.message.action == .delete {
+                        if messageItem.message.action == .messageDelete {
                             DeletedMessageView(item: messageItem)
                                 .flip()
                         } else {
@@ -279,7 +279,7 @@ struct ContentView: View {
 
         for message in previousMessages.items {
             switch message.action {
-            case .create, .update, .delete:
+            case .messageCreate, .messageUpdate, .messageDelete:
                 withAnimation {
                     listItems.append(.message(.init(message: message, isSender: message.clientID == currentClientID)))
                 }

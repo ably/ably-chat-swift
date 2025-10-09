@@ -43,7 +43,7 @@ public protocol Messages: AnyObject, Sendable {
      * - Parameters:
      *   - params: An object containing `text`, `headers` and `metadata` for the message.
      *
-     * - Returns: The published message, with the action of the message set as `.create`.
+     * - Returns: The published message, with the action of the message set as `.messageCreate`.
      *
      * - Note: It is possible to receive your own message via the messages subscription before this method returns.
      */
@@ -342,11 +342,11 @@ public struct ChatMessageEvent: Sendable {
 
     internal init(message: Message) {
         switch message.action {
-        case .create:
+        case .messageCreate:
             type = .created
-        case .update:
+        case .messageUpdate:
             type = .updated
-        case .delete:
+        case .messageDelete:
             type = .deleted
         }
         self.message = message

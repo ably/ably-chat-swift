@@ -27,7 +27,7 @@ struct MessageView: View {
                         showReactionPicker = true
                     }
                     .padding(left: 2)
-                if item.message.action == .update {
+                if item.message.action == .messageUpdate {
                     Text("Edited")
                         .foregroundStyle(.gray)
                         .font(.footnote)

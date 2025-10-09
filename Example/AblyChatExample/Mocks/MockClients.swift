@@ -129,7 +129,7 @@ class MockMessages: Messages {
             randomElement: {
                 let message = Message(
                     serial: "\(Date().timeIntervalSince1970)",
-                    action: .create,
+                    action: .messageCreate,
                     clientID: MockStrings.names.randomElement()!,
                     text: MockStrings.randomPhrase(),
                     metadata: [:],
@@ -161,7 +161,7 @@ class MockMessages: Messages {
     func send(withParams params: SendMessageParams) async throws(ARTErrorInfo) -> Message {
         let message = Message(
             serial: "\(Date().timeIntervalSince1970)",
-            action: .create,
+            action: .messageCreate,
             clientID: clientID,
             text: params.text,
             metadata: params.metadata ?? [:],
@@ -179,7 +179,7 @@ class MockMessages: Messages {
     func update(newMessage: Message, description _: String?, metadata _: OperationMetadata?) async throws(ARTErrorInfo) -> Message {
         let message = Message(
             serial: newMessage.serial,
-            action: .update,
+            action: .messageUpdate,
             clientID: clientID,
             text: newMessage.text,
             metadata: newMessage.metadata,
@@ -194,7 +194,7 @@ class MockMessages: Messages {
     func delete(message: Message, params _: DeleteMessageParams) async throws(ARTErrorInfo) -> Message {
         let message = Message(
             serial: message.serial,
-            action: .delete,
+            action: .messageDelete,
             clientID: clientID,
             text: message.text,
             metadata: message.metadata,

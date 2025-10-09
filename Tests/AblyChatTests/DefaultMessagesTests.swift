@@ -42,7 +42,7 @@ struct DefaultMessagesTests {
 
         // Then
         #expect(sentMessage.serial == "0")
-        #expect(sentMessage.action == .create)
+        #expect(sentMessage.action == .messageCreate)
         #expect(sentMessage.text == "hey")
         #expect(sentMessage.clientID == "clientId")
         #expect(sentMessage.version.serial == "0")
@@ -99,7 +99,7 @@ struct DefaultMessagesTests {
 
         // Then
         #expect(updatedMessage.serial == "0")
-        #expect(updatedMessage.action == .update)
+        #expect(updatedMessage.action == .messageUpdate)
         #expect(updatedMessage.text == "hey!")
         #expect(updatedMessage.clientID == "clientId")
         #expect(updatedMessage.version.serial == "1")
@@ -156,7 +156,7 @@ struct DefaultMessagesTests {
         #expect(deletedMessage.version.serial == "1")
         #expect(deletedMessage.version.timestamp == Date(timeIntervalSince1970: 1_631_840_030_000 / 1000))
         #expect(deletedMessage.version.clientID == "clientId2")
-        #expect(deletedMessage.action == .delete)
+        #expect(deletedMessage.action == .messageDelete)
         #expect(deletedMessage.text.isEmpty)
         #expect(deletedMessage.headers.isEmpty)
         #expect(deletedMessage.metadata.isEmpty)

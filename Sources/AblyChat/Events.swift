@@ -7,20 +7,20 @@ public enum ChatMessageAction: Sendable {
     /**
      * Action applied to a new message.
      */
-    case create
+    case messageCreate
     // swiftlint:disable:next missing_docs
-    case update
+    case messageUpdate
     // swiftlint:disable:next missing_docs
-    case delete
+    case messageDelete
 
     internal static func fromRealtimeAction(_ action: ARTMessageAction) -> Self? {
         switch action {
         case .create:
-            .create
+            .messageCreate
         case .update:
-            .update
+            .messageUpdate
         case .delete:
-            .delete
+            .messageDelete
         // ignore any other actions for now (CHA-M4k11)
         case .meta,
              .messageSummary:
@@ -43,11 +43,11 @@ extension ChatMessageAction: InternalRawRepresentable {
     internal init?(rawValue: String) {
         switch Wire(rawValue: rawValue) {
         case .create:
-            self = .create
+            self = .messageCreate
         case .update:
-            self = .update
+            self = .messageUpdate
         case .delete:
-            self = .delete
+            self = .messageDelete
         default:
             return nil
         }
@@ -55,11 +55,11 @@ extension ChatMessageAction: InternalRawRepresentable {
 
     internal var rawValue: String {
         switch self {
-        case .create:
+        case .messageCreate:
             Wire.create.rawValue
-        case .update:
+        case .messageUpdate:
             Wire.update.rawValue
-        case .delete:
+        case .messageDelete:
             Wire.delete.rawValue
         }
     }
