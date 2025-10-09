@@ -282,6 +282,50 @@ public struct HistoryParams: Sendable {
     }
 }
 
+/**
+ * Options for querying messages that were sent to a chat room before a listener was subscribed.
+ *
+ * This is the same as ``HistoryParams`` but without the `orderBy` property as the order is always newest-first.
+ */
+public struct HistoryBeforeSubscribeParams: Sendable {
+    /**
+     * The start of the time window to query from. If provided, the response will include
+     * messages with timestamps equal to or greater than this value.
+     *
+     * Defaults to the beginning of time.
+     */
+    public var start: Date?
+
+    /**
+     * The end of the time window to query from. If provided, the response will include
+     * messages with timestamps less than this value.
+     *
+     * Defaults to the current time.
+     */
+    public var end: Date?
+
+    /**
+     * The maximum number of messages to return in the response.
+     *
+     * Defaults to 100.
+     */
+    public var limit: Int?
+
+    // swiftlint:disable:next missing_docs
+    public init(start: Date? = nil, end: Date? = nil, limit: Int? = nil) {
+        self.start = start
+        self.end = end
+        self.limit = limit
+    }
+
+    /**
+     * Converts this to a ``HistoryParams`` with orderBy set to newestFirst, per CHA-M5f.
+     */
+    internal func toHistoryParams() -> HistoryParams {
+        HistoryParams(start: start, end: end, limit: limit, orderBy: .newestFirst)
+    }
+}
+
 internal extension HistoryParams {
     // Same as `ARTDataQuery.asQueryItems` from ably-cocoa.
     func asQueryItems() -> [String: String] {
@@ -363,12 +407,12 @@ public final class MessageSubscriptionResponseAsyncSequence<HistoryResult: Pagin
     private let subscription: SubscriptionAsyncSequence<Element>
 
     // can be set by either initialiser
-    private let historyBeforeSubscribe: @Sendable (HistoryParams) async throws(ARTErrorInfo) -> HistoryResult
+    private let historyBeforeSubscribe: @Sendable (HistoryBeforeSubscribeParams) async throws(ARTErrorInfo) -> HistoryResult
 
     // used internally
     internal init(
         bufferingPolicy: BufferingPolicy,
-        historyBeforeSubscribe: @escaping @Sendable (HistoryParams) async throws(ARTErrorInfo) -> HistoryResult,
+        historyBeforeSubscribe: @escaping @Sendable (HistoryBeforeSubscribeParams) async throws(ARTErrorInfo) -> HistoryResult,
     ) {
         subscription = .init(bufferingPolicy: bufferingPolicy)
         self.historyBeforeSubscribe = historyBeforeSubscribe
@@ -376,7 +420,7 @@ public final class MessageSubscriptionResponseAsyncSequence<HistoryResult: Pagin
 
     // used for testing
     // swiftlint:disable:next missing_docs
-    public init<Underlying: AsyncSequence & Sendable>(mockAsyncSequence: Underlying, mockHistoryBeforeSubscribe: @escaping @Sendable (HistoryParams) async throws(ARTErrorInfo) -> HistoryResult) where Underlying.Element == Element {
+    public init<Underlying: AsyncSequence & Sendable>(mockAsyncSequence: Underlying, mockHistoryBeforeSubscribe: @escaping @Sendable (HistoryBeforeSubscribeParams) async throws(ARTErrorInfo) -> HistoryResult) where Underlying.Element == Element {
         subscription = .init(mockAsyncSequence: mockAsyncSequence)
         historyBeforeSubscribe = mockHistoryBeforeSubscribe
     }
@@ -391,7 +435,7 @@ public final class MessageSubscriptionResponseAsyncSequence<HistoryResult: Pagin
     }
 
     // swiftlint:disable:next missing_docs
-    public func historyBeforeSubscribe(withParams params: HistoryParams) async throws(ARTErrorInfo) -> HistoryResult {
+    public func historyBeforeSubscribe(withParams params: HistoryBeforeSubscribeParams) async throws(ARTErrorInfo) -> HistoryResult {
         try await historyBeforeSubscribe(params)
     }
 

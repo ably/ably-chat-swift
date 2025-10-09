@@ -389,7 +389,7 @@ struct DefaultMessagesTests {
 
         // When: subscription is added when the underlying realtime channel is ATTACHED
         let subscription = defaultMessages.subscribe()
-        let paginatedResult = try await subscription.historyBeforeSubscribe(withParams: .init(orderBy: .oldestFirst)) // CHA-M5f, try to set unsupported direction
+        let paginatedResult = try await subscription.historyBeforeSubscribe(withParams: .init())
 
         let requestParams = try #require(realtime.requestArguments.first?.params)
 
@@ -398,7 +398,7 @@ struct DefaultMessagesTests {
         // CHA-M5g: the subscription point must be additionally specified (internally, by us) in the "fromSerial" query parameter
         #expect(requestParams["fromSerial"] == "123")
 
-        // CHA-M5f: method must accept any of the standard history query options, except for direction, which must always be backwards (`OrderBy.newestFirst` is equivalent to "backwards", see `getBeforeSubscriptionStart` func)
+        // CHA-M5f: method must accept any of the standard history query options, except for direction, which must always be backwards (`OrderBy.newestFirst` is equivalent to "backwards", see `toHistoryParams` method)
         #expect(requestParams["direction"] == "backwards")
 
         // CHA-M5h: The method must return a standard PaginatedResult
