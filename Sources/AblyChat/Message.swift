@@ -14,7 +14,7 @@ public typealias MessageMetadata = Metadata
 /**
  * ``Metadata`` type used for the metadata within an operation e.g. updating or deleting a message
  */
-public typealias OperationMetadata = Metadata
+public typealias MessageOperationMetadata = OperationMetadata
 
 /**
  * Represents a single message in a chat room.
@@ -152,12 +152,12 @@ public struct MessageVersion: Sendable, Equatable {
     /**
      * The optional metadata associated with the update or deletion.
      */
-    public var metadata: MessageMetadata?
+    public var metadata: MessageOperationMetadata?
 
     /// Memberwise initializer to create a `MessageVersion`.
     ///
     /// - Note: You should not need to use this initializer when using the Chat SDK. It is exposed only to allow users to create mock versions of the SDK's protocols.
-    public init(serial: String, timestamp: Date, clientID: String? = nil, description: String? = nil, metadata: MessageMetadata? = nil) {
+    public init(serial: String, timestamp: Date, clientID: String? = nil, description: String? = nil, metadata: MessageOperationMetadata? = nil) {
         self.serial = serial
         self.timestamp = timestamp
         self.clientID = clientID
@@ -206,7 +206,7 @@ extension MessageVersion {
             timestamp: jsonObject.optionalAblyProtocolDateValueForKey("timestamp") ?? defaultTimestamp,
             clientID: jsonObject.optionalStringValueForKey("clientId"),
             description: jsonObject.optionalStringValueForKey("description"),
-            metadata: jsonObject.optionalObjectValueForKey("metadata"),
+            metadata: jsonObject.optionalObjectValueForKey("metadata")?.compactMapValues { $0.stringValue },
         )
     }
 }

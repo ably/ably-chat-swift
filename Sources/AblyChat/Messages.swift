@@ -63,7 +63,7 @@ public protocol Messages: AnyObject, Sendable {
      *
      * - Note: It is possible to receive your own message via the messages subscription before this method returns.
      */
-    func update(newMessage: Message, description: String?, metadata: OperationMetadata?) async throws(ARTErrorInfo) -> Message
+    func update(newMessage: Message, description: String?, metadata: MessageOperationMetadata?) async throws(ARTErrorInfo) -> Message
 
     /**
      * Deletes a message in the chat room.
@@ -200,10 +200,10 @@ public struct UpdateMessageParams: Sendable {
      * validation. When reading the metadata treat it like user input.
      *
      */
-    public var metadata: OperationMetadata?
+    public var metadata: MessageOperationMetadata?
 
     // swiftlint:disable:next missing_docs
-    public init(message: SendMessageParams, description: String? = nil, metadata: OperationMetadata? = nil) {
+    public init(message: SendMessageParams, description: String? = nil, metadata: MessageOperationMetadata? = nil) {
         self.message = message
         self.description = description
         self.metadata = metadata
@@ -218,10 +218,10 @@ public struct DeleteMessageParams: Sendable {
     public var description: String?
 
     // swiftlint:disable:next missing_docs
-    public var metadata: OperationMetadata?
+    public var metadata: MessageOperationMetadata?
 
     // swiftlint:disable:next missing_docs
-    public init(description: String? = nil, metadata: OperationMetadata? = nil) {
+    public init(description: String? = nil, metadata: MessageOperationMetadata? = nil) {
         self.description = description
         self.metadata = metadata
     }

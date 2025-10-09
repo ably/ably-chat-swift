@@ -299,7 +299,7 @@ struct IntegrationTests {
             message: rxEditedMessageFromSubscription,
             params: .init(
                 description: "deleted in testing",
-                metadata: nil, // TODO: Setting as nil for now as a metadata with any non-string value causes a decoding error atm... https://github.com/ably/ably-chat-swift/issues/226
+                metadata: ["foo": "bar"],
             ),
         )
 
@@ -314,6 +314,7 @@ struct IntegrationTests {
         #expect(rxDeletedMessageFromSubscription.text.isEmpty)
         #expect(rxDeletedMessageFromSubscription.headers.isEmpty)
         #expect(rxDeletedMessageFromSubscription.metadata.isEmpty)
+        #expect(rxDeletedMessageFromSubscription.version.metadata == ["foo": "bar"])
 
         // MARK: - Room Reactions
 
