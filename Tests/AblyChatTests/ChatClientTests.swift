@@ -104,13 +104,12 @@ struct ChatClientTests {
             internalRealtimeClientFactory: internalRealtimeClientFactory,
         )
 
-        // Then: Its `rooms` property returns an instance of DefaultRooms with the wrapper SDK proxy realtime client and same client options
+        // Then: Its `rooms` property returns an instance of DefaultRooms with the wrapper SDK proxy realtime client
         #expect(internalRealtimeClientFactory.createInternalRealtimeClientArgument === proxyClient)
 
         let rooms = client.rooms
 
         let defaultRooms = try #require(rooms as? DefaultRooms<DefaultRoomFactory<InternalRealtimeClientAdapter<ARTWrapperSDKProxyRealtime>>>)
         #expect(defaultRooms.testsOnly_realtime === internalRealtime)
-        #expect(defaultRooms.clientOptions.isEqualForTestPurposes(options))
     }
 }

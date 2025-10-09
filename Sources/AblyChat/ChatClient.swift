@@ -116,7 +116,7 @@ public class ChatClient: ChatClientProtocol {
 
         logger = DefaultInternalLogger(logHandler: self.clientOptions.logHandler, logLevel: self.clientOptions.logLevel)
         let roomFactory = DefaultRoomFactory<InternalRealtimeClientAdapter<ARTWrapperSDKProxyRealtime>>()
-        _rooms = DefaultRooms(realtime: internalRealtime, clientOptions: self.clientOptions, logger: logger, roomFactory: roomFactory)
+        _rooms = DefaultRooms(realtime: internalRealtime, logger: logger, roomFactory: roomFactory)
         _connection = DefaultConnection(realtime: internalRealtime)
     }
 
