@@ -130,7 +130,7 @@ internal final class DefaultMessageReactions: MessageReactions {
                 type: reactionEventType,
                 // TODO: This is just a fallback value until ably-cocoa fixes the nullability of ARTAnnotation.timestamp. Remove in https://github.com/ably/ably-chat-swift/issues/395
                 timestamp: annotation.timestamp ?? Date(),
-                reaction: MessageReaction(
+                reaction: MessageReactionRawEvent.Reaction(
                     type: reactionType,
                     name: annotation.name ?? "", // CHA-MR7b3
                     messageSerial: annotation.messageSerial,

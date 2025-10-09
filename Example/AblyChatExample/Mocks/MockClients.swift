@@ -222,7 +222,7 @@ class MockMessageReactions: MessageReactions {
     var clientIDs: Set<String> = []
     var messageSerials: [String] = []
 
-    private var reactions: [MessageReaction] = []
+    private var reactions: [MessageReactionRawEvent.Reaction] = []
 
     private let mockSubscriptions = MockSubscriptionStorage<MessageReactionSummaryEvent>()
 
@@ -251,7 +251,7 @@ class MockMessageReactions: MessageReactions {
 
     func send(forMessageWithSerial messageSerial: String, params: SendMessageReactionParams) async throws(ARTErrorInfo) {
         reactions.append(
-            MessageReaction(
+            MessageReactionRawEvent.Reaction(
                 type: .distinct,
                 name: params.name,
                 messageSerial: messageSerial,
@@ -289,7 +289,7 @@ class MockMessageReactions: MessageReactions {
                     return nil
                 }
                 self.reactions.append(
-                    MessageReaction(
+                    MessageReactionRawEvent.Reaction(
                         type: .distinct,
                         name: Emoji.random(),
                         messageSerial: messageSerial,
