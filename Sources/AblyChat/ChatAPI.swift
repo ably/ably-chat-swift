@@ -21,27 +21,6 @@ internal final class ChatAPI {
         return try await makePaginatedRequest(endpoint, params: params.asQueryItems())
     }
 
-    internal struct SendMessageResponse: JSONObjectDecodable {
-        internal let serial: String
-        internal let timestamp: Int64
-
-        internal init(jsonObject: [String: JSONValue]) throws(InternalError) {
-            serial = try jsonObject.stringValueForKey("serial")
-            timestamp = try Int64(jsonObject.numberValueForKey("timestamp"))
-        }
-    }
-
-    internal struct MessageOperationResponse: JSONObjectDecodable {
-        internal let version: MessageVersion
-        internal let timestamp: Int64
-
-        internal init(jsonObject: [String: JSONValue]) throws(InternalError) {
-            timestamp = try Int64(jsonObject.numberValueForKey("timestamp"))
-            let timestampInSeconds = Date(timeIntervalSince1970: TimeInterval(Double(timestamp) / 1000))
-            version = try MessageVersion(jsonObject: jsonObject.objectValueForKey("version"), defaultTimestamp: timestampInSeconds)
-        }
-    }
-
     internal struct SendMessageReactionParams: Sendable {
         internal let type: MessageReactionType
         internal let name: String
@@ -61,16 +40,9 @@ internal final class ChatAPI {
         }
     }
 
-    internal typealias UpdateMessageResponse = MessageOperationResponse
-    internal typealias DeleteMessageResponse = MessageOperationResponse
-
     // (CHA-M3) Messages are sent to Ably via the Chat REST API, using the send method.
     // (CHA-M3a) When a message is sent successfully, the caller shall receive a struct representing the Message in response (as if it were received via Realtime event).
     internal func sendMessage(roomName: String, params: SendMessageParams) async throws(InternalError) -> Message {
-        guard let clientID = realtime.clientId else {
-            throw ARTErrorInfo(chatError: .clientIdRequired).toInternalError()
-        }
-
         let endpoint = "\(apiVersionV4)/rooms/\(roomName)/messages"
         var body: [String: JSONValue] = ["text": .string(params.text)]
 
@@ -83,25 +55,8 @@ internal final class ChatAPI {
             body["headers"] = .object(headers.mapValues(\.toJSONValue))
         }
 
-        let response: SendMessageResponse = try await makeRequest(endpoint, method: "POST", body: .jsonObject(body))
-
-        // response.timestamp is in milliseconds, convert it to seconds
-        let timestampInSeconds = Date(timeIntervalSince1970: TimeInterval(Double(response.timestamp) / 1000))
-        let message = Message(
-            serial: response.serial,
-            action: .create,
-            clientID: clientID,
-            text: params.text,
-            metadata: params.metadata ?? [:],
-            headers: params.headers ?? [:],
-            version: .init(
-                serial: response.serial,
-                timestamp: timestampInSeconds,
-                clientID: clientID,
-            ),
-            timestamp: timestampInSeconds,
-        )
-        return message
+        // The server returns a complete Message object with all necessary fields
+        return try await makeRequest(endpoint, method: "POST", body: .jsonObject(body))
     }
 
     // (CHA-M8) A client must be able to update a message in a room.
@@ -127,20 +82,9 @@ internal final class ChatAPI {
 
         // (CHA-M8c) An update operation has PUT semantics. If a field is not specified in the update, it is assumed to be removed.
         // CHA-M8c is not actually respected here, see https://github.com/ably/ably-chat-swift/issues/333
-        let response: UpdateMessageResponse = try await makeRequest(endpoint, method: "PUT", body: .jsonObject(body))
-
         // (CHA-M8b) When a message is updated successfully via the REST API, the caller shall receive a struct representing the Message in response, as if it were received via Realtime event.
-        let message = Message(
-            serial: modifiedMessage.serial,
-            action: .update,
-            clientID: modifiedMessage.clientID,
-            text: modifiedMessage.text,
-            metadata: modifiedMessage.metadata,
-            headers: modifiedMessage.headers,
-            version: response.version,
-            timestamp: modifiedMessage.timestamp,
-        )
-        return message
+        // (CHA-M8b1) The server returns a complete Message object with all necessary fields
+        return try await makeRequest(endpoint, method: "PUT", body: .jsonObject(body))
     }
 
     // (CHA-M9) A client must be able to delete a message in a room.
@@ -157,23 +101,9 @@ internal final class ChatAPI {
             body["metadata"] = .object(metadata)
         }
 
-        let response: DeleteMessageResponse = try await makeRequest(endpoint, method: "POST", body: .jsonObject(body))
-
-        // response.timestamp is in milliseconds, convert it to seconds
-        let timestampInSeconds = TimeInterval(Double(response.timestamp) / 1000)
-
         // (CHA-M9b) When a message is deleted successfully via the REST API, the caller shall receive a struct representing the Message in response, as if it were received via Realtime event.
-        let message = Message(
-            serial: message.serial,
-            action: .delete,
-            clientID: message.clientID,
-            text: "", // CHA-M9b (When a message is deleted successfully via the REST API, the caller shall receive a struct representing the Message in response, as if it were received via Realtime event.) Currently realtime sends an empty text for deleted message, so set it to empty text here as well.
-            metadata: [:], // CHA-M9b
-            headers: [:], // CHA-M9b
-            version: response.version,
-            timestamp: Date(timeIntervalSince1970: timestampInSeconds),
-        )
-        return message
+        // (CHA-M9b1) The server returns a complete Message object with all necessary fields
+        return try await makeRequest(endpoint, method: "POST", body: .jsonObject(body))
     }
 
     internal func getOccupancy(roomName: String) async throws(InternalError) -> OccupancyData {

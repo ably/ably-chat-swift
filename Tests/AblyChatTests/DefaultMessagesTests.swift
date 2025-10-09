@@ -19,12 +19,14 @@ struct DefaultMessagesTests {
                         "serial": "0",
                         "version": [
                             "serial": "0",
-                            "timestamp": 1_631_840_030_000,
+                            "timestamp": 1_631_840_000_000,
                         ],
                         "metadata": ["key1": "val1"],
                         "headers": ["key2": "val2"],
                         "timestamp": 1_631_840_000_000,
                         "text": "hey",
+                        "clientId": "clientId",
+                        "action": "message.create",
                     ],
                 ],
                 statusCode: 200,
@@ -42,9 +44,12 @@ struct DefaultMessagesTests {
         #expect(sentMessage.serial == "0")
         #expect(sentMessage.action == .create)
         #expect(sentMessage.text == "hey")
+        #expect(sentMessage.clientID == "clientId")
         #expect(sentMessage.version.serial == "0")
+        #expect(sentMessage.version.timestamp == Date(timeIntervalSince1970: 1_631_840_000_000 / 1000))
         #expect(sentMessage.metadata == ["key1": "val1"])
         #expect(sentMessage.headers == ["key2": "val2"])
+        #expect(sentMessage.timestamp == Date(timeIntervalSince1970: 1_631_840_000_000 / 1000))
         #expect(realtime.callRecorder.hasRecord(
             matching: "request(_:path:params:body:headers:)",
             arguments: ["method": "POST", "path": "/chat/v4/rooms/basketball/messages", "body": ["text": "hey", "metadata": ["key1": "val1"], "headers": ["key2": "val2"]], "params": [:], "headers": [:]],
@@ -67,9 +72,14 @@ struct DefaultMessagesTests {
                             "metadata": ["key": "val"],
                             "description": "add exclamation",
                             "timestamp": 1_631_840_030_000,
+                            "clientId": "clientId2",
                         ],
                         "timestamp": 1_631_840_000_000,
-                        "text": "\(text)",
+                        "text": "hey!",
+                        "clientId": "clientId",
+                        "action": "message.update",
+                        "metadata": [:],
+                        "headers": [:],
                     ],
                 ],
                 statusCode: 200,
@@ -91,9 +101,13 @@ struct DefaultMessagesTests {
         #expect(updatedMessage.serial == "0")
         #expect(updatedMessage.action == .update)
         #expect(updatedMessage.text == "hey!")
+        #expect(updatedMessage.clientID == "clientId")
         #expect(updatedMessage.version.serial == "1")
+        #expect(updatedMessage.version.timestamp == Date(timeIntervalSince1970: 1_631_840_030_000 / 1000))
         #expect(updatedMessage.version.metadata == ["key": "val"])
         #expect(updatedMessage.version.description == "add exclamation")
+        #expect(updatedMessage.version.clientID == "clientId2")
+        #expect(updatedMessage.timestamp == Date(timeIntervalSince1970: 1_631_840_000_000 / 1000))
         #expect(realtime.callRecorder.hasRecord(
             matching: "request(_:path:params:body:headers:)",
             arguments: ["method": "PUT", "path": "/chat/v4/rooms/basketball/messages/\(sentMessage.serial)", "body": ["message": ["text": "hey!", "metadata": [:], "headers": [:]], "description": "add exclamation", "metadata": ["key": "val"]], "params": [:], "headers": [:]],
@@ -115,9 +129,13 @@ struct DefaultMessagesTests {
                         "version": [
                             "serial": "1",
                             "timestamp": 1_631_840_030_000,
+                            "clientId": "clientId2",
                         ],
                         "timestamp": 1_631_840_000_000,
                         "text": "",
+                        "clientId": "clientId",
+                        "metadata": [:],
+                        "headers": [:],
                     ],
                 ],
                 statusCode: 200,
@@ -136,10 +154,13 @@ struct DefaultMessagesTests {
         // Then
         #expect(deletedMessage.serial == "0")
         #expect(deletedMessage.version.serial == "1")
+        #expect(deletedMessage.version.timestamp == Date(timeIntervalSince1970: 1_631_840_030_000 / 1000))
+        #expect(deletedMessage.version.clientID == "clientId2")
         #expect(deletedMessage.action == .delete)
         #expect(deletedMessage.text.isEmpty)
         #expect(deletedMessage.headers.isEmpty)
         #expect(deletedMessage.metadata.isEmpty)
+        #expect(deletedMessage.timestamp == Date(timeIntervalSince1970: 1_631_840_000_000 / 1000))
         #expect(realtime.callRecorder.hasRecord(
             matching: "request(_:path:params:body:headers:)",
             arguments: ["method": "POST", "path": "/chat/v4/rooms/basketball/messages/\(sentMessage.serial)/delete", "body": [:], "params": [:], "headers": [:]],
