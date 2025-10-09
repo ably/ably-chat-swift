@@ -52,13 +52,6 @@ public protocol Rooms<Channel>: AnyObject, Sendable {
      *   - name: The name of the room.
      */
     func release(name: String) async
-
-    /**
-     * Get the client options used to create the chat instance.
-     *
-     * - Returns: ``ClientOptions`` object.
-     */
-    var clientOptions: ChatClientOptions { get }
 }
 
 // swiftlint:disable:next missing_docs
@@ -79,8 +72,6 @@ internal class DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
             realtime
         }
     #endif
-
-    internal let clientOptions: ChatClientOptions
 
     private let logger: any InternalLogger
     private let roomFactory: RoomFactory
@@ -135,9 +126,8 @@ internal class DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
     /// The value for a given room name is the state that corresponds to that room name.
     private var roomStates: [String: RoomState] = [:]
 
-    internal init(realtime: RoomFactory.Realtime, clientOptions: ChatClientOptions, logger: any InternalLogger, roomFactory: RoomFactory) {
+    internal init(realtime: RoomFactory.Realtime, logger: any InternalLogger, roomFactory: RoomFactory) {
         self.realtime = realtime
-        self.clientOptions = clientOptions
         self.logger = logger
         self.roomFactory = roomFactory
         chatAPI = ChatAPI(realtime: realtime)

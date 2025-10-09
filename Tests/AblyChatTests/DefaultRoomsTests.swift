@@ -42,7 +42,7 @@ struct DefaultRoomsTests {
         let options = RoomOptions()
         let roomToReturn = MockRoom(options: options)
         let roomFactory = MockRoomFactory(room: roomToReturn)
-        let rooms = DefaultRooms(realtime: realtime, clientOptions: .init(), logger: TestLogger(), roomFactory: roomFactory)
+        let rooms = DefaultRooms(realtime: realtime, logger: TestLogger(), roomFactory: roomFactory)
 
         // When: get(name:) is called
         let name = "basketball"
@@ -66,7 +66,7 @@ struct DefaultRoomsTests {
         let options = RoomOptions()
         let roomToReturn = MockRoom(options: options)
         let roomFactory = MockRoomFactory(room: roomToReturn)
-        let rooms = DefaultRooms(realtime: realtime, clientOptions: .init(), logger: TestLogger(), roomFactory: roomFactory)
+        let rooms = DefaultRooms(realtime: realtime, logger: TestLogger(), roomFactory: roomFactory)
 
         // When: get(name:options:) is called
         let name = "basketball"
@@ -93,7 +93,7 @@ struct DefaultRoomsTests {
         let options = RoomOptions()
         let roomToReturn = MockRoom(options: options)
         let roomFactory = MockRoomFactory(room: roomToReturn)
-        let rooms = DefaultRooms(realtime: realtime, clientOptions: .init(), logger: TestLogger(), roomFactory: roomFactory)
+        let rooms = DefaultRooms(realtime: realtime, logger: TestLogger(), roomFactory: roomFactory)
 
         let name = "basketball"
         let firstRoom = try await rooms.get(name: name, options: options)
@@ -119,7 +119,7 @@ struct DefaultRoomsTests {
         let roomToReturn = MockRoom(options: options, releaseImplementation: roomReleaseOperation.releaseImplementation)
 
         let roomFactory = MockRoomFactory(room: roomToReturn)
-        let rooms = DefaultRooms(realtime: realtime, clientOptions: .init(), logger: TestLogger(), roomFactory: roomFactory)
+        let rooms = DefaultRooms(realtime: realtime, logger: TestLogger(), roomFactory: roomFactory)
 
         let name = "basketball"
 
@@ -164,7 +164,7 @@ struct DefaultRoomsTests {
         let options = RoomOptions()
 
         let roomToReturn = MockRoom(options: options)
-        let rooms = DefaultRooms(realtime: realtime, clientOptions: .init(), logger: TestLogger(), roomFactory: MockRoomFactory(room: roomToReturn))
+        let rooms = DefaultRooms(realtime: realtime, logger: TestLogger(), roomFactory: MockRoomFactory(room: roomToReturn))
 
         let name = "basketball"
         _ = try await rooms.get(name: name, options: options)
@@ -196,7 +196,7 @@ struct DefaultRoomsTests {
         let roomReleaseOperation = SignallableReleaseOperation()
         let roomToReturn = MockRoom(options: options, releaseImplementation: roomReleaseOperation.releaseImplementation)
 
-        let rooms = DefaultRooms(realtime: realtime, clientOptions: .init(), logger: TestLogger(), roomFactory: MockRoomFactory(room: roomToReturn))
+        let rooms = DefaultRooms(realtime: realtime, logger: TestLogger(), roomFactory: MockRoomFactory(room: roomToReturn))
 
         let name = "basketball"
 
@@ -245,7 +245,7 @@ struct DefaultRoomsTests {
         let options = RoomOptions()
         let roomToReturn = MockRoom(options: options, releaseImplementation: roomReleaseOperation.releaseImplementation)
 
-        let rooms = DefaultRooms(realtime: realtime, clientOptions: .init(), logger: TestLogger(), roomFactory: MockRoomFactory(room: roomToReturn))
+        let rooms = DefaultRooms(realtime: realtime, logger: TestLogger(), roomFactory: MockRoomFactory(room: roomToReturn))
 
         let name = "basketball"
 
@@ -285,7 +285,7 @@ struct DefaultRoomsTests {
             .init(name: "basketball::$chat"),
         ]))
         let roomFactory = MockRoomFactory()
-        let rooms = DefaultRooms(realtime: realtime, clientOptions: .init(), logger: TestLogger(), roomFactory: roomFactory)
+        let rooms = DefaultRooms(realtime: realtime, logger: TestLogger(), roomFactory: roomFactory)
 
         // When: `release(name:)` is called with this room name
         // Then: The call to `release(name:)` completes (this is as much as I can do to test the spec’s “no-op”; i.e. check it doesn’t seem to wait for anything or have any obvious side effects)
@@ -305,7 +305,7 @@ struct DefaultRoomsTests {
         let options = RoomOptions()
         let roomToReturn = MockRoom(options: options, releaseImplementation: roomReleaseOperation.releaseImplementation)
 
-        let rooms = DefaultRooms(realtime: realtime, clientOptions: .init(), logger: TestLogger(), roomFactory: MockRoomFactory(room: roomToReturn))
+        let rooms = DefaultRooms(realtime: realtime, logger: TestLogger(), roomFactory: MockRoomFactory(room: roomToReturn))
 
         let name = "basketball"
 
@@ -347,7 +347,7 @@ struct DefaultRoomsTests {
         let options = RoomOptions()
         let roomToReturn = MockRoom(options: options, releaseImplementation: roomReleaseOperation.releaseImplementation)
 
-        let rooms = DefaultRooms(realtime: realtime, clientOptions: .init(), logger: TestLogger(), roomFactory: MockRoomFactory(room: roomToReturn))
+        let rooms = DefaultRooms(realtime: realtime, logger: TestLogger(), roomFactory: MockRoomFactory(room: roomToReturn))
 
         let name = "basketball"
 
@@ -401,7 +401,7 @@ struct DefaultRoomsTests {
         let options = RoomOptions()
         let hasExistingRoomAtMomentRoomReleaseCalledStreamComponents = AsyncStream.makeStream(of: Bool.self)
         let roomFactory = MockRoomFactory()
-        let rooms = DefaultRooms(realtime: realtime, clientOptions: .init(), logger: TestLogger(), roomFactory: roomFactory)
+        let rooms = DefaultRooms(realtime: realtime, logger: TestLogger(), roomFactory: roomFactory)
 
         let name = "basketball"
 
