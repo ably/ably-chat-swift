@@ -198,6 +198,36 @@ internal final class DefaultPresence: Presence {
     }
 
     // (CHA-PR7a) Users may provide a listener to subscribe to all presence events in a room.
+    internal func subscribe(_ callback: @escaping @MainActor (PresenceEvent) -> Void) -> DefaultSubscription {
+        fatalErrorIfEnableEventsDisabled()
+
+        logger.log(message: "Subscribing to presence events", level: .debug)
+
+        let eventListener = channel.presence.subscribe { [weak self] message in
+            guard let self else {
+                return
+            }
+            logger.log(message: "Received presence message: \(message)", level: .debug)
+
+            guard let event = PresenceEventType(ablyCocoaValue: message.action) else {
+                return
+            }
+
+            // processPresenceSubscribe is logging so we don't need to log here
+            let presenceEvent = processPresenceSubscribe(
+                PresenceMessage(ablyCocoaPresenceMessage: message),
+                for: event,
+            )
+            callback(presenceEvent)
+        }
+
+        return DefaultSubscription { [weak self] in
+            if let eventListener {
+                self?.channel.presence.unsubscribe(eventListener)
+            }
+        }
+    }
+
     // (CHA-PR7b) Users may provide a listener and a list of selected presence events, to subscribe to just those events in a room.
     internal func subscribe(event: PresenceEventType, _ callback: @escaping @MainActor (PresenceEvent) -> Void) -> DefaultSubscription {
         fatalErrorIfEnableEventsDisabled()

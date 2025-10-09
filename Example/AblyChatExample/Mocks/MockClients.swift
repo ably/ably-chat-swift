@@ -535,6 +535,10 @@ class MockPresence: Presence {
         )
     }
 
+    func subscribe(_ callback: @escaping @MainActor (PresenceEvent) -> Void) -> MockSubscription {
+        createSubscription(callback: callback)
+    }
+
     func subscribe(event _: PresenceEventType, _ callback: @escaping @MainActor (PresenceEvent) -> Void) -> MockSubscription {
         createSubscription(callback: callback)
     }
