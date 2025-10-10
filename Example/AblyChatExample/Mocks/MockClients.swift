@@ -178,7 +178,7 @@ class MockMessages: Messages {
         return message
     }
 
-    func update(newMessage: Message, description _: String?, metadata _: MessageOperationMetadata?) async throws(ARTErrorInfo) -> Message {
+    func update(newMessage: Message, details _: OperationDetails?) async throws(ARTErrorInfo) -> Message {
         let message = Message(
             serial: newMessage.serial,
             action: .messageUpdate,

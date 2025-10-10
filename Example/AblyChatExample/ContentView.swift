@@ -403,7 +403,7 @@ struct ContentView: View {
             return nil
         }).first {
             let editedMessage = editingMessageItem.message.copy(text: newMessage)
-            _ = try await room().messages.update(newMessage: editedMessage, description: nil, metadata: nil)
+            _ = try await room().messages.update(newMessage: editedMessage, details: nil)
         }
 
         newMessage = ""

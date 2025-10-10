@@ -95,7 +95,7 @@ struct DefaultMessagesTests {
         // When
         var newMessage = sentMessage
         newMessage.text = text + "!" // see https://github.com/ably/ably-chat-swift/issues/333
-        let updatedMessage = try await defaultMessages.update(newMessage: newMessage, description: "add exclamation", metadata: ["key": "val"])
+        let updatedMessage = try await defaultMessages.update(newMessage: newMessage, details: .init(description: "add exclamation", metadata: ["key": "val"]))
 
         // Then
         #expect(updatedMessage.serial == "0")
@@ -205,7 +205,7 @@ struct DefaultMessagesTests {
         // TODO: avoids compiler crash (https://github.com/ably/ably-chat-swift/issues/233), revert once Xcode 16.3 released
         let doIt = {
             let message = try Message(jsonObject: ["serial": "0", "version": ["serial": "0"], "text": "hey", "clientId": "0", "action": "message.update", "metadata": [:], "headers": [:]]) // arbitrary
-            _ = try await defaultMessages.update(newMessage: message, description: "", metadata: [:])
+            _ = try await defaultMessages.update(newMessage: message, details: .init(description: "", metadata: [:]))
         }
         await #expect {
             try await doIt()

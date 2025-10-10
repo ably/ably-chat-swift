@@ -56,14 +56,13 @@ public protocol Messages: AnyObject, Sendable {
      *
      * - Parameters:
      *   - newMessage: A copy of the `Message` object with the intended edits applied. Use the provided `copy` method on the existing message.
-     *   - description: Optional description of the update action.
-     *   - metadata: Optional metadata of the update action. (The metadata of the message itself still resides within the newMessage object above).
+     *   - details: Optional details to record about the update action.
      *
      * - Returns: The updated message, with the `action` of the message set as `.update`.
      *
      * - Note: It is possible to receive your own message via the messages subscription before this method returns.
      */
-    func update(newMessage: Message, description: String?, metadata: MessageOperationMetadata?) async throws(ARTErrorInfo) -> Message
+    func update(newMessage: Message, details: OperationDetails?) async throws(ARTErrorInfo) -> Message
 
     /**
      * Deletes a message in the chat room.
@@ -173,40 +172,22 @@ public struct SendMessageParams: Sendable {
     }
 }
 
-/**
- * Params for updating a text message.  All fields are updated and, if omitted, they are set to empty.
- */
+/// Parameters for updating a message.
 public struct UpdateMessageParams: Sendable {
-    /**
-     * The params to update including the text of the message.
-     */
-    public var message: SendMessageParams
+    /// The new text of the message.
+    public var text: String
 
-    /**
-     * Optional description of the update action.
-     */
-    public var description: String?
+    /// Optional metadata of the message.
+    public var metadata: MessageMetadata?
 
-    /**
-     * Optional metadata of the update action.
-     *
-     * The metadata is a map of extra information that can be attached to the update action.
-     * It is not used by Ably and is sent as part of the realtime
-     * message payload. Example use cases are setting custom styling like
-     * background or text colors or fonts, adding links to external images,
-     * emojis, etc.
-     *
-     * Do not use metadata for authoritative information. There is no server-side
-     * validation. When reading the metadata treat it like user input.
-     *
-     */
-    public var metadata: MessageOperationMetadata?
+    /// Optional headers of the message.
+    public var headers: MessageHeaders?
 
-    // swiftlint:disable:next missing_docs
-    public init(message: SendMessageParams, description: String? = nil, metadata: MessageOperationMetadata? = nil) {
-        self.message = message
-        self.description = description
+    /// Creates an instance with the given property values.
+    public init(text: String, metadata: MessageMetadata? = nil, headers: MessageHeaders? = nil) {
+        self.text = text
         self.metadata = metadata
+        self.headers = headers
     }
 }
 

@@ -61,7 +61,7 @@ internal final class ChatAPI {
 
     // (CHA-M8) A client must be able to update a message in a room.
     // (CHA-M8a) A client may update a message via the Chat REST API by calling the update method.
-    internal func updateMessage(roomName: String, with modifiedMessage: Message, description: String?, metadata: MessageOperationMetadata?) async throws(InternalError) -> Message {
+    internal func updateMessage(roomName: String, with modifiedMessage: Message, details: OperationDetails?) async throws(InternalError) -> Message {
         let endpoint = "\(apiVersionV4)/rooms/\(roomName)/messages/\(modifiedMessage.serial)"
         var body: [String: JSONValue] = [:]
         let messageObject: [String: JSONValue] = [
@@ -72,11 +72,11 @@ internal final class ChatAPI {
 
         body["message"] = .object(messageObject)
 
-        if let description {
+        if let description = details?.description {
             body["description"] = .string(description)
         }
 
-        if let metadata {
+        if let metadata = details?.metadata {
             body["metadata"] = .object(metadata.mapValues { .string($0) })
         }
 

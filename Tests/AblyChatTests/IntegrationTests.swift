@@ -275,8 +275,7 @@ struct IntegrationTests {
                 metadata: ["someEditedKey": 123, "someOtherEditedKey": "foo"],
                 headers: nil,
             ),
-            description: "random",
-            metadata: nil,
+            details: .init(description: "random", metadata: nil),
         )
 
         // (2) Check that we received the edited message on the subscription

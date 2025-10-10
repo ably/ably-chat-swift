@@ -133,9 +133,9 @@ internal final class DefaultMessages: Messages {
         }
     }
 
-    internal func update(newMessage: Message, description: String?, metadata: MessageOperationMetadata?) async throws(ARTErrorInfo) -> Message {
+    internal func update(newMessage: Message, details: OperationDetails?) async throws(ARTErrorInfo) -> Message {
         do {
-            return try await chatAPI.updateMessage(roomName: roomName, with: newMessage, description: description, metadata: metadata)
+            return try await chatAPI.updateMessage(roomName: roomName, with: newMessage, details: details)
         } catch {
             throw error.toARTErrorInfo()
         }
