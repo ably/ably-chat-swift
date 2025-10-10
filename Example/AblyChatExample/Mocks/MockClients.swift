@@ -17,7 +17,7 @@ class MockChatClient: ChatClientProtocol {
         rooms = MockRooms(clientOptions: self.clientOptions)
     }
 
-    var clientID: String {
+    var clientID: String? {
         "AblyTest"
     }
 }

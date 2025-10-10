@@ -43,6 +43,7 @@ struct ContentView: View {
     private let roomName = "DemoRoom"
 
     @State private var chatClient = Environment.current.createChatClient()
+    @State private var currentClientID: String?
 
     @State private var reactions: [Reaction] = []
     @State private var newMessage = ""
@@ -90,14 +91,10 @@ struct ContentView: View {
         }
     }
 
-    private var currentClientID: String {
-        chatClient.clientID
-    }
-
     var body: some View {
         ZStack {
             VStack {
-                Text("In \(roomName) as \(currentClientID)")
+                Text("In \(roomName) as \(currentClientID ?? "<not yet known>")")
                     .font(.headline)
                     .padding(5)
                 HStack {
@@ -214,7 +211,7 @@ struct ContentView: View {
             do {
                 let room = try await room()
 
-                printConnectionStatusChange(duration: 30) // stops printing after 30 seconds
+                subscribeToConnectionStatus()
                 subscribeToReactions(room: room)
                 subscribeToRoomStatus(room: room)
                 subscribeToTypingEvents(room: room)
@@ -354,13 +351,10 @@ struct ContentView: View {
         }
     }
 
-    func printConnectionStatusChange(duration: TimeInterval) {
-        let subscription = chatClient.connection.onStatusChange { status in
+    func subscribeToConnectionStatus() {
+        chatClient.connection.onStatusChange { [weak chatClient] status in
             print("Connection status changed to: `\(status.current)` from `\(status.previous)`")
-        }
-        after(duration) {
-            subscription.off()
-            print("Unsubscribed from connection status changes.")
+            currentClientID = chatClient?.clientID
         }
     }
 

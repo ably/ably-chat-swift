@@ -30,11 +30,15 @@ public protocol ChatClientProtocol: AnyObject, Sendable {
     var connection: Connection { get }
 
     /**
-     * Returns the clientId of the current client.
+     * Returns the clientID of the current client, if known.
      *
-     * - Returns: The clientId.
+     * - Important: When using an Ably key for authentication, this value is determined immediately. If using a token,
+     * the clientID is not known until the client has successfully connected to and authenticated with
+     * the server. Use the `chatClient.connection.status` to check the connection status.
+
+     * - Returns: The clientID, or `nil` if unknown.
      */
-    var clientID: String { get }
+    var clientID: String? { get }
 
     /**
      * Returns the underlying Ably Realtime client.
@@ -121,11 +125,8 @@ public class ChatClient: ChatClientProtocol {
     }
 
     // swiftlint:disable:next missing_docs
-    public var clientID: String {
-        guard let clientID = realtime.clientId else {
-            fatalError("Ensure your Realtime instance is initialized with a clientId.")
-        }
-        return clientID
+    public var clientID: String? {
+        realtime.clientId
     }
 }
 
