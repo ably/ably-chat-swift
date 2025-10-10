@@ -280,7 +280,7 @@ struct DefaultRoomTests {
 
         let room = try DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), name: "basketball", options: .init(), logger: TestLogger(), lifecycleManagerFactory: lifecycleManagerFactory)
 
-        // When: The room lifecycle manager emits a status change through `subscribeToState`
+        // When: The room lifecycle manager emits a status change through `onRoomStatusChange`
         let managerStatusChange = RoomStatusChange(current: .detached(error: nil), previous: .detaching(error: nil)) // arbitrary
         let roomStatusSubscription = room.onStatusChange()
         lifecycleManager.emitStatusChange(managerStatusChange)
@@ -307,12 +307,12 @@ struct DefaultRoomTests {
 
         let room = try DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), name: "basketball", options: .init(), logger: TestLogger(), lifecycleManagerFactory: lifecycleManagerFactory)
 
-        // When: The room lifecycle manager emits a status change through `subscribeToState`
+        // When: The room lifecycle manager emits a discontinuity event through `onDiscontinuity`
         let managerDiscontinuity = DiscontinuityEvent(error: ARTErrorInfo.createUnknownError() /* arbitrary */ )
         let roomDiscontinuitiesSubscription = room.onDiscontinuity()
         lifecycleManager.emitDiscontinuity(managerDiscontinuity)
 
-        // Then: The room emits this discontinuity through `onDiscontinuity`
+        // Then: The room emits this discontinuity event through `onDiscontinuity`
         let roomDiscontinuity = try #require(await roomDiscontinuitiesSubscription.first { @Sendable _ in true })
         #expect(roomDiscontinuity == managerDiscontinuity)
     }
