@@ -316,7 +316,6 @@ internal class DefaultRoom<Realtime: InternalRealtimeClientProtocol, LifecycleMa
             channel: internalChannel,
             roomLifecycleManager: lifecycleManager,
             roomName: name,
-            clientID: clientId,
             logger: logger,
             options: options.presence,
         )

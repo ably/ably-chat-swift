@@ -77,13 +77,12 @@ internal protocol InternalRealtimeChannelProtocol: AnyObject, Sendable {
 internal protocol InternalRealtimePresenceProtocol: AnyObject, Sendable {
     func get() async throws(InternalError) -> [PresenceMessage]
     func get(_ query: ARTRealtimePresenceQuery) async throws(InternalError) -> [PresenceMessage]
+    func enter(_ data: JSONObject?) async throws(InternalError)
     func leave(_ data: JSONObject?) async throws(InternalError)
-    func enterClient(_ clientID: String, data: JSONObject?) async throws(InternalError)
     func update(_ data: JSONObject?) async throws(InternalError)
     func subscribe(_ callback: @escaping @MainActor (ARTPresenceMessage) -> Void) -> ARTEventListener?
     func subscribe(_ action: ARTPresenceAction, callback: @escaping @MainActor (ARTPresenceMessage) -> Void) -> ARTEventListener?
     func unsubscribe(_ listener: ARTEventListener)
-    func leaveClient(_ clientId: String, data: JSONObject?) async throws(InternalError)
 }
 
 /// Expresses the requirements of the object returned by ``InternalRealtimeChannelProtocol/annotations``.
@@ -273,10 +272,10 @@ internal final class InternalRealtimePresenceAdapter<Underlying: RealtimePresenc
         }
     }
 
-    internal func enterClient(_ clientID: String, data: JSONObject?) async throws(InternalError) {
+    internal func enter(_ data: JSONObject?) async throws(InternalError) {
         do {
             try await withCheckedContinuation { (continuation: CheckedContinuation<Result<Void, ARTErrorInfo>, _>) in
-                underlying.enterClient(clientID, data: data?.toAblyCocoaData) { error in
+                underlying.enter(data?.toAblyCocoaData) { error in
                     if let error {
                         continuation.resume(returning: .failure(error))
                     } else {
@@ -315,22 +314,6 @@ internal final class InternalRealtimePresenceAdapter<Underlying: RealtimePresenc
 
     internal func unsubscribe(_ listener: ARTEventListener) {
         underlying.unsubscribe(listener)
-    }
-
-    internal func leaveClient(_ clientID: String, data: JSONObject?) async throws(InternalError) {
-        do {
-            try await withCheckedContinuation { (continuation: CheckedContinuation<Result<Void, ARTErrorInfo>, _>) in
-                underlying.leaveClient(clientID, data: data?.toAblyCocoaData) { error in
-                    if let error {
-                        continuation.resume(returning: .failure(error))
-                    } else {
-                        continuation.resume(returning: .success(()))
-                    }
-                }
-            }.get()
-        } catch {
-            throw error.toInternalError()
-        }
     }
 }
 

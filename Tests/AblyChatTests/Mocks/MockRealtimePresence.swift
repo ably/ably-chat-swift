@@ -16,10 +16,6 @@ final class MockRealtimePresence: InternalRealtimePresenceProtocol {
         // no-op since it's called automatically
     }
 
-    func leaveClient(_: String, data _: JSONObject?) {
-        fatalError("Not implemented")
-    }
-
     func get() async throws(InternalError) -> [PresenceMessage] {
         callRecorder.addRecord(
             signature: "get()",
@@ -43,10 +39,10 @@ final class MockRealtimePresence: InternalRealtimePresenceProtocol {
         )
     }
 
-    func enterClient(_ name: String, data: JSONObject?) async throws(InternalError) {
+    func enter(_ data: JSONObject?) async throws(InternalError) {
         callRecorder.addRecord(
-            signature: "enterClient(_:data:)",
-            arguments: ["name": name, "data": data],
+            signature: "enter(_:)",
+            arguments: ["data": data],
         )
     }
 
