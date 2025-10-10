@@ -297,7 +297,7 @@ struct IntegrationTests {
         // (3) Delete the message on the other client
         let txDeleteMessage = try await txRoom.messages.delete(
             message: rxEditedMessageFromSubscription,
-            params: .init(
+            details: .init(
                 description: "deleted in testing",
                 metadata: ["foo": "bar"],
             ),

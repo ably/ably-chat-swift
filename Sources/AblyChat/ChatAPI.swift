@@ -89,15 +89,15 @@ internal final class ChatAPI {
 
     // (CHA-M9) A client must be able to delete a message in a room.
     // (CHA-M9a) A client may delete a message via the Chat REST API by calling the delete method.
-    internal func deleteMessage(roomName: String, message: Message, params: DeleteMessageParams) async throws(InternalError) -> Message {
+    internal func deleteMessage(roomName: String, message: Message, details: OperationDetails?) async throws(InternalError) -> Message {
         let endpoint = "\(apiVersionV4)/rooms/\(roomName)/messages/\(message.serial)/delete"
         var body: [String: JSONValue] = [:]
 
-        if let description = params.description {
+        if let description = details?.description {
             body["description"] = .string(description)
         }
 
-        if let metadata = params.metadata {
+        if let metadata = details?.metadata {
             body["metadata"] = .object(metadata.mapValues { .string($0) })
         }
 

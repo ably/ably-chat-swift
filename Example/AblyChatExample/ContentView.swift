@@ -411,7 +411,7 @@ struct ContentView: View {
 
     func deleteMessage(_ message: Message) {
         Task {
-            _ = try await room().messages.delete(message: message, params: .init())
+            _ = try await room().messages.delete(message: message, details: nil)
         }
     }
 

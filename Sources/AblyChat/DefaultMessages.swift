@@ -141,9 +141,9 @@ internal final class DefaultMessages: Messages {
         }
     }
 
-    internal func delete(message: Message, params: DeleteMessageParams) async throws(ARTErrorInfo) -> Message {
+    internal func delete(message: Message, details: OperationDetails?) async throws(ARTErrorInfo) -> Message {
         do {
-            return try await chatAPI.deleteMessage(roomName: roomName, message: message, params: params)
+            return try await chatAPI.deleteMessage(roomName: roomName, message: message, details: details)
         } catch {
             throw error.toARTErrorInfo()
         }

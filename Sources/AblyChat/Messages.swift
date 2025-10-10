@@ -72,13 +72,13 @@ public protocol Messages: AnyObject, Sendable {
      *
      * - Parameters:
      *   - message: The message you wish to delete.
-     *   - params: Contains an optional description and metadata of the delete action.
+     *   - details: Optional details to record about the delete action.
      *
      * - Returns: The deleted message, with the action of the message set as `.delete`.
      *
      * - Note: It is possible to receive your own message via the messages subscription before this method returns.
      */
-    func delete(message: Message, params: DeleteMessageParams) async throws(ARTErrorInfo) -> Message
+    func delete(message: Message, details: OperationDetails?) async throws(ARTErrorInfo) -> Message
 
     /**
      * Add, delete, and subscribe to message reactions.
@@ -210,14 +210,12 @@ public struct UpdateMessageParams: Sendable {
     }
 }
 
-/**
- * Params for deleting a message.
- */
-public struct DeleteMessageParams: Sendable {
-    // swiftlint:disable:next missing_docs
+/// The parameters supplied to a message action like delete or update.
+public struct OperationDetails: Sendable {
+    /// Optional description for the message action.
     public var description: String?
 
-    // swiftlint:disable:next missing_docs
+    /// Optional metadata that will be added to the action. Defaults to empty.
     public var metadata: MessageOperationMetadata?
 
     // swiftlint:disable:next missing_docs

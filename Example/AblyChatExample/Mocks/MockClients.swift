@@ -194,7 +194,7 @@ class MockMessages: Messages {
         return message
     }
 
-    func delete(message: Message, params _: DeleteMessageParams) async throws(ARTErrorInfo) -> Message {
+    func delete(message: Message, details _: OperationDetails?) async throws(ARTErrorInfo) -> Message {
         let message = Message(
             serial: message.serial,
             action: .messageDelete,
