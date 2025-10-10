@@ -285,8 +285,6 @@ internal class DefaultRoom<Realtime: InternalRealtimeClientProtocol, LifecycleMa
         self.logger = logger
         self.chatAPI = chatAPI
 
-        let clientId = realtime.clientId
-
         internalChannel = Self.createChannel(roomName: name, roomOptions: options, realtime: realtime)
 
         lifecycleManager = lifecycleManagerFactory.createManager(
@@ -303,8 +301,8 @@ internal class DefaultRoom<Realtime: InternalRealtimeClientProtocol, LifecycleMa
         )
 
         reactions = DefaultRoomReactions(
+            realtime: realtime,
             channel: internalChannel,
-            clientID: clientId,
             roomName: name,
             logger: logger,
         )

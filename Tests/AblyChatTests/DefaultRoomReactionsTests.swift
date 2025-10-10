@@ -12,7 +12,7 @@ struct DefaultRoomReactionsTests {
         let channel = MockRealtimeChannel(name: "basketball::$chat")
 
         // When
-        let defaultRoomReactions = DefaultRoomReactions(channel: channel, clientID: "mockClientId", roomName: "basketball", logger: TestLogger())
+        let defaultRoomReactions = DefaultRoomReactions(realtime: MockRealtime(), channel: channel, roomName: "basketball", logger: TestLogger())
 
         let sendReactionParams = SendReactionParams(
             name: "like",
@@ -50,7 +50,7 @@ struct DefaultRoomReactionsTests {
         let channel = MockRealtimeChannel(
             messageToEmitOnSubscribe: generateMessage(serial: "1", reaction: ":like:"),
         )
-        let defaultRoomReactions = DefaultRoomReactions(channel: channel, clientID: "mockClientId", roomName: "basketball", logger: TestLogger())
+        let defaultRoomReactions = DefaultRoomReactions(realtime: MockRealtime(), channel: channel, roomName: "basketball", logger: TestLogger())
 
         // When
         var callbackCalls = 0
@@ -98,7 +98,7 @@ struct DefaultRoomReactionsTests {
                 return message
             }(),
         )
-        let defaultRoomReactions = DefaultRoomReactions(channel: channel, clientID: "mockClientId", roomName: "basketball", logger: TestLogger())
+        let defaultRoomReactions = DefaultRoomReactions(realtime: MockRealtime(), channel: channel, roomName: "basketball", logger: TestLogger())
 
         // When
         let ts = Date()
