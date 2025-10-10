@@ -7,7 +7,6 @@ internal final class DefaultMessages: Messages {
 
     private let roomName: String
     private let chatAPI: ChatAPI
-    private let clientID: String
     private let logger: any InternalLogger
 
     private var currentSubscriptionPoint: String?
@@ -26,13 +25,12 @@ internal final class DefaultMessages: Messages {
         }
     }
 
-    internal init(channel: any InternalRealtimeChannelProtocol, chatAPI: ChatAPI, roomName: String, options: MessagesOptions = .init(), clientID: String, logger: any InternalLogger) {
+    internal init(channel: any InternalRealtimeChannelProtocol, chatAPI: ChatAPI, roomName: String, options: MessagesOptions = .init(), logger: any InternalLogger) {
         self.channel = channel
         self.chatAPI = chatAPI
         self.roomName = roomName
-        self.clientID = clientID
         self.logger = logger
-        reactions = DefaultMessageReactions(channel: channel, chatAPI: chatAPI, roomName: roomName, options: options, clientID: clientID, logger: logger)
+        reactions = DefaultMessageReactions(channel: channel, chatAPI: chatAPI, roomName: roomName, options: options, logger: logger)
         updateCurrentSubscriptionPoint()
     }
 

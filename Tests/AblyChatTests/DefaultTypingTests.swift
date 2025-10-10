@@ -17,7 +17,6 @@ struct DefaultTypingTests {
         return DefaultTyping(
             channel: channel,
             roomName: "test-room",
-            clientID: "test-client",
             logger: mockLogger,
             heartbeatThrottle: heartbeatThrottle,
             clock: mockClock,

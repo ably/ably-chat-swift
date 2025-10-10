@@ -285,9 +285,7 @@ internal class DefaultRoom<Realtime: InternalRealtimeClientProtocol, LifecycleMa
         self.logger = logger
         self.chatAPI = chatAPI
 
-        guard let clientId = realtime.clientId else {
-            throw ARTErrorInfo(chatError: .clientIdRequired).toInternalError()
-        }
+        let clientId = realtime.clientId
 
         internalChannel = Self.createChannel(roomName: name, roomOptions: options, realtime: realtime)
 
@@ -301,7 +299,6 @@ internal class DefaultRoom<Realtime: InternalRealtimeClientProtocol, LifecycleMa
             chatAPI: chatAPI,
             roomName: name,
             options: options.messages,
-            clientID: clientId,
             logger: logger,
         )
 
@@ -331,7 +328,6 @@ internal class DefaultRoom<Realtime: InternalRealtimeClientProtocol, LifecycleMa
         typing = DefaultTyping(
             channel: internalChannel,
             roomName: name,
-            clientID: clientId,
             logger: logger,
             heartbeatThrottle: options.typing.heartbeatThrottle,
             clock: SystemClock(),

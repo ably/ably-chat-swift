@@ -4,9 +4,9 @@ internal final class DefaultRoomReactions: RoomReactions {
     private let channel: any InternalRealtimeChannelProtocol
     private let roomName: String
     private let logger: any InternalLogger
-    private let clientID: String
+    private let clientID: String?
 
-    internal init(channel: any InternalRealtimeChannelProtocol, clientID: String, roomName: String, logger: any InternalLogger) {
+    internal init(channel: any InternalRealtimeChannelProtocol, clientID: String?, roomName: String, logger: any InternalLogger) {
         self.roomName = roomName
         self.channel = channel
         self.logger = logger
