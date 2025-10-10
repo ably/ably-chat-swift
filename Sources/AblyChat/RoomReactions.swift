@@ -101,9 +101,7 @@ public struct SendReactionParams: Sendable {
      */
     public var headers: ReactionHeaders?
 
-    /// Memberwise initializer to create a `SendReactionParams`.
-    ///
-    /// - Note: You should not need to use this initializer when using the Chat SDK. It is exposed only to allow users to create mock versions of the SDK's protocols.
+    /// Creates an instance with the given property values.
     public init(name: String, metadata: ReactionMetadata? = nil, headers: ReactionHeaders? = nil) {
         self.name = name
         self.metadata = metadata
