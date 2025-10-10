@@ -62,8 +62,6 @@ public enum ErrorCode: Int {
         case roomIsReleased
         case roomReleasedBeforeOperationCompleted
         case roomDiscontinuity
-        case unableDeleteReactionWithoutName
-        case cannotApplyEventForDifferentMessage
         case messageRejectedByBeforePublishRule
         case messageRejectedByModeration
 
@@ -81,10 +79,6 @@ public enum ErrorCode: Int {
                 .roomReleasedBeforeOperationCompleted
             case .roomDiscontinuity:
                 .roomDiscontinuity
-            case .unableDeleteReactionWithoutName:
-                .badRequest
-            case .cannotApplyEventForDifferentMessage:
-                .badRequest
             case .messageRejectedByModeration:
                 .messageRejectedByModeration
             case .messageRejectedByBeforePublishRule:
@@ -100,9 +94,7 @@ public enum ErrorCode: Int {
                  .roomInFailedState,
                  .roomIsReleasing,
                  .roomIsReleased,
-                 .roomReleasedBeforeOperationCompleted,
-                 .unableDeleteReactionWithoutName,
-                 .cannotApplyEventForDifferentMessage:
+                 .roomReleasedBeforeOperationCompleted:
                 400
             case .messageRejectedByModeration,
                  .messageRejectedByBeforePublishRule:
@@ -200,9 +192,9 @@ internal enum ChatError {
         case .roomDiscontinuity:
             .fixedStatusCode(.roomDiscontinuity)
         case .unableDeleteReactionWithoutName:
-            .fixedStatusCode(.unableDeleteReactionWithoutName)
+            .fixedStatusCode(.badRequest)
         case .cannotApplyEventForDifferentMessage:
-            .fixedStatusCode(.cannotApplyEventForDifferentMessage)
+            .fixedStatusCode(.badRequest)
         case .messageRejectedByBeforePublishRule:
             .fixedStatusCode(.messageRejectedByBeforePublishRule)
         case .messageRejectedByModeration:
