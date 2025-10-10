@@ -58,13 +58,17 @@ extension MockHTTPPaginatedResponse {
     static let successSendMessage = MockHTTPPaginatedResponse(
         items: [
             [
+                "clientId": "mockClientId",
                 "serial": "3446456",
+                "action": "message.create",
+                "text": "hello",
+                "metadata": [:],
+                "headers": [:],
                 "version": [
                     "serial": "3446456",
+                    "timestamp": 1_631_840_000_000,
                 ],
                 "timestamp": 1_631_840_000_000,
-                "createdAt": 1_631_840_000_000,
-                "text": "hello",
             ],
         ],
         statusCode: 200,

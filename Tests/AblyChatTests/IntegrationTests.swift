@@ -113,6 +113,8 @@ struct IntegrationTests {
         let txMessageBeforeRxSubscribe = try await txRoom.messages.send(
             withParams: .init(
                 text: "Hello from txRoom, before rxRoom subscribe",
+                metadata: ["someMetadataKey": 123, "someOtherMetadataKey": "foo"],
+                headers: ["someHeadersKey": 456, "someOtherHeadersKey": "bar"],
             ),
         )
 

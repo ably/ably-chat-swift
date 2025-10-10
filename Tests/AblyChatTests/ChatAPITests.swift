@@ -31,6 +31,7 @@ struct ChatAPITests {
     }
 
     // @spec CHA-M3a
+    // @spec CHA-M3a1
     @Test
     func sendMessage_returnsMessage() async throws {
         // Given
@@ -51,7 +52,7 @@ struct ChatAPITests {
             text: "hello",
             metadata: [:],
             headers: [:],
-            version: .init(serial: "3446456", timestamp: Date(timeIntervalSince1970: 1_631_840_000), clientID: "mockClientId"),
+            version: .init(serial: "3446456", timestamp: Date(timeIntervalSince1970: 1_631_840_000)),
             timestamp: Date(timeIntervalSince1970: 1_631_840_000),
         )
         #expect(message == expectedMessage)
