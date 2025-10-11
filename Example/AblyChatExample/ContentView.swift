@@ -314,7 +314,7 @@ struct ContentView: View {
     }
 
     func subscribeToPresence(room: any Room) {
-        room.presence.subscribe(events: [.enter, .leave, .update]) { event in
+        room.presence.subscribe { event in
             withAnimation {
                 listItems.insert(
                     .presence(

@@ -85,15 +85,6 @@ extension ARTPresenceMessage {
     }
 }
 
-extension [PresenceEventType] {
-    static let all = [
-        PresenceEventType.present,
-        PresenceEventType.enter,
-        PresenceEventType.leave,
-        PresenceEventType.update,
-    ]
-}
-
 /// Compares Any to another Any which is unavailable by default in swift for type safety, but useful to have in tests.
 func compareAny(_ any1: Any?, with any2: Any?) -> Bool {
     guard let any1, let any2 else {
