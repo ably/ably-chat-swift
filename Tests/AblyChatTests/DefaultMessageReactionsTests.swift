@@ -146,21 +146,21 @@ struct DefaultMessageReactionsTests {
         defaultMessages.reactions.subscribe { event in
             // Then
             #expect(event.type == .summary)
-            #expect(type(of: event.summary.unique) == [String: MessageReactionSummary.ClientIDList].self)
-            #expect(event.summary.unique["like"]?.total == 2)
-            #expect(event.summary.unique["love"]?.total == 1)
-            #expect(event.summary.unique["like"]?.clientIDs.count == 2)
-            #expect(event.summary.unique["love"]?.clientIDs.count == 1)
-            #expect(type(of: event.summary.distinct) == [String: MessageReactionSummary.ClientIDList].self)
-            #expect(event.summary.distinct["like"]?.total == 2)
-            #expect(event.summary.distinct["love"]?.total == 1)
-            #expect(event.summary.distinct["like"]?.clientIDs.count == 2)
-            #expect(event.summary.distinct["love"]?.clientIDs.count == 1)
-            #expect(type(of: event.summary.multiple) == [String: MessageReactionSummary.ClientIDCounts].self)
-            #expect(event.summary.multiple["like"]?.total == 5)
-            #expect(event.summary.multiple["love"]?.total == 10)
-            #expect(event.summary.multiple["like"]?.clientIDs.count == 2)
-            #expect(event.summary.multiple["love"]?.clientIDs.count == 1)
+            #expect(type(of: event.reactions.unique) == [String: MessageReactionSummary.ClientIDList].self)
+            #expect(event.reactions.unique["like"]?.total == 2)
+            #expect(event.reactions.unique["love"]?.total == 1)
+            #expect(event.reactions.unique["like"]?.clientIDs.count == 2)
+            #expect(event.reactions.unique["love"]?.clientIDs.count == 1)
+            #expect(type(of: event.reactions.distinct) == [String: MessageReactionSummary.ClientIDList].self)
+            #expect(event.reactions.distinct["like"]?.total == 2)
+            #expect(event.reactions.distinct["love"]?.total == 1)
+            #expect(event.reactions.distinct["like"]?.clientIDs.count == 2)
+            #expect(event.reactions.distinct["love"]?.clientIDs.count == 1)
+            #expect(type(of: event.reactions.multiple) == [String: MessageReactionSummary.ClientIDCounts].self)
+            #expect(event.reactions.multiple["like"]?.total == 5)
+            #expect(event.reactions.multiple["love"]?.total == 10)
+            #expect(event.reactions.multiple["like"]?.clientIDs.count == 2)
+            #expect(event.reactions.multiple["love"]?.clientIDs.count == 1)
             callbackCalls += 1
         }
         #expect(callbackCalls == 1)
@@ -190,9 +190,9 @@ struct DefaultMessageReactionsTests {
         defaultMessages.reactions.subscribe { event in
             // Then
             #expect(event.type == .summary)
-            #expect(event.summary.unique.isEmpty)
-            #expect(event.summary.distinct.isEmpty)
-            #expect(event.summary.multiple.isEmpty)
+            #expect(event.reactions.unique.isEmpty)
+            #expect(event.reactions.distinct.isEmpty)
+            #expect(event.reactions.multiple.isEmpty)
             callbackCalls += 1
         }
         #expect(callbackCalls == 1)

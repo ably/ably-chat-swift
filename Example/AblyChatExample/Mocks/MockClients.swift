@@ -224,7 +224,6 @@ class MockMessageReactions: MessageReactions {
 
     private func getUniqueReactionsSummaryForMessage(_ messageSerial: String) -> MessageReactionSummary {
         MessageReactionSummary(
-            messageSerial: messageSerial,
             unique: [:],
             distinct: reactions.filter { $0.messageSerial == messageSerial }.reduce(into: [String: MessageReactionSummary.ClientIDList]()) { dict, newItem in
                 if var oldItem = dict[newItem.name] {
@@ -260,7 +259,8 @@ class MockMessageReactions: MessageReactions {
         mockSubscriptions.emit(
             MessageReactionSummaryEvent(
                 type: MessageReactionEvent.summary,
-                summary: getUniqueReactionsSummaryForMessage(messageSerial),
+                messageSerial: messageSerial,
+                reactions: getUniqueReactionsSummaryForMessage(messageSerial),
             ),
         )
     }
@@ -272,7 +272,8 @@ class MockMessageReactions: MessageReactions {
         mockSubscriptions.emit(
             MessageReactionSummaryEvent(
                 type: MessageReactionEvent.summary,
-                summary: getUniqueReactionsSummaryForMessage(messageSerial),
+                messageSerial: messageSerial,
+                reactions: getUniqueReactionsSummaryForMessage(messageSerial),
             ),
         )
     }
@@ -295,7 +296,8 @@ class MockMessageReactions: MessageReactions {
                 )
                 return MessageReactionSummaryEvent(
                     type: MessageReactionEvent.summary,
-                    summary: self.getUniqueReactionsSummaryForMessage(messageSerial),
+                    messageSerial: messageSerial,
+                    reactions: self.getUniqueReactionsSummaryForMessage(messageSerial),
                 )
             },
             interval: Double([Int](1 ... 10).randomElement()!) / 10.0,

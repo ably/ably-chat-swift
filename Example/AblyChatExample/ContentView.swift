@@ -299,7 +299,7 @@ struct ContentView: View {
         room.messages.reactions.subscribe { summaryEvent in
             do {
                 try withAnimation {
-                    if let reactedMessageItem = listItemWithMessageSerial(summaryEvent.summary.messageSerial) {
+                    if let reactedMessageItem = listItemWithMessageSerial(summaryEvent.messageSerial) {
                         if let index = listItems.firstIndex(where: { $0.id == reactedMessageItem.message.serial }) {
                             listItems[index] = try .message(
                                 .init(
