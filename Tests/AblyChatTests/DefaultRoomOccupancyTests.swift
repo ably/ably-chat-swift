@@ -6,6 +6,7 @@ import Testing
 struct DefaultRoomOccupancyTests {
     // @spec CHA-O3
     // @spec CHA-O7b
+    // @specOneOf(6/6) CHA-RST6 - Escaping room name for API get occupancy
     @Test
     func occupancyGet() async throws {
         // Given
@@ -24,7 +25,7 @@ struct DefaultRoomOccupancyTests {
         let defaultOccupancy = DefaultOccupancy(
             channel: channel,
             chatAPI: chatAPI,
-            roomName: "basketball",
+            roomName: "basket/ball",
             logger: TestLogger(),
             options: .init(enableEvents: true),
         )
@@ -38,6 +39,17 @@ struct DefaultRoomOccupancyTests {
 
         let currentOccupancy = defaultOccupancy.current
         #expect(currentOccupancy == nil)
+
+        #expect(realtime.callRecorder.hasRecord(
+            matching: "request(_:path:params:body:headers:)",
+            arguments: [
+                "method": "GET",
+                "path": "/chat/v4/rooms/basket%2Fball/occupancy",
+                "body": [:],
+                "params": [:],
+                "headers": [:],
+            ],
+        ))
     }
 
     // @specUntested CHA-O4e - We chose to implement this failure with an idiomatic fatalError instead of throwing, but we can’t test this.

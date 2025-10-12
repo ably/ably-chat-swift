@@ -46,13 +46,13 @@ struct ChatAPITests {
 
         // Then
         let expectedMessage = Message(
-            serial: "3446456",
+            serial: "123456789-000@123456789:000",
             action: .messageCreate,
             clientID: "mockClientId",
             text: "hello",
             metadata: [:],
             headers: [:],
-            version: .init(serial: "3446456", timestamp: Date(timeIntervalSince1970: 1_631_840_000)),
+            version: .init(serial: "123456789-000@123456789:000", timestamp: Date(timeIntervalSince1970: 1_631_840_000)),
             timestamp: Date(timeIntervalSince1970: 1_631_840_000),
             reactions: .empty,
         )

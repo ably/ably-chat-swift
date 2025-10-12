@@ -9,6 +9,7 @@ struct DefaultMessagesTests {
     // @spec CHA-M3a
     // @spec CHA-M3b
     // @spec CHA-M3f
+    // @specOneOf(1/6) CHA-RST6 - Escaping room name for API send message
     @Test
     func sendMessage() async throws {
         // Given
@@ -35,7 +36,7 @@ struct DefaultMessagesTests {
         }
         let chatAPI = ChatAPI(realtime: realtime)
         let channel = MockRealtimeChannel(initialState: .attached)
-        let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", logger: TestLogger())
+        let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basket/ball", logger: TestLogger())
 
         // When
         let sentMessage = try await defaultMessages.send(withParams: .init(text: "hey", metadata: ["key1": "val1"], headers: ["key2": "val2"]))
@@ -52,12 +53,13 @@ struct DefaultMessagesTests {
         #expect(sentMessage.timestamp == Date(timeIntervalSince1970: 1_631_840_000_000 / 1000))
         #expect(realtime.callRecorder.hasRecord(
             matching: "request(_:path:params:body:headers:)",
-            arguments: ["method": "POST", "path": "/chat/v4/rooms/basketball/messages", "body": ["text": "hey", "metadata": ["key1": "val1"], "headers": ["key2": "val2"]], "params": [:], "headers": [:]],
+            arguments: ["method": "POST", "path": "/chat/v4/rooms/basket%2Fball/messages", "body": ["text": "hey", "metadata": ["key1": "val1"], "headers": ["key2": "val2"]], "params": [:], "headers": [:]],
         ))
     }
 
     // @spec CHA-M8a
     // @spec CHA-M8b
+    // @specOneOf(2/6) CHA-RST6 - Escaping room name for API update message
     @Test
     func updateMessage() async throws {
         // Given
@@ -66,7 +68,7 @@ struct DefaultMessagesTests {
             MockHTTPPaginatedResponse(
                 items: [
                     [
-                        "serial": "0",
+                        "serial": "123456789-000@123456789:000",
                         "version": [
                             "serial": "1",
                             "metadata": ["key": "val"],
@@ -88,9 +90,9 @@ struct DefaultMessagesTests {
         }
         let chatAPI = ChatAPI(realtime: realtime)
         let channel = MockRealtimeChannel(initialState: .attached)
-        let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", logger: TestLogger())
+        let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basket/ball", logger: TestLogger())
 
-        let sentMessage = try Message(jsonObject: ["serial": "0", "version": ["serial": "0"], "text": .string(text), "clientId": "0", "action": "message.create", "metadata": [:], "headers": [:]]) // arbitrary
+        let sentMessage = try Message(jsonObject: ["serial": "123456789-000@123456789:000", "version": ["serial": "123456789-000@123456789:000"], "text": .string(text), "clientId": "0", "action": "message.create", "metadata": [:], "headers": [:]]) // arbitrary
 
         // When
         var newMessage = sentMessage
@@ -98,7 +100,7 @@ struct DefaultMessagesTests {
         let updatedMessage = try await defaultMessages.update(newMessage: newMessage, details: .init(description: "add exclamation", metadata: ["key": "val"]))
 
         // Then
-        #expect(updatedMessage.serial == "0")
+        #expect(updatedMessage.serial == "123456789-000@123456789:000")
         #expect(updatedMessage.action == .messageUpdate)
         #expect(updatedMessage.text == "hey!")
         #expect(updatedMessage.clientID == "clientId")
@@ -110,12 +112,13 @@ struct DefaultMessagesTests {
         #expect(updatedMessage.timestamp == Date(timeIntervalSince1970: 1_631_840_000_000 / 1000))
         #expect(realtime.callRecorder.hasRecord(
             matching: "request(_:path:params:body:headers:)",
-            arguments: ["method": "PUT", "path": "/chat/v4/rooms/basketball/messages/\(sentMessage.serial)", "body": ["message": ["text": "hey!", "metadata": [:], "headers": [:]], "description": "add exclamation", "metadata": ["key": "val"]], "params": [:], "headers": [:]],
+            arguments: ["method": "PUT", "path": "/chat/v4/rooms/basket%2Fball/messages/123456789-000@123456789:000", "body": ["message": ["text": "hey!", "metadata": [:], "headers": [:]], "description": "add exclamation", "metadata": ["key": "val"]], "params": [:], "headers": [:]],
         ))
     }
 
     // @spec CHA-M9a
     // @spec CHA-M9b
+    // @specOneOf(3/6) CHA-RST6 - Escaping room name for API delete message
     @Test
     func deleteMessage() async throws {
         // Given
@@ -124,10 +127,10 @@ struct DefaultMessagesTests {
             MockHTTPPaginatedResponse(
                 items: [
                     [
-                        "serial": "0",
+                        "serial": "123456789-000@123456789:000",
                         "action": "message.delete",
                         "version": [
-                            "serial": "1",
+                            "serial": "123456789-000@123456789:000",
                             "timestamp": 1_631_840_030_000,
                             "clientId": "clientId2",
                         ],
@@ -144,16 +147,16 @@ struct DefaultMessagesTests {
         }
         let chatAPI = ChatAPI(realtime: realtime)
         let channel = MockRealtimeChannel(initialState: .attached)
-        let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", logger: TestLogger())
+        let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basket/ball", logger: TestLogger())
 
-        let sentMessage = try Message(jsonObject: ["serial": "0", "version": ["serial": "0"], "text": .string(text), "clientId": "0", "action": "message.create", "metadata": ["key": "val"], "headers": [:]]) // arbitrary
+        let sentMessage = try Message(jsonObject: ["serial": "123456789-000@123456789:000", "version": ["serial": "123456789-000@123456789:000"], "text": .string(text), "clientId": "0", "action": "message.create", "metadata": ["key": "val"], "headers": [:]]) // arbitrary
 
         // When
         let deletedMessage = try await defaultMessages.delete(message: sentMessage, details: nil)
 
         // Then
-        #expect(deletedMessage.serial == "0")
-        #expect(deletedMessage.version.serial == "1")
+        #expect(deletedMessage.serial == "123456789-000@123456789:000")
+        #expect(deletedMessage.version.serial == "123456789-000@123456789:000")
         #expect(deletedMessage.version.timestamp == Date(timeIntervalSince1970: 1_631_840_030_000 / 1000))
         #expect(deletedMessage.version.clientID == "clientId2")
         #expect(deletedMessage.action == .messageDelete)
@@ -163,7 +166,7 @@ struct DefaultMessagesTests {
         #expect(deletedMessage.timestamp == Date(timeIntervalSince1970: 1_631_840_000_000 / 1000))
         #expect(realtime.callRecorder.hasRecord(
             matching: "request(_:path:params:body:headers:)",
-            arguments: ["method": "POST", "path": "/chat/v4/rooms/basketball/messages/\(sentMessage.serial)/delete", "body": [:], "params": [:], "headers": [:]],
+            arguments: ["method": "POST", "path": "/chat/v4/rooms/basket%2Fball/messages/123456789-000@123456789:000/delete", "body": [:], "params": [:], "headers": [:]],
         ))
     }
 
@@ -239,6 +242,7 @@ struct DefaultMessagesTests {
     }
 
     // @spec CHA-M5a
+    // @specOneOf(4/6) CHA-RST6 - Escaping room name for API get messages
     @Test
     func subscriptionPointIsChannelSerialWhenUnderlyingRealtimeChannelIsAttached() async throws {
         // Given
@@ -251,14 +255,14 @@ struct DefaultMessagesTests {
             properties: ARTChannelProperties(attachSerial: nil, channelSerial: channelSerial),
             initialState: .attached,
         )
-        let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", logger: TestLogger())
+        let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basket/ball", logger: TestLogger())
         let subscription = defaultMessages.subscribe()
         _ = try await subscription.historyBeforeSubscribe(withParams: .init())
 
         // Then: subscription point is the current channelSerial of the realtime channel
         #expect(realtime.callRecorder.hasRecord(
             matching: "request(_:path:params:body:headers:)",
-            arguments: ["method": "GET", "path": "/chat/v4/rooms/basketball/messages", "body": [:], "params": ["direction": "backwards", "fromSerial": "\(channelSerial)"], "headers": [:]],
+            arguments: ["method": "GET", "path": "/chat/v4/rooms/basket%2Fball/messages", "body": [:], "params": ["direction": "backwards", "fromSerial": "\(channelSerial)"], "headers": [:]],
         ))
     }
 
