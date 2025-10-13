@@ -20,7 +20,7 @@ struct DefaultMessageReactionsTests {
         }
         let chatAPI = ChatAPI(realtime: realtime)
         let channel = MockRealtimeChannel(initialState: .attached)
-        let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", clientID: "clientId", logger: TestLogger())
+        let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", logger: TestLogger())
 
         // When
         let message = try await defaultMessages.send(withParams: .init(text: "a joke"))
@@ -66,7 +66,7 @@ struct DefaultMessageReactionsTests {
         }
         let chatAPI = ChatAPI(realtime: realtime)
         let channel = MockRealtimeChannel(initialState: .attached)
-        let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", clientID: "clientId", logger: TestLogger())
+        let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", logger: TestLogger())
 
         let doIt = {
             // When
@@ -89,7 +89,7 @@ struct DefaultMessageReactionsTests {
         }
         let chatAPI = ChatAPI(realtime: realtime)
         let channel = MockRealtimeChannel(initialState: .attached)
-        let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", clientID: "clientId", logger: TestLogger())
+        let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", logger: TestLogger())
 
         let doIt = {
             // When
@@ -139,7 +139,7 @@ struct DefaultMessageReactionsTests {
                 return message
             }(),
         )
-        let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", clientID: "clientId", logger: TestLogger())
+        let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", logger: TestLogger())
 
         // When
         var callbackCalls = 0
@@ -183,7 +183,7 @@ struct DefaultMessageReactionsTests {
                 return message
             }(),
         )
-        let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", clientID: "clientId", logger: TestLogger())
+        let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", logger: TestLogger())
 
         // When
         var callbackCalls = 0

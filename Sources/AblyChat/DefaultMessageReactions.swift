@@ -5,16 +5,14 @@ internal final class DefaultMessageReactions: MessageReactions {
     private let channel: any InternalRealtimeChannelProtocol
     private let roomName: String
     private let logger: any InternalLogger
-    private let clientID: String
     private let chatAPI: ChatAPI
     private let options: MessagesOptions
 
-    internal init(channel: any InternalRealtimeChannelProtocol, chatAPI: ChatAPI, roomName: String, options: MessagesOptions, clientID: String, logger: any InternalLogger) {
+    internal init(channel: any InternalRealtimeChannelProtocol, chatAPI: ChatAPI, roomName: String, options: MessagesOptions, logger: any InternalLogger) {
         self.channel = channel
         self.chatAPI = chatAPI
         self.roomName = roomName
         self.logger = logger
-        self.clientID = clientID
         self.options = options
     }
 

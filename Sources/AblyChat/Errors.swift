@@ -66,7 +66,6 @@ public enum ErrorCode: Int {
         case cannotApplyEventForDifferentMessage
         case messageRejectedByBeforePublishRule
         case messageRejectedByModeration
-        case clientIdRequired
 
         internal var toNumericErrorCode: ErrorCode {
             switch self {
@@ -90,8 +89,6 @@ public enum ErrorCode: Int {
                 .messageRejectedByModeration
             case .messageRejectedByBeforePublishRule:
                 .messageRejectedByBeforePublishRule
-            case .clientIdRequired:
-                .badRequest
             }
         }
 
@@ -105,8 +102,7 @@ public enum ErrorCode: Int {
                  .roomIsReleased,
                  .roomReleasedBeforeOperationCompleted,
                  .unableDeleteReactionWithoutName,
-                 .cannotApplyEventForDifferentMessage,
-                 .clientIdRequired:
+                 .cannotApplyEventForDifferentMessage:
                 400
             case .messageRejectedByModeration,
                  .messageRejectedByBeforePublishRule:
@@ -177,7 +173,6 @@ internal enum ChatError {
     case cannotApplyEventForDifferentMessage
     case messageRejectedByBeforePublishRule
     case messageRejectedByModeration
-    case clientIdRequired
     case attachSerialIsNotDefined
     case channelFailedToAttach(cause: ARTErrorInfo?)
 
@@ -212,8 +207,6 @@ internal enum ChatError {
             .fixedStatusCode(.messageRejectedByBeforePublishRule)
         case .messageRejectedByModeration:
             .fixedStatusCode(.messageRejectedByModeration)
-        case .clientIdRequired:
-            .fixedStatusCode(.clientIdRequired)
         case .attachSerialIsNotDefined:
             .fixedStatusCode(.badRequest)
         case .channelFailedToAttach:
@@ -272,8 +265,6 @@ internal enum ChatError {
             "The message was rejected before publishing by a rule on the chat room."
         case .messageRejectedByModeration:
             "The message was rejected before publishing by a moderation rule on the chat room."
-        case .clientIdRequired:
-            "Ensure your Realtime instance is initialized with a clientId."
         case .attachSerialIsNotDefined:
             "Channel is attached, but attachSerial is not defined."
         case let .channelFailedToAttach(cause):
@@ -301,7 +292,6 @@ internal enum ChatError {
              .unableDeleteReactionWithoutName,
              .messageRejectedByBeforePublishRule,
              .messageRejectedByModeration,
-             .clientIdRequired,
              .attachSerialIsNotDefined:
             nil
         }

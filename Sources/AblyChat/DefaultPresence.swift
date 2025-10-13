@@ -4,15 +4,13 @@ internal final class DefaultPresence: Presence {
     private let channel: any InternalRealtimeChannelProtocol
     private let roomLifecycleManager: any RoomLifecycleManager
     private let roomName: String
-    private let clientID: String
     private let logger: any InternalLogger
     private let options: PresenceOptions
 
-    internal init(channel: any InternalRealtimeChannelProtocol, roomLifecycleManager: any RoomLifecycleManager, roomName: String, clientID: String, logger: any InternalLogger, options: PresenceOptions) {
+    internal init(channel: any InternalRealtimeChannelProtocol, roomLifecycleManager: any RoomLifecycleManager, roomName: String, logger: any InternalLogger, options: PresenceOptions) {
         self.channel = channel
         self.roomLifecycleManager = roomLifecycleManager
         self.roomName = roomName
-        self.clientID = clientID
         self.logger = logger
         self.options = options
     }
@@ -116,7 +114,7 @@ internal final class DefaultPresence: Presence {
             }
 
             do {
-                try await channel.presence.enterClient(clientID, data: data)
+                try await channel.presence.enter(data)
             } catch {
                 logger.log(message: "Error entering presence: \(error)", level: .error)
                 throw error

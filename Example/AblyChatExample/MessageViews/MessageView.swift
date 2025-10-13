@@ -2,7 +2,7 @@ import AblyChat
 import SwiftUI
 
 struct MessageView: View {
-    let currentClientID: String
+    let currentClientID: String?
     var item: MessageListItem
     @Binding var isEditing: Bool
     var onDeleteMessage: () -> Void

@@ -3,7 +3,7 @@ import SwiftUI
 
 struct MessageReactionSummaryView: View {
     let summary: MessageReactionSummary
-    let currentClientID: String
+    let currentClientID: String?
 
     let onPickReaction: () -> Void
     let onAddReaction: (String) -> Void
@@ -63,7 +63,7 @@ struct MessageReactionSummaryView: View {
             Button("Show who reacted") {
                 showAllReactionsSheet = true
             }
-            if let emoji = selectedEmoji {
+            if let emoji = selectedEmoji, let currentClientID {
                 if reactions[emoji]?.clientIDs.contains(currentClientID) ?? false {
                     Button("Remove my \(emoji)", role: .destructive) {
                         onDeleteReaction(emoji)

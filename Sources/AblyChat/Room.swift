@@ -285,10 +285,6 @@ internal class DefaultRoom<Realtime: InternalRealtimeClientProtocol, LifecycleMa
         self.logger = logger
         self.chatAPI = chatAPI
 
-        guard let clientId = realtime.clientId else {
-            throw ARTErrorInfo(chatError: .clientIdRequired).toInternalError()
-        }
-
         internalChannel = Self.createChannel(roomName: name, roomOptions: options, realtime: realtime)
 
         lifecycleManager = lifecycleManagerFactory.createManager(
@@ -301,13 +297,12 @@ internal class DefaultRoom<Realtime: InternalRealtimeClientProtocol, LifecycleMa
             chatAPI: chatAPI,
             roomName: name,
             options: options.messages,
-            clientID: clientId,
             logger: logger,
         )
 
         reactions = DefaultRoomReactions(
+            realtime: realtime,
             channel: internalChannel,
-            clientID: clientId,
             roomName: name,
             logger: logger,
         )
@@ -316,7 +311,6 @@ internal class DefaultRoom<Realtime: InternalRealtimeClientProtocol, LifecycleMa
             channel: internalChannel,
             roomLifecycleManager: lifecycleManager,
             roomName: name,
-            clientID: clientId,
             logger: logger,
             options: options.presence,
         )
@@ -332,7 +326,6 @@ internal class DefaultRoom<Realtime: InternalRealtimeClientProtocol, LifecycleMa
         typing = DefaultTyping(
             channel: internalChannel,
             roomName: name,
-            clientID: clientId,
             logger: logger,
             heartbeatThrottle: options.typing.heartbeatThrottle,
             clock: SystemClock(),

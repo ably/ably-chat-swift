@@ -1,16 +1,16 @@
 import Ably
 
 internal final class DefaultRoomReactions: RoomReactions {
+    private let realtime: any InternalRealtimeClientProtocol
     private let channel: any InternalRealtimeChannelProtocol
     private let roomName: String
     private let logger: any InternalLogger
-    private let clientID: String
 
-    internal init(channel: any InternalRealtimeChannelProtocol, clientID: String, roomName: String, logger: any InternalLogger) {
-        self.roomName = roomName
+    internal init(realtime: any InternalRealtimeClientProtocol, channel: any InternalRealtimeChannelProtocol, roomName: String, logger: any InternalLogger) {
+        self.realtime = realtime
         self.channel = channel
+        self.roomName = roomName
         self.logger = logger
-        self.clientID = clientID
     }
 
     // (CHA-ER3) Ephemeral room reactions are sent to Ably via the Realtime connection via a send method.
@@ -65,7 +65,7 @@ internal final class DefaultRoomReactions: RoomReactions {
                 headers: dto?.headers ?? [:],
                 createdAt: message.timestamp ?? Date(), // CHA-ER4e4
                 clientID: messageClientID,
-                isSelf: messageClientID == clientID,
+                isSelf: messageClientID == realtime.clientId,
             )
 
             let event = RoomReactionEvent(type: .reaction, reaction: reaction)

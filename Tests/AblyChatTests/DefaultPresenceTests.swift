@@ -16,7 +16,6 @@ struct DefaultPresenceTests {
             channel: channel,
             roomLifecycleManager: MockRoomLifecycleManager(),
             roomName: "basketball",
-            clientID: "client1",
             logger: logger,
             options: .init(),
         )
@@ -26,8 +25,8 @@ struct DefaultPresenceTests {
 
         // Then
         #expect(channel.presence.callRecorder.hasRecord(
-            matching: "enterClient(_:data:)",
-            arguments: ["name": "client1", "data": ["status": JSONValue.string("Online")]],
+            matching: "enter(_:)",
+            arguments: ["data": ["status": JSONValue.string("Online")]],
         ))
     }
 
@@ -41,7 +40,6 @@ struct DefaultPresenceTests {
             channel: channel,
             roomLifecycleManager: MockRoomLifecycleManager(),
             roomName: "basketball",
-            clientID: "client1",
             logger: logger,
             options: .init(),
         )
@@ -51,8 +49,8 @@ struct DefaultPresenceTests {
 
         // Then
         #expect(channel.presence.callRecorder.hasRecord(
-            matching: "enterClient(_:data:)",
-            arguments: ["data": nil, "name": "client1"],
+            matching: "enter(_:)",
+            arguments: ["data": nil],
         ))
     }
 
@@ -67,7 +65,6 @@ struct DefaultPresenceTests {
             channel: channel,
             roomLifecycleManager: roomLifecycleManager,
             roomName: "basketball",
-            clientID: "client1",
             logger: logger,
             options: .init(),
         )
@@ -96,7 +93,6 @@ struct DefaultPresenceTests {
             channel: channel,
             roomLifecycleManager: roomLifecycleManager,
             roomName: "basketball",
-            clientID: "client1",
             logger: logger,
             options: .init(),
         )
@@ -131,7 +127,6 @@ struct DefaultPresenceTests {
             channel: channel,
             roomLifecycleManager: roomLifecycleManager,
             roomName: "basketball",
-            clientID: "client1",
             logger: logger,
             options: .init(),
         )
@@ -162,7 +157,6 @@ struct DefaultPresenceTests {
             channel: channel,
             roomLifecycleManager: roomLifecycleManager,
             roomName: "basketball",
-            clientID: "client1",
             logger: logger,
             options: .init(),
         )
@@ -187,7 +181,6 @@ struct DefaultPresenceTests {
             channel: channel,
             roomLifecycleManager: roomLifecycleManager,
             roomName: "basketball",
-            clientID: "client1",
             logger: logger,
             options: .init(),
         )
@@ -216,7 +209,6 @@ struct DefaultPresenceTests {
             channel: channel,
             roomLifecycleManager: roomLifecycleManager,
             roomName: "basketball",
-            clientID: "client1",
             logger: logger,
             options: .init(),
         )
@@ -251,7 +243,6 @@ struct DefaultPresenceTests {
             channel: channel,
             roomLifecycleManager: roomLifecycleManager,
             roomName: "basketball",
-            clientID: "client1",
             logger: logger,
             options: .init(),
         )
@@ -281,7 +272,6 @@ struct DefaultPresenceTests {
             channel: channel,
             roomLifecycleManager: roomLifecycleManager,
             roomName: "basketball",
-            clientID: "client1",
             logger: logger,
             options: .init(),
         )
@@ -309,7 +299,6 @@ struct DefaultPresenceTests {
             channel: channel,
             roomLifecycleManager: roomLifecycleManager,
             roomName: "basketball",
-            clientID: "client1",
             logger: logger,
             options: .init(),
         )
@@ -338,7 +327,6 @@ struct DefaultPresenceTests {
             channel: channel,
             roomLifecycleManager: roomLifecycleManager,
             roomName: "basketball",
-            clientID: "client1",
             logger: logger,
             options: .init(),
         )
@@ -365,7 +353,6 @@ struct DefaultPresenceTests {
             channel: channel,
             roomLifecycleManager: roomLifecycleManager,
             roomName: "basketball",
-            clientID: "client1",
             logger: logger,
             options: .init(),
         )
@@ -393,7 +380,6 @@ struct DefaultPresenceTests {
             channel: channel,
             roomLifecycleManager: roomLifecycleManager,
             roomName: "basketball",
-            clientID: "client1",
             logger: logger,
             options: .init(),
         )
@@ -422,7 +408,6 @@ struct DefaultPresenceTests {
             channel: channel,
             roomLifecycleManager: roomLifecycleManager,
             roomName: "basketball",
-            clientID: "client1",
             logger: logger,
             options: .init(),
         )

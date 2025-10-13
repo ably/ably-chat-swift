@@ -3,7 +3,6 @@ import Ably
 internal final class DefaultTyping: Typing {
     private let channel: any InternalRealtimeChannelProtocol
     private let roomName: String
-    private let clientID: String
     private let logger: any InternalLogger
     private let heartbeatThrottle: TimeInterval
 
@@ -18,10 +17,9 @@ internal final class DefaultTyping: Typing {
     // (CHA-TM14b1) During this time, each new subsequent call to either function shall abort the previously queued call. In doing so, there shall only ever be one pending call and while the mutex is held, thus the most recent call shall "win" and execute once the mutex is released.
     private let keyboardOperationQueue = TypingOperationQueue<InternalError>()
 
-    internal init(channel: any InternalRealtimeChannelProtocol, roomName: String, clientID: String, logger: any InternalLogger, heartbeatThrottle: TimeInterval, clock: some ClockProtocol) {
+    internal init(channel: any InternalRealtimeChannelProtocol, roomName: String, logger: any InternalLogger, heartbeatThrottle: TimeInterval, clock: some ClockProtocol) {
         self.roomName = roomName
         self.channel = channel
-        self.clientID = clientID
         self.logger = logger
         self.heartbeatThrottle = heartbeatThrottle
 
@@ -135,7 +133,7 @@ internal final class DefaultTyping: Typing {
     }
 
     private func publishStartedEvent() async throws(InternalError) {
-        logger.log(message: "Starting typing indicator for client: \(clientID)", level: .debug)
+        logger.log(message: "Starting typing indicator", level: .debug)
         // (CHA-T4a3) The client shall publish an ephemeral message to the channel with the name field set to typing.started, the format of which is detailed here.
         // (CHA-T4a5) The client must wait for the publish to succeed or fail before returning the result to the caller. If the publish fails, the client must throw an ErrorInfo.
         try await channel.publish(
@@ -157,7 +155,7 @@ internal final class DefaultTyping: Typing {
                 }
 
                 if typingTimerManager.isHeartbeatTimerActive {
-                    logger.log(message: "Stopping typing indicator for client: \(clientID)", level: .debug)
+                    logger.log(message: "Stopping typing indicator", level: .debug)
                     // (CHA-T5d) The client shall publish an ephemeral message to the channel with the name field set to typing.stopped, the format of which is detailed here.
                     try await channel.publish(
                         TypingEventType.stopped.rawValue,
