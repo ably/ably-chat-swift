@@ -184,15 +184,10 @@ struct DefaultMessagesTests {
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", logger: TestLogger())
 
         // Then
-        // TODO: avoids compiler crash (https://github.com/ably/ably-chat-swift/issues/233), revert once Xcode 16.3 released
-        let doIt = {
+        let thrownError = await #expect(throws: ARTErrorInfo.self) {
             _ = try await defaultMessages.send(withParams: .init(text: "hey"))
         }
-        await #expect {
-            try await doIt()
-        } throws: { error in
-            error as? ARTErrorInfo == ARTErrorInfo(domain: "SomeDomain", code: 123)
-        }
+        #expect(thrownError == ARTErrorInfo(domain: "SomeDomain", code: 123))
     }
 
     // @spec CHA-M8d
@@ -207,19 +202,14 @@ struct DefaultMessagesTests {
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", logger: TestLogger())
 
         // Then
-        // TODO: avoids compiler crash (https://github.com/ably/ably-chat-swift/issues/233), revert once Xcode 16.3 released
-        let doIt = {
+        let thrownError = await #expect(throws: ARTErrorInfo.self) {
             _ = try await defaultMessages.update(
                 forSerial: "0",
                 params: .init(text: "hey", metadata: [:], headers: [:]),
                 details: .init(description: "", metadata: [:]),
             )
         }
-        await #expect {
-            try await doIt()
-        } throws: { error in
-            error as? ARTErrorInfo == ARTErrorInfo(domain: "SomeDomain", code: 123)
-        }
+        #expect(thrownError == ARTErrorInfo(domain: "SomeDomain", code: 123))
     }
 
     // @spec CHA-M9c
@@ -234,15 +224,10 @@ struct DefaultMessagesTests {
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", logger: TestLogger())
 
         // Then
-        // TODO: avoids compiler crash (https://github.com/ably/ably-chat-swift/issues/233), revert once Xcode 16.3 released
-        let doIt = {
+        let thrownError = await #expect(throws: ARTErrorInfo.self) {
             _ = try await defaultMessages.delete(forSerial: "0", details: nil)
         }
-        await #expect {
-            try await doIt()
-        } throws: { error in
-            error as? ARTErrorInfo == ARTErrorInfo(domain: "SomeDomain", code: 123)
-        }
+        #expect(thrownError == ARTErrorInfo(domain: "SomeDomain", code: 123))
     }
 
     // @spec CHA-M13a
@@ -305,15 +290,10 @@ struct DefaultMessagesTests {
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", logger: TestLogger())
 
         // Then
-        // TODO: avoids compiler crash (https://github.com/ably/ably-chat-swift/issues/233), revert once Xcode 16.3 released
-        let doIt = {
+        let thrownError = await #expect(throws: ARTErrorInfo.self) {
             _ = try await defaultMessages.get(withSerial: "123456789-000@123456789:000")
         }
-        await #expect {
-            try await doIt()
-        } throws: { error in
-            error as? ARTErrorInfo == ARTErrorInfo(domain: "SomeDomain", code: 123)
-        }
+        #expect(thrownError == ARTErrorInfo(domain: "SomeDomain", code: 123))
     }
 
     // @spec CHA-M5a
@@ -508,16 +488,10 @@ struct DefaultMessagesTests {
         let subscription = defaultMessages.subscribe()
 
         // Then
-        // TODO: avoids compiler crash (https://github.com/ably/ably-chat-swift/issues/233), revert once Xcode 16.3 released
-        let doIt = {
+        let thrownError = await #expect(throws: ARTErrorInfo.self) {
             _ = try await subscription.historyBeforeSubscribe(withParams: .init())
         }
-        // Then
-        await #expect {
-            try await doIt()
-        } throws: { error in
-            error as? ARTErrorInfo == artError
-        }
+        #expect(thrownError == artError)
     }
 
     // @spec CHA-M6a
@@ -565,16 +539,11 @@ struct DefaultMessagesTests {
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", logger: TestLogger())
 
         // When
-        // TODO: avoids compiler crash (https://github.com/ably/ably-chat-swift/issues/233), revert once Xcode 16.3 released
-        let doIt = {
+        let thrownError = await #expect(throws: ARTErrorInfo.self) {
             _ = try await defaultMessages.history(withParams: .init())
         }
         // Then
-        await #expect {
-            try await doIt()
-        } throws: { error in
-            error as? ARTErrorInfo == artError
-        }
+        #expect(thrownError == artError)
     }
 
     // CHA-M4d is currently untestable due to not subscribing to those events on lower level

@@ -55,17 +55,6 @@ If you haven't worked with typed throws before, be aware of a few sharp edges:
   - `Dictionary.mapValues` does not support typed throws. We have our own extension `ablyChat_mapValuesWithTypedThrow` which does; use this.
 - There are times when the compiler struggles to infer the type of the error thrown within a `do` block. In these cases, you can disable type inference for a `do` block and explicitly specify the type of the thrown error, like: `do throws(InternalError) { … }`.
 - The compiler will never infer the type of the error thrown by a closure; you will need to specify this yourself; e.g. `let items = try jsonValues.map { jsonValue throws(InternalError) in … }`.
-- It is possible to crash the compiler when using Swift Testing's `#expect(throws: …)` in combination with an `expression` that throws a typed error. See https://github.com/ably/ably-chat-swift/issues/233. A workaround that seems to work, which we're using at the moment (will be able to remove once Xcode 16.3 is released) is to move the code with a typed throw into a separate, non-typed-throw function; for example:
-  ```swift
-  let doIt = {
-      try await rooms.get(name: name, options: differentOptions)
-  }
-  await #expect {
-      try await doIt()
-  } throws: { error in
-      isChatError(error, withCodeAndStatusCode: .fixedStatusCode(.badRequest))
-  }
-  ```
 
 ### Swift concurrency rough edges
 

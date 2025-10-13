@@ -97,16 +97,12 @@ struct DefaultPresenceTests {
             options: .init(),
         )
 
-        // TODO: avoids compiler crash (https://github.com/ably/ably-chat-swift/issues/233), revert once Xcode 16.3 released
-        let doIt = {
+        let thrownError = await #expect(throws: (any Error).self) {
             // When
             try await defaultPresence.enter()
         }
-        await #expect {
-            try await doIt()
-        } /* Then */ throws: { error in
-            isChatError(error, withCodeAndStatusCode: .variableStatusCode(.roomInInvalidState, statusCode: 500), cause: attachError)
-        }
+        // Then
+        #expect(isChatError(thrownError, withCodeAndStatusCode: .variableStatusCode(.roomInInvalidState, statusCode: 500), cause: attachError))
 
         // Then
         #expect(roomLifecycleManager.callRecorder.hasRecord(
@@ -132,15 +128,10 @@ struct DefaultPresenceTests {
         )
 
         // Then
-        // TODO: avoids compiler crash (https://github.com/ably/ably-chat-swift/issues/233), revert once Xcode 16.3 released
-        let doIt = {
+        let thrownError = await #expect(throws: (any Error).self) {
             _ = try await defaultPresence.enter()
         }
-        await #expect {
-            try await doIt()
-        } throws: { error in
-            isChatError(error, withCodeAndStatusCode: .variableStatusCode(.roomInInvalidState, statusCode: 400))
-        }
+        #expect(isChatError(thrownError, withCodeAndStatusCode: .variableStatusCode(.roomInInvalidState, statusCode: 400)))
     }
 
     // MARK: CHA-PR10
@@ -213,16 +204,12 @@ struct DefaultPresenceTests {
             options: .init(),
         )
 
-        // TODO: avoids compiler crash (https://github.com/ably/ably-chat-swift/issues/233), revert once Xcode 16.3 released
-        let doIt = {
+        let thrownError = await #expect(throws: (any Error).self) {
             // When
             try await defaultPresence.update()
         }
-        await #expect {
-            try await doIt()
-        } /* Then */ throws: { error in
-            isChatError(error, withCodeAndStatusCode: .variableStatusCode(.roomInInvalidState, statusCode: 500), cause: attachError)
-        }
+        // Then
+        #expect(isChatError(thrownError, withCodeAndStatusCode: .variableStatusCode(.roomInInvalidState, statusCode: 500), cause: attachError))
 
         // Then
         #expect(roomLifecycleManager.callRecorder.hasRecord(
@@ -248,15 +235,10 @@ struct DefaultPresenceTests {
         )
 
         // Then
-        // TODO: avoids compiler crash (https://github.com/ably/ably-chat-swift/issues/233), revert once Xcode 16.3 released
-        let doIt = {
+        let thrownError = await #expect(throws: (any Error).self) {
             _ = try await defaultPresence.update()
         }
-        await #expect {
-            try await doIt()
-        } throws: { error in
-            isChatError(error, withCodeAndStatusCode: .variableStatusCode(.roomInInvalidState, statusCode: 400))
-        }
+        #expect(isChatError(thrownError, withCodeAndStatusCode: .variableStatusCode(.roomInInvalidState, statusCode: 400)))
     }
 
     // MARK: CHA-PR4
@@ -358,15 +340,10 @@ struct DefaultPresenceTests {
         )
 
         // Then
-        // TODO: avoids compiler crash (https://github.com/ably/ably-chat-swift/issues/233), revert once Xcode 16.3 released
-        let doIt = {
+        let thrownError = await #expect(throws: (any Error).self) {
             _ = try await defaultPresence.get()
         }
-        await #expect {
-            try await doIt()
-        } throws: { error in
-            isChatError(error, withCodeAndStatusCode: .variableStatusCode(.roomInInvalidState, statusCode: 400))
-        }
+        #expect(isChatError(thrownError, withCodeAndStatusCode: .variableStatusCode(.roomInInvalidState, statusCode: 400)))
     }
 
     // @specOneOf(3/4) CHA-PR6c
@@ -412,16 +389,12 @@ struct DefaultPresenceTests {
             options: .init(),
         )
 
-        // TODO: avoids compiler crash (https://github.com/ably/ably-chat-swift/issues/233), revert once Xcode 16.3 released
-        let doIt = {
+        let thrownError = await #expect(throws: (any Error).self) {
             // When
             try await defaultPresence.get()
         }
-        await #expect {
-            try await doIt()
-        } /* Then */ throws: { error in
-            isChatError(error, withCodeAndStatusCode: .variableStatusCode(.roomInInvalidState, statusCode: 500), cause: attachError)
-        }
+        // Then
+        #expect(isChatError(thrownError, withCodeAndStatusCode: .variableStatusCode(.roomInInvalidState, statusCode: 500), cause: attachError))
 
         // Then
         #expect(roomLifecycleManager.callRecorder.hasRecord(

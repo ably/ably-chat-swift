@@ -69,16 +69,13 @@ struct DefaultMessageReactionsTests {
         let channel = MockRealtimeChannel(initialState: .attached)
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", logger: TestLogger())
 
-        let doIt = {
+        let thrownError = await #expect(throws: ARTErrorInfo.self) {
             // When
             try await defaultMessages.reactions.send(forMessageWithSerial: "", params: .init(name: "😐", type: .distinct))
         }
-        await #expect {
-            try await doIt()
-        } throws: { error in
-            // Then
-            error as? ARTErrorInfo == ARTErrorInfo(chatError: .nonErrorInfoInternalError(.chatAPIChatError(.messageReactionInvalidMessageSerial)))
-        }
+
+        // Then
+        #expect(thrownError == ARTErrorInfo(chatError: .nonErrorInfoInternalError(.chatAPIChatError(.messageReactionInvalidMessageSerial))))
     }
 
     // @spec CHA-MR11a1
@@ -92,16 +89,13 @@ struct DefaultMessageReactionsTests {
         let channel = MockRealtimeChannel(initialState: .attached)
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", logger: TestLogger())
 
-        let doIt = {
+        let thrownError = await #expect(throws: ARTErrorInfo.self) {
             // When
             try await defaultMessages.reactions.delete(forMessageWithSerial: "", params: .init(name: "😐", type: .distinct))
         }
-        await #expect {
-            try await doIt()
-        } throws: { error in
-            // Then
-            error as? ARTErrorInfo == ARTErrorInfo(chatError: .nonErrorInfoInternalError(.chatAPIChatError(.messageReactionInvalidMessageSerial)))
-        }
+
+        // Then
+        #expect(thrownError == ARTErrorInfo(chatError: .nonErrorInfoInternalError(.chatAPIChatError(.messageReactionInvalidMessageSerial))))
     }
 
     // @spec CHA-MR3
@@ -512,14 +506,10 @@ struct DefaultMessageReactionsTests {
             let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", logger: TestLogger())
 
             // When/Then
-            let doIt = {
+            let thrownError = await #expect(throws: ARTErrorInfo.self) {
                 _ = try await defaultMessages.reactions.clientReactions(forMessageWithSerial: "123456789-000@123456789:000", clientID: nil)
             }
-            await #expect {
-                try await doIt()
-            } throws: { error in
-                (error as? ARTErrorInfo)?.domain == "SomeDomain" && (error as? ARTErrorInfo)?.code == 404
-            }
+            #expect(thrownError?.domain == "SomeDomain" && thrownError?.code == 404)
         }
     }
 }
