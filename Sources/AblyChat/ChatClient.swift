@@ -115,7 +115,10 @@ public class ChatClient: ChatClientProtocol {
         self.realtime = suppliedRealtime
         self.clientOptions = clientOptions ?? .init()
 
-        let realtime = suppliedRealtime.createWrapperSDKProxy(with: .init(agents: agents))
+        // CHA-IN1a
+        let realtime = suppliedRealtime.createWrapperSDKProxy(
+            with: .init(agents: ClientInformation.agents),
+        )
         let internalRealtime = internalRealtimeClientFactory.createInternalRealtimeClient(realtime)
 
         logger = DefaultInternalLogger(logHandler: self.clientOptions.logHandler, logLevel: self.clientOptions.logLevel)

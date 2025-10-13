@@ -1,9 +1,10 @@
 import Ably
 
-// TODO: Just copied chat-js implementation for now to send up agent info. https://github.com/ably-labs/ably-chat-swift/issues/76
+/// Information about the Chat SDK.
+internal enum ClientInformation {
+    /// The version number of this version of the Chat SDK.
+    internal static let version = "0.8.0"
 
-// Update this when you release a new version
-// Version information
-internal let version = "0.8.0"
-
-internal let agents = ["chat-swift": version]
+    /// The agents to pass to `createWrapperSDKProxy` per CHA-IN1b.
+    internal static let agents = ["chat-swift": Self.version]
+}
