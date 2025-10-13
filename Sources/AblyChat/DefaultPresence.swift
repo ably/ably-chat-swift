@@ -212,32 +212,6 @@ internal final class DefaultPresence: Presence {
             }
 
             // processPresenceSubscribe is logging so we don't need to log here
-            let presenceEvent = processPresenceSubscribe(
-                PresenceMessage(ablyCocoaPresenceMessage: message),
-                for: event,
-            )
-            callback(presenceEvent)
-        }
-
-        return DefaultSubscription { [weak self] in
-            if let eventListener {
-                self?.channel.presence.unsubscribe(eventListener)
-            }
-        }
-    }
-
-    // (CHA-PR7b) Users may provide a listener and a list of selected presence events, to subscribe to just those events in a room.
-    internal func subscribe(event: PresenceEventType, _ callback: @escaping @MainActor (PresenceEvent) -> Void) -> DefaultSubscription {
-        fatalErrorIfEnableEventsDisabled()
-
-        logger.log(message: "Subscribing to presence events", level: .debug)
-
-        let eventListener = channel.presence.subscribe(event.toARTPresenceAction()) { [weak self] message in
-            guard let self else {
-                return
-            }
-            logger.log(message: "Received presence message: \(message)", level: .debug)
-            // processPresenceSubscribe is logging so we don't need to log here
             let presenceEvent = processPresenceSubscribe(PresenceMessage(ablyCocoaPresenceMessage: message), for: event)
             callback(presenceEvent)
         }
@@ -245,31 +219,6 @@ internal final class DefaultPresence: Presence {
         return DefaultSubscription { [weak self] in
             if let eventListener {
                 self?.channel.presence.unsubscribe(eventListener)
-            }
-        }
-    }
-
-    internal func subscribe(events: [PresenceEventType], _ callback: @escaping @MainActor (PresenceEvent) -> Void) -> DefaultSubscription {
-        fatalErrorIfEnableEventsDisabled()
-
-        logger.log(message: "Subscribing to presence events", level: .debug)
-
-        let eventListeners = events.map { event in
-            channel.presence.subscribe(event.toARTPresenceAction()) { [weak self] message in
-                guard let self else {
-                    return
-                }
-                logger.log(message: "Received presence message: \(message)", level: .debug)
-                let presenceEvent = processPresenceSubscribe(PresenceMessage(ablyCocoaPresenceMessage: message), for: event)
-                callback(presenceEvent)
-            }
-        }
-
-        return DefaultSubscription { [weak self] in
-            for eventListener in eventListeners {
-                if let eventListener {
-                    self?.channel.presence.unsubscribe(eventListener)
-                }
             }
         }
     }
