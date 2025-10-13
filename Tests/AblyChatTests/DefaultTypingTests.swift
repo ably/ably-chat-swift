@@ -147,7 +147,7 @@ struct DefaultTypingTests {
         channel.simulateIncomingMessage(message, for: TypingEventType.started.rawValue)
 
         // When
-        let typingClients = try await typing.get()
+        let typingClients = typing.current
 
         // Then
         #expect(typingClients.contains("test-client"))
@@ -288,6 +288,6 @@ struct DefaultTypingTests {
         }
 
         await #expect(stoppedEvent != nil)
-        #expect(try await typing.get().isEmpty)
+        #expect(typing.current.isEmpty)
     }
 }

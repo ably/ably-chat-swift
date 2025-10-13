@@ -1,9 +1,9 @@
 import Ably
 
 /**
- * Enum representing different message reaction events in the chat system.
+ * Enum representing different raw message reaction events in the chat system.
  */
-public enum MessageReactionEvent: Sendable {
+public enum MessageReactionRawEventType: Sendable {
     /**
      * A reaction was added to a message.
      */
@@ -12,10 +12,6 @@ public enum MessageReactionEvent: Sendable {
      * A reaction was removed from a message.
      */
     case delete
-    /**
-     * A reactions summary was updated for a message.
-     */
-    case summary
 
     internal var rawValue: String {
         switch self {
@@ -23,13 +19,11 @@ public enum MessageReactionEvent: Sendable {
             "reaction.create"
         case .delete:
             "reaction.delete"
-        case .summary:
-            "reaction.summary"
         }
     }
 }
 
-internal extension MessageReactionEvent {
+internal extension MessageReactionRawEventType {
     static func fromAnnotationAction(_ annotationAction: ARTAnnotationAction) -> Self? {
         switch annotationAction {
         case .create:
@@ -43,49 +37,13 @@ internal extension MessageReactionEvent {
 }
 
 /**
- * Represents a message-level reaction.
+ * Enum representing different message reaction summary events in the chat system.
  */
-public struct MessageReaction: Sendable {
+public enum MessageReactionSummaryEventType: Sendable {
     /**
-     * The reaction type (Unique, Distinct, or Multiple).
+     * A reactions summary was updated for a message.
      */
-    public var type: MessageReactionType
-    /**
-     * The reaction itself, typically an emoji.
-     */
-    public var name: String
-
-    /**
-     * The serial of the message, for which this reaction was created.
-     */
-    public var messageSerial: String
-
-    /**
-     * An optional count field for reactions of type "multiple".
-     */
-    public var count: Int?
-
-    /**
-     * The clientId of the user who sent the reaction.
-     */
-    public var clientID: String
-
-    /**
-     * Whether the reaction was sent by the current user.
-     */
-    public var isSelf: Bool
-
-    /// Memberwise initializer to create a `MessageReaction`.
-    ///
-    /// - Note: You should not need to use this initializer when using the Chat SDK. It is exposed only to allow users to create mock versions of the SDK's protocols.
-    public init(type: MessageReactionType, name: String, messageSerial: String, count: Int? = nil, clientID: String, isSelf: Bool) {
-        self.type = type
-        self.name = name
-        self.messageSerial = messageSerial
-        self.count = count
-        self.clientID = clientID
-        self.isSelf = isSelf
-    }
+    case summary
 }
 
 /**
@@ -229,11 +187,6 @@ public struct MessageReactionSummary: Sendable, Equatable {
     }
 
     /**
-     * Reference to the original message's serial.
-     */
-    public var messageSerial: String
-
-    /**
      * Map of unique-type reactions summaries.
      */
     public var unique: [String: ClientIDList]
@@ -251,12 +204,18 @@ public struct MessageReactionSummary: Sendable, Equatable {
     /// Memberwise initializer to create a `MessageReactionSummary`.
     ///
     /// - Note: You should not need to use this initializer when using the Chat SDK. It is exposed only to allow users to create mock versions of the SDK's protocols.
-    public init(messageSerial: String, unique: [String: MessageReactionSummary.ClientIDList], distinct: [String: MessageReactionSummary.ClientIDList], multiple: [String: MessageReactionSummary.ClientIDCounts]) {
-        self.messageSerial = messageSerial
+    public init(unique: [String: MessageReactionSummary.ClientIDList], distinct: [String: MessageReactionSummary.ClientIDList], multiple: [String: MessageReactionSummary.ClientIDCounts]) {
         self.unique = unique
         self.distinct = distinct
         self.multiple = multiple
     }
+
+    /// An empty `MessageReactionSummary`.
+    internal static let empty: Self = .init(
+        unique: [:],
+        distinct: [:],
+        multiple: [:],
+    )
 }
 
 /**
@@ -267,19 +226,25 @@ public struct MessageReactionSummaryEvent: Sendable, Equatable {
     /**
      * The type of the event (should be equal to summary).
      */
-    public var type: MessageReactionEvent
+    public var type: MessageReactionSummaryEventType
+
+    /**
+     * Reference to the original message's serial.
+     */
+    public var messageSerial: String
 
     /**
      * The message reactions summary.
      */
-    public var summary: MessageReactionSummary
+    public var reactions: MessageReactionSummary
 
     /// Memberwise initializer to create a `MessageReactionSummaryEvent`.
     ///
     /// - Note: You should not need to use this initializer when using the Chat SDK. It is exposed only to allow users to create mock versions of the SDK's protocols.
-    public init(type: MessageReactionEvent, summary: MessageReactionSummary) {
+    public init(type: MessageReactionSummaryEventType, messageSerial: String, reactions: MessageReactionSummary) {
         self.type = type
-        self.summary = summary
+        self.messageSerial = messageSerial
+        self.reactions = reactions
     }
 }
 
@@ -288,24 +253,64 @@ public struct MessageReactionSummaryEvent: Sendable, Equatable {
  */
 public struct MessageReactionRawEvent: Sendable {
     /**
+     * Represents a message-level reaction.
+     */
+    public struct Reaction: Sendable {
+        /**
+         * The reaction type (Unique, Distinct, or Multiple).
+         */
+        public var type: MessageReactionType
+        /**
+         * The reaction itself, typically an emoji.
+         */
+        public var name: String
+
+        /**
+         * The serial of the message, for which this reaction was created.
+         */
+        public var messageSerial: String
+
+        /**
+         * An optional count field for reactions of type "multiple".
+         */
+        public var count: Int?
+
+        /**
+         * The clientId of the user who sent the reaction.
+         */
+        public var clientID: String
+
+        /// Memberwise initializer to create a `Reaction`.
+        ///
+        /// - Note: You should not need to use this initializer when using the Chat SDK. It is exposed only to allow users to create mock versions of the SDK's protocols.
+        public init(type: MessageReactionType, name: String, messageSerial: String, count: Int? = nil, clientID: String) {
+            self.type = type
+            self.name = name
+            self.messageSerial = messageSerial
+            self.count = count
+            self.clientID = clientID
+        }
+    }
+
+    /**
      * Whether reaction was added or removed.
      */
-    public var type: MessageReactionEvent
+    public var type: MessageReactionRawEventType
 
     /**
      * The timestamp of this event.
      */
-    public var timestamp: Date?
+    public var timestamp: Date
 
     /**
      * The message reaction that was received.
      */
-    public var reaction: MessageReaction
+    public var reaction: Reaction
 
     /// Memberwise initializer to create a `MessageReactionRawEvent`.
     ///
     /// - Note: You should not need to use this initializer when using the Chat SDK. It is exposed only to allow users to create mock versions of the SDK's protocols.
-    public init(type: MessageReactionEvent, timestamp: Date? = nil, reaction: MessageReaction) {
+    public init(type: MessageReactionRawEventType, timestamp: Date, reaction: Reaction) {
         self.type = type
         self.timestamp = timestamp
         self.reaction = reaction

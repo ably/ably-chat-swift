@@ -12,7 +12,7 @@ final class MockMessagesPaginatedResult: PaginatedResult {
         Array(repeating: 0, count: numberOfMockMessages).map { _ in
             Message(
                 serial: "\(Date().timeIntervalSince1970)",
-                action: .create,
+                action: .messageCreate,
                 clientID: self.clientID,
                 text: MockStrings.randomPhrase(),
                 metadata: [:],
@@ -22,6 +22,7 @@ final class MockMessagesPaginatedResult: PaginatedResult {
                     timestamp: Date(),
                 ),
                 timestamp: Date(),
+                reactions: .init(unique: [:], distinct: [:], multiple: [:]),
             )
         }
     }

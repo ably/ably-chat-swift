@@ -75,7 +75,6 @@ struct IntegrationTests {
             options: .init(
                 presence: .init(),
                 typing: .init(heartbeatThrottle: 2),
-                reactions: .init(),
                 occupancy: .init(),
             ),
         )
@@ -85,7 +84,6 @@ struct IntegrationTests {
                 messages: .init(rawMessageReactions: true),
                 presence: .init(),
                 typing: .init(heartbeatThrottle: 2),
-                reactions: .init(),
                 occupancy: .init(enableEvents: true),
             ),
         )
@@ -156,35 +154,35 @@ struct IntegrationTests {
             }
         }
 
-        #expect(reactionSummaryEvents[0].summary.messageSerial == messageToReact.serial)
-        #expect(reactionSummaryEvents[0].summary.unique.isEmpty)
-        #expect(reactionSummaryEvents[0].summary.multiple.isEmpty)
-        #expect(reactionSummaryEvents[0].summary.distinct.count == 1)
-        _ = reactionSummaryEvents[0].summary.distinct.map { key, value in
+        #expect(reactionSummaryEvents[0].messageSerial == messageToReact.serial)
+        #expect(reactionSummaryEvents[0].reactions.unique.isEmpty)
+        #expect(reactionSummaryEvents[0].reactions.multiple.isEmpty)
+        #expect(reactionSummaryEvents[0].reactions.distinct.count == 1)
+        _ = reactionSummaryEvents[0].reactions.distinct.map { key, value in
             #expect(key == "👍")
             #expect(value.total == 1)
             #expect(value.clientIDs == [messageToReact.clientID])
         }
 
-        #expect(reactionSummaryEvents[1].summary.messageSerial == messageToReact.serial)
-        #expect(reactionSummaryEvents[1].summary.unique.isEmpty)
-        #expect(reactionSummaryEvents[1].summary.multiple.isEmpty)
-        #expect(reactionSummaryEvents[1].summary.distinct.count == 2)
+        #expect(reactionSummaryEvents[1].messageSerial == messageToReact.serial)
+        #expect(reactionSummaryEvents[1].reactions.unique.isEmpty)
+        #expect(reactionSummaryEvents[1].reactions.multiple.isEmpty)
+        #expect(reactionSummaryEvents[1].reactions.distinct.count == 2)
 
-        #expect(reactionSummaryEvents[2].summary.messageSerial == messageToReact.serial)
-        #expect(reactionSummaryEvents[2].summary.unique.isEmpty)
-        #expect(reactionSummaryEvents[2].summary.multiple.isEmpty)
-        #expect(reactionSummaryEvents[2].summary.distinct.count == 1)
-        _ = reactionSummaryEvents[2].summary.distinct.map { key, value in
+        #expect(reactionSummaryEvents[2].messageSerial == messageToReact.serial)
+        #expect(reactionSummaryEvents[2].reactions.unique.isEmpty)
+        #expect(reactionSummaryEvents[2].reactions.multiple.isEmpty)
+        #expect(reactionSummaryEvents[2].reactions.distinct.count == 1)
+        _ = reactionSummaryEvents[2].reactions.distinct.map { key, value in
             #expect(key == "🎉")
             #expect(value.total == 1)
             #expect(value.clientIDs == [messageToReact.clientID])
         }
 
-        #expect(reactionSummaryEvents[3].summary.messageSerial == messageToReact.serial)
-        #expect(reactionSummaryEvents[3].summary.unique.isEmpty)
-        #expect(reactionSummaryEvents[3].summary.multiple.isEmpty)
-        #expect(reactionSummaryEvents[3].summary.distinct.isEmpty)
+        #expect(reactionSummaryEvents[3].messageSerial == messageToReact.serial)
+        #expect(reactionSummaryEvents[3].reactions.unique.isEmpty)
+        #expect(reactionSummaryEvents[3].reactions.multiple.isEmpty)
+        #expect(reactionSummaryEvents[3].reactions.distinct.isEmpty)
 
         // MARK: - Message Reactions (Raw)
 
@@ -254,8 +252,7 @@ struct IntegrationTests {
         let rxMessageFromHistory = rxMessagesHistory.items[0]
         #expect(rxMessageFromHistory.serial == txMessageBeforeRxSubscribe.serial) // rxMessageFromHistory contains reactions and txMessageBeforeRxSubscribe doesn't, so we only compare serials
 
-        let rxMessageFromHistoryReactions = try #require(rxMessageFromHistory.reactions)
-        #expect(rxMessageFromHistoryReactions.messageSerial == messageToReact.serial)
+        let rxMessageFromHistoryReactions = rxMessageFromHistory.reactions
         #expect(rxMessageFromHistoryReactions.unique.isEmpty)
         #expect(rxMessageFromHistoryReactions.multiple.isEmpty)
         #expect(rxMessageFromHistoryReactions.distinct.count == 1)
@@ -278,8 +275,7 @@ struct IntegrationTests {
                 metadata: ["someEditedKey": 123, "someOtherEditedKey": "foo"],
                 headers: nil,
             ),
-            description: "random",
-            metadata: nil,
+            details: .init(description: "random", metadata: nil),
         )
 
         // (2) Check that we received the edited message on the subscription
@@ -300,9 +296,9 @@ struct IntegrationTests {
         // (3) Delete the message on the other client
         let txDeleteMessage = try await txRoom.messages.delete(
             message: rxEditedMessageFromSubscription,
-            params: .init(
+            details: .init(
                 description: "deleted in testing",
-                metadata: nil, // TODO: Setting as nil for now as a metadata with any non-string value causes a decoding error atm... https://github.com/ably/ably-chat-swift/issues/226
+                metadata: ["foo": "bar"],
             ),
         )
 
@@ -317,6 +313,7 @@ struct IntegrationTests {
         #expect(rxDeletedMessageFromSubscription.text.isEmpty)
         #expect(rxDeletedMessageFromSubscription.headers.isEmpty)
         #expect(rxDeletedMessageFromSubscription.metadata.isEmpty)
+        #expect(rxDeletedMessageFromSubscription.version.metadata == ["foo": "bar"])
 
         // MARK: - Room Reactions
 

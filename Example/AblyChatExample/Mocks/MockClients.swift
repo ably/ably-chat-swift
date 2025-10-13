@@ -105,7 +105,7 @@ class MockRoom: Room {
     }
 
     @discardableResult
-    func onDiscontinuity(_: @escaping @MainActor (DiscontinuityEvent) -> Void) -> DefaultStatusSubscription {
+    func onDiscontinuity(_: @escaping @MainActor (ARTErrorInfo) -> Void) -> DefaultStatusSubscription {
         fatalError("Not yet implemented")
     }
 }
@@ -129,7 +129,7 @@ class MockMessages: Messages {
             randomElement: {
                 let message = Message(
                     serial: "\(Date().timeIntervalSince1970)",
-                    action: .create,
+                    action: .messageCreate,
                     clientID: MockStrings.names.randomElement()!,
                     text: MockStrings.randomPhrase(),
                     metadata: [:],
@@ -139,6 +139,7 @@ class MockMessages: Messages {
                         timestamp: Date(),
                     ),
                     timestamp: Date(),
+                    reactions: .init(unique: [:], distinct: [:], multiple: [:]),
                 )
                 if byChance(30) { /* 30% of the messages will get the reaction */
                     self.reactions.messageSerials.append(message.serial)
@@ -161,7 +162,7 @@ class MockMessages: Messages {
     func send(withParams params: SendMessageParams) async throws(ARTErrorInfo) -> Message {
         let message = Message(
             serial: "\(Date().timeIntervalSince1970)",
-            action: .create,
+            action: .messageCreate,
             clientID: clientID,
             text: params.text,
             metadata: params.metadata ?? [:],
@@ -171,30 +172,32 @@ class MockMessages: Messages {
                 timestamp: Date(),
             ),
             timestamp: Date(),
+            reactions: .init(unique: [:], distinct: [:], multiple: [:]),
         )
         mockSubscriptions.emit(ChatMessageEvent(message: message))
         return message
     }
 
-    func update(newMessage: Message, description _: String?, metadata _: OperationMetadata?) async throws(ARTErrorInfo) -> Message {
+    func update(newMessage: Message, details _: OperationDetails?) async throws(ARTErrorInfo) -> Message {
         let message = Message(
             serial: newMessage.serial,
-            action: .update,
+            action: .messageUpdate,
             clientID: clientID,
             text: newMessage.text,
             metadata: newMessage.metadata,
             headers: newMessage.headers,
             version: .init(serial: "\(Date().timeIntervalSince1970)", timestamp: Date(), clientID: clientID),
             timestamp: Date(),
+            reactions: .init(unique: [:], distinct: [:], multiple: [:]),
         )
         mockSubscriptions.emit(ChatMessageEvent(message: message))
         return message
     }
 
-    func delete(message: Message, params _: DeleteMessageParams) async throws(ARTErrorInfo) -> Message {
+    func delete(message: Message, details _: OperationDetails?) async throws(ARTErrorInfo) -> Message {
         let message = Message(
             serial: message.serial,
-            action: .delete,
+            action: .messageDelete,
             clientID: clientID,
             text: message.text,
             metadata: message.metadata,
@@ -205,6 +208,7 @@ class MockMessages: Messages {
                 clientID: clientID,
             ),
             timestamp: Date(),
+            reactions: .init(unique: [:], distinct: [:], multiple: [:]),
         )
         mockSubscriptions.emit(ChatMessageEvent(message: message))
         return message
@@ -218,13 +222,12 @@ class MockMessageReactions: MessageReactions {
     var clientIDs: Set<String> = []
     var messageSerials: [String] = []
 
-    private var reactions: [MessageReaction] = []
+    private var reactions: [MessageReactionRawEvent.Reaction] = []
 
     private let mockSubscriptions = MockSubscriptionStorage<MessageReactionSummaryEvent>()
 
     private func getUniqueReactionsSummaryForMessage(_ messageSerial: String) -> MessageReactionSummary {
         MessageReactionSummary(
-            messageSerial: messageSerial,
             unique: [:],
             distinct: reactions.filter { $0.messageSerial == messageSerial }.reduce(into: [String: MessageReactionSummary.ClientIDList]()) { dict, newItem in
                 if var oldItem = dict[newItem.name] {
@@ -248,19 +251,19 @@ class MockMessageReactions: MessageReactions {
 
     func send(forMessageWithSerial messageSerial: String, params: SendMessageReactionParams) async throws(ARTErrorInfo) {
         reactions.append(
-            MessageReaction(
+            MessageReactionRawEvent.Reaction(
                 type: .distinct,
                 name: params.name,
                 messageSerial: messageSerial,
                 count: params.count,
                 clientID: clientID,
-                isSelf: true,
             ),
         )
         mockSubscriptions.emit(
             MessageReactionSummaryEvent(
-                type: MessageReactionEvent.summary,
-                summary: getUniqueReactionsSummaryForMessage(messageSerial),
+                type: MessageReactionSummaryEventType.summary,
+                messageSerial: messageSerial,
+                reactions: getUniqueReactionsSummaryForMessage(messageSerial),
             ),
         )
     }
@@ -271,8 +274,9 @@ class MockMessageReactions: MessageReactions {
         }
         mockSubscriptions.emit(
             MessageReactionSummaryEvent(
-                type: MessageReactionEvent.summary,
-                summary: getUniqueReactionsSummaryForMessage(messageSerial),
+                type: MessageReactionSummaryEventType.summary,
+                messageSerial: messageSerial,
+                reactions: getUniqueReactionsSummaryForMessage(messageSerial),
             ),
         )
     }
@@ -284,18 +288,18 @@ class MockMessageReactions: MessageReactions {
                     return nil
                 }
                 self.reactions.append(
-                    MessageReaction(
+                    MessageReactionRawEvent.Reaction(
                         type: .distinct,
                         name: Emoji.random(),
                         messageSerial: messageSerial,
                         count: 1,
                         clientID: senderClientID,
-                        isSelf: senderClientID == self.clientID,
                     ),
                 )
                 return MessageReactionSummaryEvent(
-                    type: MessageReactionEvent.summary,
-                    summary: self.getUniqueReactionsSummaryForMessage(messageSerial),
+                    type: MessageReactionSummaryEventType.summary,
+                    messageSerial: messageSerial,
+                    reactions: self.getUniqueReactionsSummaryForMessage(messageSerial),
                 )
             },
             interval: Double([Int](1 ... 10).randomElement()!) / 10.0,
@@ -381,7 +385,7 @@ class MockTyping: Typing {
         )
     }
 
-    func get() async throws(ARTErrorInfo) -> Set<String> {
+    var current: Set<String> {
         Set(MockStrings.names.shuffled().prefix(2))
     }
 
@@ -529,6 +533,10 @@ class MockPresence: Presence {
                 member: member,
             ),
         )
+    }
+
+    func subscribe(_ callback: @escaping @MainActor (PresenceEvent) -> Void) -> MockSubscription {
+        createSubscription(callback: callback)
     }
 
     func subscribe(event _: PresenceEventType, _ callback: @escaping @MainActor (PresenceEvent) -> Void) -> MockSubscription {

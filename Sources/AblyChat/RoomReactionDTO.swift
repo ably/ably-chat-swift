@@ -5,16 +5,16 @@ internal struct RoomReactionDTO {
 
     internal struct Data: Equatable {
         internal var name: String
-        internal var metadata: ReactionMetadata?
+        internal var metadata: RoomReactionMetadata?
     }
 
     internal struct Extras: Equatable {
-        internal var headers: ReactionHeaders?
+        internal var headers: RoomReactionHeaders?
     }
 }
 
 internal extension RoomReactionDTO {
-    init(name: String, metadata: ReactionMetadata?, headers: ReactionHeaders?) {
+    init(name: String, metadata: RoomReactionMetadata?, headers: RoomReactionHeaders?) {
         data = .init(name: name, metadata: metadata)
         extras = .init(headers: headers)
     }
@@ -23,11 +23,11 @@ internal extension RoomReactionDTO {
         data.name
     }
 
-    var metadata: ReactionMetadata? {
+    var metadata: RoomReactionMetadata? {
         data.metadata
     }
 
-    var headers: ReactionHeaders? {
+    var headers: RoomReactionHeaders? {
         extras.headers
     }
 }

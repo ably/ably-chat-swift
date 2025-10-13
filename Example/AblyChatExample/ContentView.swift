@@ -111,7 +111,7 @@ struct ContentView: View {
                 List(listItems, id: \.id) { item in
                     switch item {
                     case let .message(messageItem):
-                        if messageItem.message.action == .delete {
+                        if messageItem.message.action == .messageDelete {
                             DeletedMessageView(item: messageItem)
                                 .flip()
                         } else {
@@ -279,7 +279,7 @@ struct ContentView: View {
 
         for message in previousMessages.items {
             switch message.action {
-            case .create, .update, .delete:
+            case .messageCreate, .messageUpdate, .messageDelete:
                 withAnimation {
                     listItems.append(.message(.init(message: message, isSender: message.clientID == currentClientID)))
                 }
@@ -299,7 +299,7 @@ struct ContentView: View {
         room.messages.reactions.subscribe { summaryEvent in
             do {
                 try withAnimation {
-                    if let reactedMessageItem = listItemWithMessageSerial(summaryEvent.summary.messageSerial) {
+                    if let reactedMessageItem = listItemWithMessageSerial(summaryEvent.messageSerial) {
                         if let index = listItems.firstIndex(where: { $0.id == reactedMessageItem.message.serial }) {
                             listItems[index] = try .message(
                                 .init(
@@ -403,7 +403,7 @@ struct ContentView: View {
             return nil
         }).first {
             let editedMessage = editingMessageItem.message.copy(text: newMessage)
-            _ = try await room().messages.update(newMessage: editedMessage, description: nil, metadata: nil)
+            _ = try await room().messages.update(newMessage: editedMessage, details: nil)
         }
 
         newMessage = ""
@@ -411,7 +411,7 @@ struct ContentView: View {
 
     func deleteMessage(_ message: Message) {
         Task {
-            _ = try await room().messages.delete(message: message, params: .init())
+            _ = try await room().messages.delete(message: message, details: nil)
         }
     }
 

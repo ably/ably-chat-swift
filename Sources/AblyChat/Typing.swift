@@ -27,7 +27,7 @@ public protocol Typing: AnyObject, Sendable {
      *
      * - Returns: A set of clientIds that are currently typing.
      */
-    func get() async throws(ARTErrorInfo) -> Set<String>
+    var current: Set<String> { get }
 
     /**
      * Keystroke indicates that the current user is typing. This will emit a ``TypingEvent`` event to inform listening clients and begin a timer,

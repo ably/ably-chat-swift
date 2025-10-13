@@ -47,13 +47,14 @@ struct ChatAPITests {
         // Then
         let expectedMessage = Message(
             serial: "3446456",
-            action: .create,
+            action: .messageCreate,
             clientID: "mockClientId",
             text: "hello",
             metadata: [:],
             headers: [:],
             version: .init(serial: "3446456", timestamp: Date(timeIntervalSince1970: 1_631_840_000)),
             timestamp: Date(timeIntervalSince1970: 1_631_840_000),
+            reactions: .empty,
         )
         #expect(message == expectedMessage)
     }
@@ -143,23 +144,25 @@ struct ChatAPITests {
             items: [
                 Message(
                     serial: "3446456",
-                    action: .create,
+                    action: .messageCreate,
                     clientID: "random",
                     text: "hello",
                     metadata: [:],
                     headers: [:],
                     version: .init(serial: "3446456", timestamp: Date(timeIntervalSince1970: 1_730_943_049.269)), // from successGetMessagesWithItems
                     timestamp: Date(timeIntervalSince1970: 1_730_943_049.269),
+                    reactions: .empty,
                 ),
                 Message(
                     serial: "3446457",
-                    action: .create,
+                    action: .messageCreate,
                     clientID: "random",
                     text: "hello response",
                     metadata: [:],
                     headers: [:],
                     version: .init(serial: "3446457", timestamp: Date(timeIntervalSince1970: 1_730_943_051.269)),
                     timestamp: Date(timeIntervalSince1970: 1_730_943_051.269),
+                    reactions: .empty,
                 ),
             ],
         )

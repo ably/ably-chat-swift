@@ -43,7 +43,7 @@ public protocol Messages: AnyObject, Sendable {
      * - Parameters:
      *   - params: An object containing `text`, `headers` and `metadata` for the message.
      *
-     * - Returns: The published message, with the action of the message set as `.create`.
+     * - Returns: The published message, with the action of the message set as `.messageCreate`.
      *
      * - Note: It is possible to receive your own message via the messages subscription before this method returns.
      */
@@ -56,14 +56,13 @@ public protocol Messages: AnyObject, Sendable {
      *
      * - Parameters:
      *   - newMessage: A copy of the `Message` object with the intended edits applied. Use the provided `copy` method on the existing message.
-     *   - description: Optional description of the update action.
-     *   - metadata: Optional metadata of the update action. (The metadata of the message itself still resides within the newMessage object above).
+     *   - details: Optional details to record about the update action.
      *
      * - Returns: The updated message, with the `action` of the message set as `.update`.
      *
      * - Note: It is possible to receive your own message via the messages subscription before this method returns.
      */
-    func update(newMessage: Message, description: String?, metadata: OperationMetadata?) async throws(ARTErrorInfo) -> Message
+    func update(newMessage: Message, details: OperationDetails?) async throws(ARTErrorInfo) -> Message
 
     /**
      * Deletes a message in the chat room.
@@ -72,13 +71,13 @@ public protocol Messages: AnyObject, Sendable {
      *
      * - Parameters:
      *   - message: The message you wish to delete.
-     *   - params: Contains an optional description and metadata of the delete action.
+     *   - details: Optional details to record about the delete action.
      *
      * - Returns: The deleted message, with the action of the message set as `.delete`.
      *
      * - Note: It is possible to receive your own message via the messages subscription before this method returns.
      */
-    func delete(message: Message, params: DeleteMessageParams) async throws(ARTErrorInfo) -> Message
+    func delete(message: Message, details: OperationDetails?) async throws(ARTErrorInfo) -> Message
 
     /**
      * Add, delete, and subscribe to message reactions.
@@ -173,55 +172,35 @@ public struct SendMessageParams: Sendable {
     }
 }
 
-/**
- * Params for updating a text message.  All fields are updated and, if omitted, they are set to empty.
- */
+/// Parameters for updating a message.
 public struct UpdateMessageParams: Sendable {
-    /**
-     * The params to update including the text of the message.
-     */
-    public var message: SendMessageParams
+    /// The new text of the message.
+    public var text: String
 
-    /**
-     * Optional description of the update action.
-     */
-    public var description: String?
+    /// Optional metadata of the message.
+    public var metadata: MessageMetadata?
 
-    /**
-     * Optional metadata of the update action.
-     *
-     * The metadata is a map of extra information that can be attached to the update action.
-     * It is not used by Ably and is sent as part of the realtime
-     * message payload. Example use cases are setting custom styling like
-     * background or text colors or fonts, adding links to external images,
-     * emojis, etc.
-     *
-     * Do not use metadata for authoritative information. There is no server-side
-     * validation. When reading the metadata treat it like user input.
-     *
-     */
-    public var metadata: OperationMetadata?
+    /// Optional headers of the message.
+    public var headers: MessageHeaders?
 
-    // swiftlint:disable:next missing_docs
-    public init(message: SendMessageParams, description: String? = nil, metadata: OperationMetadata? = nil) {
-        self.message = message
-        self.description = description
+    /// Creates an instance with the given property values.
+    public init(text: String, metadata: MessageMetadata? = nil, headers: MessageHeaders? = nil) {
+        self.text = text
         self.metadata = metadata
+        self.headers = headers
     }
 }
 
-/**
- * Params for deleting a message.
- */
-public struct DeleteMessageParams: Sendable {
-    // swiftlint:disable:next missing_docs
+/// The parameters supplied to a message action like delete or update.
+public struct OperationDetails: Sendable {
+    /// Optional description for the message action.
     public var description: String?
 
-    // swiftlint:disable:next missing_docs
-    public var metadata: OperationMetadata?
+    /// Optional metadata that will be added to the action. Defaults to empty.
+    public var metadata: MessageOperationMetadata?
 
     // swiftlint:disable:next missing_docs
-    public init(description: String? = nil, metadata: OperationMetadata? = nil) {
+    public init(description: String? = nil, metadata: MessageOperationMetadata? = nil) {
         self.description = description
         self.metadata = metadata
     }
@@ -279,6 +258,50 @@ public struct HistoryParams: Sendable {
         self.end = end
         self.limit = limit
         self.orderBy = orderBy
+    }
+}
+
+/**
+ * Options for querying messages that were sent to a chat room before a listener was subscribed.
+ *
+ * This is the same as ``HistoryParams`` but without the `orderBy` property as the order is always newest-first.
+ */
+public struct HistoryBeforeSubscribeParams: Sendable {
+    /**
+     * The start of the time window to query from. If provided, the response will include
+     * messages with timestamps equal to or greater than this value.
+     *
+     * Defaults to the beginning of time.
+     */
+    public var start: Date?
+
+    /**
+     * The end of the time window to query from. If provided, the response will include
+     * messages with timestamps less than this value.
+     *
+     * Defaults to the current time.
+     */
+    public var end: Date?
+
+    /**
+     * The maximum number of messages to return in the response.
+     *
+     * Defaults to 100.
+     */
+    public var limit: Int?
+
+    // swiftlint:disable:next missing_docs
+    public init(start: Date? = nil, end: Date? = nil, limit: Int? = nil) {
+        self.start = start
+        self.end = end
+        self.limit = limit
+    }
+
+    /**
+     * Converts this to a ``HistoryParams`` with orderBy set to newestFirst, per CHA-M5f.
+     */
+    internal func toHistoryParams() -> HistoryParams {
+        HistoryParams(start: start, end: end, limit: limit, orderBy: .newestFirst)
     }
 }
 
@@ -342,11 +365,11 @@ public struct ChatMessageEvent: Sendable {
 
     internal init(message: Message) {
         switch message.action {
-        case .create:
+        case .messageCreate:
             type = .created
-        case .update:
+        case .messageUpdate:
             type = .updated
-        case .delete:
+        case .messageDelete:
             type = .deleted
         }
         self.message = message
@@ -363,12 +386,12 @@ public final class MessageSubscriptionResponseAsyncSequence<HistoryResult: Pagin
     private let subscription: SubscriptionAsyncSequence<Element>
 
     // can be set by either initialiser
-    private let historyBeforeSubscribe: @Sendable (HistoryParams) async throws(ARTErrorInfo) -> HistoryResult
+    private let historyBeforeSubscribe: @Sendable (HistoryBeforeSubscribeParams) async throws(ARTErrorInfo) -> HistoryResult
 
     // used internally
     internal init(
         bufferingPolicy: BufferingPolicy,
-        historyBeforeSubscribe: @escaping @Sendable (HistoryParams) async throws(ARTErrorInfo) -> HistoryResult,
+        historyBeforeSubscribe: @escaping @Sendable (HistoryBeforeSubscribeParams) async throws(ARTErrorInfo) -> HistoryResult,
     ) {
         subscription = .init(bufferingPolicy: bufferingPolicy)
         self.historyBeforeSubscribe = historyBeforeSubscribe
@@ -376,7 +399,7 @@ public final class MessageSubscriptionResponseAsyncSequence<HistoryResult: Pagin
 
     // used for testing
     // swiftlint:disable:next missing_docs
-    public init<Underlying: AsyncSequence & Sendable>(mockAsyncSequence: Underlying, mockHistoryBeforeSubscribe: @escaping @Sendable (HistoryParams) async throws(ARTErrorInfo) -> HistoryResult) where Underlying.Element == Element {
+    public init<Underlying: AsyncSequence & Sendable>(mockAsyncSequence: Underlying, mockHistoryBeforeSubscribe: @escaping @Sendable (HistoryBeforeSubscribeParams) async throws(ARTErrorInfo) -> HistoryResult) where Underlying.Element == Element {
         subscription = .init(mockAsyncSequence: mockAsyncSequence)
         historyBeforeSubscribe = mockHistoryBeforeSubscribe
     }
@@ -391,7 +414,7 @@ public final class MessageSubscriptionResponseAsyncSequence<HistoryResult: Pagin
     }
 
     // swiftlint:disable:next missing_docs
-    public func historyBeforeSubscribe(withParams params: HistoryParams) async throws(ARTErrorInfo) -> HistoryResult {
+    public func historyBeforeSubscribe(withParams params: HistoryBeforeSubscribeParams) async throws(ARTErrorInfo) -> HistoryResult {
         try await historyBeforeSubscribe(params)
     }
 

@@ -280,7 +280,7 @@ struct DefaultRoomTests {
 
         let room = try DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), name: "basketball", options: .init(), logger: TestLogger(), lifecycleManagerFactory: lifecycleManagerFactory)
 
-        // When: The room lifecycle manager emits a status change through `subscribeToState`
+        // When: The room lifecycle manager emits a status change through `onRoomStatusChange`
         let managerStatusChange = RoomStatusChange(current: .detached(error: nil), previous: .detaching(error: nil)) // arbitrary
         let roomStatusSubscription = room.onStatusChange()
         lifecycleManager.emitStatusChange(managerStatusChange)
@@ -307,14 +307,14 @@ struct DefaultRoomTests {
 
         let room = try DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), name: "basketball", options: .init(), logger: TestLogger(), lifecycleManagerFactory: lifecycleManagerFactory)
 
-        // When: The room lifecycle manager emits a status change through `subscribeToState`
-        let managerDiscontinuity = DiscontinuityEvent(error: ARTErrorInfo.createUnknownError() /* arbitrary */ )
+        // When: The room lifecycle manager emits a discontinuity event through `onDiscontinuity`
+        let managerDiscontinuityError = ARTErrorInfo.createUnknownError() // arbitrary
         let roomDiscontinuitiesSubscription = room.onDiscontinuity()
-        lifecycleManager.emitDiscontinuity(managerDiscontinuity)
+        lifecycleManager.emitDiscontinuity(managerDiscontinuityError)
 
-        // Then: The room emits this discontinuity through `onDiscontinuity`
-        let roomDiscontinuity = try #require(await roomDiscontinuitiesSubscription.first { @Sendable _ in true })
-        #expect(roomDiscontinuity == managerDiscontinuity)
+        // Then: The room emits this discontinuity event through `onDiscontinuity`
+        let roomDiscontinuityError = try #require(await roomDiscontinuitiesSubscription.first { @Sendable _ in true })
+        #expect(roomDiscontinuityError === managerDiscontinuityError)
     }
 
     // @specNotApplicable CHA-RL15b - We do not have an explicit unsubscribe API, since we use AsyncSequence instead of listeners.

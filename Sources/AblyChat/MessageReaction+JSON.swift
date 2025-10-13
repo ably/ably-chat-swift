@@ -2,15 +2,12 @@ import Foundation
 
 internal extension MessageReactionSummary {
     enum JSONKey: String {
-        case messageSerial
         case unique
         case distinct
         case multiple
     }
 
-    init(messageSerial: String, values jsonObject: [String: JSONValue]) {
-        self.messageSerial = messageSerial
-
+    init(values jsonObject: [String: JSONValue]) {
         // Two different key are used for now until fixed. Internal discussion:
         // https://ably-real-time.slack.com/archives/C02NY1VT3LY/p1749924228762039?thread_ts=1749655305.091679&cid=C02NY1VT3LY
         let uniqueJson = try? jsonObject.optionalObjectValueForKey(MessageReactionType.unique.rawValue) ??

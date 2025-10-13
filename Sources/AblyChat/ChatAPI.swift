@@ -61,7 +61,7 @@ internal final class ChatAPI {
 
     // (CHA-M8) A client must be able to update a message in a room.
     // (CHA-M8a) A client may update a message via the Chat REST API by calling the update method.
-    internal func updateMessage(roomName: String, with modifiedMessage: Message, description: String?, metadata: OperationMetadata?) async throws(InternalError) -> Message {
+    internal func updateMessage(roomName: String, with modifiedMessage: Message, details: OperationDetails?) async throws(InternalError) -> Message {
         let endpoint = "\(apiVersionV4)/rooms/\(roomName)/messages/\(modifiedMessage.serial)"
         var body: [String: JSONValue] = [:]
         let messageObject: [String: JSONValue] = [
@@ -72,12 +72,12 @@ internal final class ChatAPI {
 
         body["message"] = .object(messageObject)
 
-        if let description {
+        if let description = details?.description {
             body["description"] = .string(description)
         }
 
-        if let metadata {
-            body["metadata"] = .object(metadata)
+        if let metadata = details?.metadata {
+            body["metadata"] = .object(metadata.mapValues { .string($0) })
         }
 
         // (CHA-M8c) An update operation has PUT semantics. If a field is not specified in the update, it is assumed to be removed.
@@ -89,16 +89,16 @@ internal final class ChatAPI {
 
     // (CHA-M9) A client must be able to delete a message in a room.
     // (CHA-M9a) A client may delete a message via the Chat REST API by calling the delete method.
-    internal func deleteMessage(roomName: String, message: Message, params: DeleteMessageParams) async throws(InternalError) -> Message {
+    internal func deleteMessage(roomName: String, message: Message, details: OperationDetails?) async throws(InternalError) -> Message {
         let endpoint = "\(apiVersionV4)/rooms/\(roomName)/messages/\(message.serial)/delete"
         var body: [String: JSONValue] = [:]
 
-        if let description = params.description {
+        if let description = details?.description {
             body["description"] = .string(description)
         }
 
-        if let metadata = params.metadata {
-            body["metadata"] = .object(metadata)
+        if let metadata = details?.metadata {
+            body["metadata"] = .object(metadata.mapValues { .string($0) })
         }
 
         // (CHA-M9b) When a message is deleted successfully via the REST API, the caller shall receive a struct representing the Message in response, as if it were received via Realtime event.

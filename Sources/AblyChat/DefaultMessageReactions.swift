@@ -82,9 +82,9 @@ internal final class DefaultMessageReactions: MessageReactions {
             }
 
             let summaryEvent = MessageReactionSummaryEvent(
-                type: MessageReactionEvent.summary,
-                summary: MessageReactionSummary(
-                    messageSerial: messageSerial,
+                type: MessageReactionSummaryEventType.summary,
+                messageSerial: messageSerial,
+                reactions: MessageReactionSummary(
                     values: summaryJson ?? [:], // CHA-MR6a1
                 ),
             )
@@ -115,7 +115,7 @@ internal final class DefaultMessageReactions: MessageReactions {
             }
             logger.log(message: "Received reaction (message annotation): \(annotation)", level: .debug)
 
-            guard let reactionEventType = MessageReactionEvent.fromAnnotationAction(annotation.action) else {
+            guard let reactionEventType = MessageReactionRawEventType.fromAnnotationAction(annotation.action) else {
                 logger.log(message: "Received reaction with unknown action: \(annotation.action)", level: .info) // CHA-MR7b2
                 return
             }
@@ -128,14 +128,14 @@ internal final class DefaultMessageReactions: MessageReactions {
 
             let reactionEvent = MessageReactionRawEvent(
                 type: reactionEventType,
-                timestamp: annotation.timestamp,
-                reaction: MessageReaction(
+                // TODO: This is just a fallback value until ably-cocoa fixes the nullability of ARTAnnotation.timestamp. Remove in https://github.com/ably/ably-chat-swift/issues/395
+                timestamp: annotation.timestamp ?? Date(),
+                reaction: MessageReactionRawEvent.Reaction(
                     type: reactionType,
                     name: annotation.name ?? "", // CHA-MR7b3
                     messageSerial: annotation.messageSerial,
                     count: annotation.count?.intValue ?? (annotation.action == .create && reactionType == .multiple ? 1 : nil),
                     clientID: annotationClientID,
-                    isSelf: annotationClientID == clientID,
                 ),
             )
 

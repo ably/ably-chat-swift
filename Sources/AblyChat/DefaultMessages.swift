@@ -45,7 +45,7 @@ internal final class DefaultMessages: Messages {
             guard let self else {
                 return
             }
-            guard let action = MessageAction.fromRealtimeAction(message.action) else {
+            guard let action = ChatMessageAction.fromRealtimeAction(message.action) else {
                 logger.log(message: "Received incoming message with unsupported action: \(message.action)", level: .info) // CHA-M4m5
                 return
             }
@@ -79,9 +79,11 @@ internal final class DefaultMessages: Messages {
                     timestamp: version.timestamp ?? timestamp, // CHA-M4k7
                     clientID: version.clientId ?? "", // CHA-M4k1
                     description: version.descriptionText,
-                    metadata: version.metadata?.mapValues { .string($0) } ?? [:], // CHA-M4k2
+                    metadata: version.metadata ?? [:], // CHA-M4k2
                 ),
                 timestamp: timestamp,
+                // TODO: Not sure of correct behaviour here, see https://github.com/ably/ably-chat-swift/issues/391
+                reactions: .empty,
             )
 
             let event = ChatMessageEvent(message: message)
@@ -131,17 +133,17 @@ internal final class DefaultMessages: Messages {
         }
     }
 
-    internal func update(newMessage: Message, description: String?, metadata: OperationMetadata?) async throws(ARTErrorInfo) -> Message {
+    internal func update(newMessage: Message, details: OperationDetails?) async throws(ARTErrorInfo) -> Message {
         do {
-            return try await chatAPI.updateMessage(roomName: roomName, with: newMessage, description: description, metadata: metadata)
+            return try await chatAPI.updateMessage(roomName: roomName, with: newMessage, details: details)
         } catch {
             throw error.toARTErrorInfo()
         }
     }
 
-    internal func delete(message: Message, params: DeleteMessageParams) async throws(ARTErrorInfo) -> Message {
+    internal func delete(message: Message, details: OperationDetails?) async throws(ARTErrorInfo) -> Message {
         do {
-            return try await chatAPI.deleteMessage(roomName: roomName, message: message, params: params)
+            return try await chatAPI.deleteMessage(roomName: roomName, message: message, details: details)
         } catch {
             throw error.toARTErrorInfo()
         }

@@ -42,7 +42,7 @@ struct DefaultMessagesTests {
 
         // Then
         #expect(sentMessage.serial == "0")
-        #expect(sentMessage.action == .create)
+        #expect(sentMessage.action == .messageCreate)
         #expect(sentMessage.text == "hey")
         #expect(sentMessage.clientID == "clientId")
         #expect(sentMessage.version.serial == "0")
@@ -95,11 +95,11 @@ struct DefaultMessagesTests {
         // When
         var newMessage = sentMessage
         newMessage.text = text + "!" // see https://github.com/ably/ably-chat-swift/issues/333
-        let updatedMessage = try await defaultMessages.update(newMessage: newMessage, description: "add exclamation", metadata: ["key": "val"])
+        let updatedMessage = try await defaultMessages.update(newMessage: newMessage, details: .init(description: "add exclamation", metadata: ["key": "val"]))
 
         // Then
         #expect(updatedMessage.serial == "0")
-        #expect(updatedMessage.action == .update)
+        #expect(updatedMessage.action == .messageUpdate)
         #expect(updatedMessage.text == "hey!")
         #expect(updatedMessage.clientID == "clientId")
         #expect(updatedMessage.version.serial == "1")
@@ -149,14 +149,14 @@ struct DefaultMessagesTests {
         let sentMessage = try Message(jsonObject: ["serial": "0", "version": ["serial": "0"], "text": .string(text), "clientId": "0", "action": "message.create", "metadata": ["key": "val"], "headers": [:]]) // arbitrary
 
         // When
-        let deletedMessage = try await defaultMessages.delete(message: sentMessage, params: .init())
+        let deletedMessage = try await defaultMessages.delete(message: sentMessage, details: nil)
 
         // Then
         #expect(deletedMessage.serial == "0")
         #expect(deletedMessage.version.serial == "1")
         #expect(deletedMessage.version.timestamp == Date(timeIntervalSince1970: 1_631_840_030_000 / 1000))
         #expect(deletedMessage.version.clientID == "clientId2")
-        #expect(deletedMessage.action == .delete)
+        #expect(deletedMessage.action == .messageDelete)
         #expect(deletedMessage.text.isEmpty)
         #expect(deletedMessage.headers.isEmpty)
         #expect(deletedMessage.metadata.isEmpty)
@@ -205,7 +205,7 @@ struct DefaultMessagesTests {
         // TODO: avoids compiler crash (https://github.com/ably/ably-chat-swift/issues/233), revert once Xcode 16.3 released
         let doIt = {
             let message = try Message(jsonObject: ["serial": "0", "version": ["serial": "0"], "text": "hey", "clientId": "0", "action": "message.update", "metadata": [:], "headers": [:]]) // arbitrary
-            _ = try await defaultMessages.update(newMessage: message, description: "", metadata: [:])
+            _ = try await defaultMessages.update(newMessage: message, details: .init(description: "", metadata: [:]))
         }
         await #expect {
             try await doIt()
@@ -229,7 +229,7 @@ struct DefaultMessagesTests {
         // TODO: avoids compiler crash (https://github.com/ably/ably-chat-swift/issues/233), revert once Xcode 16.3 released
         let doIt = {
             let message = try Message(jsonObject: ["serial": "0", "version": ["serial": "0"], "text": "hey", "clientId": "0", "action": "message.update", "metadata": [:], "headers": [:]]) // arbitrary
-            _ = try await defaultMessages.delete(message: message, params: .init())
+            _ = try await defaultMessages.delete(message: message, details: nil)
         }
         await #expect {
             try await doIt()
@@ -389,7 +389,7 @@ struct DefaultMessagesTests {
 
         // When: subscription is added when the underlying realtime channel is ATTACHED
         let subscription = defaultMessages.subscribe()
-        let paginatedResult = try await subscription.historyBeforeSubscribe(withParams: .init(orderBy: .oldestFirst)) // CHA-M5f, try to set unsupported direction
+        let paginatedResult = try await subscription.historyBeforeSubscribe(withParams: .init())
 
         let requestParams = try #require(realtime.requestArguments.first?.params)
 
@@ -398,7 +398,7 @@ struct DefaultMessagesTests {
         // CHA-M5g: the subscription point must be additionally specified (internally, by us) in the "fromSerial" query parameter
         #expect(requestParams["fromSerial"] == "123")
 
-        // CHA-M5f: method must accept any of the standard history query options, except for direction, which must always be backwards (`OrderBy.newestFirst` is equivalent to "backwards", see `getBeforeSubscriptionStart` func)
+        // CHA-M5f: method must accept any of the standard history query options, except for direction, which must always be backwards (`OrderBy.newestFirst` is equivalent to "backwards", see `toHistoryParams` method)
         #expect(requestParams["direction"] == "backwards")
 
         // CHA-M5h: The method must return a standard PaginatedResult

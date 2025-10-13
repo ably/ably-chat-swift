@@ -27,23 +27,21 @@ struct MessageView: View {
                         showReactionPicker = true
                     }
                     .padding(left: 2)
-                if item.message.action == .update {
+                if item.message.action == .messageUpdate {
                     Text("Edited")
                         .foregroundStyle(.gray)
                         .font(.footnote)
                 }
-                if let reactionsSummary = item.message.reactions {
-                    MessageReactionSummaryView(
-                        summary: reactionsSummary,
-                        currentClientID: currentClientID,
-                        onPickReaction: {
-                            showReactionPicker = true
-                        },
-                        onAddReaction: onAddReaction,
-                        onDeleteReaction: onDeleteReaction,
-                    )
-                    .padding(left: 2)
-                }
+                MessageReactionSummaryView(
+                    summary: item.message.reactions,
+                    currentClientID: currentClientID,
+                    onPickReaction: {
+                        showReactionPicker = true
+                    },
+                    onAddReaction: onAddReaction,
+                    onDeleteReaction: onDeleteReaction,
+                )
+                .padding(left: 2)
             }
             Spacer()
             if item.isSender {

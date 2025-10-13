@@ -54,7 +54,7 @@ public protocol MessageSubscriptionResponse: Subscription, Sendable {
      *
      * - Returns: A paginated result of messages, in newest-to-oldest order.
      */
-    func historyBeforeSubscribe(withParams params: HistoryParams) async throws(ARTErrorInfo) -> HistoryResult
+    func historyBeforeSubscribe(withParams params: HistoryBeforeSubscribeParams) async throws(ARTErrorInfo) -> HistoryResult
 }
 
 internal struct DefaultSubscription: Subscription, Sendable {
@@ -91,13 +91,12 @@ internal struct DefaultMessageSubscriptionResponse: MessageSubscriptionResponse,
         _unsubscribe()
     }
 
-    internal func historyBeforeSubscribe(withParams params: HistoryParams) async throws(ARTErrorInfo) -> some PaginatedResult<Message> {
+    internal func historyBeforeSubscribe(withParams params: HistoryBeforeSubscribeParams) async throws(ARTErrorInfo) -> some PaginatedResult<Message> {
         do {
             let fromSerial = try await subscriptionStartSerial()
 
-            // (CHA-M5f) This method must accept any of the standard history query options, except for direction, which must always be backwards.
-            var queryOptions = params
-            queryOptions.orderBy = .newestFirst // newestFirst is equivalent to backwards
+            // (CHA-M5f) This method must accept any of the standard history query options, except for direction
+            var queryOptions = params.toHistoryParams()
 
             // (CHA-M5g) The subscribers subscription point must be additionally specified (internally, by us) in the fromSerial query parameter.
             queryOptions.fromSerial = fromSerial

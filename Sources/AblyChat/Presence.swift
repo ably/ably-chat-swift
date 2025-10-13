@@ -74,6 +74,19 @@ public protocol Presence: AnyObject, Sendable {
     func leave(withData data: PresenceData) async throws(ARTErrorInfo)
 
     /**
+     * Subscribes a given listener to all presence events.
+     *
+     * Note that it is a programmer error to call this method if presence events are not enabled in the room options. Make sure to set `enableEvents: true` in your room's presence options to use this feature (this is the default value).
+     *
+     * - Parameters:
+     *   - callback: The listener closure for capturing room ``PresenceEvent`` events.
+     *
+     * - Returns: A subscription that can be used to unsubscribe from ``PresenceEvent`` events.
+     */
+    @discardableResult
+    func subscribe(_ callback: @escaping @MainActor (PresenceEvent) -> Void) -> Subscription
+
+    /**
      * Subscribes a given listener to a particular presence event in the chat room.
      *
      * Note that it is a programmer error to call this method if presence events are not enabled in the room options. Make sure to set `enableEvents: true` in your room's presence options to use this feature (this is the default value).
@@ -129,6 +142,32 @@ public protocol Presence: AnyObject, Sendable {
 // swiftlint:disable:next missing_docs
 public extension Presence {
     /**
+     * Subscribes to all presence events.
+     *
+     * Note that it is a programmer error to call this method if presence events are not enabled in the room options. Make sure to set `enableEvents: true` in your room's presence options to use this feature (this is the default value).
+     *
+     * - Parameters:
+     *   - bufferingPolicy: The ``BufferingPolicy`` for the created subscription.
+     *
+     * - Returns: A subscription `AsyncSequence` that can be used to iterate through ``PresenceEvent`` events.
+     */
+    func subscribe(bufferingPolicy: BufferingPolicy) -> SubscriptionAsyncSequence<PresenceEvent> {
+        let subscriptionAsyncSequence = SubscriptionAsyncSequence<PresenceEvent>(bufferingPolicy: bufferingPolicy)
+
+        let subscription = subscribe { presence in
+            subscriptionAsyncSequence.emit(presence)
+        }
+
+        subscriptionAsyncSequence.addTerminationHandler {
+            Task { @MainActor in
+                subscription.unsubscribe()
+            }
+        }
+
+        return subscriptionAsyncSequence
+    }
+
+    /**
      * Subscribes a given listener to a particular presence event in the chat room.
      *
      * Note that it is a programmer error to call this method if presence events are not enabled in the room options. Make sure to set `enableEvents: true` in your room's presence options to use this feature (this is the default value).
@@ -180,6 +219,11 @@ public extension Presence {
         }
 
         return subscriptionAsyncSequence
+    }
+
+    /// Same as calling ``subscribe(bufferingPolicy:)`` with ``BufferingPolicy/unbounded``.
+    func subscribe() -> SubscriptionAsyncSequence<PresenceEvent> {
+        subscribe(bufferingPolicy: .unbounded)
     }
 
     /// Same as calling ``subscribe(event:bufferingPolicy:)`` with ``BufferingPolicy/unbounded``.
@@ -249,6 +293,24 @@ public enum PresenceEventType: Sendable {
      * Event triggered when a user initially subscribes to presence.
      */
     case present
+
+    internal init?(ablyCocoaValue: ARTPresenceAction) {
+        switch ablyCocoaValue {
+        case .present:
+            self = .present
+        case .enter:
+            self = .enter
+        case .leave:
+            self = .leave
+        case .update:
+            self = .update
+        case .absent:
+            // This should never be emitted as an event
+            return nil
+        @unknown default:
+            return nil
+        }
+    }
 
     internal func toARTPresenceAction() -> ARTPresenceAction {
         switch self {

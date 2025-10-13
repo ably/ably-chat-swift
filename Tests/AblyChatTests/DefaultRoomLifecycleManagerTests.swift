@@ -923,11 +923,11 @@ struct DefaultRoomLifecycleManagerTests {
 
         if expectDiscontinuity {
             try #require(emittedDiscontinuities.count == 1)
-            let discontinuityEvent = emittedDiscontinuities[0]
+            let discontinuityError = emittedDiscontinuities[0]
 
             #expect(
                 isChatError(
-                    discontinuityEvent.error,
+                    discontinuityError,
                     withCodeAndStatusCode: .fixedStatusCode(.roomDiscontinuity),
                     cause: channelEvent.reason,
                 ),

@@ -447,56 +447,5 @@ struct DefaultPresenceTests {
 
     // MARK: CHA-PR7
 
-    // @spec CHA-PR7a
-    // @spec CHA-PR7b
-    @Test
-    func usersMaySubscribeToAllPresenceEvents() async throws {
-        // Given
-        let channel = await MockRealtimeChannel(name: "basketball::$chat::$chatMessages")
-        let logger = TestLogger()
-        let roomLifecycleManager = await MockRoomLifecycleManager()
-        let defaultPresence = await DefaultPresence(
-            channel: channel,
-            roomLifecycleManager: roomLifecycleManager,
-            roomName: "basketball",
-            clientID: "client1",
-            logger: logger,
-            options: .init(),
-        )
-
-        // Given
-        let subscription = await defaultPresence.subscribe(events: .all) // CHA-PR7a and CHA-PR7b since `all` is just a selection of all events
-
-        // When
-        subscription.emit(PresenceEvent(type: .present, member: PresenceMember(clientID: "client1", data: nil, extras: nil, updatedAt: Date())))
-
-        // Then
-        let presentEvent = try #require(await subscription.first { _ in true })
-        #expect(presentEvent.type == .present)
-        #expect(presentEvent.member.clientID == "client1")
-
-        // When
-        subscription.emit(PresenceEvent(type: .enter, member: PresenceMember(clientID: "client1", data: nil, extras: nil, updatedAt: Date())))
-
-        // Then
-        let enterEvent = try #require(await subscription.first { _ in true })
-        #expect(enterEvent.type == .enter)
-        #expect(enterEvent.member.clientID == "client1")
-
-        // When
-        subscription.emit(PresenceEvent(type: .update, member: PresenceMember(clientID: "client1", data: nil, extras: nil, updatedAt: Date())))
-
-        // Then
-        let updateEvent = try #require(await subscription.first { _ in true })
-        #expect(updateEvent.type == .update)
-        #expect(updateEvent.member.clientID == "client1")
-
-        // When
-        subscription.emit(PresenceEvent(type: .leave, member: PresenceMember(clientID: "client1", data: nil, extras: nil, updatedAt: Date())))
-
-        // Then
-        let leaveEvent = try #require(await subscription.first { _ in true })
-        #expect(leaveEvent.type == .leave)
-        #expect(leaveEvent.member.clientID == "client1")
-    }
+    // TODO: Test (https://github.com/ably/ably-chat-swift/issues/396)
 }
