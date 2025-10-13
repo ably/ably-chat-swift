@@ -80,6 +80,11 @@ public protocol Room<Channel>: AnyObject, Sendable {
     var status: RoomStatus { get }
 
     /**
+     * The current error, if any, that caused the room to enter the current status.
+     */
+    var error: ARTErrorInfo? { get }
+
+    /**
      * Subscribes a given listener to the room status changes.
      *
      * - Parameters:
@@ -216,12 +221,19 @@ public struct RoomStatusChange: Sendable {
      */
     public var previous: RoomStatus
 
+    /**
+     * An error that provides a reason why the room has
+     * entered the new status, if applicable.
+     */
+    public var error: ARTErrorInfo?
+
     /// Memberwise initializer to create a `RoomStatusChange`.
     ///
     /// - Note: You should not need to use this initializer when using the Chat SDK. It is exposed only to allow users to create mock versions of the SDK's protocols.
-    public init(current: RoomStatus, previous: RoomStatus) {
+    public init(current: RoomStatus, previous: RoomStatus, error: ARTErrorInfo? = nil) {
         self.current = current
         self.previous = previous
+        self.error = error
     }
 }
 
@@ -395,6 +407,10 @@ internal class DefaultRoom<Realtime: InternalRealtimeClientProtocol, LifecycleMa
 
     internal var status: RoomStatus {
         lifecycleManager.roomStatus
+    }
+
+    internal var error: ARTErrorInfo? {
+        lifecycleManager.error
     }
 
     // MARK: - Discontinuities

@@ -72,11 +72,14 @@ class MockRoom: Room {
     }
 
     var status: RoomStatus = .initialized
+    var error: ARTErrorInfo?
 
     private func randomStatusInterval() -> Double { 8.0 }
 
     private let randomStatusChange = { @Sendable in
-        RoomStatusChange(current: [.attached(error: nil), .attached(error: nil), .attached(error: nil), .attached(error: nil), .attaching(error: nil), .attaching(error: nil), .suspended(error: .createUnknownError())].randomElement()!, previous: .attaching(error: nil))
+        let newStatus: RoomStatus = [.attached, .attached, .attached, .attached, .attaching, .attaching, .suspended].randomElement()!
+        let error: ARTErrorInfo? = (newStatus == .suspended) ? ARTErrorInfo.createUnknownError() : nil
+        return RoomStatusChange(current: newStatus, previous: .attaching, error: error)
     }
 
     func attach() async throws(ARTErrorInfo) {
@@ -95,7 +98,10 @@ class MockRoom: Room {
                 return false
             }
             if needNext {
-                callback(randomStatusChange())
+                let statusChange = randomStatusChange()
+                status = statusChange.current
+                error = statusChange.error
+                callback(statusChange)
             }
             return needNext
         }

@@ -96,9 +96,9 @@ struct IntegrationTests {
 
         // (5) Check that we received an ATTACHED status change as a result of attaching the room
         _ = try #require(await rxRoomStatusSubscription.first { @Sendable statusChange in
-            statusChange.current == .attached(error: nil)
+            statusChange.current == .attached
         })
-        #expect(rxRoom.status == .attached(error: nil))
+        #expect(rxRoom.status == .attached)
 
         // MARK: - Send and receive messages
 
@@ -490,9 +490,9 @@ struct IntegrationTests {
 
         // (2) Check that we received a DETACHED status change as a result of detaching the room
         _ = try #require(await rxRoomStatusSubscription.first { @Sendable statusChange in
-            statusChange.current == .detached(error: nil)
+            statusChange.current == .detached
         })
-        #expect(rxRoom.status == .detached(error: nil))
+        #expect(rxRoom.status == .detached)
 
         // MARK: - Release
 

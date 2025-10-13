@@ -8,6 +8,7 @@ internal protocol RoomLifecycleManager: Sendable {
     func performDetachOperation() async throws(InternalError)
     func performReleaseOperation() async
     var roomStatus: RoomStatus { get }
+    var error: ARTErrorInfo? { get }
     @discardableResult
     func onRoomStatusChange(_ callback: @escaping @MainActor (RoomStatusChange) -> Void) -> StatusSubscription
 
@@ -53,28 +54,22 @@ internal final class DefaultRoomLifecycleManagerFactory: RoomLifecycleManagerFac
 }
 
 private extension RoomStatus {
-    init(channelState: ARTRealtimeChannelState, error: ARTErrorInfo?) {
+    init(channelState: ARTRealtimeChannelState) {
         switch channelState {
         case .initialized:
             self = .initialized
         case .attaching:
-            self = .attaching(error: error)
+            self = .attaching
         case .attached:
-            self = .attached(error: error)
+            self = .attached
         case .detaching:
-            self = .detaching(error: error)
+            self = .detaching
         case .detached:
-            self = .detached(error: error)
+            self = .detached
         case .suspended:
-            guard let error else {
-                fatalError("Expected an error with SUSPENDED channel state")
-            }
-            self = .suspended(error: error)
+            self = .suspended
         case .failed:
-            guard let error else {
-                fatalError("Expected an error with FAILED channel state")
-            }
-            self = .failed(error: error)
+            self = .failed
         @unknown default:
             fatalError("Unknown channel state \(channelState)")
         }
@@ -91,6 +86,7 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
     // MARK: - Variable properties
 
     internal private(set) var roomStatus: RoomStatus
+    internal private(set) var error: ARTErrorInfo?
     private var currentOperationID: UUID?
 
     // CHA-RL13
@@ -185,12 +181,13 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
     }
 
     /// Updates ``roomStatus`` and emits a status change event.
-    private func changeStatus(to new: RoomStatus) {
+    private func changeStatus(to new: RoomStatus, error: ARTErrorInfo? = nil) {
         logger.log(message: "Transitioning from \(roomStatus) to \(new)", level: .info)
         let previous = roomStatus
         roomStatus = new
+        self.error = error
 
-        let statusChange = RoomStatusChange(current: roomStatus, previous: previous)
+        let statusChange = RoomStatusChange(current: roomStatus, previous: previous, error: error)
         roomStatusChangeSubscriptions.emit(statusChange)
     }
 
@@ -203,7 +200,7 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
         // CHA-RL11b
         if event.event != .update, !hasOperationInProgress {
             // CHA-RL11c
-            changeStatus(to: .init(channelState: event.current, error: event.reason))
+            changeStatus(to: .init(channelState: event.current), error: event.reason)
         }
 
         switch event.event {
@@ -412,7 +409,7 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
         defer { currentOperationID = nil }
 
         // CHA-RL1e
-        changeStatus(to: .attaching(error: nil))
+        changeStatus(to: .attaching, error: nil)
 
         // CHA-RL1k
         do {
@@ -421,14 +418,14 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
             // CHA-RL1k2, CHA-RL1k3
             let channelState = channel.state
             logger.log(message: "Failed to attach channel, error \(error), channel now in \(channelState)", level: .info)
-            changeStatus(to: .init(channelState: channelState, error: error.toARTErrorInfo()))
+            changeStatus(to: .init(channelState: channelState), error: error.toARTErrorInfo())
             throw error
         }
 
         // CHA-RL1k1
         isExplicitlyDetached = false
         hasAttachedOnce = true
-        changeStatus(to: .attached(error: nil))
+        changeStatus(to: .attached, error: nil)
     }
 
     // MARK: - DETACH operation
@@ -478,7 +475,7 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
         defer { currentOperationID = nil }
 
         // CHA-RL2j
-        changeStatus(to: .detaching(error: nil))
+        changeStatus(to: .detaching, error: nil)
 
         // CHA-RL2k
         do {
@@ -487,13 +484,13 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
             // CHA-RL2k2, CHA-RL2k3
             let channelState = channel.state
             logger.log(message: "Failed to detach channel, error \(error), channel now in \(channelState)", level: .info)
-            changeStatus(to: .init(channelState: channelState, error: error.toARTErrorInfo()))
+            changeStatus(to: .init(channelState: channelState), error: error.toARTErrorInfo())
             throw error
         }
 
         // CHA-RL2k1
         isExplicitlyDetached = true
-        changeStatus(to: .detached(error: nil))
+        changeStatus(to: .detached, error: nil)
     }
 
     // MARK: - RELEASE operation
@@ -609,9 +606,9 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
             }
             nextRoomStatusSubscription.off()
             // CHA-RL9b
-            guard case let .attached(error) = nextRoomStatusChange.current, error == nil else {
+            guard case .attached = nextRoomStatusChange.current, nextRoomStatusChange.error == nil else {
                 // CHA-RL9c
-                throw ARTErrorInfo(chatError: .roomTransitionedToInvalidStateForPresenceOperation(cause: nextRoomStatusChange.current.error)).toInternalError()
+                throw ARTErrorInfo(chatError: .roomTransitionedToInvalidStateForPresenceOperation(cause: nextRoomStatusChange.error)).toInternalError()
             }
         case .attached:
             // CHA-PR3e, CHA-PR10e, CHA-PR6d
