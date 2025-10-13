@@ -163,6 +163,7 @@ internal enum ChatError {
     case roomDiscontinuity(cause: ARTErrorInfo?)
     case unableDeleteReactionWithoutName(reactionType: String)
     case cannotApplyEventForDifferentMessage
+    case cannotApplyCreatedMessageEvent
     case messageRejectedByBeforePublishRule
     case messageRejectedByModeration
     case attachSerialIsNotDefined
@@ -194,6 +195,8 @@ internal enum ChatError {
         case .unableDeleteReactionWithoutName:
             .fixedStatusCode(.badRequest)
         case .cannotApplyEventForDifferentMessage:
+            .fixedStatusCode(.badRequest)
+        case .cannotApplyCreatedMessageEvent:
             .fixedStatusCode(.badRequest)
         case .messageRejectedByBeforePublishRule:
             .fixedStatusCode(.messageRejectedByBeforePublishRule)
@@ -253,6 +256,8 @@ internal enum ChatError {
             "Cannot delete reaction of type '\(reactionType)' without a reaction name."
         case .cannotApplyEventForDifferentMessage:
             "Cannot apply event for different message."
+        case .cannotApplyCreatedMessageEvent:
+            "Cannot apply created message event."
         case .messageRejectedByBeforePublishRule:
             "The message was rejected before publishing by a rule on the chat room."
         case .messageRejectedByModeration:
@@ -281,6 +286,7 @@ internal enum ChatError {
              .roomReleasedBeforeOperationCompleted,
              .presenceOperationRequiresRoomAttach,
              .cannotApplyEventForDifferentMessage,
+             .cannotApplyCreatedMessageEvent,
              .unableDeleteReactionWithoutName,
              .messageRejectedByBeforePublishRule,
              .messageRejectedByModeration,

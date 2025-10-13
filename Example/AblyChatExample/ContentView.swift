@@ -66,6 +66,15 @@ struct ContentView: View {
                 item.presence.member.updatedAt.description
             }
         }
+
+        var message: Message? {
+            switch self {
+            case let .message(item):
+                item.message
+            case .presence:
+                nil
+            }
+        }
     }
 
     func listItemWithMessageSerial(_ serial: String) -> MessageListItem? {
@@ -263,12 +272,19 @@ struct ContentView: View {
                 }
             case .updated, .deleted:
                 if let index = listItems.firstIndex(where: { $0.id == message.serial }) {
-                    listItems[index] = .message(
-                        .init(
-                            message: message,
-                            isSender: message.clientID == currentClientID,
-                        ),
-                    )
+                    do {
+                        if let oldMessage = listItems[index].message {
+                            let message = try oldMessage.with(event)
+                            listItems[index] = .message(
+                                .init(
+                                    message: message,
+                                    isSender: message.clientID == currentClientID,
+                                ),
+                            )
+                        }
+                    } catch {
+                        print("Can't update message with newer message: \(error)")
+                    }
                 }
             }
         }

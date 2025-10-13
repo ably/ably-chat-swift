@@ -233,4 +233,37 @@ public extension Message {
         newMessage.reactions = summaryEvent.reactions
         return newMessage
     }
+
+    /**
+     * Creates a new message instance with the message event applied.
+     *
+     * - Parameters:
+     *   - messageEvent: The message event to be applied to the returned message.
+     *
+     * - Throws: ``ARTErrorInfo`` if the event is for a different message, if it's a created event, or if there are other validation errors.
+     *
+     * - Returns: A new message instance with the event applied, or the original message if the event is older.
+     */
+    func with(_ messageEvent: ChatMessageEvent) throws(ARTErrorInfo) -> Self {
+        // (CHA-M11a) When the method receives a MessageEvent of type created, it must throw an ErrorInfo with code 40000 and status code 400.
+        if messageEvent.type == .created {
+            throw ARTErrorInfo(chatError: .cannotApplyCreatedMessageEvent)
+        }
+
+        // (CHA-M11b) For MessageEvent the method must verify that the message.serial in the event matches the message's own serial. If they don't match, an error with code 40000 and status code 400 must be thrown.
+        guard serial == messageEvent.message.serial else {
+            throw ARTErrorInfo(chatError: .cannotApplyEventForDifferentMessage)
+        }
+
+        // (CHA-M11c) For MessageEvent of type update and delete, if the event message is older or the same, the original message must be returned unchanged.
+        // (CHA-M10e) To sort Message versions of the same Message (instances with the same serial) in global order, sort Message instances lexicographically by their version.serial property.
+        if messageEvent.message.version.serial <= version.serial {
+            return self
+        }
+
+        // (CHA-M11d) For MessageEvent of type update and delete, if the event message is newer, the method must return a new message based on the event and deep-copying the reactions from the original message.
+        var newMessage = messageEvent.message
+        newMessage.reactions = reactions
+        return newMessage
+    }
 }
