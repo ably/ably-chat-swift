@@ -13,7 +13,6 @@ public protocol Connection: AnyObject, Sendable {
      */
     var status: ConnectionStatus { get }
 
-    // TODO: (https://github.com/ably-labs/ably-chat-swift/issues/12): consider how to avoid the need for an unwrap
     /**
      * The current error, if any, that caused the connection to enter the current status.
      */
@@ -143,7 +142,6 @@ public struct ConnectionStatusChange: Sendable {
      */
     public var previous: ConnectionStatus
 
-    // TODO: (https://github.com/ably-labs/ably-chat-swift/issues/12): consider how to avoid the need for an unwrap
     /**
      * An error that provides a reason why the connection has
      * entered the new status, if applicable.

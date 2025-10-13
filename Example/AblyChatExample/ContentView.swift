@@ -377,11 +377,11 @@ struct ContentView: View {
     func subscribeToRoomStatus(room: any Room) {
         room.onStatusChange { status in
             withAnimation {
-                if status.current.isAttaching {
+                if status.current == .attaching {
                     statusInfo = "\(status.current)...".capitalized
                 } else {
                     statusInfo = "\(status.current)".capitalized
-                    if status.current.isAttached {
+                    if status.current == .attached {
                         after(1) {
                             withAnimation {
                                 statusInfo = ""

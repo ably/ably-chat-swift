@@ -9,15 +9,17 @@ class MockRoomLifecycleManager: RoomLifecycleManager {
     private(set) var detachCallCount = 0
     private(set) var releaseCallCount = 0
     private let _roomStatus: RoomStatus?
+    private let _error: ARTErrorInfo?
     private let roomStatusSubscriptions = StatusSubscriptionStorage<RoomStatusChange>()
     private let discontinuitySubscriptions = StatusSubscriptionStorage<ARTErrorInfo>()
     private let resultOfWaitToBeAbleToPerformPresenceOperations: Result<Void, ARTErrorInfo>?
 
-    init(attachResult: Result<Void, ARTErrorInfo>? = nil, detachResult: Result<Void, ARTErrorInfo>? = nil, roomStatus: RoomStatus? = nil, resultOfWaitToBeAbleToPerformPresenceOperations: Result<Void, ARTErrorInfo> = .success(())) {
+    init(attachResult: Result<Void, ARTErrorInfo>? = nil, detachResult: Result<Void, ARTErrorInfo>? = nil, roomStatus: RoomStatus? = nil, error: ARTErrorInfo? = nil, resultOfWaitToBeAbleToPerformPresenceOperations: Result<Void, ARTErrorInfo> = .success(())) {
         self.attachResult = attachResult
         self.detachResult = detachResult
         self.resultOfWaitToBeAbleToPerformPresenceOperations = resultOfWaitToBeAbleToPerformPresenceOperations
         _roomStatus = roomStatus
+        _error = error
     }
 
     func performAttachOperation() async throws(InternalError) {
@@ -53,6 +55,10 @@ class MockRoomLifecycleManager: RoomLifecycleManager {
             fatalError("In order to call roomStatus, roomStatus must be passed to the initializer")
         }
         return roomStatus
+    }
+
+    var error: ARTErrorInfo? {
+        _error
     }
 
     func emitStatusChange(_ statusChange: RoomStatusChange) {

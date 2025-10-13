@@ -40,6 +40,10 @@ class MockRoom: InternalRoom {
         fatalError("Not implemented")
     }
 
+    var error: ARTErrorInfo? {
+        fatalError("Not implemented")
+    }
+
     func attach() async throws(ARTErrorInfo) {
         fatalError("Not implemented")
     }

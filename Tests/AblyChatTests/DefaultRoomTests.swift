@@ -247,7 +247,7 @@ struct DefaultRoomTests {
     // MARK: - Room status
 
     @Test
-    func status() async throws {
+    func statusAndError() async throws {
         // Given: a DefaultRoom instance
         let channelsList = [
             MockRealtimeChannel(name: "basketball::$chat"),
@@ -255,15 +255,17 @@ struct DefaultRoomTests {
         let channels = MockChannels(channels: channelsList)
         let realtime = MockRealtime(channels: channels)
 
-        let lifecycleManagerRoomStatus = RoomStatus.attached(error: nil) // arbitrary
+        let lifecycleManagerRoomStatus = RoomStatus.attached // arbitrary
+        let lifecycleManagerError = ARTErrorInfo.createUnknownError() // arbitrary
 
-        let lifecycleManager = MockRoomLifecycleManager(roomStatus: lifecycleManagerRoomStatus)
+        let lifecycleManager = MockRoomLifecycleManager(roomStatus: lifecycleManagerRoomStatus, error: lifecycleManagerError)
         let lifecycleManagerFactory = MockRoomLifecycleManagerFactory(manager: lifecycleManager)
 
         let room = try DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), name: "basketball", options: .init(), logger: TestLogger(), lifecycleManagerFactory: lifecycleManagerFactory)
 
-        // Then: The `status` property returns that of the room lifecycle manager
+        // Then: The `status` and `error` properties return those of the room lifecycle manager
         #expect(room.status == lifecycleManagerRoomStatus)
+        #expect(room.error === lifecycleManagerError)
     }
 
     @Test
@@ -281,7 +283,7 @@ struct DefaultRoomTests {
         let room = try DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), name: "basketball", options: .init(), logger: TestLogger(), lifecycleManagerFactory: lifecycleManagerFactory)
 
         // When: The room lifecycle manager emits a status change through `onRoomStatusChange`
-        let managerStatusChange = RoomStatusChange(current: .detached(error: nil), previous: .detaching(error: nil)) // arbitrary
+        let managerStatusChange = RoomStatusChange(current: .detached, previous: .detaching) // arbitrary
         let roomStatusSubscription = room.onStatusChange()
         lifecycleManager.emitStatusChange(managerStatusChange)
 
