@@ -565,9 +565,10 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
                 // CHA-RL3n4: Retry until detach succeeds, with a pause before each attempt
                 let waitDuration = 0.25
                 logger.log(message: "Failed to detach channel, error \(error). Will retry in \(waitDuration)s.", level: .info)
-                // TODO: Make this not trap in the case where the Task is cancelled (as part of the broader https://github.com/ably-labs/ably-chat-swift/issues/29 for handling task cancellation)
-                // swiftlint:disable:next force_try
-                try! await clock.sleep(timeInterval: waitDuration)
+                // We're using an unstructured task so that this wait completes regardless of cancellation of the task that performed the release operation. But TODO think about the right behaviour in the case where the task is cancelled (as part of the broader https://github.com/ably-labs/ably-chat-swift/issues/29 for handling task cancellation)
+                _ = await Task {
+                    try await clock.sleep(timeInterval: waitDuration)
+                }.result
 
                 // Loop repeats
             }
