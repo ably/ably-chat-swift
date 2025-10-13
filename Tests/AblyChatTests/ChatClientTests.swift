@@ -86,7 +86,7 @@ struct ChatClientTests {
             internalRealtimeClientFactory: MockInternalRealtimeClientFactory(createInternalRealtimeClientReturnValue: internalRealtine),
         )
 
-        #expect(realtime.createWrapperSDKProxyOptionsArgument?.agents == ["chat-swift": AblyChat.version])
+        #expect(realtime.createWrapperSDKProxyOptionsArgument?.agents == ["chat-swift": ClientInformation.version])
     }
 
     // @spec CHA-IN1d
