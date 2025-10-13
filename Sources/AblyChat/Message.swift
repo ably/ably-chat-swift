@@ -197,9 +197,7 @@ extension Message: JSONObjectDecodable {
     }
 }
 
-extension MessageVersion {
-    // It's a conflicting rule: explicit_acl vs extensionAccessControl
-    // swiftlint:disable:next explicit_acl
+internal extension MessageVersion {
     init(jsonObject: [String: JSONValue], defaultTimestamp: Date) throws(InternalError) {
         try self.init(
             serial: jsonObject.stringValueForKey("serial"),
