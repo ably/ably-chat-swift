@@ -131,17 +131,17 @@ internal final class DefaultMessages: Messages {
         }
     }
 
-    internal func update(newMessage: Message, details: OperationDetails?) async throws(ARTErrorInfo) -> Message {
+    internal func update(forSerial serial: String, params: UpdateMessageParams, details: OperationDetails?) async throws(ARTErrorInfo) -> Message {
         do {
-            return try await chatAPI.updateMessage(roomName: roomName, with: newMessage, details: details)
+            return try await chatAPI.updateMessage(roomName: roomName, serial: serial, updateParams: params, details: details)
         } catch {
             throw error.toARTErrorInfo()
         }
     }
 
-    internal func delete(message: Message, details: OperationDetails?) async throws(ARTErrorInfo) -> Message {
+    internal func delete(forSerial serial: String, details: OperationDetails?) async throws(ARTErrorInfo) -> Message {
         do {
-            return try await chatAPI.deleteMessage(roomName: roomName, message: message, details: details)
+            return try await chatAPI.deleteMessage(roomName: roomName, serial: serial, details: details)
         } catch {
             throw error.toARTErrorInfo()
         }
