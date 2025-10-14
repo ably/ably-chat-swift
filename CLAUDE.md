@@ -43,7 +43,7 @@ swift run BuildTool lint --fix # Auto-fix where possible
 **Other BuildTool commands:**
 
 - `swift run BuildTool build-library` - Build the library
-- `swift run BuildTool build-example-app` - Build example app
+- `swift run BuildTool build-example-app --platform <platform>` - Build example app (platform: iOS, macOS, or tvOS)
 - `swift run BuildTool spec-coverage` - Generate spec coverage report
 - `swift run BuildTool build-documentation` - Build docs
 - `swift run BuildTool generate-code-coverage` - Generate code coverage
