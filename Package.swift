@@ -24,10 +24,13 @@ let package = Package(
         ),
     ],
     dependencies: [
+        // This is the SDK's only dependency.
         .package(
             url: "https://github.com/ably/ably-cocoa",
             from: "1.2.48",
         ),
+
+        // All of the following dependencies are only used for internal purposes (testing or build tooling).
         .package(
             url: "https://github.com/apple/swift-argument-parser",
             from: "1.5.0",
