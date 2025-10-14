@@ -449,6 +449,7 @@ class MockPresence: Presence {
             randomElement: {
                 let member = PresenceMember(
                     clientID: MockStrings.names.randomElement()!,
+                    connectionID: "someConnectionID",
                     data: nil,
                     extras: nil,
                     updatedAt: Date(),
@@ -467,6 +468,7 @@ class MockPresence: Presence {
         MockStrings.names.shuffled().map { name in
             PresenceMember(
                 clientID: name,
+                connectionID: "someConnectionID",
                 data: nil,
                 extras: nil,
                 updatedAt: Date(),
@@ -478,6 +480,7 @@ class MockPresence: Presence {
         MockStrings.names.shuffled().map { name in
             PresenceMember(
                 clientID: name,
+                connectionID: "someConnectionID",
                 data: nil,
                 extras: nil,
                 updatedAt: Date(),
@@ -500,6 +503,7 @@ class MockPresence: Presence {
     private func enter(dataForEvent: PresenceData?) async throws(ARTErrorInfo) {
         let member = PresenceMember(
             clientID: clientID,
+            connectionID: "someConnectionID",
             data: dataForEvent,
             extras: nil,
             updatedAt: Date(),
@@ -523,6 +527,7 @@ class MockPresence: Presence {
     private func update(dataForEvent: PresenceData? = nil) async throws(ARTErrorInfo) {
         let member = PresenceMember(
             clientID: clientID,
+            connectionID: "someConnectionID",
             data: dataForEvent,
             extras: nil,
             updatedAt: Date(),
@@ -546,6 +551,7 @@ class MockPresence: Presence {
     func leave(dataForEvent: PresenceData? = nil) async throws(ARTErrorInfo) {
         let member = PresenceMember(
             clientID: clientID,
+            connectionID: "someConnectionID",
             data: dataForEvent,
             extras: nil,
             updatedAt: Date(),
