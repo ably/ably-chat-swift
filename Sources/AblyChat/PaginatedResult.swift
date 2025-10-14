@@ -16,7 +16,6 @@ public protocol PaginatedResult<Item>: AnyObject, Sendable {
     var hasNext: Bool { get }
     // swiftlint:disable:next missing_docs
     var isLast: Bool { get }
-    // TODO: (https://github.com/ably-labs/ably-chat-swift/issues/11): consider how to avoid the need for an unwrap
     // Note that there seems to be a compiler bug (https://github.com/swiftlang/swift/issues/79992) that means that the compiler does not enforce the access level of the error type for property getters. I accidentally originally wrote these as throws(InternalError), which the compiler should have rejected since InternalError is internal and this protocol is public, but it did not reject it and this mistake was only noticed in code review.
     // swiftlint:disable:next missing_docs
     var next: Self? { get async throws(ARTErrorInfo) }
