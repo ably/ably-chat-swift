@@ -262,6 +262,14 @@ struct IntegrationTests {
             #expect(value.clientIDs == [messageToReact.clientID])
         }
 
+        // (8) Get a single message by its serial
+        let retrievedMessage = try await rxRoom.messages.get(withSerial: rxMessageFromHistory.serial)
+        #expect(retrievedMessage.serial == rxMessageFromHistory.serial)
+        #expect(retrievedMessage.text == rxMessageFromHistory.text)
+        #expect(retrievedMessage.clientID == rxMessageFromHistory.clientID)
+        // Verify the retrieved message has the same reaction summary
+        #expect(retrievedMessage.reactions.distinct.count == rxMessageFromHistory.reactions.distinct.count)
+
         // MARK: - Editing and Deleting Messages
 
         // Reuse message subscription and message from (5) and (6) above

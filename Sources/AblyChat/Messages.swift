@@ -80,6 +80,16 @@ public protocol Messages: AnyObject, Sendable {
     func delete(message: Message, details: OperationDetails?) async throws(ARTErrorInfo) -> Message
 
     /**
+     * Get a message by its serial.
+     *
+     * - Parameters:
+     *   - serial: The serial of the message to get.
+     *
+     * - Returns: The message with the specified serial.
+     */
+    func get(withSerial serial: String) async throws(ARTErrorInfo) -> Message
+
+    /**
      * Add, delete, and subscribe to message reactions.
      */
     var reactions: Reactions { get }
