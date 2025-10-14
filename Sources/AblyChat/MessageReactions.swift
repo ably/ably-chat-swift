@@ -53,6 +53,42 @@ public protocol MessageReactions: AnyObject, Sendable {
      */
     @discardableResult
     func subscribeRaw(_ callback: @escaping @MainActor (MessageReactionRawEvent) -> Void) -> Subscription
+
+    /**
+     * Get the reaction count for a message for a particular client.
+     *
+     * - Parameters:
+     *   - messageSerial: The serial of the message to get reactions for.
+     *   - clientID: The client to fetch the reaction summary for (leave unset for current client).
+     *
+     * - Returns: A clipped reaction summary containing only the requested clientId.
+     *
+     * For example:
+     *
+     * ```swift
+     * room.messages.reactions.subscribe { event in
+     *     Task {
+     *         var modifiedEvent = event
+     *
+     *         // For brevity of example, we check unique 👍 (normally iterate for all relevant reactions)
+     *         let uniqueLikes = event.reactions.unique["👍"]
+     *         if let uniqueLikes, uniqueLikes.clipped, !uniqueLikes.clientIDs.contains(myClientID) {
+     *             // summary is clipped and doesn't include myClientId, so we need to fetch a clientSummary
+     *             let clientReactions = try await room.messages.reactions.clientReactions(
+     *                 forMessageWithSerial: event.messageSerial,
+     *                 clientID: myClientID,
+     *             )
+     *             if clientReactions.unique["👍"] != nil {
+     *                 // client has reacted with 👍
+     *                 modifiedEvent.reactions.unique["👍", default: .init(total: 0, clientIDs: [], clipped: false)].clientIDs.append(myClientID)
+     *             }
+     *         }
+     *         // from here, process modifiedEvent as usual
+     *     }
+     * }
+     * ```
+     */
+    func clientReactions(forMessageWithSerial messageSerial: String, clientID: String?) async throws(ARTErrorInfo) -> MessageReactionSummary
 }
 
 /// `AsyncSequence` variant of receiving message reactions events.

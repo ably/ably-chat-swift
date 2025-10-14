@@ -66,6 +66,7 @@ struct IntegrationTests {
 
         // (1) Create a couple of chat clients — one for sending and one for receiving
         let txClient = Self.createSandboxChatClient(apiKey: apiKey, loggingLabel: "tx")
+        let txClientID = try #require(txClient.clientID)
         let rxClient = Self.createSandboxChatClient(apiKey: apiKey, loggingLabel: "rx")
 
         // (2) Fetch a room
@@ -142,6 +143,15 @@ struct IntegrationTests {
 
         try await txRoom.messages.reactions.send(forMessageWithSerial: messageToReact.serial, params: .init(name: "👍"))
         try await txRoom.messages.reactions.send(forMessageWithSerial: messageToReact.serial, params: .init(name: "🎉"))
+
+        // Before deleting, fetch the reactions summary for txClientID and check its contents
+        let reactionsForClient = try await rxRoom.messages.reactions.clientReactions(
+            forMessageWithSerial: messageToReact.serial,
+            clientID: txClientID,
+        )
+        #expect(reactionsForClient.distinct["👍"]?.clipped == true)
+        #expect(reactionsForClient.distinct["👍"]?.clientIDs == [txClientID])
+
         try await txRoom.messages.reactions.delete(forMessageWithSerial: messageToReact.serial, params: .init(name: "👍"))
         try await txRoom.messages.reactions.delete(forMessageWithSerial: messageToReact.serial, params: .init(name: "🎉"))
 

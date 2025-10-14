@@ -145,4 +145,21 @@ internal final class DefaultMessageReactions: MessageReactions {
             self?.channel.unsubscribe(eventListener)
         }
     }
+
+    // CHA-MR13
+    internal func clientReactions(forMessageWithSerial messageSerial: String, clientID: String?) async throws(ARTErrorInfo) -> MessageReactionSummary {
+        do {
+            logger.log(message: "Fetching client reactions for message serial: \(messageSerial), clientId: \(clientID ?? "current client")", level: .debug)
+
+            // CHA-MR13b
+            let summary = try await chatAPI.getClientReactions(forMessageWithSerial: messageSerial, roomName: roomName, clientID: clientID)
+
+            logger.log(message: "Fetched client reactions for message serial: \(messageSerial)", level: .info)
+
+            return summary
+        } catch {
+            // CHA-MR13c
+            throw error.toARTErrorInfo()
+        }
+    }
 }

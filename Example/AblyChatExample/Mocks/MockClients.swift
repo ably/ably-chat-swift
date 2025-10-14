@@ -333,6 +333,10 @@ class MockMessageReactions: MessageReactions {
     func subscribeRaw(_: @escaping @MainActor @Sendable (MessageReactionRawEvent) -> Void) -> MockSubscription {
         fatalError("Not implemented")
     }
+
+    func clientReactions(forMessageWithSerial _: String, clientID _: String?) async throws(ARTErrorInfo) -> MessageReactionSummary {
+        fatalError("Not implemented")
+    }
 }
 
 class MockRoomReactions: RoomReactions {

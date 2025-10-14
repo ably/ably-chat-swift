@@ -164,6 +164,28 @@ internal final class ChatAPI {
         return try await makeRequest(endpoint, method: "DELETE", params: httpParams)
     }
 
+    // CHA-MR13
+    internal func getClientReactions(forMessageWithSerial messageSerial: String, roomName: String, clientID: String?) async throws(InternalError) -> MessageReactionSummary {
+        // CHA-MR13b
+        let endpoint = messageUrl(roomName: roomName, serial: messageSerial, suffix: "/client-reactions")
+
+        var params: [String: String]?
+        if let clientID {
+            params = ["forClientId": clientID]
+        }
+
+        let response: MessageReactionSummaryResponse = try await makeRequest(endpoint, method: "GET", params: params)
+        return response.reactions
+    }
+
+    internal struct MessageReactionSummaryResponse: JSONObjectDecodable {
+        internal let reactions: MessageReactionSummary
+
+        internal init(jsonObject: [String: JSONValue]) throws(InternalError) {
+            reactions = MessageReactionSummary(values: jsonObject)
+        }
+    }
+
     private func makeRequest<Response: JSONDecodable>(_ url: String, method: String, params: [String: String]? = nil, body: RequestBody? = nil) async throws(InternalError) -> Response {
         let ablyCocoaBody: Any? = if let body {
             switch body {
