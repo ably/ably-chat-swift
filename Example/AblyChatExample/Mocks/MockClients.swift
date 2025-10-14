@@ -219,6 +219,23 @@ class MockMessages: Messages {
         mockSubscriptions.emit(ChatMessageEvent(message: message))
         return message
     }
+
+    func get(withSerial serial: String) async throws(ARTErrorInfo) -> Message {
+        Message(
+            serial: serial,
+            action: .messageCreate,
+            clientID: clientID,
+            text: MockStrings.randomPhrase(),
+            metadata: [:],
+            headers: [:],
+            version: .init(
+                serial: serial,
+                timestamp: Date(),
+            ),
+            timestamp: Date(),
+            reactions: .init(unique: [:], distinct: [:], multiple: [:]),
+        )
+    }
 }
 
 class MockMessageReactions: MessageReactions {

@@ -143,24 +143,24 @@ struct ChatAPITests {
             paginatedResponse: paginatedResponse,
             items: [
                 Message(
-                    serial: "3446456",
+                    serial: "123456789-000@123456789:000",
                     action: .messageCreate,
                     clientID: "random",
                     text: "hello",
                     metadata: [:],
                     headers: [:],
-                    version: .init(serial: "3446456", timestamp: Date(timeIntervalSince1970: 1_730_943_049.269)), // from successGetMessagesWithItems
+                    version: .init(serial: "123456789-000@123456789:000", timestamp: Date(timeIntervalSince1970: 1_730_943_049.269)), // from successGetMessagesWithItems
                     timestamp: Date(timeIntervalSince1970: 1_730_943_049.269),
                     reactions: .empty,
                 ),
                 Message(
-                    serial: "3446457",
+                    serial: "123456789-000@123456789:001",
                     action: .messageCreate,
                     clientID: "random",
                     text: "hello response",
                     metadata: [:],
                     headers: [:],
-                    version: .init(serial: "3446457", timestamp: Date(timeIntervalSince1970: 1_730_943_051.269)),
+                    version: .init(serial: "123456789-000@123456789:001", timestamp: Date(timeIntervalSince1970: 1_730_943_051.269)),
                     timestamp: Date(timeIntervalSince1970: 1_730_943_051.269),
                     reactions: .empty,
                 ),

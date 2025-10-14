@@ -147,6 +147,15 @@ internal final class DefaultMessages: Messages {
         }
     }
 
+    // (CHA-M13) A single message must be retrievable from the REST API.
+    internal func get(withSerial serial: String) async throws(ARTErrorInfo) -> Message {
+        do {
+            return try await chatAPI.getMessage(roomName: roomName, serial: serial)
+        } catch {
+            throw error.toARTErrorInfo()
+        }
+    }
+
     private func resolveSubscriptionStart() async throws(InternalError) -> String {
         logger.log(message: "Resolving subscription start serial", level: .debug)
         // (CHA-M5a) If a subscription is added when the underlying realtime channel is ATTACHED, then the subscription point is the current channelSerial of the realtime channel.

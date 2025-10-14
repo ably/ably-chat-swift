@@ -241,6 +241,77 @@ struct DefaultMessagesTests {
         }
     }
 
+    // @spec CHA-M13a
+    @Test
+    func getMessage() async throws {
+        // Given
+        let realtime = MockRealtime {
+            MockHTTPPaginatedResponse(
+                items: [
+                    [
+                        "serial": "123456789-000@123456789:000",
+                        "version": [
+                            "serial": "123456789-000@123456789:000",
+                            "timestamp": 1_631_840_000_000,
+                        ],
+                        "metadata": ["key1": "val1"],
+                        "headers": ["key2": "val2"],
+                        "timestamp": 1_631_840_000_000,
+                        "text": "hey",
+                        "clientId": "clientId",
+                        "action": "message.create",
+                    ],
+                ],
+                statusCode: 200,
+                headers: [:],
+            )
+        }
+        let chatAPI = ChatAPI(realtime: realtime)
+        let channel = MockRealtimeChannel(initialState: .attached)
+        let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", logger: TestLogger())
+
+        // When
+        let retrievedMessage = try await defaultMessages.get(withSerial: "123456789-000@123456789:000")
+
+        // Then
+        #expect(retrievedMessage.serial == "123456789-000@123456789:000")
+        #expect(retrievedMessage.action == .messageCreate)
+        #expect(retrievedMessage.text == "hey")
+        #expect(retrievedMessage.clientID == "clientId")
+        #expect(retrievedMessage.version.serial == "123456789-000@123456789:000")
+        #expect(retrievedMessage.version.timestamp == Date(timeIntervalSince1970: 1_631_840_000_000 / 1000))
+        #expect(retrievedMessage.metadata == ["key1": "val1"])
+        #expect(retrievedMessage.headers == ["key2": "val2"])
+        #expect(retrievedMessage.timestamp == Date(timeIntervalSince1970: 1_631_840_000_000 / 1000))
+        #expect(realtime.callRecorder.hasRecord(
+            matching: "request(_:path:params:body:headers:)",
+            arguments: ["method": "GET", "path": "/chat/v4/rooms/basketball/messages/123456789-000@123456789:000", "body": [:], "params": [:], "headers": [:]],
+        ))
+    }
+
+    // @spec CHA-M13b
+    @Test
+    func errorShouldBeThrownIfErrorIsReturnedFromGetRESTChatAPI() async throws {
+        // Given
+        let realtime = MockRealtime { @Sendable () throws(ARTErrorInfo) in
+            throw ARTErrorInfo(domain: "SomeDomain", code: 123)
+        }
+        let chatAPI = ChatAPI(realtime: realtime)
+        let channel = MockRealtimeChannel()
+        let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", logger: TestLogger())
+
+        // Then
+        // TODO: avoids compiler crash (https://github.com/ably/ably-chat-swift/issues/233), revert once Xcode 16.3 released
+        let doIt = {
+            _ = try await defaultMessages.get(withSerial: "123456789-000@123456789:000")
+        }
+        await #expect {
+            try await doIt()
+        } throws: { error in
+            error as? ARTErrorInfo == ARTErrorInfo(domain: "SomeDomain", code: 123)
+        }
+    }
+
     // @spec CHA-M5a
     // @specOneOf(4/6) CHA-RST6 - Escaping room name for API get messages
     @Test

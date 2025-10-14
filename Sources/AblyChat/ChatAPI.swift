@@ -33,6 +33,12 @@ internal final class ChatAPI {
         return try await makePaginatedRequest(endpoint, params: params.asQueryItems())
     }
 
+    // (CHA-M13) Get a single message by its serial
+    internal func getMessage(roomName: String, serial: String) async throws(InternalError) -> Message {
+        let endpoint = messageUrl(roomName: roomName, serial: serial)
+        return try await makeRequest(endpoint, method: "GET")
+    }
+
     internal struct SendMessageReactionParams: Sendable {
         internal let type: MessageReactionType
         internal let name: String
