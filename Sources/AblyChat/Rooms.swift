@@ -13,14 +13,14 @@ public protocol Rooms<Channel>: AnyObject, Sendable {
     /**
      * Gets a room reference by name. The Rooms class ensures that only one reference
      * exists for each room. A new reference object is created if it doesn't already
-     * exist, or if the one used previously was released using ``release(name:)``.
+     * exist, or if the one used previously was released using ``release(named:)``.
      *
-     * Always call `release(name:)` after the ``Room`` object is no longer needed.
+     * Always call `release(named:)` after the ``Room`` object is no longer needed.
      *
      * If a call to this method is made for a room that is currently being released, then this it returns only when
      * the release operation is complete.
      *
-     * If a call to this method is made, followed by a subsequent call to `release(name:)` before the `get(name:options:)` returns, then the
+     * If a call to this method is made, followed by a subsequent call to `release(named:)` before the `get(named:options:)` returns, then the
      * promise will throw an error.
      *
      * - Parameters:
@@ -31,12 +31,12 @@ public protocol Rooms<Channel>: AnyObject, Sendable {
      *
      * - Throws: `ARTErrorInfo` if a room with the same name but different options already exists.
      */
-    func get(name: String, options: RoomOptions) async throws(ARTErrorInfo) -> Room
+    func get(named name: String, options: RoomOptions) async throws(ARTErrorInfo) -> Room
 
-    /// Same as calling ``get(name:options:)`` with `RoomOptions()`.
+    /// Same as calling ``get(named:options:)`` with `RoomOptions()`.
     ///
     /// The `Rooms` protocol provides a default implementation of this method.
-    func get(name: String) async throws(ARTErrorInfo) -> Room
+    func get(named name: String) async throws(ARTErrorInfo) -> Room
 
     /**
      * Release the ``Room`` object if it exists. This method only releases the reference
@@ -44,22 +44,22 @@ public protocol Rooms<Channel>: AnyObject, Sendable {
      * events.
      *
      * After calling this function, the room object is no-longer usable. If you wish to get the room object again,
-     * you must call ``Rooms/get(name:options:)``.
+     * you must call ``Rooms/get(named:options:)``.
      *
-     * Calling this function will abort any in-progress `get(name:options:)` calls for the same room.
+     * Calling this function will abort any in-progress `get(named:options:)` calls for the same room.
      *
      * - Parameters:
      *   - name: The name of the room.
      */
-    func release(name: String) async
+    func release(named name: String) async
 }
 
 // swiftlint:disable:next missing_docs
 public extension Rooms {
     // swiftlint:disable:next missing_docs
-    func get(name: String) async throws(ARTErrorInfo) -> Room {
+    func get(named name: String) async throws(ARTErrorInfo) -> Room {
         // CHA-RC4a
-        try await get(name: name, options: .init())
+        try await get(named: name, options: .init())
     }
 }
 
@@ -161,7 +161,7 @@ internal class DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
         }
     #endif
 
-    internal func get(name: String, options: RoomOptions) async throws(ARTErrorInfo) -> RoomFactory.Room {
+    internal func get(named name: String, options: RoomOptions) async throws(ARTErrorInfo) -> RoomFactory.Room {
         do throws(InternalError) {
             if let existingRoomState = roomStates[name] {
                 switch existingRoomState {
@@ -322,7 +322,7 @@ internal class DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
         }
     #endif
 
-    internal func release(name: String) async {
+    internal func release(named name: String) async {
         guard let roomState = roomStates[name] else {
             // CHA-RC1g2 (no-op)
             return

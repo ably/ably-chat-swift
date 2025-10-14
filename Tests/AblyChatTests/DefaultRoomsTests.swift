@@ -46,7 +46,7 @@ struct DefaultRoomsTests {
 
         // When: get(name:) is called
         let name = "basketball"
-        _ = try await rooms.get(name: name)
+        _ = try await rooms.get(named: name)
 
         // Then: It uses the default options
         let createRoomArguments = try #require(roomFactory.createRoomArguments)
@@ -70,7 +70,7 @@ struct DefaultRoomsTests {
 
         // When: get(name:options:) is called
         let name = "basketball"
-        let room = try await rooms.get(name: name, options: options)
+        let room = try await rooms.get(named: name, options: options)
 
         // Then: It returns a room that uses the same Realtime instance, with the given name and options, and it creates a room map entry for that name
         #expect(room === roomToReturn)
@@ -96,10 +96,10 @@ struct DefaultRoomsTests {
         let rooms = DefaultRooms(realtime: realtime, logger: TestLogger(), roomFactory: roomFactory)
 
         let name = "basketball"
-        let firstRoom = try await rooms.get(name: name, options: options)
+        let firstRoom = try await rooms.get(named: name, options: options)
 
         // When: get(name:options:) is called with the same room name and options
-        let secondRoom = try await rooms.get(name: name, options: options)
+        let secondRoom = try await rooms.get(named: name, options: options)
 
         // Then: It does not create another room, and returns the same room object
         #expect(roomFactory.createRoomCallCount == 1)
@@ -124,22 +124,22 @@ struct DefaultRoomsTests {
         let name = "basketball"
 
         // Get a room so that we can release it
-        _ = try await rooms.get(name: name, options: options)
+        _ = try await rooms.get(named: name, options: options)
         let roomReleaseCalls = roomToReturn.releaseCallsAsyncSequence
-        async let _ = rooms.release(name: name)
+        async let _ = rooms.release(named: name)
         // Wait for `release` to be called on the room so that we know that the CHA-RC1g release operation is in progress
         _ = await roomReleaseCalls.first { @Sendable _ in true }
 
         let operationWaitSubscription = rooms.testsOnly_subscribeToOperationWaitEvents()
         // This is the "Given"’s "previous call to get(name:options:)"
-        async let firstRoom = try await rooms.get(name: name, options: options)
+        async let firstRoom = try await rooms.get(named: name, options: options)
         // Wait for the `firstRoom` fetch to start waiting for the CHA-RC1g release operation, to know that we’ve fulfilled the conditions of the "Given"
         _ = await operationWaitSubscription.first { @Sendable operationWaitEvent in
             operationWaitEvent.waitingOperationType == .get && operationWaitEvent.waitedOperationType == .release
         }
 
         // When: get(name:options:) is called with the same room name
-        async let secondRoom = try await rooms.get(name: name, options: options)
+        async let secondRoom = try await rooms.get(named: name, options: options)
 
         // Then: The second call to `get` waits for the first call, and when the CHA-RC1g release operation completes, the second call to get(name:options:) does not create another room and returns the same room object as the first call
         _ = await operationWaitSubscription.first { @Sendable operationWaitEvent in
@@ -167,7 +167,7 @@ struct DefaultRoomsTests {
         let rooms = DefaultRooms(realtime: realtime, logger: TestLogger(), roomFactory: MockRoomFactory(room: roomToReturn))
 
         let name = "basketball"
-        _ = try await rooms.get(name: name, options: options)
+        _ = try await rooms.get(named: name, options: options)
 
         // When: get(name:options:) is called with the same name but different options
         // Then: It throws a `badRequest` error
@@ -175,7 +175,7 @@ struct DefaultRoomsTests {
 
         // TODO: avoids compiler crash (https://github.com/ably/ably-chat-swift/issues/233), revert once Xcode 16.3 released
         let doIt = {
-            try await rooms.get(name: name, options: differentOptions)
+            try await rooms.get(named: name, options: differentOptions)
         }
         await #expect {
             try await doIt()
@@ -201,15 +201,15 @@ struct DefaultRoomsTests {
         let name = "basketball"
 
         // Get a room so that we can release it
-        _ = try await rooms.get(name: name, options: options)
+        _ = try await rooms.get(named: name, options: options)
         let roomReleaseCalls = roomToReturn.releaseCallsAsyncSequence
-        async let _ = rooms.release(name: name)
+        async let _ = rooms.release(named: name)
         // Wait for `release` to be called on the room so that we know that the CHA-RC1g release operation is in progress
         _ = await roomReleaseCalls.first { @Sendable _ in true }
 
         let operationWaitSubscription = rooms.testsOnly_subscribeToOperationWaitEvents()
         // This is the "Given"’s "previous call to get(name:options:)"
-        async let _ = try await rooms.get(name: name, options: options)
+        async let _ = try await rooms.get(named: name, options: options)
         // Wait for the `firstRoom` fetch to start waiting for the CHA-RC1g release operation, to know that we’ve fulfilled the conditions of the "Given"
         _ = await operationWaitSubscription.first { @Sendable operationWaitEvent in
             operationWaitEvent.waitingOperationType == .get && operationWaitEvent.waitedOperationType == .release
@@ -221,7 +221,7 @@ struct DefaultRoomsTests {
 
         // TODO: avoids compiler crash (https://github.com/ably/ably-chat-swift/issues/233), revert once Xcode 16.3 released
         let doIt = {
-            try await rooms.get(name: name, options: differentOptions)
+            try await rooms.get(named: name, options: differentOptions)
         }
         await #expect {
             try await doIt()
@@ -250,15 +250,15 @@ struct DefaultRoomsTests {
         let name = "basketball"
 
         // Get a room so that we can release it
-        _ = try await rooms.get(name: name, options: options)
+        _ = try await rooms.get(named: name, options: options)
         let roomReleaseCalls = roomToReturn.releaseCallsAsyncSequence
-        async let _ = rooms.release(name: name)
+        async let _ = rooms.release(named: name)
         // Wait for `release` to be called on the room so that we know that the CHA-RC1g release operation is in progress
         _ = await roomReleaseCalls.first { @Sendable _ in true }
 
         // When: `get(name:options:)` is called on the room
         let operationWaitSubscription = rooms.testsOnly_subscribeToOperationWaitEvents()
-        async let fetchedRoom = rooms.get(name: name, options: options)
+        async let fetchedRoom = rooms.get(named: name, options: options)
 
         // Then: The call to `get(name:options:)` creates a room map entry and waits for the CHA-RC1g release operation to complete
         _ = await operationWaitSubscription.first { @Sendable operationWaitEvent in
@@ -290,7 +290,7 @@ struct DefaultRoomsTests {
         // When: `release(name:)` is called with this room name
         // Then: The call to `release(name:)` completes (this is as much as I can do to test the spec’s “no-op”; i.e. check it doesn’t seem to wait for anything or have any obvious side effects)
         let name = "basketball"
-        await rooms.release(name: name)
+        await rooms.release(named: name)
     }
 
     // @spec CHA-RC1g3
@@ -310,15 +310,15 @@ struct DefaultRoomsTests {
         let name = "basketball"
 
         // Get a room so that we can release it
-        _ = try await rooms.get(name: name, options: options)
+        _ = try await rooms.get(named: name, options: options)
         let roomReleaseCalls = roomToReturn.releaseCallsAsyncSequence
-        async let _ = rooms.release(name: name)
+        async let _ = rooms.release(named: name)
         // Wait for `release` to be called on the room so that we know that the release operation is in progress
         _ = await roomReleaseCalls.first { @Sendable _ in true }
 
         // When: `release(name:)` is called with this room name
         let operationWaitSubscription = rooms.testsOnly_subscribeToOperationWaitEvents()
-        async let secondReleaseResult: Void = rooms.release(name: name)
+        async let secondReleaseResult: Void = rooms.release(named: name)
 
         // Then: The call to `release(name:)` waits for the previous release operation to complete
         _ = await operationWaitSubscription.first { @Sendable operationWaitEvent in
@@ -352,15 +352,15 @@ struct DefaultRoomsTests {
         let name = "basketball"
 
         // Get a room so that we can release it
-        _ = try await rooms.get(name: name, options: options)
+        _ = try await rooms.get(named: name, options: options)
         let roomReleaseCalls = roomToReturn.releaseCallsAsyncSequence
-        async let _ = rooms.release(name: name)
+        async let _ = rooms.release(named: name)
         // Wait for `release` to be called on the room so that we know that the release operation is in progress
         _ = await roomReleaseCalls.first { @Sendable _ in true }
 
         let operationWaitSubscription = rooms.testsOnly_subscribeToOperationWaitEvents()
         // This is the “CHA-RC1f future” of the “Given”
-        async let fetchedRoom = rooms.get(name: name, options: options)
+        async let fetchedRoom = rooms.get(named: name, options: options)
 
         // Wait for the call to `get(name:options:)` to start waiting for the CHA-RC1g release operation to complete
         _ = await operationWaitSubscription.first { @Sendable operationWaitEvent in
@@ -368,7 +368,7 @@ struct DefaultRoomsTests {
         }
 
         // When: `release(name:)` is called on the room, with the same room name
-        async let secondReleaseResult: Void = rooms.release(name: name)
+        async let secondReleaseResult: Void = rooms.release(named: name)
 
         // Then: The pending call to `get(name:options:)` that is waiting for the “CHA-RC1f future” of the “Given” fails with a RoomReleasedBeforeOperationCompleted error
         let roomGetError: (any Error)?
@@ -410,11 +410,11 @@ struct DefaultRoomsTests {
         }
         roomFactory.setRoom(roomToReturn)
 
-        _ = try await rooms.get(name: name, options: .init())
+        _ = try await rooms.get(named: name, options: .init())
         try #require(rooms.testsOnly_hasRoomMapEntryWithName(name))
 
         // When: `release(name:)` is called with this room name
-        _ = await rooms.release(name: name)
+        _ = await rooms.release(named: name)
 
         // Then:
         // 1. first, the room is removed from the room map

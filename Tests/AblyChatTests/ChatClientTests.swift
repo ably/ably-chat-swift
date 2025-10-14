@@ -43,7 +43,7 @@ struct ChatClientTests {
 
         func withChatClient(_ chatClient: ChatClient) async throws {
             let _: ARTRealtime = chatClient.realtime
-            let room = try await chatClient.rooms.get(name: "room")
+            let room = try await chatClient.rooms.get(named: "room")
             let _: ARTRealtimeChannel = room.channel
         }
 
@@ -54,7 +54,7 @@ struct ChatClientTests {
             // But luckily we can still use existentials.
             var rooms: [any Room<ARTRealtimeChannel>] = []
             for roomName in ["foo", "bar"] {
-                try await rooms.append(chatClient.rooms.get(name: roomName))
+                try await rooms.append(chatClient.rooms.get(named: roomName))
             }
 
             // This crashes the compiler! (https://github.com/swiftlang/swift/issues/84744)

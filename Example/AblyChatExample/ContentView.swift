@@ -87,7 +87,7 @@ struct ContentView: View {
     }
 
     private func room() async throws -> any Room {
-        try await chatClient.rooms.get(name: roomName, options: .init(occupancy: .init(enableEvents: true)))
+        try await chatClient.rooms.get(named: roomName, options: .init(occupancy: .init(enableEvents: true)))
     }
 
     private var sendTitle: String {

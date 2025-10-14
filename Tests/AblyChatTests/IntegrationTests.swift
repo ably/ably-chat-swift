@@ -71,7 +71,7 @@ struct IntegrationTests {
         // (2) Fetch a room
         let roomName = "basketball"
         let txRoom = try await txClient.rooms.get(
-            name: roomName,
+            named: roomName,
             options: .init(
                 presence: .init(),
                 typing: .init(heartbeatThrottle: 2),
@@ -79,7 +79,7 @@ struct IntegrationTests {
             ),
         )
         let rxRoom = try await rxClient.rooms.get(
-            name: roomName,
+            named: roomName,
             options: .init(
                 messages: .init(rawMessageReactions: true),
                 presence: .init(),
@@ -505,7 +505,7 @@ struct IntegrationTests {
         // MARK: - Release
 
         // (1) Release the room
-        await rxClient.rooms.release(name: roomName)
+        await rxClient.rooms.release(named: roomName)
 
         // (2) Check that we received a RELEASED status change as a result of releasing the room
         _ = try #require(await rxRoomStatusSubscription.first { @Sendable statusChange in
@@ -514,7 +514,7 @@ struct IntegrationTests {
         #expect(rxRoom.status == .released)
 
         // (3) Fetch the room we just released and check it's a new object
-        let postReleaseRxRoom = try await rxClient.rooms.get(name: roomName, options: .init())
+        let postReleaseRxRoom = try await rxClient.rooms.get(named: roomName, options: .init())
         #expect(postReleaseRxRoom !== rxRoom)
     }
 
@@ -532,11 +532,11 @@ struct IntegrationTests {
         // (2) Fetch a room with a slash in the name
         let roomName = "room/with/slash"
         let txRoom = try await txClient.rooms.get(
-            name: roomName,
+            named: roomName,
             options: .init(),
         )
         let rxRoom = try await rxClient.rooms.get(
-            name: roomName,
+            named: roomName,
             options: .init(),
         )
 
@@ -579,7 +579,7 @@ struct IntegrationTests {
         #expect(rxRoom.status == .detached)
 
         // (3) Release the room
-        await rxClient.rooms.release(name: roomName)
+        await rxClient.rooms.release(named: roomName)
 
         // (4) Check that the room was released
         #expect(rxRoom.status == .released)
