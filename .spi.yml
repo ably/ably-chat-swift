@@ -1,0 +1,11 @@
+# Configuration for Swift Package Index builds
+# Reference: https://swiftpackageindex.com/swiftpackageindex/spimanifest/~/documentation/spimanifest
+
+version: 1
+builder:
+  configs:
+    # For non-macOS platforms, only build the AblyChat scheme; building BuildTool will fail on non-macOS platforms, making it look like we're not compatible with those platforms.
+    - platform: ios
+      scheme: AblyChat
+    - platform: tvos
+      scheme: AblyChat
