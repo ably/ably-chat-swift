@@ -12,6 +12,7 @@ struct DefaultMessageReactionsTests {
     // @spec CHA-MR11b
     // @spec CHA-MR11b1
     // @spec CHA-MR11b2
+    // @specOneOf(5/6) CHA-RST6 - Escaping room name for API send/delete reaction
     @Test
     func sendAndDeleteReactionForMessage() async throws {
         // Given
@@ -20,7 +21,7 @@ struct DefaultMessageReactionsTests {
         }
         let chatAPI = ChatAPI(realtime: realtime)
         let channel = MockRealtimeChannel(initialState: .attached)
-        let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", logger: TestLogger())
+        let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basket/ball", logger: TestLogger())
 
         // When
         let message = try await defaultMessages.send(withParams: .init(text: "a joke"))
@@ -32,7 +33,7 @@ struct DefaultMessageReactionsTests {
             matching: "request(_:path:params:body:headers:)",
             arguments: [
                 "method": "POST",
-                "path": "/chat/v4/rooms/basketball/messages/\(message.serial)/reactions",
+                "path": "/chat/v4/rooms/basket%2Fball/messages/123456789-000@123456789:000/reactions",
                 "body": [
                     "name": "😆",
                     "type": "reaction:multiple.v1",
@@ -46,7 +47,7 @@ struct DefaultMessageReactionsTests {
             matching: "request(_:path:params:body:headers:)",
             arguments: [
                 "method": "DELETE",
-                "path": "/chat/v4/rooms/basketball/messages/\(message.serial)/reactions",
+                "path": "/chat/v4/rooms/basket%2Fball/messages/123456789-000@123456789:000/reactions",
                 "body": [:],
                 "params": [
                     "name": "😆",
@@ -353,7 +354,7 @@ struct DefaultMessageReactionsTests {
             matching: "request(_:path:params:body:headers:)",
             arguments: [
                 "method": "POST",
-                "path": "/chat/v4/rooms/basketball/messages/\(message.serial)/reactions",
+                "path": "/chat/v4/rooms/basketball/messages/123456789-000@123456789:000/reactions",
                 "body": [
                     "name": "😆",
                     "type": "reaction:multiple.v1",
@@ -392,7 +393,7 @@ struct DefaultMessageReactionsTests {
             matching: "request(_:path:params:body:headers:)",
             arguments: [
                 "method": "POST",
-                "path": "/chat/v4/rooms/basketball/messages/\(message.serial)/reactions",
+                "path": "/chat/v4/rooms/basketball/messages/123456789-000@123456789:000/reactions",
                 "body": [
                     "name": "😆",
                     "type": "reaction:distinct.v1",

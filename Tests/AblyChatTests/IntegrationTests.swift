@@ -509,6 +509,73 @@ struct IntegrationTests {
         let postReleaseRxRoom = try await rxClient.rooms.get(name: roomName, options: .init())
         #expect(postReleaseRxRoom !== rxRoom)
     }
+
+    /// This test ensures that ably-cocoa isn't making double percent-encoding
+    @Test
+    func roomNameWithSlashInTheName() async throws {
+        // MARK: - Setup + Attach
+
+        let apiKey = try await Sandbox.createAPIKey()
+
+        // (1) Create a couple of chat clients — one for sending and one for receiving
+        let txClient = Self.createSandboxChatClient(apiKey: apiKey, loggingLabel: "tx-slash")
+        let rxClient = Self.createSandboxChatClient(apiKey: apiKey, loggingLabel: "rx-slash")
+
+        // (2) Fetch a room with a slash in the name
+        let roomName = "room/with/slash"
+        let txRoom = try await txClient.rooms.get(
+            name: roomName,
+            options: .init(),
+        )
+        let rxRoom = try await rxClient.rooms.get(
+            name: roomName,
+            options: .init(),
+        )
+
+        // (3) Subscribe to room status
+        let rxRoomStatusSubscription = rxRoom.onStatusChange()
+
+        // (4) Attach the room so we can receive messages on it
+        try await rxRoom.attach()
+
+        // (5) Check that the room is attached
+        #expect(rxRoom.status == .attached)
+
+        // MARK: - Send and receive messages
+
+        // (1) Subscribe to messages
+        let rxMessageSubscription = rxRoom.messages.subscribe()
+
+        // (2) Send a message on the tx client and check that we receive it on the rx subscription
+        let txMessage = try await txRoom.messages.send(
+            withParams: .init(
+                text: "Hello from room with slash in the name",
+            ),
+        )
+
+        // (3) Wait for the message to be received on the subscription
+        let rxEventFromSubscription = try #require(await rxMessageSubscription.first { @Sendable _ in true })
+
+        // (4) Verify the received message matches the sent message
+        #expect(rxEventFromSubscription.message.text == txMessage.text)
+
+        // MARK: - Cleanup
+
+        // (1) Detach the room
+        try await rxRoom.detach()
+
+        // (2) Check that we received a DETACHED status change
+        _ = try #require(await rxRoomStatusSubscription.first { @Sendable statusChange in
+            statusChange.current == .detached
+        })
+        #expect(rxRoom.status == .detached)
+
+        // (3) Release the room
+        await rxClient.rooms.release(name: roomName)
+
+        // (4) Check that the room was released
+        #expect(rxRoom.status == .released)
+    }
 }
 
 /// Compares two messages for equality, ignoring all properties of the messages' `version` except for `serial`.

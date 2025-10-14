@@ -59,13 +59,13 @@ extension MockHTTPPaginatedResponse {
         items: [
             [
                 "clientId": "mockClientId",
-                "serial": "3446456",
+                "serial": "123456789-000@123456789:000",
                 "action": "message.create",
                 "text": "hello",
                 "metadata": [:],
                 "headers": [:],
                 "version": [
-                    "serial": "3446456",
+                    "serial": "123456789-000@123456789:000",
                     "timestamp": 1_631_840_000_000,
                 ],
                 "timestamp": 1_631_840_000_000,

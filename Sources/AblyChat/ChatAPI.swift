@@ -15,9 +15,21 @@ internal final class ChatAPI {
         self.realtime = realtime
     }
 
+    private func escapePathSegment(_ segment: String) -> String {
+        segment.encodePathSegment()
+    }
+
+    private func roomUrl(roomName: String, suffix: String = "") -> String {
+        "\(apiVersionV4)/rooms/\(escapePathSegment(roomName))\(suffix)" // CHA-RST6
+    }
+
+    private func messageUrl(roomName: String, serial: String, suffix: String = "") -> String {
+        "\(roomUrl(roomName: roomName, suffix: "/messages/"))\(escapePathSegment(serial))\(suffix)"
+    }
+
     // (CHA-M6) Messages should be queryable from a paginated REST API.
     internal func getMessages(roomName: String, params: HistoryParams) async throws(InternalError) -> some PaginatedResult<Message> {
-        let endpoint = "\(apiVersionV4)/rooms/\(roomName)/messages"
+        let endpoint = roomUrl(roomName: roomName, suffix: "/messages")
         return try await makePaginatedRequest(endpoint, params: params.asQueryItems())
     }
 
@@ -43,7 +55,7 @@ internal final class ChatAPI {
     // (CHA-M3) Messages are sent to Ably via the Chat REST API, using the send method.
     // (CHA-M3a) When a message is sent successfully, the caller shall receive a struct representing the Message in response (as if it were received via Realtime event).
     internal func sendMessage(roomName: String, params: SendMessageParams) async throws(InternalError) -> Message {
-        let endpoint = "\(apiVersionV4)/rooms/\(roomName)/messages"
+        let endpoint = roomUrl(roomName: roomName, suffix: "/messages")
         var body: [String: JSONValue] = ["text": .string(params.text)]
 
         // (CHA-M3b) A message may be sent without metadata or headers. When these are not specified by the user, they must be omitted from the REST payload.
@@ -62,7 +74,7 @@ internal final class ChatAPI {
     // (CHA-M8) A client must be able to update a message in a room.
     // (CHA-M8a) A client may update a message via the Chat REST API by calling the update method.
     internal func updateMessage(roomName: String, with modifiedMessage: Message, details: OperationDetails?) async throws(InternalError) -> Message {
-        let endpoint = "\(apiVersionV4)/rooms/\(roomName)/messages/\(modifiedMessage.serial)"
+        let endpoint = messageUrl(roomName: roomName, serial: modifiedMessage.serial)
         var body: [String: JSONValue] = [:]
         let messageObject: [String: JSONValue] = [
             "text": .string(modifiedMessage.text),
@@ -90,7 +102,7 @@ internal final class ChatAPI {
     // (CHA-M9) A client must be able to delete a message in a room.
     // (CHA-M9a) A client may delete a message via the Chat REST API by calling the delete method.
     internal func deleteMessage(roomName: String, message: Message, details: OperationDetails?) async throws(InternalError) -> Message {
-        let endpoint = "\(apiVersionV4)/rooms/\(roomName)/messages/\(message.serial)/delete"
+        let endpoint = messageUrl(roomName: roomName, serial: message.serial, suffix: "/delete")
         var body: [String: JSONValue] = [:]
 
         if let description = details?.description {
@@ -107,7 +119,7 @@ internal final class ChatAPI {
     }
 
     internal func getOccupancy(roomName: String) async throws(InternalError) -> OccupancyData {
-        let endpoint = "\(apiVersionV4)/rooms/\(roomName)/occupancy"
+        let endpoint = roomUrl(roomName: roomName, suffix: "/occupancy")
         return try await makeRequest(endpoint, method: "GET")
     }
 
@@ -118,7 +130,7 @@ internal final class ChatAPI {
             throw ChatError.messageReactionInvalidMessageSerial.toInternalError()
         }
 
-        let endpoint = "\(apiVersionV4)/rooms/\(roomName)/messages/\(messageSerial)/reactions"
+        let endpoint = messageUrl(roomName: roomName, serial: messageSerial, suffix: "/reactions")
 
         let ablyCocoaBody: [String: Any] = [
             "type": params.type.rawValue,
@@ -136,7 +148,7 @@ internal final class ChatAPI {
             throw ChatError.messageReactionInvalidMessageSerial.toInternalError()
         }
 
-        let endpoint = "\(apiVersionV4)/rooms/\(roomName)/messages/\(messageSerial)/reactions"
+        let endpoint = messageUrl(roomName: roomName, serial: messageSerial, suffix: "/reactions")
 
         var httpParams: [String: String] = [
             "type": params.type.rawValue,
