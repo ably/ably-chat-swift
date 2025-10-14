@@ -2,7 +2,7 @@
 
 ## [0.8.0](https://github.com/ably/ably-chat-swift/tree/0.8.0)
 
-## What's Changed
+### What's Changed
 
 - Adds new getting started link by @franrob-projects in https://github.com/ably/ably-chat-swift/pull/352
 - Add support for clipped summaries and unidentified totals by @ttypic in https://github.com/ably/ably-chat-swift/pull/355
@@ -16,7 +16,7 @@ Breaking Changes:
 
 ## [0.7.0](https://github.com/ably/ably-chat-swift/tree/0.7.0)
 
-## What's Changed
+### What's Changed
 
 - Adds moderation and rule based error cases by @umair-ably in https://github.com/ably/ably-chat-swift/pull/328
 - Add the soft delete behaviour and validation loosening by @maratal in https://github.com/ably/ably-chat-swift/pull/330
@@ -31,7 +31,7 @@ Breaking Changes:
 
 ## [0.6.0](https://github.com/ably/ably-chat-swift/tree/0.6.0)
 
-## What's Changed
+### What's Changed
 
 Breaking Changes:
 
@@ -41,7 +41,7 @@ Breaking Changes:
 
 ## [0.5.0](https://github.com/ably/ably-chat-swift/tree/0.5.0)
 
-## What's Changed
+### What's Changed
 
 The following features have been added in this release:
 
@@ -62,7 +62,7 @@ The following additional changes (some breaking) are also a part of this release
 
 ## [0.4.0](https://github.com/ably/ably-chat-swift/tree/0.4.0)
 
-## What's Changed
+### What's Changed
 
 - All Chat features now use a single underlying channel. This greatly simplifies the SDK whilst improving performance.
 
@@ -74,7 +74,7 @@ The following features have also been added in this release:
 
 ## [0.3.0](https://github.com/ably/ably-chat-swift/tree/0.3.0)
 
-## What's Changed
+### What's Changed
 
 - All of the main protocols in the SDK are now marked as `@MainActor`, to simplify the experience of using the SDK. (#261)
 - All of the errors thrown by the SDK are now explicitly typed as `ARTErrorInfo`. (#234)
@@ -83,7 +83,7 @@ The following features have also been added in this release:
 
 ## [0.2.0](https://github.com/ably/ably-chat-swift/tree/0.2.0)
 
-## What's Changed
+### What's Changed
 
 The following features have been added in this release:
 
@@ -100,7 +100,7 @@ The included example app has been updated to demonstrate the new features.
 
 ## [0.1.2](https://github.com/ably/ably-chat-swift/tree/0.1.2)
 
-## What's Changed
+### What's Changed
 
 This release reverts the pinning of ably-cocoa that was introduced in version 0.1.1 (https://github.com/ably/ably-chat-swift/pull/215).
 
@@ -108,7 +108,7 @@ This release reverts the pinning of ably-cocoa that was introduced in version 0.
 
 ## [0.1.1](https://github.com/ably/ably-chat-swift/tree/0.1.1)
 
-## What's Changed
+### What's Changed
 
 This release temporarily pins the SDK's required version of ably-cocoa (https://github.com/ably/ably-chat-swift/pull/213). This change will be reverted in an upcoming release in the near future.
 
