@@ -227,6 +227,7 @@ internal final class DefaultPresence: Presence {
         let presenceMembers = try members.map { member throws(InternalError) in
             let presenceMember = PresenceMember(
                 clientID: member.clientId ?? "", // CHA-M4k1
+                connectionID: member.connectionID,
                 data: member.data,
                 extras: member.extras,
                 updatedAt: member.timestamp ?? Date(timeIntervalSince1970: 0), // CHA-M4k5
@@ -241,6 +242,7 @@ internal final class DefaultPresence: Presence {
     private func processPresenceSubscribe(_ message: PresenceMessage, for event: PresenceEventType) -> PresenceEvent {
         let member = PresenceMember(
             clientID: message.clientId ?? "", // CHA-M4k1
+            connectionID: message.connectionID,
             data: message.data,
             extras: message.extras,
             updatedAt: message.timestamp ?? Date(timeIntervalSince1970: 0), // CHA-M4k5

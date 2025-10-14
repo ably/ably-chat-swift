@@ -447,6 +447,7 @@ internal final class InternalRealtimeChannelsAdapter<Underlying: ProxyRealtimeCh
 /// A version of `ARTPresenceMessage` that uses strongly-typed `data` and `extras` properties. Only contains the properties that the Chat SDK is currently using; add as needed.
 internal struct PresenceMessage {
     internal var clientId: String?
+    internal var connectionID: String
     internal var timestamp: Date?
     internal var action: ARTPresenceAction
     internal var data: JSONObject?
@@ -456,6 +457,7 @@ internal struct PresenceMessage {
 internal extension PresenceMessage {
     init(ablyCocoaPresenceMessage: ARTPresenceMessage) {
         clientId = ablyCocoaPresenceMessage.clientId
+        connectionID = ablyCocoaPresenceMessage.connectionId
         timestamp = ablyCocoaPresenceMessage.timestamp
         action = ablyCocoaPresenceMessage.action
         if let ablyCocoaData = ablyCocoaPresenceMessage.data {

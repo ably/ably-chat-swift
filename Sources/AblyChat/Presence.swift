@@ -152,8 +152,9 @@ public struct PresenceMember: Sendable {
     /// Memberwise initializer to create a `PresenceMember`.
     ///
     /// - Note: You should not need to use this initializer when using the Chat SDK. It is exposed only to allow users to create mock versions of the SDK's protocols.
-    public init(clientID: String, data: PresenceData?, extras: [String: JSONValue]?, updatedAt: Date) {
+    public init(clientID: String, connectionID: String, data: PresenceData?, extras: [String: JSONValue]?, updatedAt: Date) {
         self.clientID = clientID
+        self.connectionID = connectionID
         self.data = data
         self.extras = extras
         self.updatedAt = updatedAt
@@ -163,6 +164,9 @@ public struct PresenceMember: Sendable {
      * The clientId of the presence member.
      */
     public var clientID: String
+
+    /// The connection ID of this presence member.
+    public var connectionID: String
 
     /**
      * The data associated with the presence member.
