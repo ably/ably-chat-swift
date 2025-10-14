@@ -26,7 +26,7 @@ class MockRooms: Rooms {
     let clientOptions: ChatClientOptions
     private var rooms = [String: MockRoom]()
 
-    func get(name: String, options: RoomOptions) async throws(ARTErrorInfo) -> MockRoom {
+    func get(named name: String, options: RoomOptions) async throws(ARTErrorInfo) -> MockRoom {
         if let room = rooms[name] {
             return room
         }
@@ -35,7 +35,7 @@ class MockRooms: Rooms {
         return room
     }
 
-    func release(name _: String) async {
+    func release(named _: String) async {
         fatalError("Not yet implemented")
     }
 
