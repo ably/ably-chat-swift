@@ -152,8 +152,8 @@ struct IntegrationTests {
         #expect(reactionsForClient.distinct["👍"]?.clipped == true)
         #expect(reactionsForClient.distinct["👍"]?.clientIDs == [txClientID])
 
-        try await txRoom.messages.reactions.delete(forMessageWithSerial: messageToReact.serial, params: .init(name: "👍"))
-        try await txRoom.messages.reactions.delete(forMessageWithSerial: messageToReact.serial, params: .init(name: "🎉"))
+        try await txRoom.messages.reactions.delete(fromMessageWithSerial: messageToReact.serial, params: .init(name: "👍"))
+        try await txRoom.messages.reactions.delete(fromMessageWithSerial: messageToReact.serial, params: .init(name: "🎉"))
 
         var reactionSummaryEvents = [MessageReactionSummaryEvent]()
 
@@ -200,7 +200,7 @@ struct IntegrationTests {
 
         try await txRoom.messages.reactions.send(forMessageWithSerial: messageToReact.serial, params: .init(name: "🔥"))
         try await txRoom.messages.reactions.send(forMessageWithSerial: messageToReact.serial, params: .init(name: "😆"))
-        try await txRoom.messages.reactions.delete(forMessageWithSerial: messageToReact.serial, params: .init(name: "😆")) // not deleting 🔥 to check it later in history request
+        try await txRoom.messages.reactions.delete(fromMessageWithSerial: messageToReact.serial, params: .init(name: "😆")) // not deleting 🔥 to check it later in history request
 
         var reactionRawEvents = [MessageReactionRawEvent]()
 
@@ -288,7 +288,7 @@ struct IntegrationTests {
 
         // (1) Edit the message on the other client
         let txEditedMessage = try await txRoom.messages.update(
-            forSerial: messageToEditDelete.serial,
+            withSerial: messageToEditDelete.serial,
             params: .init(
                 text: "edited message",
                 metadata: ["someEditedKey": 123, "someOtherEditedKey": "foo"],
@@ -314,7 +314,7 @@ struct IntegrationTests {
 
         // (3) Delete the message on the other client
         let txDeleteMessage = try await txRoom.messages.delete(
-            forSerial: rxEditedMessageFromSubscription.serial,
+            withSerial: rxEditedMessageFromSubscription.serial,
             details: .init(
                 description: "deleted in testing",
                 metadata: ["foo": "bar"],

@@ -28,7 +28,7 @@ public protocol MessageReactions: AnyObject, Sendable {
      *   - messageSerial: A serial of the message to remove the reaction from.
      *   - params: The type of reaction annotation and the specific reaction to remove. The reaction to remove is required for all types except ``MessageReactionType/unique``.
      */
-    func delete(forMessageWithSerial messageSerial: String, params: DeleteMessageReactionParams) async throws(ARTErrorInfo)
+    func delete(fromMessageWithSerial messageSerial: String, params: DeleteMessageReactionParams) async throws(ARTErrorInfo)
 
     /**
      * Subscribe to message reaction summaries. Use this to keep message reaction counts up to date efficiently in the UI.

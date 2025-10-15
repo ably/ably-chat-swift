@@ -184,7 +184,7 @@ class MockMessages: Messages {
         return message
     }
 
-    func update(forSerial serial: String, params: UpdateMessageParams, details _: OperationDetails?) async throws(ARTErrorInfo) -> Message {
+    func update(withSerial serial: String, params: UpdateMessageParams, details _: OperationDetails?) async throws(ARTErrorInfo) -> Message {
         let message = Message(
             serial: serial,
             action: .messageUpdate,
@@ -204,7 +204,7 @@ class MockMessages: Messages {
         return message
     }
 
-    func delete(forSerial serial: String, details _: OperationDetails?) async throws(ARTErrorInfo) -> Message {
+    func delete(withSerial serial: String, details _: OperationDetails?) async throws(ARTErrorInfo) -> Message {
         let message = Message(
             serial: serial,
             action: .messageDelete,
@@ -291,7 +291,7 @@ class MockMessageReactions: MessageReactions {
         )
     }
 
-    func delete(forMessageWithSerial messageSerial: String, params: DeleteMessageReactionParams) async throws(ARTErrorInfo) {
+    func delete(fromMessageWithSerial messageSerial: String, params: DeleteMessageReactionParams) async throws(ARTErrorInfo) {
         reactions.removeAll { reaction in
             reaction.messageSerial == messageSerial && reaction.name == params.name && reaction.clientID == clientID
         }
