@@ -16,13 +16,12 @@ public protocol PaginatedResult<Item>: AnyObject, Sendable {
     var hasNext: Bool { get }
     // swiftlint:disable:next missing_docs
     var isLast: Bool { get }
-    // Note that there seems to be a compiler bug (https://github.com/swiftlang/swift/issues/79992) that means that the compiler does not enforce the access level of the error type for property getters. I accidentally originally wrote these as throws(InternalError), which the compiler should have rejected since InternalError is internal and this protocol is public, but it did not reject it and this mistake was only noticed in code review.
     // swiftlint:disable:next missing_docs
-    var next: Self? { get async throws(ARTErrorInfo) }
+    func next() async throws(ARTErrorInfo) -> Self?
     // swiftlint:disable:next missing_docs
-    var first: Self { get async throws(ARTErrorInfo) }
+    func first() async throws(ARTErrorInfo) -> Self
     // swiftlint:disable:next missing_docs
-    var current: Self { get async throws(ARTErrorInfo) }
+    func current() async throws(ARTErrorInfo) -> Self
 }
 
 /// Used internally to reduce the amount of duplicate code when interacting with `ARTHTTPPaginatedCallback`'s. The wrapper takes in the callback result from the caller e.g. `realtime.request` and either throws the appropriate error, or decodes and returns the response.
@@ -75,37 +74,33 @@ internal final class PaginatedResultWrapper<Item: JSONDecodable & Sendable & Equ
     }
 
     /// Asynchronously fetch the next page if available
-    internal var next: PaginatedResultWrapper<Item>? {
-        get async throws(ARTErrorInfo) {
-            do {
-                return try await withCheckedContinuation { continuation in
-                    paginatedResponse.next { paginatedResponse, error in
-                        ARTHTTPPaginatedCallbackWrapper(callbackResult: (paginatedResponse, error)).handleResponse(continuation: continuation)
-                    }
-                }.get()
-            } catch {
-                throw error.toARTErrorInfo()
-            }
+    internal func next() async throws(ARTErrorInfo) -> PaginatedResultWrapper<Item>? {
+        do {
+            return try await withCheckedContinuation { continuation in
+                paginatedResponse.next { paginatedResponse, error in
+                    ARTHTTPPaginatedCallbackWrapper(callbackResult: (paginatedResponse, error)).handleResponse(continuation: continuation)
+                }
+            }.get()
+        } catch {
+            throw error.toARTErrorInfo()
         }
     }
 
     /// Asynchronously fetch the first page
-    internal var first: PaginatedResultWrapper<Item> {
-        get async throws(ARTErrorInfo) {
-            do {
-                return try await withCheckedContinuation { continuation in
-                    paginatedResponse.first { paginatedResponse, error in
-                        ARTHTTPPaginatedCallbackWrapper(callbackResult: (paginatedResponse, error)).handleResponse(continuation: continuation)
-                    }
-                }.get()
-            } catch {
-                throw error.toARTErrorInfo()
-            }
+    internal func first() async throws(ARTErrorInfo) -> PaginatedResultWrapper<Item> {
+        do {
+            return try await withCheckedContinuation { continuation in
+                paginatedResponse.first { paginatedResponse, error in
+                    ARTHTTPPaginatedCallbackWrapper(callbackResult: (paginatedResponse, error)).handleResponse(continuation: continuation)
+                }
+            }.get()
+        } catch {
+            throw error.toARTErrorInfo()
         }
     }
 
     /// Asynchronously fetch the current page
-    internal var current: PaginatedResultWrapper<Item> {
+    internal func current() async throws(ARTErrorInfo) -> PaginatedResultWrapper<Item> {
         self
     }
 
