@@ -465,7 +465,7 @@ struct DefaultMessagesTests {
         #expect(paginatedResult.hasNext == true)
 
         // CHA-M5h: which can be further inspected to paginate across results
-        let nextPage = try #require(await paginatedResult.next)
+        let nextPage = try #require(await paginatedResult.next())
         #expect(nextPage.hasNext == false)
     }
 
@@ -519,7 +519,7 @@ struct DefaultMessagesTests {
 
         // Then
         // CHA-M6a: which can then be paginated through
-        let nextPage = try #require(await paginatedResult.next)
+        let nextPage = try #require(await paginatedResult.next())
         #expect(nextPage.hasNext == false)
     }
 

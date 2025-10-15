@@ -1,3 +1,4 @@
+import Ably
 @testable import AblyChat
 import AsyncAlgorithms
 import Foundation
@@ -10,11 +11,11 @@ private final class MockPaginatedResult<Item: Equatable>: PaginatedResult, @Main
 
     var isLast: Bool { fatalError("Not implemented") }
 
-    var next: MockPaginatedResult<Item>? { fatalError("Not implemented") }
+    func next() async throws(ARTErrorInfo) -> MockPaginatedResult<Item>? { fatalError("Not implemented") }
 
-    var first: MockPaginatedResult<Item> { fatalError("Not implemented") }
+    func first() async throws(ARTErrorInfo) -> MockPaginatedResult<Item> { fatalError("Not implemented") }
 
-    var current: MockPaginatedResult<Item> { fatalError("Not implemented") }
+    func current() async throws(ARTErrorInfo) -> MockPaginatedResult<Item> { fatalError("Not implemented") }
 
     init() {}
 
