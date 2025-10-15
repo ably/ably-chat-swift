@@ -6,7 +6,7 @@ struct InternalErrorTests {
     @Test
     func toARTErrorInfo_whenUnderlyingErrorIsARTErrorInfo() {
         let underlyingErrorInfo = ARTErrorInfo.createUnknownError()
-        let internalError = InternalError.errorInfo(underlyingErrorInfo)
+        let internalError = InternalError.fromAblyCocoa(underlyingErrorInfo)
 
         let convertedToErrorInfo = internalError.toARTErrorInfo()
         #expect(convertedToErrorInfo === underlyingErrorInfo)
@@ -14,7 +14,7 @@ struct InternalErrorTests {
 
     @Test
     func toARTErrorInfo_whenUnderlyingErrorIsNotARTErrorInfo() {
-        let internalError = InternalError.other(.chatAPIChatError(.noItemInResponse))
+        let internalError = InternalError.internallyThrown(.other(.chatAPIChatError(.noItemInResponse)))
 
         let convertedToErrorInfo = internalError.toARTErrorInfo()
         #expect(isChatError(convertedToErrorInfo, withCodeAndStatusCode: .fixedStatusCode(.badRequest)))

@@ -21,7 +21,7 @@ struct ChatAPITests {
                 try await chatAPI.sendMessage(roomName: roomName, params: .init(text: "hello", headers: [:]))
             }, throws: { error in
                 // Then
-                if let internalError = error as? InternalError, case .other(.chatAPIChatError(.noItemInResponse)) = internalError {
+                if let internalError = error as? InternalError, case .internallyThrown(.other(.chatAPIChatError(.noItemInResponse))) = internalError {
                     true
                 } else {
                     false
