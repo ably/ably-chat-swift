@@ -408,4 +408,118 @@ struct DefaultMessageReactionsTests {
     // @specNotApplicable CHA-MR7a - It's a programmer error to call `Room.messages.reactions.subscribeRaw` without `MessageOptions.rawMessageReactions` being set to `true`.
 
     // @specNotApplicable CHA-MR3a - Summary is a `NSDictionary` of wire values in the cocoa SDK.
+
+    // Tests for CHA-MR13
+    @MainActor
+    struct ClientReactions {
+        // @specOneOf(1/3) CHA-MR13
+        // @specOneOf(1/2) CHA-MR13b
+        // @spec CHA-MR13b1
+        @Test
+        func getClientReactionsForMessage() async throws {
+            // Given
+            let realtime = MockRealtime {
+                MockHTTPPaginatedResponse(
+                    items: [
+                        [
+                            "reaction:unique.v1": [
+                                "like": ["total": 1, "clientIds": ["testClientId"]],
+                            ],
+                            "reaction:distinct.v1": [
+                                "love": ["total": 1, "clientIds": ["testClientId"]],
+                            ],
+                            "reaction:multiple.v1": [
+                                "fire": ["total": 5, "clientIds": ["testClientId": 5]],
+                            ],
+                        ],
+                    ],
+                    statusCode: 200,
+                    headers: [:],
+                )
+            }
+            let chatAPI = ChatAPI(realtime: realtime)
+            let channel = MockRealtimeChannel(initialState: .attached)
+            let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", logger: TestLogger())
+
+            // When - using nil clientID should not pass forClientId parameter (server uses current client implicitly)
+            let summary = try await defaultMessages.reactions.clientReactions(forMessageWithSerial: "123456789-000@123456789:000", clientID: nil)
+
+            // Then
+            #expect(summary.unique["like"]?.total == 1)
+            #expect(summary.distinct["love"]?.total == 1)
+            #expect(summary.multiple["fire"]?.total == 5)
+            #expect(realtime.callRecorder.hasRecord(
+                matching: "request(_:path:params:body:headers:)",
+                arguments: [
+                    "method": "GET",
+                    "path": "/chat/v4/rooms/basketball/messages/123456789-000@123456789:000/client-reactions",
+                    "body": [:],
+                    "params": [:],
+                    "headers": [:],
+                ],
+            ))
+        }
+
+        // @specOneOf(2/3) CHA-MR13
+        // @specOneOf(2/2) CHA-MR13b
+        @Test
+        func getClientReactionsForMessageWithSpecificClientID() async throws {
+            // Given
+            let realtime = MockRealtime {
+                MockHTTPPaginatedResponse(
+                    items: [
+                        [
+                            "reaction:unique.v1": [
+                                "like": ["total": 1, "clientIds": ["otherClientId"]],
+                            ],
+                        ],
+                    ],
+                    statusCode: 200,
+                    headers: [:],
+                )
+            }
+            let chatAPI = ChatAPI(realtime: realtime)
+            let channel = MockRealtimeChannel(initialState: .attached)
+            let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", logger: TestLogger())
+
+            // When
+            let summary = try await defaultMessages.reactions.clientReactions(forMessageWithSerial: "123456789-000@123456789:000", clientID: "otherClientId")
+
+            // Then
+            #expect(summary.unique["like"]?.total == 1)
+            #expect(realtime.callRecorder.hasRecord(
+                matching: "request(_:path:params:body:headers:)",
+                arguments: [
+                    "method": "GET",
+                    "path": "/chat/v4/rooms/basketball/messages/123456789-000@123456789:000/client-reactions",
+                    "body": [:],
+                    "params": ["forClientId": "otherClientId"],
+                    "headers": [:],
+                ],
+            ))
+        }
+
+        // @specOneOf(3/3) CHA-MR13
+        // @spec CHA-MR13c
+        @Test
+        func getClientReactionsThrowsErrorOnAPIFailure() async throws {
+            // Given
+            let realtime = MockRealtime { @Sendable () throws(ARTErrorInfo) in
+                throw ARTErrorInfo(domain: "SomeDomain", code: 404)
+            }
+            let chatAPI = ChatAPI(realtime: realtime)
+            let channel = MockRealtimeChannel(initialState: .attached)
+            let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", logger: TestLogger())
+
+            // When/Then
+            let doIt = {
+                _ = try await defaultMessages.reactions.clientReactions(forMessageWithSerial: "123456789-000@123456789:000", clientID: nil)
+            }
+            await #expect {
+                try await doIt()
+            } throws: { error in
+                (error as? ARTErrorInfo)?.domain == "SomeDomain" && (error as? ARTErrorInfo)?.code == 404
+            }
+        }
+    }
 }
