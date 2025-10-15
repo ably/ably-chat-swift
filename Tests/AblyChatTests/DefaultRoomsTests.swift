@@ -1,3 +1,4 @@
+import Ably
 @testable import AblyChat
 import Testing
 
@@ -173,15 +174,10 @@ struct DefaultRoomsTests {
         // Then: It throws a `badRequest` error
         let differentOptions = RoomOptions(presence: .init(enableEvents: false))
 
-        // TODO: avoids compiler crash (https://github.com/ably/ably-chat-swift/issues/233), revert once Xcode 16.3 released
-        let doIt = {
+        let thrownError = await #expect(throws: (any Error).self) {
             try await rooms.get(named: name, options: differentOptions)
         }
-        await #expect {
-            try await doIt()
-        } throws: { error in
-            isChatError(error, withCodeAndStatusCode: .fixedStatusCode(.badRequest))
-        }
+        #expect(isChatError(thrownError, withCodeAndStatusCode: .fixedStatusCode(.badRequest)))
     }
 
     // @specOneOf(2/2) CHA-RC1f1 - Tests the case where, per CHA-RC1f4, there is, in the spec’s language, a _future_ in the room map
@@ -219,15 +215,10 @@ struct DefaultRoomsTests {
         // Then: The second call to get(name:options:) throws a `badRequest` error
         let differentOptions = RoomOptions(presence: .init(enableEvents: false))
 
-        // TODO: avoids compiler crash (https://github.com/ably/ably-chat-swift/issues/233), revert once Xcode 16.3 released
-        let doIt = {
+        let thrownError = await #expect(throws: (any Error).self) {
             try await rooms.get(named: name, options: differentOptions)
         }
-        await #expect {
-            try await doIt()
-        } throws: { error in
-            isChatError(error, withCodeAndStatusCode: .fixedStatusCode(.badRequest))
-        }
+        #expect(isChatError(thrownError, withCodeAndStatusCode: .fixedStatusCode(.badRequest)))
 
         // Post-test: Allow the CHA-RC1g release operation to complete
         roomReleaseOperation.complete()
