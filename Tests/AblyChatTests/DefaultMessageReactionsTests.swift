@@ -26,7 +26,7 @@ struct DefaultMessageReactionsTests {
         // When
         let message = try await defaultMessages.send(withParams: .init(text: "a joke"))
         try await defaultMessages.reactions.send(forMessageWithSerial: message.serial, params: .init(name: "😆", type: .multiple, count: 10))
-        try await defaultMessages.reactions.delete(forMessageWithSerial: message.serial, params: .init(name: "😆", type: .multiple))
+        try await defaultMessages.reactions.delete(fromMessageWithSerial: message.serial, params: .init(name: "😆", type: .multiple))
 
         // Then
         #expect(realtime.callRecorder.hasRecord(
@@ -91,7 +91,7 @@ struct DefaultMessageReactionsTests {
 
         let thrownError = await #expect(throws: ARTErrorInfo.self) {
             // When
-            try await defaultMessages.reactions.delete(forMessageWithSerial: "", params: .init(name: "😐", type: .distinct))
+            try await defaultMessages.reactions.delete(fromMessageWithSerial: "", params: .init(name: "😐", type: .distinct))
         }
 
         // Then

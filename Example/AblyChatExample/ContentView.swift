@@ -413,7 +413,7 @@ struct ContentView: View {
             return nil
         }).first {
             _ = try await room().messages.update(
-                forSerial: editingMessageItem.message.serial,
+                withSerial: editingMessageItem.message.serial,
                 params: .init(
                     text: newMessage,
                     metadata: editingMessageItem.message.metadata,
@@ -428,7 +428,7 @@ struct ContentView: View {
 
     func deleteMessage(_ message: Message) {
         Task {
-            _ = try await room().messages.delete(forSerial: message.serial, details: nil)
+            _ = try await room().messages.delete(withSerial: message.serial, details: nil)
         }
     }
 
@@ -446,7 +446,7 @@ struct ContentView: View {
 
     func deleteMessageReaction(_ reaction: String, messageSerial: String) {
         Task {
-            try await room().messages.reactions.delete(forMessageWithSerial: messageSerial, params: .init(name: reaction, type: .distinct))
+            try await room().messages.reactions.delete(fromMessageWithSerial: messageSerial, params: .init(name: reaction, type: .distinct))
         }
     }
 

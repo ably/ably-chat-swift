@@ -96,7 +96,7 @@ struct DefaultMessagesTests {
 
         // When
         let updatedMessage = try await defaultMessages.update(
-            forSerial: sentMessage.serial,
+            withSerial: sentMessage.serial,
             params: .init(text: text + "!", metadata: [:], headers: [:]),
             details: .init(description: "add exclamation", metadata: ["key": "val"]),
         )
@@ -154,7 +154,7 @@ struct DefaultMessagesTests {
         let sentMessage = try Message(jsonObject: ["serial": "123456789-000@123456789:000", "version": ["serial": "123456789-000@123456789:000"], "text": .string(text), "clientId": "0", "action": "message.create", "metadata": ["key": "val"], "headers": [:]]) // arbitrary
 
         // When
-        let deletedMessage = try await defaultMessages.delete(forSerial: sentMessage.serial, details: nil)
+        let deletedMessage = try await defaultMessages.delete(withSerial: sentMessage.serial, details: nil)
 
         // Then
         #expect(deletedMessage.serial == "123456789-000@123456789:000")
@@ -204,7 +204,7 @@ struct DefaultMessagesTests {
         // Then
         let thrownError = await #expect(throws: ARTErrorInfo.self) {
             _ = try await defaultMessages.update(
-                forSerial: "0",
+                withSerial: "0",
                 params: .init(text: "hey", metadata: [:], headers: [:]),
                 details: .init(description: "", metadata: [:]),
             )
@@ -225,7 +225,7 @@ struct DefaultMessagesTests {
 
         // Then
         let thrownError = await #expect(throws: ARTErrorInfo.self) {
-            _ = try await defaultMessages.delete(forSerial: "0", details: nil)
+            _ = try await defaultMessages.delete(withSerial: "0", details: nil)
         }
         #expect(thrownError == ARTErrorInfo(domain: "SomeDomain", code: 123))
     }

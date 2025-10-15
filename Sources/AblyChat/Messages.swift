@@ -70,7 +70,7 @@ public protocol Messages: AnyObject, Sendable {
      *
      * - Returns: The updated message.
      */
-    func update(forSerial serial: String, params: UpdateMessageParams, details: OperationDetails?) async throws(ARTErrorInfo) -> Message
+    func update(withSerial serial: String, params: UpdateMessageParams, details: OperationDetails?) async throws(ARTErrorInfo) -> Message
 
     /**
      * Delete a message in the chat room.
@@ -97,7 +97,7 @@ public protocol Messages: AnyObject, Sendable {
      *
      * - Returns: The deleted message.
      */
-    func delete(forSerial serial: String, details: OperationDetails?) async throws(ARTErrorInfo) -> Message
+    func delete(withSerial serial: String, details: OperationDetails?) async throws(ARTErrorInfo) -> Message
 
     /**
      * Get a message by its serial.
