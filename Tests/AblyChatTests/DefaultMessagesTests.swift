@@ -95,9 +95,11 @@ struct DefaultMessagesTests {
         let sentMessage = try Message(jsonObject: ["serial": "123456789-000@123456789:000", "version": ["serial": "123456789-000@123456789:000"], "text": .string(text), "clientId": "0", "action": "message.create", "metadata": [:], "headers": [:]]) // arbitrary
 
         // When
-        var newMessage = sentMessage
-        newMessage.text = text + "!" // see https://github.com/ably/ably-chat-swift/issues/333
-        let updatedMessage = try await defaultMessages.update(newMessage: newMessage, details: .init(description: "add exclamation", metadata: ["key": "val"]))
+        let updatedMessage = try await defaultMessages.update(
+            forSerial: sentMessage.serial,
+            params: .init(text: text + "!", metadata: [:], headers: [:]),
+            details: .init(description: "add exclamation", metadata: ["key": "val"]),
+        )
 
         // Then
         #expect(updatedMessage.serial == "123456789-000@123456789:000")
@@ -152,7 +154,7 @@ struct DefaultMessagesTests {
         let sentMessage = try Message(jsonObject: ["serial": "123456789-000@123456789:000", "version": ["serial": "123456789-000@123456789:000"], "text": .string(text), "clientId": "0", "action": "message.create", "metadata": ["key": "val"], "headers": [:]]) // arbitrary
 
         // When
-        let deletedMessage = try await defaultMessages.delete(message: sentMessage, details: nil)
+        let deletedMessage = try await defaultMessages.delete(forSerial: sentMessage.serial, details: nil)
 
         // Then
         #expect(deletedMessage.serial == "123456789-000@123456789:000")
@@ -207,8 +209,11 @@ struct DefaultMessagesTests {
         // Then
         // TODO: avoids compiler crash (https://github.com/ably/ably-chat-swift/issues/233), revert once Xcode 16.3 released
         let doIt = {
-            let message = try Message(jsonObject: ["serial": "0", "version": ["serial": "0"], "text": "hey", "clientId": "0", "action": "message.update", "metadata": [:], "headers": [:]]) // arbitrary
-            _ = try await defaultMessages.update(newMessage: message, details: .init(description: "", metadata: [:]))
+            _ = try await defaultMessages.update(
+                forSerial: "0",
+                params: .init(text: "hey", metadata: [:], headers: [:]),
+                details: .init(description: "", metadata: [:]),
+            )
         }
         await #expect {
             try await doIt()
@@ -231,8 +236,7 @@ struct DefaultMessagesTests {
         // Then
         // TODO: avoids compiler crash (https://github.com/ably/ably-chat-swift/issues/233), revert once Xcode 16.3 released
         let doIt = {
-            let message = try Message(jsonObject: ["serial": "0", "version": ["serial": "0"], "text": "hey", "clientId": "0", "action": "message.update", "metadata": [:], "headers": [:]]) // arbitrary
-            _ = try await defaultMessages.delete(message: message, details: nil)
+            _ = try await defaultMessages.delete(forSerial: "0", details: nil)
         }
         await #expect {
             try await doIt()

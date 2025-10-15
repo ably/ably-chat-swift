@@ -184,15 +184,19 @@ class MockMessages: Messages {
         return message
     }
 
-    func update(newMessage: Message, details _: OperationDetails?) async throws(ARTErrorInfo) -> Message {
+    func update(forSerial serial: String, params: UpdateMessageParams, details _: OperationDetails?) async throws(ARTErrorInfo) -> Message {
         let message = Message(
-            serial: newMessage.serial,
+            serial: serial,
             action: .messageUpdate,
             clientID: clientID,
-            text: newMessage.text,
-            metadata: newMessage.metadata,
-            headers: newMessage.headers,
-            version: .init(serial: "\(Date().timeIntervalSince1970)", timestamp: Date(), clientID: clientID),
+            text: params.text,
+            metadata: params.metadata ?? [:],
+            headers: params.headers ?? [:],
+            version: .init(
+                serial: "\(Date().timeIntervalSince1970)",
+                timestamp: Date(),
+                clientID: clientID,
+            ),
             timestamp: Date(),
             reactions: .init(unique: [:], distinct: [:], multiple: [:]),
         )
@@ -200,19 +204,15 @@ class MockMessages: Messages {
         return message
     }
 
-    func delete(message: Message, details _: OperationDetails?) async throws(ARTErrorInfo) -> Message {
+    func delete(forSerial serial: String, details _: OperationDetails?) async throws(ARTErrorInfo) -> Message {
         let message = Message(
-            serial: message.serial,
+            serial: serial,
             action: .messageDelete,
             clientID: clientID,
-            text: message.text,
-            metadata: message.metadata,
-            headers: message.headers,
-            version: .init(
-                serial: "\(Date().timeIntervalSince1970)",
-                timestamp: Date(),
-                clientID: clientID,
-            ),
+            text: "",
+            metadata: [:],
+            headers: [:],
+            version: .init(serial: "\(Date().timeIntervalSince1970)", timestamp: Date(), clientID: clientID),
             timestamp: Date(),
             reactions: .init(unique: [:], distinct: [:], multiple: [:]),
         )

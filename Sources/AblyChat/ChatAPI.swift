@@ -79,14 +79,21 @@ internal final class ChatAPI {
 
     // (CHA-M8) A client must be able to update a message in a room.
     // (CHA-M8a) A client may update a message via the Chat REST API by calling the update method.
-    internal func updateMessage(roomName: String, with modifiedMessage: Message, details: OperationDetails?) async throws(InternalError) -> Message {
-        let endpoint = messageUrl(roomName: roomName, serial: modifiedMessage.serial)
+    internal func updateMessage(roomName: String, serial: String, updateParams: UpdateMessageParams, details: OperationDetails?) async throws(InternalError) -> Message {
+        let endpoint = messageUrl(roomName: roomName, serial: serial)
         var body: [String: JSONValue] = [:]
-        let messageObject: [String: JSONValue] = [
-            "text": .string(modifiedMessage.text),
-            "metadata": .object(modifiedMessage.metadata),
-            "headers": .object(modifiedMessage.headers.mapValues(\.toJSONValue)),
+
+        var messageObject: [String: JSONValue] = [
+            "text": .string(updateParams.text),
         ]
+
+        if let metadata = updateParams.metadata {
+            messageObject["metadata"] = .object(metadata)
+        }
+
+        if let headers = updateParams.headers {
+            messageObject["headers"] = .object(headers.mapValues(\.toJSONValue))
+        }
 
         body["message"] = .object(messageObject)
 
@@ -107,8 +114,8 @@ internal final class ChatAPI {
 
     // (CHA-M9) A client must be able to delete a message in a room.
     // (CHA-M9a) A client may delete a message via the Chat REST API by calling the delete method.
-    internal func deleteMessage(roomName: String, message: Message, details: OperationDetails?) async throws(InternalError) -> Message {
-        let endpoint = messageUrl(roomName: roomName, serial: message.serial, suffix: "/delete")
+    internal func deleteMessage(roomName: String, serial: String, details: OperationDetails?) async throws(InternalError) -> Message {
+        let endpoint = messageUrl(roomName: roomName, serial: serial, suffix: "/delete")
         var body: [String: JSONValue] = [:]
 
         if let description = details?.description {

@@ -288,7 +288,8 @@ struct IntegrationTests {
 
         // (1) Edit the message on the other client
         let txEditedMessage = try await txRoom.messages.update(
-            newMessage: messageToEditDelete.copy(
+            forSerial: messageToEditDelete.serial,
+            params: .init(
                 text: "edited message",
                 metadata: ["someEditedKey": 123, "someOtherEditedKey": "foo"],
                 headers: nil,
@@ -313,7 +314,7 @@ struct IntegrationTests {
 
         // (3) Delete the message on the other client
         let txDeleteMessage = try await txRoom.messages.delete(
-            message: rxEditedMessageFromSubscription,
+            forSerial: rxEditedMessageFromSubscription.serial,
             details: .init(
                 description: "deleted in testing",
                 metadata: ["foo": "bar"],

@@ -412,8 +412,15 @@ struct ContentView: View {
             }
             return nil
         }).first {
-            let editedMessage = editingMessageItem.message.copy(text: newMessage)
-            _ = try await room().messages.update(newMessage: editedMessage, details: nil)
+            _ = try await room().messages.update(
+                forSerial: editingMessageItem.message.serial,
+                params: .init(
+                    text: newMessage,
+                    metadata: editingMessageItem.message.metadata,
+                    headers: editingMessageItem.message.headers,
+                ),
+                details: nil,
+            )
         }
 
         newMessage = ""
@@ -421,7 +428,7 @@ struct ContentView: View {
 
     func deleteMessage(_ message: Message) {
         Task {
-            _ = try await room().messages.delete(message: message, details: nil)
+            _ = try await room().messages.delete(forSerial: message.serial, details: nil)
         }
     }
 

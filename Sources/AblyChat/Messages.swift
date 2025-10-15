@@ -50,34 +50,54 @@ public protocol Messages: AnyObject, Sendable {
     func send(withParams params: SendMessageParams) async throws(ARTErrorInfo) -> Message
 
     /**
-     * Updates a message in the chat room.
+     * Update a message in the chat room.
      *
-     * This method uses the Ably Chat API endpoint for updating messages.
+     * Note that this method may return before OR after the updated message is
+     * received from the realtime channel. This means you may see the update that
+     * was just sent in a callback to `subscribe` before this method returns.
+     *
+     * NOTE: The Message instance returned by this method is the state of the message as a result of the update operation.
+     * If you have a subscription to message events via `subscribe`, you should discard the message instance returned by
+     * this method and use the event payloads from the subscription instead.
+     *
+     * This method uses PUT-like semantics: if headers and metadata are omitted from the updateParams, then
+     * the existing headers and metadata are replaced with the empty objects.
      *
      * - Parameters:
-     *   - newMessage: A copy of the `Message` object with the intended edits applied. Use the provided `copy` method on the existing message.
+     *   - serial: The serial of the message to update.
+     *   - updateParams: The parameters for updating the message.
      *   - details: Optional details to record about the update action.
      *
-     * - Returns: The updated message, with the `action` of the message set as `.update`.
-     *
-     * - Note: It is possible to receive your own message via the messages subscription before this method returns.
+     * - Returns: The updated message.
      */
-    func update(newMessage: Message, details: OperationDetails?) async throws(ARTErrorInfo) -> Message
+    func update(forSerial serial: String, params: UpdateMessageParams, details: OperationDetails?) async throws(ARTErrorInfo) -> Message
 
     /**
-     * Deletes a message in the chat room.
+     * Delete a message in the chat room.
      *
-     * This method uses the Ably Chat API endpoint for deleting messages.
+     * This method uses the Ably Chat API REST endpoint for deleting messages.
+     * It performs a `soft` delete, meaning the message is marked as deleted.
+     *
+     * Note that this method may return before OR after the message is deleted
+     * from the realtime channel. This means you may see the message that was just
+     * deleted in a callback to `subscribe` before this method returns.
+     *
+     * NOTE: The Message instance returned by this method is the state of the message as a result of the delete operation.
+     * If you have a subscription to message events via `subscribe`, you should discard the message instance returned by
+     * this method and use the event payloads from the subscription instead.
+     *
+     * Should you wish to restore a deleted message, and providing you have the appropriate permissions,
+     * you can simply send an update to the original message.
+     * Note: This is subject to change in future versions, whereby a new permissions model will be introduced
+     * and a deleted message may not be restorable in this way.
      *
      * - Parameters:
-     *   - message: The message you wish to delete.
+     *   - serial: The serial of the message to delete.
      *   - details: Optional details to record about the delete action.
      *
-     * - Returns: The deleted message, with the action of the message set as `.delete`.
-     *
-     * - Note: It is possible to receive your own message via the messages subscription before this method returns.
+     * - Returns: The deleted message.
      */
-    func delete(message: Message, details: OperationDetails?) async throws(ARTErrorInfo) -> Message
+    func delete(forSerial serial: String, details: OperationDetails?) async throws(ARTErrorInfo) -> Message
 
     /**
      * Get a message by its serial.
