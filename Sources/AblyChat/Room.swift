@@ -82,7 +82,7 @@ public protocol Room<Channel>: AnyObject, Sendable {
     /**
      * The current error, if any, that caused the room to enter the current status.
      */
-    var error: ARTErrorInfo? { get }
+    var error: ErrorInfo? { get }
 
     /**
      * Subscribes a given listener to the room status changes.
@@ -104,7 +104,7 @@ public protocol Room<Channel>: AnyObject, Sendable {
      * - Returns: A subscription that can be used to unsubscribe from discontinuity events.
      */
     @discardableResult
-    func onDiscontinuity(_ callback: @escaping @MainActor (ARTErrorInfo) -> Void) -> StatusSubscription
+    func onDiscontinuity(_ callback: @escaping @MainActor (ErrorInfo) -> Void) -> StatusSubscription
 
     /**
      * Attaches to the room to receive events in realtime.
@@ -113,19 +113,19 @@ public protocol Room<Channel>: AnyObject, Sendable {
      *
      * If the room enters the failed state, then it will not automatically retry attaching and intervention is required.
      *
-     * If the room enters the suspended state, then the call to attach will throw `ARTErrorInfo` with the cause of the suspension. However,
+     * If the room enters the suspended state, then the call to attach will throw `ErrorInfo` with the cause of the suspension. However,
      * the room will automatically retry attaching after a delay.
      *
-     * - Throws: An `ARTErrorInfo`.
+     * - Throws: An `ErrorInfo`.
      */
-    func attach() async throws(ARTErrorInfo)
+    func attach() async throws(ErrorInfo)
 
     /**
      * Detaches from the room to stop receiving events in realtime.
      *
-     * - Throws: An `ARTErrorInfo`.
+     * - Throws: An `ErrorInfo`.
      */
-    func detach() async throws(ARTErrorInfo)
+    func detach() async throws(ErrorInfo)
 
     /**
      * Returns the room options.
@@ -181,8 +181,8 @@ public extension Room {
      *
      * - Returns: A subscription `AsyncSequence` that can be used to iterate through discontinuity events.
      */
-    func onDiscontinuity(bufferingPolicy: BufferingPolicy) -> SubscriptionAsyncSequence<ARTErrorInfo> {
-        let subscriptionAsyncSequence = SubscriptionAsyncSequence<ARTErrorInfo>(bufferingPolicy: bufferingPolicy)
+    func onDiscontinuity(bufferingPolicy: BufferingPolicy) -> SubscriptionAsyncSequence<ErrorInfo> {
+        let subscriptionAsyncSequence = SubscriptionAsyncSequence<ErrorInfo>(bufferingPolicy: bufferingPolicy)
 
         let subscription = onDiscontinuity { error in
             subscriptionAsyncSequence.emit(error)
@@ -197,7 +197,7 @@ public extension Room {
     }
 
     /// Same as calling ``onDiscontinuity(bufferingPolicy:)`` with ``BufferingPolicy/unbounded``.
-    func onDiscontinuity() -> SubscriptionAsyncSequence<ARTErrorInfo> {
+    func onDiscontinuity() -> SubscriptionAsyncSequence<ErrorInfo> {
         onDiscontinuity(bufferingPolicy: .unbounded)
     }
 }
@@ -225,12 +225,12 @@ public struct RoomStatusChange: Sendable {
      * An error that provides a reason why the room has
      * entered the new status, if applicable.
      */
-    public var error: ARTErrorInfo?
+    public var error: ErrorInfo?
 
     /// Memberwise initializer to create a `RoomStatusChange`.
     ///
     /// - Note: You should not need to use this initializer when using the Chat SDK. It is exposed only to allow users to create mock versions of the SDK's protocols.
-    public init(current: RoomStatus, previous: RoomStatus, error: ARTErrorInfo? = nil) {
+    public init(current: RoomStatus, previous: RoomStatus, error: ErrorInfo? = nil) {
         self.current = current
         self.previous = previous
         self.error = error
@@ -374,20 +374,20 @@ internal class DefaultRoom<Realtime: InternalRealtimeClientProtocol, LifecycleMa
     }
 
     // swiftlint:disable:next missing_docs
-    public func attach() async throws(ARTErrorInfo) {
+    public func attach() async throws(ErrorInfo) {
         do {
             try await lifecycleManager.performAttachOperation()
         } catch {
-            throw error.toARTErrorInfo()
+            throw error.toErrorInfo()
         }
     }
 
     // swiftlint:disable:next missing_docs
-    public func detach() async throws(ARTErrorInfo) {
+    public func detach() async throws(ErrorInfo) {
         do {
             try await lifecycleManager.performDetachOperation()
         } catch {
-            throw error.toARTErrorInfo()
+            throw error.toErrorInfo()
         }
     }
 
@@ -409,14 +409,14 @@ internal class DefaultRoom<Realtime: InternalRealtimeClientProtocol, LifecycleMa
         lifecycleManager.roomStatus
     }
 
-    internal var error: ARTErrorInfo? {
+    internal var error: ErrorInfo? {
         lifecycleManager.error
     }
 
     // MARK: - Discontinuities
 
     @discardableResult
-    internal func onDiscontinuity(_ callback: @escaping @MainActor (ARTErrorInfo) -> Void) -> LifecycleManager.StatusSubscription {
+    internal func onDiscontinuity(_ callback: @escaping @MainActor (ErrorInfo) -> Void) -> LifecycleManager.StatusSubscription {
         lifecycleManager.onDiscontinuity(callback)
     }
 }

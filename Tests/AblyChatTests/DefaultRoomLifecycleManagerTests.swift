@@ -237,11 +237,11 @@ struct DefaultRoomLifecycleManagerTests {
         async let maybeFailedStatusChange = statusChangeSubscription.first { $0.current == .failed }
 
         // When: `performAttachOperation()` is called on the lifecycle manager
-        var roomAttachError: ARTErrorInfo?
+        var roomAttachError: InternalError?
         do {
             try await manager.performAttachOperation()
         } catch {
-            roomAttachError = error.toARTErrorInfo()
+            roomAttachError = error
         }
 
         // Then:
@@ -252,8 +252,8 @@ struct DefaultRoomLifecycleManagerTests {
 
         #expect(manager.roomStatus == .failed)
 
-        for error in [failedStatusChange.error, manager.error, roomAttachError] {
-            #expect(error === channelAttachError)
+        for error in [failedStatusChange.error, manager.error, roomAttachError?.toErrorInfo()] {
+            #expect(error == .init(ablyCocoaError: channelAttachError))
         }
     }
 
@@ -437,11 +437,11 @@ struct DefaultRoomLifecycleManagerTests {
         async let maybeFailedStatusChange = statusChangeSubscription.first { $0.current == .failed }
 
         // When: `performDetachOperation()` is called on the lifecycle manager
-        var roomDetachError: ARTErrorInfo?
+        var roomDetachError: InternalError?
         do {
             try await manager.performDetachOperation()
         } catch {
-            roomDetachError = error.toARTErrorInfo()
+            roomDetachError = error
         }
 
         // Then:
@@ -452,8 +452,8 @@ struct DefaultRoomLifecycleManagerTests {
 
         #expect(manager.roomStatus == .failed)
 
-        for error in [failedStatusChange.error, manager.error, roomDetachError] {
-            #expect(error === channelDetachError)
+        for error in [failedStatusChange.error, manager.error, roomDetachError?.toErrorInfo()] {
+            #expect(error == .init(ablyCocoaError: channelDetachError))
         }
     }
 
@@ -770,7 +770,7 @@ struct DefaultRoomLifecycleManagerTests {
         let roomStatusChange = try #require(await roomStatusSubscription.first { @Sendable _ in true })
         #expect(roomStatusChange.current == .attaching)
         #expect(manager.roomStatus == .attaching)
-        #expect(manager.error === channelStateChangeError)
+        #expect(manager.error == .init(ablyCocoaError: channelStateChangeError))
     }
 
     // @specOneOf(3/3) CHA-RL11a - Tests that only state change events can cause a room status change
@@ -942,7 +942,7 @@ struct DefaultRoomLifecycleManagerTests {
                 isChatError(
                     discontinuityError,
                     withCodeAndStatusCode: .fixedStatusCode(.roomDiscontinuity),
-                    cause: channelEvent.reason,
+                    cause: .init(optionalAblyCocoaError: channelEvent.reason),
                 ),
             )
         } else {
@@ -1035,7 +1035,7 @@ struct DefaultRoomLifecycleManagerTests {
             caughtError = error
         }
 
-        let expectedCause = channelAttachError // using our knowledge of CHA-RL1k2
+        let expectedCause = ErrorInfo(internalError: .fromAblyCocoa(channelAttachError)) // using our knowledge of CHA-RL1k2
         #expect(isChatError(caughtError, withCodeAndStatusCode: .variableStatusCode(.roomInInvalidState, statusCode: 500), cause: expectedCause))
     }
 

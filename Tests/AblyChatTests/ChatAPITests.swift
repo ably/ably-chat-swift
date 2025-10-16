@@ -191,7 +191,7 @@ struct ChatAPITests {
                 try await chatAPI.getMessages(roomName: roomName, params: .init()) as? PaginatedResultWrapper<Message>
             }, throws: { error in
                 // Then
-                isInternalErrorWrappingErrorInfo(error, artError)
+                isInternalErrorWrappingAblyCocoaError(error, artError)
             },
         )
     }

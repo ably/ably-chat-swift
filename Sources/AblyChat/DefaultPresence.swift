@@ -15,7 +15,7 @@ internal final class DefaultPresence: Presence {
         self.options = options
     }
 
-    internal func get() async throws(ARTErrorInfo) -> [PresenceMember] {
+    internal func get() async throws(ErrorInfo) -> [PresenceMember] {
         do throws(InternalError) {
             logger.log(message: "Getting presence", level: .debug)
 
@@ -36,11 +36,11 @@ internal final class DefaultPresence: Presence {
             }
             return try processPresenceGet(members: members)
         } catch {
-            throw error.toARTErrorInfo()
+            throw error.toErrorInfo()
         }
     }
 
-    internal func get(withParams params: PresenceParams) async throws(ARTErrorInfo) -> [PresenceMember] {
+    internal func get(withParams params: PresenceParams) async throws(ErrorInfo) -> [PresenceMember] {
         do throws(InternalError) {
             logger.log(message: "Getting presence with params: \(params)", level: .debug)
 
@@ -61,12 +61,12 @@ internal final class DefaultPresence: Presence {
             }
             return try processPresenceGet(members: members)
         } catch {
-            throw error.toARTErrorInfo()
+            throw error.toErrorInfo()
         }
     }
 
     // (CHA-PR5) It must be possible to query if a given clientId is in the presence set.
-    internal func isUserPresent(withClientID clientID: String) async throws(ARTErrorInfo) -> Bool {
+    internal func isUserPresent(withClientID clientID: String) async throws(ErrorInfo) -> Bool {
         do throws(InternalError) {
             logger.log(message: "Checking if user is present with clientID: \(clientID)", level: .debug)
 
@@ -88,20 +88,20 @@ internal final class DefaultPresence: Presence {
 
             return !members.isEmpty
         } catch {
-            throw error.toARTErrorInfo()
+            throw error.toErrorInfo()
         }
     }
 
-    internal func enter(withData data: PresenceData) async throws(ARTErrorInfo) {
+    internal func enter(withData data: PresenceData) async throws(ErrorInfo) {
         try await enter(optionalData: data)
     }
 
-    internal func enter() async throws(ARTErrorInfo) {
+    internal func enter() async throws(ErrorInfo) {
         try await enter(optionalData: nil)
     }
 
     // (CHA-PR3a) Users may choose to enter presence, optionally providing custom data to enter with. The overall presence data must retain the format specified in CHA-PR2.
-    private func enter(optionalData data: PresenceData?) async throws(ARTErrorInfo) {
+    private func enter(optionalData data: PresenceData?) async throws(ErrorInfo) {
         do throws(InternalError) {
             logger.log(message: "Entering presence", level: .debug)
 
@@ -120,20 +120,20 @@ internal final class DefaultPresence: Presence {
                 throw error
             }
         } catch {
-            throw error.toARTErrorInfo()
+            throw error.toErrorInfo()
         }
     }
 
-    internal func update(withData data: PresenceData) async throws(ARTErrorInfo) {
+    internal func update(withData data: PresenceData) async throws(ErrorInfo) {
         try await update(optionalData: data)
     }
 
-    internal func update() async throws(ARTErrorInfo) {
+    internal func update() async throws(ErrorInfo) {
         try await update(optionalData: nil)
     }
 
     // (CHA-PR10a) Users may choose to update their presence data, optionally providing custom data to update with. The overall presence data must retain the format specified in CHA-PR2.
-    private func update(optionalData data: PresenceData?) async throws(ARTErrorInfo) {
+    private func update(optionalData data: PresenceData?) async throws(ErrorInfo) {
         do throws(InternalError) {
             logger.log(message: "Updating presence", level: .debug)
 
@@ -152,20 +152,20 @@ internal final class DefaultPresence: Presence {
                 throw error
             }
         } catch {
-            throw error.toARTErrorInfo()
+            throw error.toErrorInfo()
         }
     }
 
-    internal func leave(withData data: PresenceData) async throws(ARTErrorInfo) {
+    internal func leave(withData data: PresenceData) async throws(ErrorInfo) {
         try await leave(optionalData: data)
     }
 
-    internal func leave() async throws(ARTErrorInfo) {
+    internal func leave() async throws(ErrorInfo) {
         try await leave(optionalData: nil)
     }
 
     // (CHA-PR4a) Users may choose to leave presence, which results in them being removed from the Realtime presence set.
-    internal func leave(optionalData data: PresenceData?) async throws(ARTErrorInfo) {
+    internal func leave(optionalData data: PresenceData?) async throws(ErrorInfo) {
         do throws(InternalError) {
             logger.log(message: "Leaving presence", level: .debug)
 
@@ -184,7 +184,7 @@ internal final class DefaultPresence: Presence {
                 throw error
             }
         } catch {
-            throw error.toARTErrorInfo()
+            throw error.toErrorInfo()
         }
     }
 

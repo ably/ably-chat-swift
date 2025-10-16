@@ -45,8 +45,8 @@ To check formatting and code quality, run `swift run BuildTool lint`. Run with `
 
 ### Throwing errors
 
-- The public API of the SDK should use typed throws, and the thrown errors should be of type `ARTErrorInfo`.
-- Currently, we throw the `InternalError` type everywhere internally, and then convert it to `ARTErrorInfo` at the public API. This allows us to use richer Swift errors for our internals.
+- The public API of the SDK should use typed throws, and the thrown errors should be of type `ErrorInfo`.
+- Currently, we throw the `InternalError` type everywhere internally, and then convert it to `ErrorInfo` at the public API.
 
 If you haven't worked with typed throws before, be aware of a few sharp edges:
 

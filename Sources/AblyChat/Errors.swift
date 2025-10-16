@@ -1,20 +1,9 @@
 import Ably
 
-// MARK: - Public API
+// MARK: - Error codes
 
-/**
- The error domain used for the `ARTErrorInfo` error instances thrown by the Ably Chat SDK.
-
- See ``ErrorCode`` for the possible `code` values.
- */
-public let errorDomain = "AblyChatErrorDomain"
-
-/**
- The error codes for errors in the ``errorDomain`` error domain.
-
- - Note: Future minor version updates of the library may add new values to this enum. Bear this in mind if you wish to switch exhaustively over it.
- */
-public enum ErrorCode: Int {
+/// The ```ErrorInfo/code`` values for errors thrown internally by the Chat SDK.
+internal enum ErrorCode: Int {
     /// The user attempted to perform an invalid action.
     case badRequest = 40000
 
@@ -38,7 +27,6 @@ public enum ErrorCode: Int {
      */
     case roomReleasedBeforeOperationCompleted = 102_106
 
-    // swiftlint:disable:next missing_docs
     case roomInInvalidState = 102_107
 
     /**
@@ -88,7 +76,7 @@ public enum ErrorCode: Int {
             }
         }
 
-        /// The ``ARTErrorInfo/statusCode`` that should be returned for this error.
+        /// The ``ErrorInfo/statusCode`` that should be returned for this error.
         internal var statusCode: Int {
             // These status codes are taken from the "Chat-specific Error Codes" section of the spec.
             switch self {
@@ -123,45 +111,33 @@ public enum ErrorCode: Int {
 // MARK: - InternalError
 
 /// Either an error thrown by an ably-cocoa operation performed by the Chat SDK, or an error thrown by the Chat SDK itself.
+///
+/// Provides the rich error information that is stored inside an ``ErrorInfo``. `ErrorInfo` then maps these errors to its public properties (`code`, `statusCode` etc), but it also keeps hold of the original `InternalError` to aid with debugging.
 internal enum InternalError: Error {
-    /// An error thrown by ably-cocoa that we wish to re-throw.
+    /// An error thrown by ably-cocoa that we wish to re-throw, or an error thrown by ably-cocoa that we wish to use for the `cause` of an ``ErrorInfo``, or the `cause` of an error thrown by ably-cocoa.
     case fromAblyCocoa(ARTErrorInfo)
 
     /// An error thrown by the Chat SDK itself.
     case internallyThrown(InternallyThrown)
 
     /// Returns the error that this should be converted to when exposed via the SDK's public API.
-    internal func toARTErrorInfo() -> ARTErrorInfo {
-        switch self {
-        case let .fromAblyCocoa(errorInfo):
-            return errorInfo
-        case let .internallyThrown(internallyThrownError):
-            var userInfo: [String: Any] = [:]
-            // TODO: copied and pasted from implementation of -[ARTErrorInfo createWithCode:status:message:requestId:] because there’s no way to pass domain; revisit in https://github.com/ably-labs/ably-chat-swift/issues/32. Also the ARTErrorInfoStatusCode variable in ably-cocoa is not public.
-            userInfo["ARTErrorInfoStatusCode"] = internallyThrownError.codeAndStatusCode.statusCode
-            userInfo[NSLocalizedDescriptionKey] = internallyThrownError.localizedDescription
-
-            // TODO: This is kind of an implementation detail (that NSUnderlyingErrorKey is what populates `cause`); consider documenting in ably-cocoa as part of https://github.com/ably-labs/ably-chat-swift/issues/32.
-            if let cause = internallyThrownError.cause {
-                userInfo[NSUnderlyingErrorKey] = cause
-            }
-
-            return ARTErrorInfo(
-                domain: errorDomain,
-                code: internallyThrownError.codeAndStatusCode.code.rawValue,
-                userInfo: userInfo,
-            )
-        }
+    internal func toErrorInfo() -> ErrorInfo {
+        .init(internalError: self)
     }
 
     // Useful for logging
     internal var message: String {
-        toARTErrorInfo().message
+        switch self {
+        case let .fromAblyCocoa(ablyCocoaError):
+            ablyCocoaError.message
+        case let .internallyThrown(internallyThrown):
+            internallyThrown.message
+        }
     }
 
     /// A specific error thrown by the internals of the Chat SDK.
     ///
-    /// This type exists in addition to ``ErrorCode`` to allow us to attach metadata which can be incorporated into the error’s `localizedDescription` and `cause`.
+    /// This type exists in addition to ``ErrorCode`` to allow us to attach metadata which can be incorporated into the error’s `message` and `cause`.
     internal enum InternallyThrown {
         case other(Other)
         case inconsistentRoomOptions(requested: RoomOptions, existing: RoomOptions)
@@ -170,7 +146,7 @@ internal enum InternalError: Error {
         case roomIsReleased
         case roomReleasedBeforeOperationCompleted
         case presenceOperationRequiresRoomAttach(feature: RoomFeature)
-        case roomTransitionedToInvalidStateForPresenceOperation(cause: ARTErrorInfo?)
+        case roomTransitionedToInvalidStateForPresenceOperation(cause: ErrorInfo?)
         case roomDiscontinuity(cause: ARTErrorInfo?)
         case unableDeleteReactionWithoutName(reactionType: String)
         case cannotApplyEventForDifferentMessage
@@ -180,7 +156,7 @@ internal enum InternalError: Error {
         case attachSerialIsNotDefined
         case channelFailedToAttach(cause: ARTErrorInfo?)
 
-        /// This was originally created to represent any of the various internal types that existed at the time of converting the public API of the SDK to throw ARTErrorInfo. We may rethink this when we do a broader rethink of the errors thrown by the SDK in https://github.com/ably/ably-chat-swift/issues/32. For now, feel free to introduce further internal error types and add them to the `Other` enum.
+        /// This was originally created to represent any of the various internal types that existed at the time of converting the public API of the SDK to throw ErrorInfo. We may rethink this when we do a broader rethink of the errors thrown by the SDK in https://github.com/ably/ably-chat-swift/issues/32. For now, feel free to introduce further internal error types and add them to the `Other` enum.
         internal enum Other {
             case chatAPIChatError(ChatAPI.ChatError)
             case headersValueJSONDecodingError(HeadersValue.JSONDecodingError)
@@ -196,7 +172,7 @@ internal enum InternalError: Error {
             case fixedStatusCode(ErrorCode.CaseThatImpliesFixedStatusCode)
             case variableStatusCode(ErrorCode.CaseThatImpliesVariableStatusCode, statusCode: Int)
 
-            /// The ``ARTErrorInfo/code`` that should be returned for this error.
+            /// The ``ErrorInfo/code`` that should be returned for this error.
             internal var code: ErrorCode {
                 switch self {
                 case let .fixedStatusCode(code):
@@ -206,7 +182,7 @@ internal enum InternalError: Error {
                 }
             }
 
-            /// The ``ARTErrorInfo/statusCode`` that should be returned for this error.
+            /// The ``ErrorInfo/statusCode`` that should be returned for this error.
             internal var statusCode: Int {
                 switch self {
                 case let .fixedStatusCode(code):
@@ -220,7 +196,7 @@ internal enum InternalError: Error {
         internal var codeAndStatusCode: ErrorCodeAndStatusCode {
             switch self {
             case .other:
-                // For now we just treat all errors that are not backed by an ARTErrorInfo as non-recoverable user errors
+                // For now we just treat all miscellaneous internally-thrown errors as non-recoverable user errors
                 .fixedStatusCode(.badRequest)
             case .inconsistentRoomOptions:
                 .fixedStatusCode(.badRequest)
@@ -278,8 +254,8 @@ internal enum InternalError: Error {
             case detach
         }
 
-        /// The ``ARTErrorInfo/localizedDescription`` that should be returned for this error.
-        internal var localizedDescription: String {
+        /// The ``ErrorInfo/message`` that should be returned for this error.
+        internal var message: String {
             switch self {
             case let .other(otherInternalError):
                 // This will contain the name of the underlying enum case (we have a test to verify this); this will do for now
@@ -317,15 +293,15 @@ internal enum InternalError: Error {
             }
         }
 
-        /// The ``ARTErrorInfo/cause`` that should be returned for this error.
-        internal var cause: ARTErrorInfo? {
+        /// The ``ErrorInfo/cause`` that should be returned for this error.
+        internal var cause: ErrorInfo? {
             switch self {
             case let .roomTransitionedToInvalidStateForPresenceOperation(cause):
                 cause
             case let .roomDiscontinuity(cause):
-                cause
+                .init(optionalAblyCocoaError: cause)
             case let .channelFailedToAttach(cause):
-                cause
+                .init(optionalAblyCocoaError: cause)
             case .other,
                  .inconsistentRoomOptions,
                  .roomInFailedState,

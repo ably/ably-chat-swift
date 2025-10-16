@@ -33,7 +33,7 @@ public protocol Messages: AnyObject, Sendable {
      *
      * - Returns: A paginated result object that can be used to fetch more messages if available.
      */
-    func history(withParams params: HistoryParams) async throws(ARTErrorInfo) -> HistoryResult
+    func history(withParams params: HistoryParams) async throws(ErrorInfo) -> HistoryResult
 
     /**
      * Send a message in the chat room.
@@ -47,7 +47,7 @@ public protocol Messages: AnyObject, Sendable {
      *
      * - Note: It is possible to receive your own message via the messages subscription before this method returns.
      */
-    func send(withParams params: SendMessageParams) async throws(ARTErrorInfo) -> Message
+    func send(withParams params: SendMessageParams) async throws(ErrorInfo) -> Message
 
     /**
      * Update a message in the chat room.
@@ -70,7 +70,7 @@ public protocol Messages: AnyObject, Sendable {
      *
      * - Returns: The updated message.
      */
-    func update(withSerial serial: String, params: UpdateMessageParams, details: OperationDetails?) async throws(ARTErrorInfo) -> Message
+    func update(withSerial serial: String, params: UpdateMessageParams, details: OperationDetails?) async throws(ErrorInfo) -> Message
 
     /**
      * Delete a message in the chat room.
@@ -97,7 +97,7 @@ public protocol Messages: AnyObject, Sendable {
      *
      * - Returns: The deleted message.
      */
-    func delete(withSerial serial: String, details: OperationDetails?) async throws(ARTErrorInfo) -> Message
+    func delete(withSerial serial: String, details: OperationDetails?) async throws(ErrorInfo) -> Message
 
     /**
      * Get a message by its serial.
@@ -107,7 +107,7 @@ public protocol Messages: AnyObject, Sendable {
      *
      * - Returns: The message with the specified serial.
      */
-    func get(withSerial serial: String) async throws(ARTErrorInfo) -> Message
+    func get(withSerial serial: String) async throws(ErrorInfo) -> Message
 
     /**
      * Add, delete, and subscribe to message reactions.
@@ -416,12 +416,12 @@ public final class MessageSubscriptionResponseAsyncSequence<HistoryResult: Pagin
     private let subscription: SubscriptionAsyncSequence<Element>
 
     // can be set by either initialiser
-    private let historyBeforeSubscribe: @Sendable (HistoryBeforeSubscribeParams) async throws(ARTErrorInfo) -> HistoryResult
+    private let historyBeforeSubscribe: @Sendable (HistoryBeforeSubscribeParams) async throws(ErrorInfo) -> HistoryResult
 
     // used internally
     internal init(
         bufferingPolicy: BufferingPolicy,
-        historyBeforeSubscribe: @escaping @Sendable (HistoryBeforeSubscribeParams) async throws(ARTErrorInfo) -> HistoryResult,
+        historyBeforeSubscribe: @escaping @Sendable (HistoryBeforeSubscribeParams) async throws(ErrorInfo) -> HistoryResult,
     ) {
         subscription = .init(bufferingPolicy: bufferingPolicy)
         self.historyBeforeSubscribe = historyBeforeSubscribe
@@ -429,7 +429,7 @@ public final class MessageSubscriptionResponseAsyncSequence<HistoryResult: Pagin
 
     // used for testing
     // swiftlint:disable:next missing_docs
-    public init<Underlying: AsyncSequence & Sendable>(mockAsyncSequence: Underlying, mockHistoryBeforeSubscribe: @escaping @Sendable (HistoryBeforeSubscribeParams) async throws(ARTErrorInfo) -> HistoryResult) where Underlying.Element == Element {
+    public init<Underlying: AsyncSequence & Sendable>(mockAsyncSequence: Underlying, mockHistoryBeforeSubscribe: @escaping @Sendable (HistoryBeforeSubscribeParams) async throws(ErrorInfo) -> HistoryResult) where Underlying.Element == Element {
         subscription = .init(mockAsyncSequence: mockAsyncSequence)
         historyBeforeSubscribe = mockHistoryBeforeSubscribe
     }
@@ -444,7 +444,7 @@ public final class MessageSubscriptionResponseAsyncSequence<HistoryResult: Pagin
     }
 
     // swiftlint:disable:next missing_docs
-    public func historyBeforeSubscribe(withParams params: HistoryBeforeSubscribeParams) async throws(ARTErrorInfo) -> HistoryResult {
+    public func historyBeforeSubscribe(withParams params: HistoryBeforeSubscribeParams) async throws(ErrorInfo) -> HistoryResult {
         try await historyBeforeSubscribe(params)
     }
 

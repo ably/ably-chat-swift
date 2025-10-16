@@ -3,18 +3,18 @@ import Ably
 
 class MockRoomLifecycleManager: RoomLifecycleManager {
     let callRecorder = MockMethodCallRecorder()
-    private let attachResult: Result<Void, ARTErrorInfo>?
+    private let attachResult: Result<Void, InternalError>?
     private(set) var attachCallCount = 0
-    private let detachResult: Result<Void, ARTErrorInfo>?
+    private let detachResult: Result<Void, InternalError>?
     private(set) var detachCallCount = 0
     private(set) var releaseCallCount = 0
     private let _roomStatus: RoomStatus?
-    private let _error: ARTErrorInfo?
+    private let _error: ErrorInfo?
     private let roomStatusSubscriptions = StatusSubscriptionStorage<RoomStatusChange>()
-    private let discontinuitySubscriptions = StatusSubscriptionStorage<ARTErrorInfo>()
-    private let resultOfWaitToBeAbleToPerformPresenceOperations: Result<Void, ARTErrorInfo>?
+    private let discontinuitySubscriptions = StatusSubscriptionStorage<ErrorInfo>()
+    private let resultOfWaitToBeAbleToPerformPresenceOperations: Result<Void, InternalError>?
 
-    init(attachResult: Result<Void, ARTErrorInfo>? = nil, detachResult: Result<Void, ARTErrorInfo>? = nil, roomStatus: RoomStatus? = nil, error: ARTErrorInfo? = nil, resultOfWaitToBeAbleToPerformPresenceOperations: Result<Void, ARTErrorInfo> = .success(())) {
+    init(attachResult: Result<Void, InternalError>? = nil, detachResult: Result<Void, InternalError>? = nil, roomStatus: RoomStatus? = nil, error: ErrorInfo? = nil, resultOfWaitToBeAbleToPerformPresenceOperations: Result<Void, InternalError> = .success(())) {
         self.attachResult = attachResult
         self.detachResult = detachResult
         self.resultOfWaitToBeAbleToPerformPresenceOperations = resultOfWaitToBeAbleToPerformPresenceOperations
@@ -27,11 +27,7 @@ class MockRoomLifecycleManager: RoomLifecycleManager {
         guard let attachResult else {
             fatalError("In order to call performAttachOperation, attachResult must be passed to the initializer")
         }
-        do {
-            try attachResult.get()
-        } catch {
-            throw InternalError.fromAblyCocoa(error)
-        }
+        try attachResult.get()
     }
 
     func performDetachOperation() async throws(InternalError) {
@@ -39,11 +35,7 @@ class MockRoomLifecycleManager: RoomLifecycleManager {
         guard let detachResult else {
             fatalError("In order to call performDetachOperation, detachResult must be passed to the initializer")
         }
-        do {
-            try detachResult.get()
-        } catch {
-            throw InternalError.fromAblyCocoa(error)
-        }
+        try detachResult.get()
     }
 
     func performReleaseOperation() async {
@@ -57,7 +49,7 @@ class MockRoomLifecycleManager: RoomLifecycleManager {
         return roomStatus
     }
 
-    var error: ARTErrorInfo? {
+    var error: ErrorInfo? {
         _error
     }
 
@@ -73,11 +65,7 @@ class MockRoomLifecycleManager: RoomLifecycleManager {
             signature: "waitToBeAbleToPerformPresenceOperations(requestedByFeature:)",
             arguments: ["requestedByFeature": "\(requestedByFeature)"],
         )
-        do {
-            try resultOfWaitToBeAbleToPerformPresenceOperations.get()
-        } catch {
-            throw InternalError.fromAblyCocoa(error)
-        }
+        try resultOfWaitToBeAbleToPerformPresenceOperations.get()
     }
 
     @discardableResult
@@ -86,11 +74,11 @@ class MockRoomLifecycleManager: RoomLifecycleManager {
     }
 
     @discardableResult
-    func onDiscontinuity(_ callback: @escaping @MainActor (ARTErrorInfo) -> Void) -> DefaultStatusSubscription {
+    func onDiscontinuity(_ callback: @escaping @MainActor (ErrorInfo) -> Void) -> DefaultStatusSubscription {
         discontinuitySubscriptions.create(callback)
     }
 
-    func emitDiscontinuity(_ error: ARTErrorInfo) {
+    func emitDiscontinuity(_ error: ErrorInfo) {
         discontinuitySubscriptions.emit(error)
     }
 }

@@ -54,7 +54,7 @@ swift run BuildTool lint --fix # Auto-fix where possible
 
 **Main actor isolation:** All mutable state is isolated to the main actor. Stateful objects are marked `@MainActor`.
 
-**Typed throws:** Public API uses typed throws with `ARTErrorInfo`. Internally, `InternalError` is used and converted at public API boundaries.
+**Typed throws:** Public API uses typed throws with `ErrorInfo`. Internally, `InternalError` is used and converted at public API boundaries.
 
 **Room lifecycle:** `RoomLifecycleManager` manages room state transitions (ATTACHING → ATTACHED → DETACHING → DETACHED → RELEASING → RELEASED, with FAILED and SUSPENDED states). Each room has features (messages, presence, typing, reactions, occupancy) that coordinate through the lifecycle manager.
 

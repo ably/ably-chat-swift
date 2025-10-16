@@ -54,7 +54,7 @@ public protocol MessageSubscriptionResponse: Subscription, Sendable {
      *
      * - Returns: A paginated result of messages, in newest-to-oldest order.
      */
-    func historyBeforeSubscribe(withParams params: HistoryBeforeSubscribeParams) async throws(ARTErrorInfo) -> HistoryResult
+    func historyBeforeSubscribe(withParams params: HistoryBeforeSubscribeParams) async throws(ErrorInfo) -> HistoryResult
 }
 
 internal struct DefaultSubscription: Subscription, Sendable {
@@ -91,7 +91,7 @@ internal struct DefaultMessageSubscriptionResponse: MessageSubscriptionResponse,
         _unsubscribe()
     }
 
-    internal func historyBeforeSubscribe(withParams params: HistoryBeforeSubscribeParams) async throws(ARTErrorInfo) -> some PaginatedResult<Message> {
+    internal func historyBeforeSubscribe(withParams params: HistoryBeforeSubscribeParams) async throws(ErrorInfo) -> some PaginatedResult<Message> {
         do {
             let fromSerial = try await subscriptionStartSerial()
 
@@ -103,7 +103,7 @@ internal struct DefaultMessageSubscriptionResponse: MessageSubscriptionResponse,
 
             return try await chatAPI.getMessages(roomName: roomName, params: queryOptions)
         } catch {
-            throw error.toARTErrorInfo()
+            throw error.toErrorInfo()
         }
     }
 

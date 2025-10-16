@@ -115,44 +115,44 @@ internal final class DefaultMessages: Messages {
     }
 
     // (CHA-M6a) A method must be exposed that accepts the standard Ably REST API query parameters. It shall call the "REST API"#rest-fetching-messages and return a PaginatedResult containing messages, which can then be paginated through.
-    internal func history(withParams params: HistoryParams) async throws(ARTErrorInfo) -> some PaginatedResult<Message> {
+    internal func history(withParams params: HistoryParams) async throws(ErrorInfo) -> some PaginatedResult<Message> {
         do {
             return try await chatAPI.getMessages(roomName: roomName, params: params)
         } catch {
-            throw error.toARTErrorInfo()
+            throw error.toErrorInfo()
         }
     }
 
-    internal func send(withParams params: SendMessageParams) async throws(ARTErrorInfo) -> Message {
+    internal func send(withParams params: SendMessageParams) async throws(ErrorInfo) -> Message {
         do {
             return try await chatAPI.sendMessage(roomName: roomName, params: params)
         } catch {
-            throw error.toARTErrorInfo()
+            throw error.toErrorInfo()
         }
     }
 
-    internal func update(withSerial serial: String, params: UpdateMessageParams, details: OperationDetails?) async throws(ARTErrorInfo) -> Message {
+    internal func update(withSerial serial: String, params: UpdateMessageParams, details: OperationDetails?) async throws(ErrorInfo) -> Message {
         do {
             return try await chatAPI.updateMessage(roomName: roomName, serial: serial, updateParams: params, details: details)
         } catch {
-            throw error.toARTErrorInfo()
+            throw error.toErrorInfo()
         }
     }
 
-    internal func delete(withSerial serial: String, details: OperationDetails?) async throws(ARTErrorInfo) -> Message {
+    internal func delete(withSerial serial: String, details: OperationDetails?) async throws(ErrorInfo) -> Message {
         do {
             return try await chatAPI.deleteMessage(roomName: roomName, serial: serial, details: details)
         } catch {
-            throw error.toARTErrorInfo()
+            throw error.toErrorInfo()
         }
     }
 
     // (CHA-M13) A single message must be retrievable from the REST API.
-    internal func get(withSerial serial: String) async throws(ARTErrorInfo) -> Message {
+    internal func get(withSerial serial: String) async throws(ErrorInfo) -> Message {
         do {
             return try await chatAPI.getMessage(roomName: roomName, serial: serial)
         } catch {
-            throw error.toARTErrorInfo()
+            throw error.toErrorInfo()
         }
     }
 

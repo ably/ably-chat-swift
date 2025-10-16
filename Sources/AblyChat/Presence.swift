@@ -17,7 +17,7 @@ public protocol Presence: AnyObject, Sendable {
     /**
      * Same as ``get(params:)``, but with defaults params.
      */
-    func get() async throws(ARTErrorInfo) -> [PresenceMember]
+    func get() async throws(ErrorInfo) -> [PresenceMember]
 
     /**
      * Method to get list of the current online users and returns the latest presence messages associated to it.
@@ -27,9 +27,9 @@ public protocol Presence: AnyObject, Sendable {
      *
      * - Returns: An array of ``PresenceMember``s.
      *
-     * - Throws: An `ARTErrorInfo`.
+     * - Throws: An `ErrorInfo`.
      */
-    func get(withParams params: PresenceParams) async throws(ARTErrorInfo) -> [PresenceMember]
+    func get(withParams params: PresenceParams) async throws(ErrorInfo) -> [PresenceMember]
 
     /**
      * Method to check if user with supplied clientId is online.
@@ -39,9 +39,9 @@ public protocol Presence: AnyObject, Sendable {
      *
      * - Returns: A boolean value indicating whether the user is present in the room.
      *
-     * - Throws: An `ARTErrorInfo`.
+     * - Throws: An `ErrorInfo`.
      */
-    func isUserPresent(withClientID clientID: String) async throws(ARTErrorInfo) -> Bool
+    func isUserPresent(withClientID clientID: String) async throws(ErrorInfo) -> Bool
 
     /**
      * Method to join room presence, will emit an enter event to all subscribers. Repeat calls will trigger more enter events.
@@ -49,9 +49,9 @@ public protocol Presence: AnyObject, Sendable {
      * - Parameters:
      *   - data: The users data, a JSON serializable object that will be sent to all subscribers.
      *
-     * - Throws: An `ARTErrorInfo`.
+     * - Throws: An `ErrorInfo`.
      */
-    func enter(withData data: PresenceData) async throws(ARTErrorInfo)
+    func enter(withData data: PresenceData) async throws(ErrorInfo)
 
     /**
      * Method to update room presence, will emit an update event to all subscribers. If the user is not present, it will be treated as a join event.
@@ -59,9 +59,9 @@ public protocol Presence: AnyObject, Sendable {
      * - Parameters:
      *   - data: The users data, a JSON serializable object that will be sent to all subscribers.
      *
-     * - Throws: An `ARTErrorInfo`.
+     * - Throws: An `ErrorInfo`.
      */
-    func update(withData data: PresenceData) async throws(ARTErrorInfo)
+    func update(withData data: PresenceData) async throws(ErrorInfo)
 
     /**
      * Method to leave room presence, will emit a leave event to all subscribers. If the user is not present, it will be treated as a no-op.
@@ -69,9 +69,9 @@ public protocol Presence: AnyObject, Sendable {
      * - Parameters:
      *   - data: The users data, a JSON serializable object that will be sent to all subscribers.
      *
-     * - Throws: An `ARTErrorInfo`.
+     * - Throws: An `ErrorInfo`.
      */
-    func leave(withData data: PresenceData) async throws(ARTErrorInfo)
+    func leave(withData data: PresenceData) async throws(ErrorInfo)
 
     /**
      * Subscribes a given listener to all presence events in the chat room.
@@ -90,25 +90,25 @@ public protocol Presence: AnyObject, Sendable {
      * Method to join room presence, will emit an enter event to all subscribers. Repeat calls will trigger more enter events.
      * In oppose to ``enter(data:)`` it doesn't publish any custom presence data.
      *
-     * - Throws: An `ARTErrorInfo`.
+     * - Throws: An `ErrorInfo`.
      */
-    func enter() async throws(ARTErrorInfo)
+    func enter() async throws(ErrorInfo)
 
     /**
      * Method to update room presence, will emit an update event to all subscribers. If the user is not present, it will be treated as a join event.
      * In oppose to ``update(data:)`` it doesn't publish any custom presence data.
      *
-     * - Throws: An `ARTErrorInfo`.
+     * - Throws: An `ErrorInfo`.
      */
-    func update() async throws(ARTErrorInfo)
+    func update() async throws(ErrorInfo)
 
     /**
      * Method to leave room presence, will emit a leave event to all subscribers. If the user is not present, it will be treated as a no-op.
      * In oppose to ``leave(data:)`` it doesn't publish any custom presence data.
      *
-     * - Throws: An `ARTErrorInfo`.
+     * - Throws: An `ErrorInfo`.
      */
-    func leave() async throws(ARTErrorInfo)
+    func leave() async throws(ErrorInfo)
 }
 
 // swiftlint:disable:next missing_docs

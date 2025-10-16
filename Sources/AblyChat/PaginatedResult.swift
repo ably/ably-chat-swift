@@ -17,11 +17,11 @@ public protocol PaginatedResult<Item>: AnyObject, Sendable {
     // swiftlint:disable:next missing_docs
     var isLast: Bool { get }
     // swiftlint:disable:next missing_docs
-    func next() async throws(ARTErrorInfo) -> Self?
+    func next() async throws(ErrorInfo) -> Self?
     // swiftlint:disable:next missing_docs
-    func first() async throws(ARTErrorInfo) -> Self
+    func first() async throws(ErrorInfo) -> Self
     // swiftlint:disable:next missing_docs
-    func current() async throws(ARTErrorInfo) -> Self
+    func current() async throws(ErrorInfo) -> Self
 }
 
 /// Used internally to reduce the amount of duplicate code when interacting with `ARTHTTPPaginatedCallback`'s. The wrapper takes in the callback result from the caller e.g. `realtime.request` and either throws the appropriate error, or decodes and returns the response.
@@ -74,7 +74,7 @@ internal final class PaginatedResultWrapper<Item: JSONDecodable & Sendable & Equ
     }
 
     /// Asynchronously fetch the next page if available
-    internal func next() async throws(ARTErrorInfo) -> PaginatedResultWrapper<Item>? {
+    internal func next() async throws(ErrorInfo) -> PaginatedResultWrapper<Item>? {
         do {
             return try await withCheckedContinuation { continuation in
                 paginatedResponse.next { paginatedResponse, error in
@@ -82,12 +82,12 @@ internal final class PaginatedResultWrapper<Item: JSONDecodable & Sendable & Equ
                 }
             }.get()
         } catch {
-            throw error.toARTErrorInfo()
+            throw error.toErrorInfo()
         }
     }
 
     /// Asynchronously fetch the first page
-    internal func first() async throws(ARTErrorInfo) -> PaginatedResultWrapper<Item> {
+    internal func first() async throws(ErrorInfo) -> PaginatedResultWrapper<Item> {
         do {
             return try await withCheckedContinuation { continuation in
                 paginatedResponse.first { paginatedResponse, error in
@@ -95,12 +95,12 @@ internal final class PaginatedResultWrapper<Item: JSONDecodable & Sendable & Equ
                 }
             }.get()
         } catch {
-            throw error.toARTErrorInfo()
+            throw error.toErrorInfo()
         }
     }
 
     /// Asynchronously fetch the current page
-    internal func current() async throws(ARTErrorInfo) -> PaginatedResultWrapper<Item> {
+    internal func current() async throws(ErrorInfo) -> PaginatedResultWrapper<Item> {
         self
     }
 

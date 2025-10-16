@@ -19,7 +19,7 @@ public protocol MessageReactions: AnyObject, Sendable {
      *
      * - Note: It is possible to receive your own reaction via the reactions subscription before this method returns.
      */
-    func send(forMessageWithSerial messageSerial: String, params: SendMessageReactionParams) async throws(ARTErrorInfo)
+    func send(forMessageWithSerial messageSerial: String, params: SendMessageReactionParams) async throws(ErrorInfo)
 
     /**
      * Delete a message reaction.
@@ -28,7 +28,7 @@ public protocol MessageReactions: AnyObject, Sendable {
      *   - messageSerial: A serial of the message to remove the reaction from.
      *   - params: The type of reaction annotation and the specific reaction to remove. The reaction to remove is required for all types except ``MessageReactionType/unique``.
      */
-    func delete(fromMessageWithSerial messageSerial: String, params: DeleteMessageReactionParams) async throws(ARTErrorInfo)
+    func delete(fromMessageWithSerial messageSerial: String, params: DeleteMessageReactionParams) async throws(ErrorInfo)
 
     /**
      * Subscribe to message reaction summaries. Use this to keep message reaction counts up to date efficiently in the UI.
@@ -88,7 +88,7 @@ public protocol MessageReactions: AnyObject, Sendable {
      * }
      * ```
      */
-    func clientReactions(forMessageWithSerial messageSerial: String, clientID: String?) async throws(ARTErrorInfo) -> MessageReactionSummary
+    func clientReactions(forMessageWithSerial messageSerial: String, clientID: String?) async throws(ErrorInfo) -> MessageReactionSummary
 }
 
 /// `AsyncSequence` variant of receiving message reactions events.

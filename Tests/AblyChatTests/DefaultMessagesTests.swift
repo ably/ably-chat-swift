@@ -176,58 +176,61 @@ struct DefaultMessagesTests {
     @Test
     func errorShouldBeThrownIfErrorIsReturnedFromSendRESTChatAPI() async throws {
         // Given
+        let apiError = ARTErrorInfo(domain: "SomeDomain", code: 123)
         let realtime = MockRealtime { @Sendable () throws(ARTErrorInfo) in
-            throw ARTErrorInfo(domain: "SomeDomain", code: 123)
+            throw apiError
         }
         let chatAPI = ChatAPI(realtime: realtime)
         let channel = MockRealtimeChannel()
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", logger: TestLogger())
 
         // Then
-        let thrownError = await #expect(throws: ARTErrorInfo.self) {
+        let thrownError = await #expect(throws: ErrorInfo.self) {
             _ = try await defaultMessages.send(withParams: .init(text: "hey"))
         }
-        #expect(thrownError == ARTErrorInfo(domain: "SomeDomain", code: 123))
+        #expect(thrownError == .init(ablyCocoaError: apiError))
     }
 
     // @spec CHA-M8d
     @Test
     func errorShouldBeThrownIfErrorIsReturnedFromUpdateRESTChatAPI() async throws {
         // Given
+        let apiError = ARTErrorInfo(domain: "SomeDomain", code: 123)
         let realtime = MockRealtime { @Sendable () throws(ARTErrorInfo) in
-            throw ARTErrorInfo(domain: "SomeDomain", code: 123)
+            throw apiError
         }
         let chatAPI = ChatAPI(realtime: realtime)
         let channel = MockRealtimeChannel()
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", logger: TestLogger())
 
         // Then
-        let thrownError = await #expect(throws: ARTErrorInfo.self) {
+        let thrownError = await #expect(throws: ErrorInfo.self) {
             _ = try await defaultMessages.update(
                 withSerial: "0",
                 params: .init(text: "hey", metadata: [:], headers: [:]),
                 details: .init(description: "", metadata: [:]),
             )
         }
-        #expect(thrownError == ARTErrorInfo(domain: "SomeDomain", code: 123))
+        #expect(thrownError == .init(ablyCocoaError: apiError))
     }
 
     // @spec CHA-M9c
     @Test
     func errorShouldBeThrownIfErrorIsReturnedFromDeleteRESTChatAPI() async throws {
         // Given
+        let apiError = ARTErrorInfo(domain: "SomeDomain", code: 123)
         let realtime = MockRealtime { @Sendable () throws(ARTErrorInfo) in
-            throw ARTErrorInfo(domain: "SomeDomain", code: 123)
+            throw apiError
         }
         let chatAPI = ChatAPI(realtime: realtime)
         let channel = MockRealtimeChannel()
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", logger: TestLogger())
 
         // Then
-        let thrownError = await #expect(throws: ARTErrorInfo.self) {
+        let thrownError = await #expect(throws: ErrorInfo.self) {
             _ = try await defaultMessages.delete(withSerial: "0", details: nil)
         }
-        #expect(thrownError == ARTErrorInfo(domain: "SomeDomain", code: 123))
+        #expect(thrownError == .init(ablyCocoaError: apiError))
     }
 
     // @spec CHA-M13a
@@ -282,18 +285,19 @@ struct DefaultMessagesTests {
     @Test
     func errorShouldBeThrownIfErrorIsReturnedFromGetRESTChatAPI() async throws {
         // Given
+        let apiError = ARTErrorInfo(domain: "SomeDomain", code: 123)
         let realtime = MockRealtime { @Sendable () throws(ARTErrorInfo) in
-            throw ARTErrorInfo(domain: "SomeDomain", code: 123)
+            throw apiError
         }
         let chatAPI = ChatAPI(realtime: realtime)
         let channel = MockRealtimeChannel()
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", logger: TestLogger())
 
         // Then
-        let thrownError = await #expect(throws: ARTErrorInfo.self) {
+        let thrownError = await #expect(throws: ErrorInfo.self) {
             _ = try await defaultMessages.get(withSerial: "123456789-000@123456789:000")
         }
-        #expect(thrownError == ARTErrorInfo(domain: "SomeDomain", code: 123))
+        #expect(thrownError == .init(ablyCocoaError: apiError))
     }
 
     // @spec CHA-M5a
@@ -488,10 +492,10 @@ struct DefaultMessagesTests {
         let subscription = defaultMessages.subscribe()
 
         // Then
-        let thrownError = await #expect(throws: ARTErrorInfo.self) {
+        let thrownError = await #expect(throws: ErrorInfo.self) {
             _ = try await subscription.historyBeforeSubscribe(withParams: .init())
         }
-        #expect(thrownError == artError)
+        #expect(thrownError == .init(ablyCocoaError: artError))
     }
 
     // @spec CHA-M6a
@@ -539,11 +543,11 @@ struct DefaultMessagesTests {
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", logger: TestLogger())
 
         // When
-        let thrownError = await #expect(throws: ARTErrorInfo.self) {
+        let thrownError = await #expect(throws: ErrorInfo.self) {
             _ = try await defaultMessages.history(withParams: .init())
         }
         // Then
-        #expect(thrownError == artError)
+        #expect(thrownError == .init(ablyCocoaError: artError))
     }
 
     // CHA-M4d is currently untestable due to not subscribing to those events on lower level
