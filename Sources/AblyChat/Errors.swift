@@ -113,7 +113,9 @@ internal enum ErrorCode: Int {
 /// Either an error thrown by an ably-cocoa operation performed by the Chat SDK, or an error thrown by the Chat SDK itself.
 ///
 /// Provides the rich error information that is stored inside an ``ErrorInfo``. `ErrorInfo` then maps these errors to its public properties (`code`, `statusCode` etc), but it also keeps hold of the original `InternalError` to aid with debugging.
-internal enum InternalError: Error {
+///
+/// This type does not conform to `Error` and cannot be thrown directly. It serves as the backing storage for ``ErrorInfo``, which is the actual error type thrown by the SDK.
+internal enum InternalError {
     /// An error thrown by ably-cocoa that we wish to re-throw, or an error thrown by ably-cocoa that we wish to use for the `cause` of an ``ErrorInfo``, or the `cause` of an error thrown by ably-cocoa.
     case fromAblyCocoa(ARTErrorInfo)
 
@@ -323,32 +325,43 @@ internal enum InternalError: Error {
 
 // MARK: - Convenience conversions to InternalError
 
-internal extension ChatAPI.ChatError {
-    func toInternalError() -> InternalError {
+internal protocol ConvertibleToInternalError {
+    func toInternalError() -> InternalError
+}
+
+internal extension ConvertibleToInternalError {
+    /// Convenience method to convert directly to an `ErrorInfo`.
+    func toErrorInfo() -> ErrorInfo {
+        toInternalError().toErrorInfo()
+    }
+}
+
+extension ChatAPI.ChatError: ConvertibleToInternalError {
+    internal func toInternalError() -> InternalError {
         .internallyThrown(.other(.chatAPIChatError(self)))
     }
 }
 
-internal extension HeadersValue.JSONDecodingError {
-    func toInternalError() -> InternalError {
+extension HeadersValue.JSONDecodingError: ConvertibleToInternalError {
+    internal func toInternalError() -> InternalError {
         .internallyThrown(.other(.headersValueJSONDecodingError(self)))
     }
 }
 
-internal extension JSONValueDecodingError {
-    func toInternalError() -> InternalError {
+extension JSONValueDecodingError: ConvertibleToInternalError {
+    internal func toInternalError() -> InternalError {
         .internallyThrown(.other(.jsonValueDecodingError(self)))
     }
 }
 
-internal extension PaginatedResultError {
-    func toInternalError() -> InternalError {
+extension PaginatedResultError: ConvertibleToInternalError {
+    internal func toInternalError() -> InternalError {
         .internallyThrown(.other(.paginatedResultError(self)))
     }
 }
 
-internal extension DefaultMessages.MessagesError {
-    func toInternalError() -> InternalError {
+extension DefaultMessages.MessagesError: ConvertibleToInternalError {
+    internal func toInternalError() -> InternalError {
         .internallyThrown(.other(.messagesError(self)))
     }
 }

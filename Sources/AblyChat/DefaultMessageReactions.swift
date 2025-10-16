@@ -18,23 +18,19 @@ internal final class DefaultMessageReactions: MessageReactions {
 
     // (CHA-MR4) Users should be able to send a reaction to a message via the `send` method of the `MessagesReactions` object
     internal func send(forMessageWithSerial messageSerial: String, params: SendMessageReactionParams) async throws(ErrorInfo) {
-        do {
-            var count = params.count
-            if params.type == .multiple, params.count == nil {
-                count = 1
-            }
-
-            let apiParams: ChatAPI.SendMessageReactionParams = .init(
-                type: params.type ?? options.defaultMessageReactionType,
-                name: params.name,
-                count: count,
-            )
-            let response = try await chatAPI.sendReactionToMessage(messageSerial, roomName: roomName, params: apiParams)
-
-            logger.log(message: "Added message reaction (annotation serial: \(response.serial))", level: .info)
-        } catch {
-            throw error.toErrorInfo()
+        var count = params.count
+        if params.type == .multiple, params.count == nil {
+            count = 1
         }
+
+        let apiParams: ChatAPI.SendMessageReactionParams = .init(
+            type: params.type ?? options.defaultMessageReactionType,
+            name: params.name,
+            count: count,
+        )
+        let response = try await chatAPI.sendReactionToMessage(messageSerial, roomName: roomName, params: apiParams)
+
+        logger.log(message: "Added message reaction (annotation serial: \(response.serial))", level: .info)
     }
 
     // (CHA-MR11) Users should be able to delete a reaction from a message via the `delete` method of the `MessagesReactions` object
@@ -43,17 +39,13 @@ internal final class DefaultMessageReactions: MessageReactions {
         if reactionType != .unique, params.name == nil {
             throw InternalError.internallyThrown(.unableDeleteReactionWithoutName(reactionType: reactionType.rawValue)).toErrorInfo()
         }
-        do {
-            let apiParams: ChatAPI.DeleteMessageReactionParams = .init(
-                type: reactionType,
-                name: reactionType != .unique ? params.name : nil,
-            )
-            let response = try await chatAPI.deleteReactionFromMessage(messageSerial, roomName: roomName, params: apiParams)
+        let apiParams: ChatAPI.DeleteMessageReactionParams = .init(
+            type: reactionType,
+            name: reactionType != .unique ? params.name : nil,
+        )
+        let response = try await chatAPI.deleteReactionFromMessage(messageSerial, roomName: roomName, params: apiParams)
 
-            logger.log(message: "Deleted message reaction (annotation serial: \(response.serial))", level: .info)
-        } catch {
-            throw error.toErrorInfo()
-        }
+        logger.log(message: "Deleted message reaction (annotation serial: \(response.serial))", level: .info)
     }
 
     // (CHA-MR6) Users must be able to subscribe to message reaction summaries via the subscribe method of the MessagesReactions object. The events emitted will be of type MessageReactionSummaryEvent.
@@ -148,18 +140,13 @@ internal final class DefaultMessageReactions: MessageReactions {
 
     // CHA-MR13
     internal func clientReactions(forMessageWithSerial messageSerial: String, clientID: String?) async throws(ErrorInfo) -> MessageReactionSummary {
-        do {
-            logger.log(message: "Fetching client reactions for message serial: \(messageSerial), clientId: \(clientID ?? "current client")", level: .debug)
+        logger.log(message: "Fetching client reactions for message serial: \(messageSerial), clientId: \(clientID ?? "current client")", level: .debug)
 
-            // CHA-MR13b
-            let summary = try await chatAPI.getClientReactions(forMessageWithSerial: messageSerial, roomName: roomName, clientID: clientID)
+        // CHA-MR13b, CHA-MR13c
+        let summary = try await chatAPI.getClientReactions(forMessageWithSerial: messageSerial, roomName: roomName, clientID: clientID)
 
-            logger.log(message: "Fetched client reactions for message serial: \(messageSerial)", level: .info)
+        logger.log(message: "Fetched client reactions for message serial: \(messageSerial)", level: .info)
 
-            return summary
-        } catch {
-            // CHA-MR13c
-            throw error.toErrorInfo()
-        }
+        return summary
     }
 }

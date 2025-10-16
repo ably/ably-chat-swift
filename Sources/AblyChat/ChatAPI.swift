@@ -28,13 +28,13 @@ internal final class ChatAPI {
     }
 
     // (CHA-M6) Messages should be queryable from a paginated REST API.
-    internal func getMessages(roomName: String, params: HistoryParams) async throws(InternalError) -> some PaginatedResult<Message> {
+    internal func getMessages(roomName: String, params: HistoryParams) async throws(ErrorInfo) -> some PaginatedResult<Message> {
         let endpoint = roomUrl(roomName: roomName, suffix: "/messages")
         return try await makePaginatedRequest(endpoint, params: params.asQueryItems())
     }
 
     // (CHA-M13) Get a single message by its serial
-    internal func getMessage(roomName: String, serial: String) async throws(InternalError) -> Message {
+    internal func getMessage(roomName: String, serial: String) async throws(ErrorInfo) -> Message {
         let endpoint = messageUrl(roomName: roomName, serial: serial)
         return try await makeRequest(endpoint, method: "GET")
     }
@@ -53,14 +53,14 @@ internal final class ChatAPI {
     internal struct MessageReactionResponse: JSONObjectDecodable {
         internal let serial: String
 
-        internal init(jsonObject: [String: JSONValue]) throws(InternalError) {
+        internal init(jsonObject: [String: JSONValue]) throws(ErrorInfo) {
             serial = try jsonObject.stringValueForKey("serial")
         }
     }
 
     // (CHA-M3) Messages are sent to Ably via the Chat REST API, using the send method.
     // (CHA-M3a) When a message is sent successfully, the caller shall receive a struct representing the Message in response (as if it were received via Realtime event).
-    internal func sendMessage(roomName: String, params: SendMessageParams) async throws(InternalError) -> Message {
+    internal func sendMessage(roomName: String, params: SendMessageParams) async throws(ErrorInfo) -> Message {
         let endpoint = roomUrl(roomName: roomName, suffix: "/messages")
         var body: [String: JSONValue] = ["text": .string(params.text)]
 
@@ -79,7 +79,7 @@ internal final class ChatAPI {
 
     // (CHA-M8) A client must be able to update a message in a room.
     // (CHA-M8a) A client may update a message via the Chat REST API by calling the update method.
-    internal func updateMessage(roomName: String, serial: String, updateParams: UpdateMessageParams, details: OperationDetails?) async throws(InternalError) -> Message {
+    internal func updateMessage(roomName: String, serial: String, updateParams: UpdateMessageParams, details: OperationDetails?) async throws(ErrorInfo) -> Message {
         let endpoint = messageUrl(roomName: roomName, serial: serial)
         var body: [String: JSONValue] = [:]
 
@@ -114,7 +114,7 @@ internal final class ChatAPI {
 
     // (CHA-M9) A client must be able to delete a message in a room.
     // (CHA-M9a) A client may delete a message via the Chat REST API by calling the delete method.
-    internal func deleteMessage(roomName: String, serial: String, details: OperationDetails?) async throws(InternalError) -> Message {
+    internal func deleteMessage(roomName: String, serial: String, details: OperationDetails?) async throws(ErrorInfo) -> Message {
         let endpoint = messageUrl(roomName: roomName, serial: serial, suffix: "/delete")
         var body: [String: JSONValue] = [:]
 
@@ -131,16 +131,16 @@ internal final class ChatAPI {
         return try await makeRequest(endpoint, method: "POST", body: .jsonObject(body))
     }
 
-    internal func getOccupancy(roomName: String) async throws(InternalError) -> OccupancyData {
+    internal func getOccupancy(roomName: String) async throws(ErrorInfo) -> OccupancyData {
         let endpoint = roomUrl(roomName: roomName, suffix: "/occupancy")
         return try await makeRequest(endpoint, method: "GET")
     }
 
     // (CHA-MR4) Users should be able to send a reaction to a message via the `send` method of the `MessagesReactions` object
-    internal func sendReactionToMessage(_ messageSerial: String, roomName: String, params: SendMessageReactionParams) async throws(InternalError) -> MessageReactionResponse {
+    internal func sendReactionToMessage(_ messageSerial: String, roomName: String, params: SendMessageReactionParams) async throws(ErrorInfo) -> MessageReactionResponse {
         // (CHA-MR4a1) If the serial passed to this method is invalid: undefined, null, empty string, an error with code 40000 must be thrown.
         guard !messageSerial.isEmpty else {
-            throw ChatError.messageReactionInvalidMessageSerial.toInternalError()
+            throw ChatError.messageReactionInvalidMessageSerial.toErrorInfo()
         }
 
         let endpoint = messageUrl(roomName: roomName, serial: messageSerial, suffix: "/reactions")
@@ -155,10 +155,10 @@ internal final class ChatAPI {
     }
 
     // (CHA-MR11) Users should be able to delete a reaction from a message via the `delete` method of the `MessagesReactions` object
-    internal func deleteReactionFromMessage(_ messageSerial: String, roomName: String, params: DeleteMessageReactionParams) async throws(InternalError) -> MessageReactionResponse {
+    internal func deleteReactionFromMessage(_ messageSerial: String, roomName: String, params: DeleteMessageReactionParams) async throws(ErrorInfo) -> MessageReactionResponse {
         // (CHA-MR11a1) If the serial passed to this method is invalid: undefined, null, empty string, an error with code 40000 must be thrown.
         guard !messageSerial.isEmpty else {
-            throw ChatError.messageReactionInvalidMessageSerial.toInternalError()
+            throw ChatError.messageReactionInvalidMessageSerial.toErrorInfo()
         }
 
         let endpoint = messageUrl(roomName: roomName, serial: messageSerial, suffix: "/reactions")
@@ -172,7 +172,7 @@ internal final class ChatAPI {
     }
 
     // CHA-MR13
-    internal func getClientReactions(forMessageWithSerial messageSerial: String, roomName: String, clientID: String?) async throws(InternalError) -> MessageReactionSummary {
+    internal func getClientReactions(forMessageWithSerial messageSerial: String, roomName: String, clientID: String?) async throws(ErrorInfo) -> MessageReactionSummary {
         // CHA-MR13b
         let endpoint = messageUrl(roomName: roomName, serial: messageSerial, suffix: "/client-reactions")
 
@@ -188,12 +188,12 @@ internal final class ChatAPI {
     internal struct MessageReactionSummaryResponse: JSONObjectDecodable {
         internal let reactions: MessageReactionSummary
 
-        internal init(jsonObject: [String: JSONValue]) throws(InternalError) {
+        internal init(jsonObject: [String: JSONValue]) throws(ErrorInfo) {
             reactions = MessageReactionSummary(values: jsonObject)
         }
     }
 
-    private func makeRequest<Response: JSONDecodable>(_ url: String, method: String, params: [String: String]? = nil, body: RequestBody? = nil) async throws(InternalError) -> Response {
+    private func makeRequest<Response: JSONDecodable>(_ url: String, method: String, params: [String: String]? = nil, body: RequestBody? = nil) async throws(ErrorInfo) -> Response {
         let ablyCocoaBody: Any? = if let body {
             switch body {
             case let .jsonObject(jsonObject):
@@ -209,7 +209,7 @@ internal final class ChatAPI {
         let paginatedResponse = try await realtime.request(method, path: url, params: params, body: ablyCocoaBody, headers: [:])
 
         guard let firstItem = paginatedResponse.items.first else {
-            throw ChatError.noItemInResponse.toInternalError()
+            throw ChatError.noItemInResponse.toErrorInfo()
         }
 
         let jsonValue = JSONValue(ablyCocoaData: firstItem)
@@ -219,10 +219,10 @@ internal final class ChatAPI {
     private func makePaginatedRequest<Response: JSONDecodable & Sendable & Equatable>(
         _ url: String,
         params: [String: String]? = nil,
-    ) async throws(InternalError) -> some PaginatedResult<Response> {
+    ) async throws(ErrorInfo) -> some PaginatedResult<Response> {
         let paginatedResponse = try await realtime.request("GET", path: url, params: params, body: nil, headers: [:])
         let jsonValues = paginatedResponse.items.map { JSONValue(ablyCocoaData: $0) }
-        let items = try jsonValues.map { jsonValue throws(InternalError) in
+        let items = try jsonValues.map { jsonValue throws(ErrorInfo) in
             try Response(jsonValue: jsonValue)
         }
         return paginatedResponse.toPaginatedResult(items: items)

@@ -4,8 +4,8 @@ import Ably
 internal protocol RoomLifecycleManager: Sendable {
     associatedtype StatusSubscription: AblyChat.StatusSubscription
 
-    func performAttachOperation() async throws(InternalError)
-    func performDetachOperation() async throws(InternalError)
+    func performAttachOperation() async throws(ErrorInfo)
+    func performDetachOperation() async throws(ErrorInfo)
     func performReleaseOperation() async
     var roomStatus: RoomStatus { get }
     var error: ErrorInfo? { get }
@@ -16,13 +16,13 @@ internal protocol RoomLifecycleManager: Sendable {
     ///
     /// Implements the checks described by CHA-PR3d, CHA-PR3e, and CHA-PR3h (and similar ones described by other functionality that performs channel presence operations). Namely:
     ///
-    /// - CHA-RL9, which is invoked by CHA-PR3d, CHA-PR10d, CHA-PR6c: If the room is in the ATTACHING status, it waits for the next room status change. If the new status is ATTACHED, it returns. Else, it throws an `InternalError` derived from ``InternalError/InternallyThrown/roomTransitionedToInvalidStateForPresenceOperation(cause:)``.
+    /// - CHA-RL9, which is invoked by CHA-PR3d, CHA-PR10d, CHA-PR6c: If the room is in the ATTACHING status, it waits for the next room status change. If the new status is ATTACHED, it returns. Else, it throws an `ErrorInfo` derived from ``InternalError/InternallyThrown/roomTransitionedToInvalidStateForPresenceOperation(cause:)``.
     /// - CHA-PR3e, CHA-PR10e, CHA-PR6d: If the room is in the ATTACHED status, it returns immediately.
-    /// - CHA-PR3h, CHA-PR10h, CHA-PR6h: If the room is in any other status, it throws an `InternalError` derived from ``InternalError/InternallyThrown/presenceOperationRequiresRoomAttach(feature:)``.
+    /// - CHA-PR3h, CHA-PR10h, CHA-PR6h: If the room is in any other status, it throws an `ErrorInfo` derived from ``InternalError/InternallyThrown/presenceOperationRequiresRoomAttach(feature:)``.
     ///
     /// - Parameters:
     ///   - requester: The room feature that wishes to perform a presence operation. This is only used for customising the message of the thrown error.
-    func waitToBeAbleToPerformPresenceOperations(requestedByFeature requester: RoomFeature) async throws(InternalError)
+    func waitToBeAbleToPerformPresenceOperations(requestedByFeature requester: RoomFeature) async throws(ErrorInfo)
 
     @discardableResult
     func onDiscontinuity(_ callback: @escaping @MainActor (ErrorInfo) -> Void) -> StatusSubscription
@@ -240,7 +240,7 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
 
     /// Stores bookkeeping information needed for allowing one operation to await the result of another.
     private struct OperationResultContinuations {
-        typealias Continuation = CheckedContinuation<Result<Void, InternalError>, Never>
+        typealias Continuation = CheckedContinuation<Result<Void, ErrorInfo>, Never>
 
         private var operationResultContinuationsByOperationID: [UUID: [Continuation]] = [:]
 
@@ -306,7 +306,7 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
     private func waitForCompletionOfOperationWithID(
         _ waitedOperationID: UUID,
         requester: OperationWaitRequester,
-    ) async throws(InternalError) {
+    ) async throws(ErrorInfo) {
         logger.log(message: "\(requester.loggingDescription) started waiting for result of operation \(waitedOperationID)", level: .debug)
 
         do {
@@ -330,7 +330,7 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
     }
 
     /// Operations should call this when they have completed, in order to complete any waits initiated by ``waitForCompletionOfOperationWithID(_:waitingOperationID:)``.
-    private func operationWithID(_ operationID: UUID, didCompleteWithResult result: Result<Void, InternalError>) {
+    private func operationWithID(_ operationID: UUID, didCompleteWithResult result: Result<Void, ErrorInfo>) {
         logger.log(message: "Operation \(operationID) completed with result \(result)", level: .debug)
         let continuationsToResume = operationResultContinuations.removeContinuationsForResultOfOperationWithID(operationID)
 
@@ -350,11 +350,11 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
     ///   - body: The implementation of the operation to be performed. Once this function returns or throws an error, the operation is considered to have completed, and any waits for this operation's completion initiated via ``waitForCompletionOfOperationWithID(_:waitingOperationID:)`` will complete.
     private func performAnOperation(
         forcingOperationID forcedOperationID: UUID?,
-        _ body: (UUID) async throws(InternalError) -> Void,
-    ) async throws(InternalError) {
+        _ body: (UUID) async throws(ErrorInfo) -> Void,
+    ) async throws(ErrorInfo) {
         let operationID = forcedOperationID ?? UUID()
         logger.log(message: "Performing operation \(operationID)", level: .debug)
-        let result: Result<Void, InternalError>
+        let result: Result<Void, ErrorInfo>
         do {
             // My understanding (based on what the compiler allows me to do, and a vague understanding of how actors work) is that inside this closure you can write code as if it were a method on the manager itself — i.e. with synchronous access to the manager's state. But I currently lack the Swift concurrency vocabulary to explain exactly why this is the case.
             try await body(operationID)
@@ -363,18 +363,18 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
             result = .failure(error)
         }
 
-        operationWithID(operationID, didCompleteWithResult: result.mapError { $0 })
+        operationWithID(operationID, didCompleteWithResult: result)
 
         try result.get()
     }
 
     // MARK: - ATTACH operation
 
-    internal func performAttachOperation() async throws(InternalError) {
+    internal func performAttachOperation() async throws(ErrorInfo) {
         try await _performAttachOperation(forcingOperationID: nil)
     }
 
-    internal func performAttachOperation(testsOnly_forcingOperationID forcedOperationID: UUID? = nil) async throws(InternalError) {
+    internal func performAttachOperation(testsOnly_forcingOperationID forcedOperationID: UUID? = nil) async throws(ErrorInfo) {
         try await _performAttachOperation(forcingOperationID: forcedOperationID)
     }
 
@@ -382,23 +382,23 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
     ///
     /// - Parameters:
     ///   - forcedOperationID: Allows tests to force the operation to have a given ID. In combination with the ``testsOnly_subscribeToOperationWaitEvents`` API, this allows tests to verify that one test-initiated operation is waiting for another test-initiated operation.
-    private func _performAttachOperation(forcingOperationID forcedOperationID: UUID?) async throws(InternalError) {
-        try await performAnOperation(forcingOperationID: forcedOperationID) { operationID throws(InternalError) in
+    private func _performAttachOperation(forcingOperationID forcedOperationID: UUID?) async throws(ErrorInfo) {
+        try await performAnOperation(forcingOperationID: forcedOperationID) { operationID throws(ErrorInfo) in
             try await bodyOfAttachOperation(operationID: operationID)
         }
     }
 
-    private func bodyOfAttachOperation(operationID: UUID) async throws(InternalError) {
+    private func bodyOfAttachOperation(operationID: UUID) async throws(ErrorInfo) {
         switch roomStatus {
         case .attached:
             // CHA-RL1a
             return
         case .releasing:
             // CHA-RL1b
-            throw InternalError.internallyThrown(.roomIsReleasing)
+            throw InternalError.internallyThrown(.roomIsReleasing).toErrorInfo()
         case .released:
             // CHA-RL1c
-            throw InternalError.internallyThrown(.roomIsReleased)
+            throw InternalError.internallyThrown(.roomIsReleased).toErrorInfo()
         default:
             break
         }
@@ -421,7 +421,7 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
             // CHA-RL1k2, CHA-RL1k3
             let channelState = channel.state
             logger.log(message: "Failed to attach channel, error \(error), channel now in \(channelState)", level: .info)
-            changeStatus(to: .init(channelState: channelState), error: error.toErrorInfo())
+            changeStatus(to: .init(channelState: channelState), error: error)
             throw error
         }
 
@@ -433,11 +433,11 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
 
     // MARK: - DETACH operation
 
-    internal func performDetachOperation() async throws(InternalError) {
+    internal func performDetachOperation() async throws(ErrorInfo) {
         try await _performDetachOperation(forcingOperationID: nil)
     }
 
-    internal func performDetachOperation(testsOnly_forcingOperationID forcedOperationID: UUID? = nil) async throws(InternalError) {
+    internal func performDetachOperation(testsOnly_forcingOperationID forcedOperationID: UUID? = nil) async throws(ErrorInfo) {
         try await _performDetachOperation(forcingOperationID: forcedOperationID)
     }
 
@@ -445,26 +445,26 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
     ///
     /// - Parameters:
     ///   - forcedOperationID: Allows tests to force the operation to have a given ID. In combination with the ``testsOnly_subscribeToOperationWaitEvents`` API, this allows tests to verify that one test-initiated operation is waiting for another test-initiated operation.
-    private func _performDetachOperation(forcingOperationID forcedOperationID: UUID?) async throws(InternalError) {
-        try await performAnOperation(forcingOperationID: forcedOperationID) { operationID throws(InternalError) in
+    private func _performDetachOperation(forcingOperationID forcedOperationID: UUID?) async throws(ErrorInfo) {
+        try await performAnOperation(forcingOperationID: forcedOperationID) { operationID throws(ErrorInfo) in
             try await bodyOfDetachOperation(operationID: operationID)
         }
     }
 
-    private func bodyOfDetachOperation(operationID: UUID) async throws(InternalError) {
+    private func bodyOfDetachOperation(operationID: UUID) async throws(ErrorInfo) {
         switch roomStatus {
         case .detached:
             // CHA-RL2a
             return
         case .releasing:
             // CHA-RL2b
-            throw InternalError.internallyThrown(.roomIsReleasing)
+            throw InternalError.internallyThrown(.roomIsReleasing).toErrorInfo()
         case .released:
             // CHA-RL2c
-            throw InternalError.internallyThrown(.roomIsReleased)
+            throw InternalError.internallyThrown(.roomIsReleased).toErrorInfo()
         case .failed:
             // CHA-RL2d
-            throw InternalError.internallyThrown(.roomInFailedState)
+            throw InternalError.internallyThrown(.roomInFailedState).toErrorInfo()
         case .initialized, .attaching, .attached, .detaching, .suspended:
             break
         }
@@ -487,7 +487,7 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
             // CHA-RL2k2, CHA-RL2k3
             let channelState = channel.state
             logger.log(message: "Failed to detach channel, error \(error), channel now in \(channelState)", level: .info)
-            changeStatus(to: .init(channelState: channelState), error: error.toErrorInfo())
+            changeStatus(to: .init(channelState: channelState), error: error)
             throw error
         }
 
@@ -583,7 +583,7 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
 
     // MARK: - Waiting to be able to perform presence operations
 
-    internal func waitToBeAbleToPerformPresenceOperations(requestedByFeature requester: RoomFeature) async throws(InternalError) {
+    internal func waitToBeAbleToPerformPresenceOperations(requestedByFeature requester: RoomFeature) async throws(ErrorInfo) {
         // Although this method's implementation only uses the manager's public
         // API, it's implemented as a method on the manager itself, so that the
         // implementation is isolated to the manager and hence doesn't "miss"
@@ -612,14 +612,14 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
             // CHA-RL9b
             guard case .attached = nextRoomStatusChange.current, nextRoomStatusChange.error == nil else {
                 // CHA-RL9c
-                throw InternalError.internallyThrown(.roomTransitionedToInvalidStateForPresenceOperation(cause: nextRoomStatusChange.error))
+                throw InternalError.internallyThrown(.roomTransitionedToInvalidStateForPresenceOperation(cause: nextRoomStatusChange.error)).toErrorInfo()
             }
         case .attached:
             // CHA-PR3e, CHA-PR10e, CHA-PR6d
             break
         default:
             // CHA-PR3h, CHA-PR10h, CHA-PR6h
-            throw InternalError.internallyThrown(.presenceOperationRequiresRoomAttach(feature: requester))
+            throw InternalError.internallyThrown(.presenceOperationRequiresRoomAttach(feature: requester)).toErrorInfo()
         }
     }
 

@@ -151,9 +151,9 @@ struct DefaultRoomTests {
         arguments: [
             .success(()),
             .failure(.createArbitraryError()),
-        ] as[Result<Void, InternalError>],
+        ] as[Result<Void, ErrorInfo>],
     )
-    func attach(managerAttachResult: Result<Void, InternalError>) async throws {
+    func attach(managerAttachResult: Result<Void, ErrorInfo>) async throws {
         // Given: a DefaultRoom instance
         let channelsList = [
             MockRealtimeChannel(name: "basketball::$chat"),
@@ -172,7 +172,7 @@ struct DefaultRoomTests {
         }
 
         // Then: It calls through to the `performAttachOperation()` method on the room lifecycle manager
-        #expect(result == managerAttachResult.mapError { .init(internalError: $0) })
+        #expect(result == managerAttachResult)
         #expect(lifecycleManager.attachCallCount == 1)
     }
 
@@ -182,9 +182,9 @@ struct DefaultRoomTests {
         arguments: [
             .success(()),
             .failure(.createArbitraryError()),
-        ] as[Result<Void, InternalError>],
+        ] as[Result<Void, ErrorInfo>],
     )
-    func detach(managerDetachResult: Result<Void, InternalError>) async throws {
+    func detach(managerDetachResult: Result<Void, ErrorInfo>) async throws {
         // Given: a DefaultRoom instance
         let channelsList = [
             MockRealtimeChannel(name: "basketball::$chat"),
@@ -203,7 +203,7 @@ struct DefaultRoomTests {
         }
 
         // Then: It calls through to the `performDetachOperation()` method on the room lifecycle manager
-        #expect(result == managerDetachResult.mapError { .init(internalError: $0) })
+        #expect(result == managerDetachResult)
         #expect(lifecycleManager.detachCallCount == 1)
     }
 

@@ -2,20 +2,10 @@ import Ably
 @testable import AblyChat
 
 /**
- Tests whether a given optional `Error` is either an internally-thrown `InternalError` with a given code and cause, or an `ErrorInfo` backed by such an `InternalError`. Can optionally pass a message and it will check that it matches.
+ Tests whether a given optional `Error` is an `ErrorInfo` backed by an internally-thrown `InternalError` with a given code and cause. Can optionally pass a message and it will check that it matches.
  */
 func isChatError(_ maybeError: (any Error)?, withCodeAndStatusCode codeAndStatusCode: AblyChat.InternalError.InternallyThrown.ErrorCodeAndStatusCode, cause: ErrorInfo? = nil, message: String? = nil) -> Bool {
-    let internalError: InternalError? = if let argAsInternalError = maybeError as? InternalError {
-        // Is it an InternalError?
-        argAsInternalError
-    } else if let errorInfo = maybeError as? ErrorInfo, case let .internalError(wrappedInternalError) = errorInfo.source {
-        // If it's not an InternalError, is it an ErrorInfo that wraps one?
-        wrappedInternalError
-    } else {
-        nil
-    }
-
-    guard let internalError, case let .internallyThrown(internallyThrownError) = internalError else {
+    guard let errorInfo = maybeError as? ErrorInfo, case let .internalError(internalError) = errorInfo.source, case let .internallyThrown(internallyThrownError) = internalError else {
         return false
     }
 
@@ -32,8 +22,8 @@ func isChatError(_ maybeError: (any Error)?, withCodeAndStatusCode codeAndStatus
     return true
 }
 
-func isInternalErrorWrappingAblyCocoaError(_ error: any Error, _ expectedErrorInfo: ARTErrorInfo) -> Bool {
-    if let internalError = error as? InternalError, case let .fromAblyCocoa(actualErrorInfo) = internalError, expectedErrorInfo == actualErrorInfo {
+func isErrorInfoWrappingAblyCocoaError(_ error: any Error, _ expectedErrorInfo: ARTErrorInfo) -> Bool {
+    if let errorInfo = error as? ErrorInfo, case let .internalError(internalError) = errorInfo.source, case let .fromAblyCocoa(actualErrorInfo) = internalError, expectedErrorInfo == actualErrorInfo {
         true
     } else {
         false
@@ -57,8 +47,8 @@ extension InternalError {
     }
 }
 
-func isInternalErrorWithCase(_ error: any Error, _ expectedCase: InternalError.Case) -> Bool {
-    if let internalError = error as? InternalError, internalError.enumCase == expectedCase {
+func isErrorInfoWithInternalErrorCase(_ error: any Error, _ expectedCase: InternalError.Case) -> Bool {
+    if let errorInfo = error as? ErrorInfo, case let .internalError(internalError) = errorInfo.source, internalError.enumCase == expectedCase {
         true
     } else {
         false
@@ -173,11 +163,5 @@ extension ARTMessageAnnotations {
 extension ErrorInfo {
     static func createArbitraryError() -> Self {
         .init(code: 50000, message: "Internal error", statusCode: 500)
-    }
-}
-
-extension InternalError {
-    static func createArbitraryError() -> Self {
-        .fromAblyCocoa(.createUnknownError())
     }
 }

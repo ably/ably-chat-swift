@@ -29,24 +29,24 @@ internal struct ARTHTTPPaginatedCallbackWrapper<Response: JSONDecodable & Sendab
     internal let callbackResult: (ARTHTTPPaginatedResponse?, ARTErrorInfo?)
 
     @MainActor
-    internal func handleResponse(continuation: CheckedContinuation<Result<PaginatedResultWrapper<Response>, InternalError>, Never>) {
+    internal func handleResponse(continuation: CheckedContinuation<Result<PaginatedResultWrapper<Response>, ErrorInfo>, Never>) {
         let (paginatedResponse, error) = callbackResult
 
         // (CHA-M5i) If the REST API returns an error, then the method must throw its ErrorInfo representation.
         // (CHA-M6b) If the REST API returns an error, then the method must throw its ErrorInfo representation.
         if let error {
-            continuation.resume(returning: .failure(.fromAblyCocoa(error)))
+            continuation.resume(returning: .failure(ErrorInfo(ablyCocoaError: error)))
             return
         }
 
         guard let paginatedResponse, paginatedResponse.statusCode == 200 else {
-            continuation.resume(returning: .failure(PaginatedResultError.noErrorWithInvalidResponse.toInternalError()))
+            continuation.resume(returning: .failure(PaginatedResultError.noErrorWithInvalidResponse.toErrorInfo()))
             return
         }
 
         do {
             let jsonValues = paginatedResponse.items.map { JSONValue(ablyCocoaData: $0) }
-            let decodedResponse = try jsonValues.map { jsonValue throws(InternalError) in try Response(jsonValue: jsonValue) }
+            let decodedResponse = try jsonValues.map { jsonValue throws(ErrorInfo) in try Response(jsonValue: jsonValue) }
             let result = paginatedResponse.toPaginatedResult(items: decodedResponse)
             continuation.resume(returning: .success(result))
         } catch {
@@ -75,28 +75,20 @@ internal final class PaginatedResultWrapper<Item: JSONDecodable & Sendable & Equ
 
     /// Asynchronously fetch the next page if available
     internal func next() async throws(ErrorInfo) -> PaginatedResultWrapper<Item>? {
-        do {
-            return try await withCheckedContinuation { continuation in
-                paginatedResponse.next { paginatedResponse, error in
-                    ARTHTTPPaginatedCallbackWrapper(callbackResult: (paginatedResponse, error)).handleResponse(continuation: continuation)
-                }
-            }.get()
-        } catch {
-            throw error.toErrorInfo()
-        }
+        try await withCheckedContinuation { continuation in
+            paginatedResponse.next { paginatedResponse, error in
+                ARTHTTPPaginatedCallbackWrapper(callbackResult: (paginatedResponse, error)).handleResponse(continuation: continuation)
+            }
+        }.get()
     }
 
     /// Asynchronously fetch the first page
     internal func first() async throws(ErrorInfo) -> PaginatedResultWrapper<Item> {
-        do {
-            return try await withCheckedContinuation { continuation in
-                paginatedResponse.first { paginatedResponse, error in
-                    ARTHTTPPaginatedCallbackWrapper(callbackResult: (paginatedResponse, error)).handleResponse(continuation: continuation)
-                }
-            }.get()
-        } catch {
-            throw error.toErrorInfo()
-        }
+        try await withCheckedContinuation { continuation in
+            paginatedResponse.first { paginatedResponse, error in
+                ARTHTTPPaginatedCallbackWrapper(callbackResult: (paginatedResponse, error)).handleResponse(continuation: continuation)
+            }
+        }.get()
     }
 
     /// Asynchronously fetch the current page

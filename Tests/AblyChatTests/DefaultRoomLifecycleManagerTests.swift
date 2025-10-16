@@ -237,7 +237,7 @@ struct DefaultRoomLifecycleManagerTests {
         async let maybeFailedStatusChange = statusChangeSubscription.first { $0.current == .failed }
 
         // When: `performAttachOperation()` is called on the lifecycle manager
-        var roomAttachError: InternalError?
+        var roomAttachError: ErrorInfo?
         do {
             try await manager.performAttachOperation()
         } catch {
@@ -252,7 +252,7 @@ struct DefaultRoomLifecycleManagerTests {
 
         #expect(manager.roomStatus == .failed)
 
-        for error in [failedStatusChange.error, manager.error, roomAttachError?.toErrorInfo()] {
+        for error in [failedStatusChange.error, manager.error, roomAttachError] {
             #expect(error == .init(ablyCocoaError: channelAttachError))
         }
     }
@@ -437,7 +437,7 @@ struct DefaultRoomLifecycleManagerTests {
         async let maybeFailedStatusChange = statusChangeSubscription.first { $0.current == .failed }
 
         // When: `performDetachOperation()` is called on the lifecycle manager
-        var roomDetachError: InternalError?
+        var roomDetachError: ErrorInfo?
         do {
             try await manager.performDetachOperation()
         } catch {
@@ -452,7 +452,7 @@ struct DefaultRoomLifecycleManagerTests {
 
         #expect(manager.roomStatus == .failed)
 
-        for error in [failedStatusChange.error, manager.error, roomDetachError?.toErrorInfo()] {
+        for error in [failedStatusChange.error, manager.error, roomDetachError] {
             #expect(error == .init(ablyCocoaError: channelDetachError))
         }
     }

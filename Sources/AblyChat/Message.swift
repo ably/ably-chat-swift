@@ -167,7 +167,7 @@ public struct MessageVersion: Sendable, Equatable {
 }
 
 extension Message: JSONObjectDecodable {
-    internal init(jsonObject: [String: JSONValue]) throws(InternalError) {
+    internal init(jsonObject: [String: JSONValue]) throws(ErrorInfo) {
         let serial = try jsonObject.stringValueForKey("serial")
         let reactionSummary: MessageReactionSummary = if let summaryJson = try? jsonObject.objectValueForKey("reactions"), !summaryJson.isEmpty {
             MessageReactionSummary(
@@ -178,7 +178,7 @@ extension Message: JSONObjectDecodable {
         }
         let rawAction = try jsonObject.stringValueForKey("action")
         guard let action = ChatMessageAction(rawValue: rawAction) else {
-            throw JSONValueDecodingError.failedToDecodeFromRawValue(rawAction).toInternalError()
+            throw JSONValueDecodingError.failedToDecodeFromRawValue(rawAction).toErrorInfo()
         }
         let timestamp = try jsonObject.optionalAblyProtocolDateValueForKey("timestamp") ?? Date(timeIntervalSince1970: 0) // CHA-M4k5
         try self.init(
@@ -187,7 +187,7 @@ extension Message: JSONObjectDecodable {
             clientID: jsonObject.stringValueForKey("clientId"),
             text: jsonObject.stringValueForKey("text"),
             metadata: jsonObject.objectValueForKey("metadata"),
-            headers: jsonObject.objectValueForKey("headers").ablyChat_mapValuesWithTypedThrow { jsonValue throws(InternalError) in
+            headers: jsonObject.objectValueForKey("headers").ablyChat_mapValuesWithTypedThrow { jsonValue throws(ErrorInfo) in
                 try .init(jsonValue: jsonValue)
             },
             version: .init(jsonObject: jsonObject.objectValueForKey("version"), defaultTimestamp: timestamp),
@@ -198,7 +198,7 @@ extension Message: JSONObjectDecodable {
 }
 
 internal extension MessageVersion {
-    init(jsonObject: [String: JSONValue], defaultTimestamp: Date) throws(InternalError) {
+    init(jsonObject: [String: JSONValue], defaultTimestamp: Date) throws(ErrorInfo) {
         try self.init(
             serial: jsonObject.stringValueForKey("serial"),
             timestamp: jsonObject.optionalAblyProtocolDateValueForKey("timestamp") ?? defaultTimestamp,

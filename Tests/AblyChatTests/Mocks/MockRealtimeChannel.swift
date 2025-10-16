@@ -77,12 +77,12 @@ final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
         case success
         case failure(ARTErrorInfo)
 
-        func get() throws(InternalError) {
+        func get() throws(ErrorInfo) {
             switch self {
             case .success:
                 break
             case let .failure(error):
-                throw InternalError.fromAblyCocoa(error)
+                throw .init(ablyCocoaError: error)
             }
         }
     }
@@ -91,7 +91,7 @@ final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
 
     var attachCallCount = 0
 
-    func attach() async throws(InternalError) {
+    func attach() async throws(ErrorInfo) {
         attachCallCount += 1
 
         guard let attachBehavior else {
@@ -105,7 +105,7 @@ final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
 
     var detachCallCount = 0
 
-    func detach() async throws(InternalError) {
+    func detach() async throws(ErrorInfo) {
         detachCallCount += 1
 
         guard let detachBehavior else {
@@ -115,7 +115,7 @@ final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
         try await performBehavior(detachBehavior, callCount: detachCallCount)
     }
 
-    private func performBehavior(_ behavior: AttachOrDetachBehavior, callCount: Int) async throws(InternalError) {
+    private func performBehavior(_ behavior: AttachOrDetachBehavior, callCount: Int) async throws(ErrorInfo) {
         let result: AttachOrDetachResult
         switch behavior {
         case let .fromFunction(function):

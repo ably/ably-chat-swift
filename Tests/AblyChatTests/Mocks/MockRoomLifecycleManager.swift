@@ -3,18 +3,18 @@ import Ably
 
 class MockRoomLifecycleManager: RoomLifecycleManager {
     let callRecorder = MockMethodCallRecorder()
-    private let attachResult: Result<Void, InternalError>?
+    private let attachResult: Result<Void, ErrorInfo>?
     private(set) var attachCallCount = 0
-    private let detachResult: Result<Void, InternalError>?
+    private let detachResult: Result<Void, ErrorInfo>?
     private(set) var detachCallCount = 0
     private(set) var releaseCallCount = 0
     private let _roomStatus: RoomStatus?
     private let _error: ErrorInfo?
     private let roomStatusSubscriptions = StatusSubscriptionStorage<RoomStatusChange>()
     private let discontinuitySubscriptions = StatusSubscriptionStorage<ErrorInfo>()
-    private let resultOfWaitToBeAbleToPerformPresenceOperations: Result<Void, InternalError>?
+    private let resultOfWaitToBeAbleToPerformPresenceOperations: Result<Void, ErrorInfo>?
 
-    init(attachResult: Result<Void, InternalError>? = nil, detachResult: Result<Void, InternalError>? = nil, roomStatus: RoomStatus? = nil, error: ErrorInfo? = nil, resultOfWaitToBeAbleToPerformPresenceOperations: Result<Void, InternalError> = .success(())) {
+    init(attachResult: Result<Void, ErrorInfo>? = nil, detachResult: Result<Void, ErrorInfo>? = nil, roomStatus: RoomStatus? = nil, error: ErrorInfo? = nil, resultOfWaitToBeAbleToPerformPresenceOperations: Result<Void, ErrorInfo> = .success(())) {
         self.attachResult = attachResult
         self.detachResult = detachResult
         self.resultOfWaitToBeAbleToPerformPresenceOperations = resultOfWaitToBeAbleToPerformPresenceOperations
@@ -22,7 +22,7 @@ class MockRoomLifecycleManager: RoomLifecycleManager {
         _error = error
     }
 
-    func performAttachOperation() async throws(InternalError) {
+    func performAttachOperation() async throws(ErrorInfo) {
         attachCallCount += 1
         guard let attachResult else {
             fatalError("In order to call performAttachOperation, attachResult must be passed to the initializer")
@@ -30,7 +30,7 @@ class MockRoomLifecycleManager: RoomLifecycleManager {
         try attachResult.get()
     }
 
-    func performDetachOperation() async throws(InternalError) {
+    func performDetachOperation() async throws(ErrorInfo) {
         detachCallCount += 1
         guard let detachResult else {
             fatalError("In order to call performDetachOperation, detachResult must be passed to the initializer")
@@ -57,7 +57,7 @@ class MockRoomLifecycleManager: RoomLifecycleManager {
         roomStatusSubscriptions.emit(statusChange)
     }
 
-    func waitToBeAbleToPerformPresenceOperations(requestedByFeature: RoomFeature) async throws(InternalError) {
+    func waitToBeAbleToPerformPresenceOperations(requestedByFeature: RoomFeature) async throws(ErrorInfo) {
         guard let resultOfWaitToBeAbleToPerformPresenceOperations else {
             fatalError("resultOfWaitToBeAblePerformPresenceOperations must be set before waitToBeAbleToPerformPresenceOperations is called")
         }

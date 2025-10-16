@@ -26,7 +26,7 @@ final class MockRealtime: InternalRealtimeClientProtocol {
         self.connection = connection
     }
 
-    func request(_ method: String, path: String, params: [String: String]?, body: Any?, headers: [String: String]?) async throws(InternalError) -> ARTHTTPPaginatedResponse {
+    func request(_ method: String, path: String, params: [String: String]?, body: Any?, headers: [String: String]?) async throws(ErrorInfo) -> ARTHTTPPaginatedResponse {
         requestArguments.append((method: method, path: path, params: params, body: body, headers: headers))
         guard let paginatedCallback else {
             fatalError("Paginated callback not set")
@@ -44,7 +44,7 @@ final class MockRealtime: InternalRealtimeClientProtocol {
             )
             return try paginatedCallback()
         } catch {
-            throw InternalError.fromAblyCocoa(error)
+            throw .init(ablyCocoaError: error)
         }
     }
 }

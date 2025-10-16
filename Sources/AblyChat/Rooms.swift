@@ -94,9 +94,9 @@ internal class DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
             // The options with which the room was requested.
             requestedOptions: RoomOptions,
             // A task that will return the result of this room fetch request.
-            creationTask: Task<Result<RoomFactory.Room, InternalError>, Never>,
+            creationTask: Task<Result<RoomFactory.Room, ErrorInfo>, Never>,
             // Calling this function will cause `creationTask` to fail with the given error.
-            failCreation: @Sendable (InternalError) -> Void,
+            failCreation: @Sendable (ErrorInfo) -> Void,
         )
 
         /// The room has been created.
@@ -105,7 +105,7 @@ internal class DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
         /// The room options that correspond to this room map entry (either the options that were passed to the pending room fetch request, or the options of the created room).
         @MainActor var roomOptions: RoomOptions {
             switch self {
-            case let .requestAwaitingRelease(_, requestedOptions: options, _, _):
+            case let .requestAwaitingRelease(_, options, _, _):
                 options
             case let .created(room):
                 room.options
@@ -113,9 +113,9 @@ internal class DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
         }
 
         /// Returns the room which this room map entry corresponds to. If the room map entry represents a pending request, it will return or throw with the result of this request.
-        func waitForRoom() async throws(InternalError) -> RoomFactory.Room {
+        func waitForRoom() async throws(ErrorInfo) -> RoomFactory.Room {
             switch self {
-            case let .requestAwaitingRelease(_, _, creationTask: creationTask, _):
+            case let .requestAwaitingRelease(_, _, creationTask, _):
                 try await creationTask.value.get()
             case let .created(room):
                 room
@@ -162,134 +162,127 @@ internal class DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
     #endif
 
     internal func get(named name: String, options: RoomOptions) async throws(ErrorInfo) -> RoomFactory.Room {
-        do throws(InternalError) {
-            if let existingRoomState = roomStates[name] {
-                switch existingRoomState {
-                case let .roomMapEntry(existingRoomMapEntry):
-                    // CHA-RC1f1
-                    if existingRoomMapEntry.roomOptions.equatableBox != options.equatableBox {
-                        throw InternalError.internallyThrown(
-                            .inconsistentRoomOptions(
-                                requested: options,
-                                existing: existingRoomMapEntry.roomOptions,
-                            ),
-                        )
-                    }
-
-                    // CHA-RC1f2
-                    logger.log(message: "Waiting for room from existing room map entry \(existingRoomMapEntry)", level: .debug)
-
-                    #if DEBUG
-                        emitOperationWaitEvent(waitingOperationType: .get, waitedOperationType: .get)
-                    #endif
-
-                    do {
-                        let room = try await existingRoomMapEntry.waitForRoom()
-                        logger.log(message: "Completed waiting for room from existing room map entry \(existingRoomMapEntry)", level: .debug)
-                        return room
-                    } catch {
-                        logger.log(message: "Got error \(error) waiting for room from existing room map entry \(existingRoomMapEntry)", level: .debug)
-                        throw error
-                    }
-                case let .releaseOperationInProgress(releaseTask: releaseTask):
-                    let creationFailureFunctions = makeCreationFailureFunctions()
-
-                    let creationTask = Task<Result<RoomFactory.Room, InternalError>, Never> {
-                        do throws(InternalError) {
-                            logger.log(message: "At start of room creation task", level: .debug)
-
-                            // We wait for the first of the following events:
-                            //
-                            // - a creation failure is externally signalled, in which case we throw the corresponding error
-                            // - the in-progress release operation completes
-                            try await withTaskGroup(of: Result<Void, InternalError>.self) { group in
-                                group.addTask {
-                                    do throws(InternalError) {
-                                        try await creationFailureFunctions.throwAnySignalledCreationFailure()
-                                        return .success(())
-                                    } catch {
-                                        return .failure(error)
-                                    }
-                                }
-
-                                group.addTask { [logger] in
-                                    // This task is rather messy but its aim can be summarised as the following:
-                                    //
-                                    // - if releaseTask completes, then complete
-                                    // - if the task is cancelled, then do not propagate the cancellation to releaseTask (because we haven't properly thought through whether it can handle task cancellation; see existing TODO: https://github.com/ably/ably-chat-swift/issues/29), and do not wait for releaseTask to complete (because the CHA-RC1g4 failure is meant to happen immediately, not only once the release operation completes)
-
-                                    logger.log(message: "Room creation waiting for completion of release operation", level: .debug)
-                                    #if DEBUG
-                                        await self.emitOperationWaitEvent(waitingOperationType: .get, waitedOperationType: .release)
-                                    #endif
-
-                                    let (stream, continuation) = AsyncStream<Void>.makeStream()
-                                    Task.detached { // detached so as not to propagate task cancellation
-                                        // CHA-RC1f4
-                                        await releaseTask.value
-                                        continuation.yield(())
-                                        continuation.finish()
-                                    }
-
-                                    if await (stream.contains { _ in true }) {
-                                        logger.log(message: "Room creation completed waiting for completion of release operation", level: .debug)
-                                    } else {
-                                        // Task was cancelled
-                                        logger.log(message: "Room creation stopped waiting for completion of release operation", level: .debug)
-                                    }
-
-                                    return .success(())
-                                }
-
-                                // This pattern for waiting for the first of multiple tasks to complete is taken from here:
-                                // https://forums.swift.org/t/accept-the-first-task-to-complete/54386
-                                defer { group.cancelAll() }
-                                return await group.next() ?? .success(())
-                            }.get()
-
-                            return try .success(createRoom(name: name, options: options))
-                        } catch {
-                            return .failure(error)
-                        }
-                    }
-
-                    roomStates[name] = .roomMapEntry(
-                        .requestAwaitingRelease(
-                            releaseTask: releaseTask,
-                            requestedOptions: options,
-                            creationTask: creationTask,
-                            failCreation: creationFailureFunctions.failCreation,
+        if let existingRoomState = roomStates[name] {
+            switch existingRoomState {
+            case let .roomMapEntry(existingRoomMapEntry):
+                // CHA-RC1f1
+                if existingRoomMapEntry.roomOptions.equatableBox != options.equatableBox {
+                    throw InternalError.internallyThrown(
+                        .inconsistentRoomOptions(
+                            requested: options,
+                            existing: existingRoomMapEntry.roomOptions,
                         ),
                     )
-
-                    return try await creationTask.value.get()
+                    .toErrorInfo()
                 }
-            }
 
-            // CHA-RC1f3
-            return try createRoom(name: name, options: options)
-        } catch {
-            throw error.toErrorInfo()
+                // CHA-RC1f2
+                logger.log(message: "Waiting for room from existing room map entry \(existingRoomMapEntry)", level: .debug)
+
+                #if DEBUG
+                    emitOperationWaitEvent(waitingOperationType: .get, waitedOperationType: .get)
+                #endif
+
+                do {
+                    let room = try await existingRoomMapEntry.waitForRoom()
+                    logger.log(message: "Completed waiting for room from existing room map entry \(existingRoomMapEntry)", level: .debug)
+                    return room
+                } catch {
+                    logger.log(message: "Got error \(error) waiting for room from existing room map entry \(existingRoomMapEntry)", level: .debug)
+                    throw error
+                }
+            case let .releaseOperationInProgress(releaseTask: releaseTask):
+                let creationFailureFunctions = makeCreationFailureFunctions()
+
+                let creationTask = Task<Result<RoomFactory.Room, ErrorInfo>, Never> {
+                    do throws(ErrorInfo) {
+                        logger.log(message: "At start of room creation task", level: .debug)
+
+                        // We wait for the first of the following events:
+                        //
+                        // - a creation failure is externally signalled, in which case we throw the corresponding error
+                        // - the in-progress release operation completes
+                        try await withTaskGroup(of: Result<Void, ErrorInfo>.self) { group in
+                            group.addTask {
+                                do throws(ErrorInfo) {
+                                    try await creationFailureFunctions.throwAnySignalledCreationFailure()
+                                    return .success(())
+                                } catch {
+                                    return .failure(error)
+                                }
+                            }
+
+                            group.addTask { [logger] in
+                                // This task is rather messy but its aim can be summarised as the following:
+                                //
+                                // - if releaseTask completes, then complete
+                                // - if the task is cancelled, then do not propagate the cancellation to releaseTask (because we haven't properly thought through whether it can handle task cancellation; see existing TODO: https://github.com/ably/ably-chat-swift/issues/29), and do not wait for releaseTask to complete (because the CHA-RC1g4 failure is meant to happen immediately, not only once the release operation completes)
+
+                                logger.log(message: "Room creation waiting for completion of release operation", level: .debug)
+                                #if DEBUG
+                                    await self.emitOperationWaitEvent(waitingOperationType: .get, waitedOperationType: .release)
+                                #endif
+
+                                let (stream, continuation) = AsyncStream<Void>.makeStream()
+                                Task.detached { // detached so as not to propagate task cancellation
+                                    // CHA-RC1f4
+                                    await releaseTask.value
+                                    continuation.yield(())
+                                    continuation.finish()
+                                }
+
+                                if await (stream.contains { _ in true }) {
+                                    logger.log(message: "Room creation completed waiting for completion of release operation", level: .debug)
+                                } else {
+                                    // Task was cancelled
+                                    logger.log(message: "Room creation stopped waiting for completion of release operation", level: .debug)
+                                }
+
+                                return .success(())
+                            }
+
+                            // This pattern for waiting for the first of multiple tasks to complete is taken from here:
+                            // https://forums.swift.org/t/accept-the-first-task-to-complete/54386
+                            defer { group.cancelAll() }
+                            return await group.next() ?? .success(())
+                        }.get()
+
+                        return try .success(createRoom(name: name, options: options))
+                    } catch {
+                        return .failure(error)
+                    }
+                }
+
+                roomStates[name] = .roomMapEntry(
+                    .requestAwaitingRelease(
+                        releaseTask: releaseTask,
+                        requestedOptions: options,
+                        creationTask: creationTask,
+                        failCreation: creationFailureFunctions.failCreation,
+                    ),
+                )
+
+                return try await creationTask.value.get()
+            }
         }
+
+        // CHA-RC1f3
+        return try createRoom(name: name, options: options)
     }
 
     /// Creates two functions, `failCreation` and `throwAnySignalledCreationFailure`. The latter is an async function that waits until the former is called with an error as an argument; it then throws this error.
-    private func makeCreationFailureFunctions() -> (failCreation: @Sendable (InternalError) -> Void, throwAnySignalledCreationFailure: @Sendable () async throws(InternalError) -> Void) {
-        let (stream, continuation) = AsyncStream.makeStream(of: Result<Void, InternalError>.self)
+    private func makeCreationFailureFunctions() -> (failCreation: @Sendable (ErrorInfo) -> Void, throwAnySignalledCreationFailure: @Sendable () async throws(ErrorInfo) -> Void) {
+        let (stream, continuation) = AsyncStream.makeStream(of: Result<Void, ErrorInfo>.self)
 
         return (
-            failCreation: { @Sendable [logger] (error: InternalError) in
+            failCreation: { @Sendable [logger] (error: ErrorInfo) in
                 logger.log(message: "Recieved request to fail room creation with error \(error)", level: .debug)
                 continuation.yield(.failure(error))
                 continuation.finish()
             },
-            throwAnySignalledCreationFailure: { @Sendable [logger] () throws(InternalError) in
+            throwAnySignalledCreationFailure: { @Sendable [logger] () throws(ErrorInfo) in
                 logger.log(message: "Waiting for room creation failure request", level: .debug)
-                do throws(InternalError) {
-                    try await stream.first { _ in true }?.get()
-                } catch {
-                    throw error
-                }
+                try await stream.first { _ in true }?.get()
                 logger.log(message: "Wait for room creation failure request completed without error", level: .debug)
             },
         )
@@ -304,7 +297,7 @@ internal class DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
         logger.log(message: "\(waitingOperationType) operation completed waiting for in-progress \(waitedOperationType) operation to complete", level: .debug)
     }
 
-    private func createRoom(name: String, options: RoomOptions) throws(InternalError) -> RoomFactory.Room {
+    private func createRoom(name: String, options: RoomOptions) throws(ErrorInfo) -> RoomFactory.Room {
         logger.log(message: "Creating room with name \(name), options \(options)", level: .debug)
         let room = try roomFactory.createRoom(realtime: realtime, chatAPI: chatAPI, name: name, options: options, logger: logger)
         roomStates[name] = .roomMapEntry(.created(room: room))
@@ -345,7 +338,7 @@ internal class DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
         ):
             // CHA-RC1g4
             logger.log(message: "Release operation requesting failure of in-progress room creation request", level: .debug)
-            failCreation(InternalError.internallyThrown(.roomReleasedBeforeOperationCompleted))
+            failCreation(InternalError.internallyThrown(.roomReleasedBeforeOperationCompleted).toErrorInfo())
             await waitForOperation(releaseTask, waitingOperationType: .release, waitedOperationType: .release)
         case let .roomMapEntry(.created(room: room)):
             let releaseTask = Task {

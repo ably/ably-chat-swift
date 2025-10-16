@@ -10,7 +10,7 @@ enum RoomReactionDTOTests {
             #expect {
                 try RoomReactionDTO.Data(jsonValue: "hello")
             } throws: { error in
-                isInternalErrorWithCase(error, .jsonValueDecodingError)
+                isErrorInfoWithInternalErrorCase(error, .jsonValueDecodingError)
             }
         }
 
@@ -19,7 +19,7 @@ enum RoomReactionDTOTests {
             #expect {
                 try RoomReactionDTO.Data(jsonValue: [:])
             } throws: { error in
-                isInternalErrorWithCase(error, .jsonValueDecodingError)
+                isErrorInfoWithInternalErrorCase(error, .jsonValueDecodingError)
             }
         }
 
@@ -73,7 +73,7 @@ enum RoomReactionDTOTests {
             #expect {
                 try RoomReactionDTO.Extras(jsonValue: "hello")
             } throws: { error in
-                isInternalErrorWithCase(error, .jsonValueDecodingError)
+                isErrorInfoWithInternalErrorCase(error, .jsonValueDecodingError)
             }
         }
 
