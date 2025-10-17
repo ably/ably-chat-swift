@@ -34,16 +34,6 @@ internal enum ErrorCode: Int {
      */
     case roomDiscontinuity = 102_100
 
-    /**
-     * The message was rejected before publishing by a rule on the chat room.
-     */
-    case messageRejectedByBeforePublishRule = 42211
-
-    /**
-     * The message was rejected before publishing by a moderation rule on the chat room.
-     */
-    case messageRejectedByModeration = 42213
-
     /// Has a case for each of the ``ErrorCode`` cases that imply a fixed status code.
     internal enum CaseThatImpliesFixedStatusCode {
         case badRequest
@@ -52,8 +42,6 @@ internal enum ErrorCode: Int {
         case roomIsReleased
         case roomReleasedBeforeOperationCompleted
         case roomDiscontinuity
-        case messageRejectedByBeforePublishRule
-        case messageRejectedByModeration
 
         internal var toNumericErrorCode: ErrorCode {
             switch self {
@@ -69,10 +57,6 @@ internal enum ErrorCode: Int {
                 .roomReleasedBeforeOperationCompleted
             case .roomDiscontinuity:
                 .roomDiscontinuity
-            case .messageRejectedByModeration:
-                .messageRejectedByModeration
-            case .messageRejectedByBeforePublishRule:
-                .messageRejectedByBeforePublishRule
             }
         }
 
@@ -86,9 +70,6 @@ internal enum ErrorCode: Int {
                  .roomIsReleased,
                  .roomReleasedBeforeOperationCompleted:
                 400
-            case .messageRejectedByModeration,
-                 .messageRejectedByBeforePublishRule:
-                422
             case .roomDiscontinuity:
                 500
             }
@@ -128,8 +109,6 @@ internal enum InternalError {
     case unableDeleteReactionWithoutName(reactionType: String)
     case cannotApplyEventForDifferentMessage
     case cannotApplyCreatedMessageEvent
-    case messageRejectedByBeforePublishRule
-    case messageRejectedByModeration
     case attachSerialIsNotDefined
     case channelFailedToAttach(cause: ErrorInfo?)
 
@@ -204,10 +183,6 @@ internal enum InternalError {
             .fixedStatusCode(.badRequest)
         case .cannotApplyCreatedMessageEvent:
             .fixedStatusCode(.badRequest)
-        case .messageRejectedByBeforePublishRule:
-            .fixedStatusCode(.messageRejectedByBeforePublishRule)
-        case .messageRejectedByModeration:
-            .fixedStatusCode(.messageRejectedByModeration)
         case .attachSerialIsNotDefined:
             .fixedStatusCode(.badRequest)
         case .channelFailedToAttach:
@@ -264,10 +239,6 @@ internal enum InternalError {
             "Cannot apply event for different message."
         case .cannotApplyCreatedMessageEvent:
             "Cannot apply created message event."
-        case .messageRejectedByBeforePublishRule:
-            "The message was rejected before publishing by a rule on the chat room."
-        case .messageRejectedByModeration:
-            "The message was rejected before publishing by a moderation rule on the chat room."
         case .attachSerialIsNotDefined:
             "Channel is attached, but attachSerial is not defined."
         case let .channelFailedToAttach(cause):
@@ -294,8 +265,6 @@ internal enum InternalError {
              .cannotApplyEventForDifferentMessage,
              .cannotApplyCreatedMessageEvent,
              .unableDeleteReactionWithoutName,
-             .messageRejectedByBeforePublishRule,
-             .messageRejectedByModeration,
              .attachSerialIsNotDefined:
             nil
         }
