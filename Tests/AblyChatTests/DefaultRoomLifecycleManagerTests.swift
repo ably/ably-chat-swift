@@ -97,25 +97,25 @@ struct DefaultRoomLifecycleManagerTests {
         )
 
         // When: `performAttachOperation()` is called on the lifecycle manager
-        // Then: It throws a roomIsReleasing error
+        // Then: It throws a roomInInvalidState error (note that the spec point said roomIsReleasing, but this spec point no longer exists and this error code no longer exists in the spec, so use roomInInvalidState instead)
         let thrownError = try await #require(throws: ErrorInfo.self) {
             try await manager.performAttachOperation()
         }
-        #expect(thrownError.hasCodeAndStatusCode(.fixedStatusCode(.roomIsReleasing)))
+        #expect(thrownError.hasCodeAndStatusCode(.fixedStatusCode(.roomInInvalidState)))
     }
 
-    // @spec CHA-RL1c
+    // @spec CHA-RL1l
     @Test
     func attach_whenReleased() async throws {
         // Given: A DefaultRoomLifecycleManager in the RELEASED status
         let manager = createManager(forTestingWhatHappensWhenCurrentlyIn: .released)
 
         // When: `performAttachOperation()` is called on the lifecycle manager
-        // Then: It throws a roomIsReleased error
+        // Then: It throws a roomInInvalidState error
         let thrownError = try await #require(throws: ErrorInfo.self) {
             try await manager.performAttachOperation()
         }
-        #expect(thrownError.hasCodeAndStatusCode(.fixedStatusCode(.roomIsReleased)))
+        #expect(thrownError.hasCodeAndStatusCode(.fixedStatusCode(.roomInInvalidState)))
     }
 
     // @spec CHA-RL1d
@@ -280,28 +280,28 @@ struct DefaultRoomLifecycleManagerTests {
         )
 
         // When: `performDetachOperation()` is called on the lifecycle manager
-        // Then: It throws a roomIsReleasing error
+        // Then: It throws a roomInInvalidState error (note that the spec point said roomIsReleasing, but this spec point no longer exists and this error code no longer exists in the spec, so use roomInInvalidState instead)
         let thrownError = try await #require(throws: ErrorInfo.self) {
             try await manager.performDetachOperation()
         }
-        #expect(thrownError.hasCodeAndStatusCode(.fixedStatusCode(.roomIsReleasing)))
+        #expect(thrownError.hasCodeAndStatusCode(.fixedStatusCode(.roomInInvalidState)))
     }
 
-    // @spec CHA-RL2c
+    // @spec CHA-RL2l
     @Test
     func detach_whenReleased() async throws {
         // Given: A DefaultRoomLifecycleManager in the RELEASED status
         let manager = createManager(forTestingWhatHappensWhenCurrentlyIn: .released)
 
         // When: `performAttachOperation()` is called on the lifecycle manager
-        // Then: It throws a roomIsReleased error
+        // Then: It throws a roomInInvalidState error
         let thrownError = try await #require(throws: ErrorInfo.self) {
             try await manager.performDetachOperation()
         }
-        #expect(thrownError.hasCodeAndStatusCode(.fixedStatusCode(.roomIsReleased)))
+        #expect(thrownError.hasCodeAndStatusCode(.fixedStatusCode(.roomInInvalidState)))
     }
 
-    // @spec CHA-RL2d
+    // @spec CHA-RL2m
     @Test
     func detach_whenFailed() async throws {
         // Given: A DefaultRoomLifecycleManager in the FAILED status
@@ -310,11 +310,11 @@ struct DefaultRoomLifecycleManagerTests {
         )
 
         // When: `performAttachOperation()` is called on the lifecycle manager
-        // Then: It throws a roomInFailedState error
+        // Then: It throws a roomInInvalidState error
         let thrownError = try await #require(throws: ErrorInfo.self) {
             try await manager.performDetachOperation()
         }
-        #expect(thrownError.hasCodeAndStatusCode(.fixedStatusCode(.roomInFailedState)))
+        #expect(thrownError.hasCodeAndStatusCode(.fixedStatusCode(.roomInInvalidState)))
     }
 
     // @spec CHA-RL2i
@@ -1021,7 +1021,7 @@ struct DefaultRoomLifecycleManagerTests {
         let channelAttachError = ErrorInfo.createArbitraryError()
         channelAttachOperation.complete(behavior: .completeAndChangeState(.failure(channelAttachError), newState: .failed))
 
-        // Then: The call to `waitToBeAbleToPerformPresenceOperations(requestedByFeature:)` fails with a `roomInInvalidState` error with status code 500, whose cause is the error associated with the room status change
+        // Then: The call to `waitToBeAbleToPerformPresenceOperations(requestedByFeature:)` fails with a `roomInInvalidState` error, whose cause is the error associated with the room status change
         var caughtError: ErrorInfo?
         do {
             try await waitToBeAbleToPerformPresenceOperationsResult
@@ -1030,7 +1030,7 @@ struct DefaultRoomLifecycleManagerTests {
         }
 
         let expectedCause = channelAttachError // using our knowledge of CHA-RL1k2
-        #expect(try #require(caughtError).hasCodeAndStatusCode(.variableStatusCode(.roomInInvalidState, statusCode: 500), cause: expectedCause))
+        #expect(try #require(caughtError).hasCodeAndStatusCode(.fixedStatusCode(.roomInInvalidState), cause: expectedCause))
     }
 
     // @specOneOf(1/2) CHA-PR3e - Tests the wait described in the spec point, but not that the feature actually performs this wait nor the side effect.
@@ -1065,7 +1065,7 @@ struct DefaultRoomLifecycleManagerTests {
             try await manager.waitToBeAbleToPerformPresenceOperations(requestedByFeature: .messages /* arbitrary */ )
         }
 
-        // Then: It throws a roomInInvalidState error for that feature, with status code 400, and a message explaining that the room must first be attached
-        #expect(caughtError.hasCodeAndStatusCode(.variableStatusCode(.roomInInvalidState, statusCode: 400), message: "To perform this messages operation, you must first attach the room."))
+        // Then: It throws a roomInInvalidState error for that feature, with a message explaining that the room must first be attached
+        #expect(caughtError.hasCodeAndStatusCode(.fixedStatusCode(.roomInInvalidState), message: "To perform this messages operation, you must first attach the room."))
     }
 }

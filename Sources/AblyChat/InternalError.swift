@@ -6,20 +6,92 @@ import Ably
 ///
 /// This type does not conform to `Error` and cannot be thrown directly. It serves as the backing storage for ``ErrorInfo``, which is the actual error type thrown by the SDK.
 internal enum InternalError {
+    /// Some other internal error that does not fall into any of the below cases.
+    ///
+    /// These are all errors for which the spec does not specify any particular handling.
     case other(Other)
-    case inconsistentRoomOptions(requested: RoomOptions, existing: RoomOptions)
-    case roomInFailedState
-    case roomIsReleasing
-    case roomIsReleased
-    case roomReleasedBeforeOperationCompleted
-    case presenceOperationRequiresRoomAttach(feature: RoomFeature)
-    case roomTransitionedToInvalidStateForPresenceOperation(cause: ErrorInfo?)
-    case roomDiscontinuity(cause: ErrorInfo?)
-    case unableDeleteReactionWithoutName(reactionType: String)
-    case cannotApplyEventForDifferentMessage
+
+    /// Not proceeding with `Room.attach()` because the room has the following invalid status, per CHA-RL1l.
+    ///
+    /// Error code is `roomInInvalidState`.
+    case roomInInvalidStateForAttach(RoomStatus)
+
+    /// Not proceeding with `Room.detach()` because the room has the following invalid status, per CHA-RL2l or CHA-RL2m.
+    ///
+    /// Error code is `roomInInvalidState`.
+    case roomInInvalidStateForDetach(RoomStatus)
+
+    /// Attempted to apply a `MessageEvent.created` event to a `Message`, which is not allowed per CHA-M11h.
+    ///
+    /// Error code is `invalidArgument`.
     case cannotApplyCreatedMessageEvent
-    case attachSerialIsNotDefined
-    case channelFailedToAttach(cause: ErrorInfo?)
+
+    /// Attempted to apply a `MessageEvent` to a `Message` whose `serial` doesn't match the `messageSerial` of the event, which is not allowed per CHA-M11i.
+    ///
+    /// Error code is `invalidArgument`.
+    case cannotApplyMessageEventForDifferentMessage
+
+    /// Attempted to apply a `MessageReactionSummaryEvent` to a `Message` whose `serial` doesn't match the `messageSerial` of the event, which is not allowed per CHA-M11j.
+    ///
+    /// Error code is `invalidArgument`.
+    case cannotApplyReactionSummaryEventForDifferentMessage
+
+    /// The user passed an empty `messageSerial` when sending a reaction, which is not allowed per CHA-MR4a2.
+    ///
+    /// Error code is `invalidArgument`.
+    case sendMessageReactionEmptyMessageSerial
+
+    /// The user passed an empty `messageSerial` when deleting a reaction, which is not allowed per CHA-MR11a2.
+    ///
+    /// Error code is `invalidArgument`.
+    case deleteMessageReactionEmptyMessageSerial
+
+    /// The user tried to fetch a room which has already been requested with different options, which is not allowed per CHA-RC1f1.
+    ///
+    /// Error code is `roomExistsWithDifferentOptions`.
+    case roomExistsWithDifferentOptions(requested: RoomOptions, existing: RoomOptions)
+
+    /// The user tried to attach or detach a room which is in the RELEASING state, which is not allowed per CHA-RL1b or CHA-RL2b respectively.
+    ///
+    /// Error code is `roomInInvalidState` (note that the spec point said `roomIsReleasing`, but this spec point no longer exists and this error code no longer exists in the spec, so use `roomInInvalidState` instead).
+    case roomIsReleasing
+
+    /// The user attempted to release a room whilst a release operation was already in progress, causing the release operation to fail per CHA-RC1g4.
+    ///
+    /// Error code is `roomReleasedBeforeOperationCompleted`.
+    case roomReleasedBeforeOperationCompleted
+
+    /// The user attempted to perform a presence operation whilst the room was not ATTACHED or ATTACHING, resulting in this error per CHA-PR3h, CHA-PR10h, CHA-PR6h.
+    ///
+    /// Error code is `roomInInvalidState`.
+    case presenceOperationRequiresRoomAttach(feature: RoomFeature)
+
+    /// The user attempted to perform a presence operation whilst the room was ATTACHING, and after waiting for a room status change the next status was not ATTACHED, resulting in this error per CHA-RL9c.
+    ///
+    /// Error code is `roomInInvalidState`.
+    case roomTransitionedToInvalidStateForPresenceOperation(cause: ErrorInfo?)
+
+    /// The room's channel emitted an event representing a discontinuity, and so the room emitted this error per CHA-RL12b.
+    ///
+    /// Error code is `roomDiscontinuity`.
+    case roomDiscontinuity(cause: ErrorInfo?)
+
+    // TODO: Revisit the non-specified errors as part of https://github.com/ably/ably-chat-swift/issues/438
+
+    /// The user attempted to delete a reaction of type different than `unique`, without specifying the reaction identifier. This is not allowed per CHA-MR11b1.
+    ///
+    /// Error code is `badRequest` (this is not specified by the spec, which does not make it explicit that the SDK should throw an error in this scenario).
+    case unableDeleteReactionWithoutName(reactionType: String)
+
+    /// Unable to fetch `historyBeforeSubscribe` because a channel in the `ATTACHED` state has violated our expectations by its `attachSerial` not being populated, so we cannot resolve its "subscription point" per CHA-M5b.
+    ///
+    /// Error code is `badRequest` (this is not specified by the spec, which does not make it explicit that the SDK should throw an error in this scenario).
+    case failedToResolveSubscriptionPointBecauseAttachSerialNotDefined
+
+    /// Unable to fetch `historyBeforeSubscribe` because whilst waiting for a channel to become attached per CHA-M5b in order to resolve its "subscription point".
+    ///
+    /// Error code is `badRequest` (this is not specified by the spec, which does not make it explicit that the SDK should throw an error in this scenario).
+    case failedToResolveSubscriptionPointBecauseChannelFailedToAttach(cause: ErrorInfo?)
 
     /// Returns the error that this should be converted to when exposed via the SDK's public API.
     internal func toErrorInfo() -> ErrorInfo {
@@ -36,58 +108,37 @@ internal enum InternalError {
     }
 
     /// The ```ErrorInfo/code`` values used by `InternalError` cases.
+    ///
+    /// These values are taken from the "Common Error Codes used by Chat" and "Chat-specific Error Codes" section of the chat spec.
     internal enum ErrorCode: Int {
-        /// The user attempted to perform an invalid action.
         case badRequest = 40000
-
-        /**
-         * Cannot perform operation because the room is in a failed state.
-         */
-        case roomInFailedState = 102_101
-
-        /**
-         * Cannot perform operation because the room is in a releasing state.
-         */
-        case roomIsReleasing = 102_102
-
-        /**
-         * Cannot perform operation because the room is in a released state.
-         */
-        case roomIsReleased = 102_103
-
-        /**
-         * Room was released before the operation could complete.
-         */
-        case roomReleasedBeforeOperationCompleted = 102_106
-
-        case roomInInvalidState = 102_107
-
-        /**
-         * The room has experienced a discontinuity.
-         */
+        case invalidArgument = 40003
         case roomDiscontinuity = 102_100
+        case roomReleasedBeforeOperationCompleted = 102_106
+        case roomExistsWithDifferentOptions = 102_107
+        case roomInInvalidState = 102_112
 
         /// Has a case for each of the ``ErrorCode`` cases that imply a fixed status code.
         internal enum CaseThatImpliesFixedStatusCode {
             case badRequest
-            case roomInFailedState
-            case roomIsReleasing
-            case roomIsReleased
-            case roomReleasedBeforeOperationCompleted
+            case invalidArgument
             case roomDiscontinuity
+            case roomReleasedBeforeOperationCompleted
+            case roomExistsWithDifferentOptions
+            case roomInInvalidState
 
             internal var toNumericErrorCode: ErrorCode {
                 switch self {
                 case .badRequest:
                     .badRequest
-                case .roomInFailedState:
-                    .roomInFailedState
-                case .roomIsReleasing:
-                    .roomIsReleasing
-                case .roomIsReleased:
-                    .roomIsReleased
+                case .invalidArgument:
+                    .invalidArgument
                 case .roomReleasedBeforeOperationCompleted:
                     .roomReleasedBeforeOperationCompleted
+                case .roomExistsWithDifferentOptions:
+                    .roomExistsWithDifferentOptions
+                case .roomInInvalidState:
+                    .roomInInvalidState
                 case .roomDiscontinuity:
                     .roomDiscontinuity
                 }
@@ -95,13 +146,13 @@ internal enum InternalError {
 
             /// The ``ErrorInfo/statusCode`` that should be returned for this error.
             internal var statusCode: Int {
-                // These status codes are taken from the "Chat-specific Error Codes" section of the spec.
+                /// These status codes are taken from the "Common Error Codes used by Chat" and "Chat-specific Error Codes" sections of the chat spec.
                 switch self {
                 case .badRequest,
-                     .roomInFailedState,
-                     .roomIsReleasing,
-                     .roomIsReleased,
-                     .roomReleasedBeforeOperationCompleted:
+                     .invalidArgument,
+                     .roomReleasedBeforeOperationCompleted,
+                     .roomInInvalidState,
+                     .roomExistsWithDifferentOptions:
                     400
                 case .roomDiscontinuity:
                     500
@@ -110,14 +161,9 @@ internal enum InternalError {
         }
 
         /// Has a case for each of the ``ErrorCode`` cases that do not imply a fixed status code.
-        internal enum CaseThatImpliesVariableStatusCode {
-            case roomInInvalidState
-
-            internal var toNumericErrorCode: ErrorCode {
-                switch self {
-                case .roomInInvalidState:
-                    .roomInInvalidState
-                }
+        internal enum CaseThatImpliesVariableStatusCode: Equatable {
+            internal var toNumericErrorCode: Never {
+                switch self {}
             }
         }
     }
@@ -155,33 +201,39 @@ internal enum InternalError {
         case .other:
             // For now we just treat all miscellaneous internally-thrown errors as non-recoverable user errors
             .fixedStatusCode(.badRequest)
-        case .inconsistentRoomOptions:
-            .fixedStatusCode(.badRequest)
-        case .roomInFailedState:
-            .fixedStatusCode(.roomInFailedState)
+        case .roomExistsWithDifferentOptions:
+            .fixedStatusCode(.roomExistsWithDifferentOptions)
         case .roomIsReleasing:
-            .fixedStatusCode(.roomIsReleasing)
-        case .roomIsReleased:
-            .fixedStatusCode(.roomIsReleased)
+            .fixedStatusCode(.roomInInvalidState)
         case .roomReleasedBeforeOperationCompleted:
             .fixedStatusCode(.roomReleasedBeforeOperationCompleted)
+        case .roomInInvalidStateForAttach:
+            .fixedStatusCode(.roomInInvalidState)
+        case .roomInInvalidStateForDetach:
+            .fixedStatusCode(.roomInInvalidState)
+        case .sendMessageReactionEmptyMessageSerial:
+            .fixedStatusCode(.invalidArgument)
+        case .deleteMessageReactionEmptyMessageSerial:
+            .fixedStatusCode(.invalidArgument)
         case .roomTransitionedToInvalidStateForPresenceOperation:
             // CHA-RL9c
-            .variableStatusCode(.roomInInvalidState, statusCode: 500)
+            .fixedStatusCode(.roomInInvalidState)
         case .presenceOperationRequiresRoomAttach:
             // CHA-PR3h, CHA-PR10h, CHA-PR6h
-            .variableStatusCode(.roomInInvalidState, statusCode: 400)
+            .fixedStatusCode(.roomInInvalidState)
         case .roomDiscontinuity:
             .fixedStatusCode(.roomDiscontinuity)
         case .unableDeleteReactionWithoutName:
             .fixedStatusCode(.badRequest)
-        case .cannotApplyEventForDifferentMessage:
-            .fixedStatusCode(.badRequest)
+        case .cannotApplyMessageEventForDifferentMessage:
+            .fixedStatusCode(.invalidArgument)
+        case .cannotApplyReactionSummaryEventForDifferentMessage:
+            .fixedStatusCode(.invalidArgument)
         case .cannotApplyCreatedMessageEvent:
+            .fixedStatusCode(.invalidArgument)
+        case .failedToResolveSubscriptionPointBecauseAttachSerialNotDefined:
             .fixedStatusCode(.badRequest)
-        case .attachSerialIsNotDefined:
-            .fixedStatusCode(.badRequest)
-        case .channelFailedToAttach:
+        case .failedToResolveSubscriptionPointBecauseChannelFailedToAttach:
             .fixedStatusCode(.badRequest)
         }
     }
@@ -201,6 +253,29 @@ internal enum InternalError {
         }
     }
 
+    private static func descriptionOfRoomStatus(_ roomStatus: RoomStatus) -> String {
+        switch roomStatus {
+        case .initialized:
+            "initialized"
+        case .attaching:
+            "attaching"
+        case .attached:
+            "attached"
+        case .detaching:
+            "detaching"
+        case .detached:
+            "detached"
+        case .suspended:
+            "suspended"
+        case .failed:
+            "failed"
+        case .releasing:
+            "releasing"
+        case .released:
+            "released"
+        }
+    }
+
     /// A helper type for parameterising the construction of error messages.
     private enum AttachOrDetach {
         case attach
@@ -213,14 +288,14 @@ internal enum InternalError {
         case let .other(otherInternalError):
             // This will contain the name of the underlying enum case (we have a test to verify this); this will do for now
             "\(otherInternalError)"
-        case let .inconsistentRoomOptions(requested, existing):
+        case let .roomExistsWithDifferentOptions(requested, existing):
             "Rooms.get(roomName:options:) was called with a different set of room options than was used on a previous call. You must first release the existing room instance using Rooms.release(roomName:). Requested options: \(requested), existing options: \(existing)"
-        case .roomInFailedState:
-            "Cannot perform operation because the room is in a failed state."
+        case let .roomInInvalidStateForAttach(roomStatus):
+            "Cannot attach room because the room is in a \(Self.descriptionOfRoomStatus(roomStatus)) state."
+        case let .roomInInvalidStateForDetach(roomStatus):
+            "Cannot detach room because the room is in a \(Self.descriptionOfRoomStatus(roomStatus)) state."
         case .roomIsReleasing:
             "Cannot perform operation because the room is in a releasing state."
-        case .roomIsReleased:
-            "Cannot perform operation because the room is in a released state."
         case .roomReleasedBeforeOperationCompleted:
             "Room was released before the operation could complete."
         case let .presenceOperationRequiresRoomAttach(feature):
@@ -231,14 +306,20 @@ internal enum InternalError {
             "The room has experienced a discontinuity."
         case let .unableDeleteReactionWithoutName(reactionType: reactionType):
             "Cannot delete reaction of type '\(reactionType)' without a reaction name."
-        case .cannotApplyEventForDifferentMessage:
-            "Cannot apply event for different message."
+        case .cannotApplyMessageEventForDifferentMessage:
+            "Cannot apply MessageEvent for a different message."
+        case .cannotApplyReactionSummaryEventForDifferentMessage:
+            "Cannot apply MessageReactionSummaryEvent for a different message."
         case .cannotApplyCreatedMessageEvent:
             "Cannot apply created message event."
-        case .attachSerialIsNotDefined:
+        case .failedToResolveSubscriptionPointBecauseAttachSerialNotDefined:
             "Channel is attached, but attachSerial is not defined."
-        case let .channelFailedToAttach(cause):
+        case let .failedToResolveSubscriptionPointBecauseChannelFailedToAttach(cause):
             "Channel failed to attach: \(String(describing: cause))"
+        case .sendMessageReactionEmptyMessageSerial:
+            "Failed to send message reaction: message serial must not be empty"
+        case .deleteMessageReactionEmptyMessageSerial:
+            "Failed to delete message reaction: message serial must not be empty"
         }
     }
 
@@ -249,19 +330,22 @@ internal enum InternalError {
             cause
         case let .roomDiscontinuity(cause):
             cause
-        case let .channelFailedToAttach(cause):
+        case let .failedToResolveSubscriptionPointBecauseChannelFailedToAttach(cause):
             cause
         case .other,
-             .inconsistentRoomOptions,
-             .roomInFailedState,
+             .roomExistsWithDifferentOptions,
              .roomIsReleasing,
-             .roomIsReleased,
              .roomReleasedBeforeOperationCompleted,
              .presenceOperationRequiresRoomAttach,
-             .cannotApplyEventForDifferentMessage,
              .cannotApplyCreatedMessageEvent,
              .unableDeleteReactionWithoutName,
-             .attachSerialIsNotDefined:
+             .failedToResolveSubscriptionPointBecauseAttachSerialNotDefined,
+             .roomInInvalidStateForAttach,
+             .roomInInvalidStateForDetach,
+             .cannotApplyMessageEventForDifferentMessage,
+             .cannotApplyReactionSummaryEventForDifferentMessage,
+             .sendMessageReactionEmptyMessageSerial,
+             .deleteMessageReactionEmptyMessageSerial:
             nil
         }
     }

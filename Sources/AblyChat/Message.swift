@@ -222,9 +222,9 @@ public extension Message {
      * - Returns: A new message instance with the event applied.
      */
     func with(_ summaryEvent: MessageReactionSummaryEvent) throws(ErrorInfo) -> Self {
-        // (CHA-M11e) For MessageReactionSummaryEvent, the method must verify that the summary.messageSerial in the event matches the message's own serial. If they don't match, an error with code 40000 and status code 400 must be thrown.
+        // (CHA-M11j) For MessageReactionSummaryEvent, the method must verify that the summary.messageSerial in the event matches the message's own serial. If they don't match, an error with code InvalidArgument must be thrown.
         guard serial == summaryEvent.messageSerial else {
-            throw InternalError.cannotApplyEventForDifferentMessage.toErrorInfo()
+            throw InternalError.cannotApplyReactionSummaryEventForDifferentMessage.toErrorInfo()
         }
 
         var newMessage = self
@@ -243,14 +243,14 @@ public extension Message {
      * - Returns: A new message instance with the event applied, or the original message if the event is older.
      */
     func with(_ messageEvent: ChatMessageEvent) throws(ErrorInfo) -> Self {
-        // (CHA-M11a) When the method receives a MessageEvent of type created, it must throw an ErrorInfo with code 40000 and status code 400.
+        // (CHA-M11h) When the method receives a MessageEvent of type created, it must throw an ErrorInfo with code InvalidArgument.
         if messageEvent.type == .created {
             throw InternalError.cannotApplyCreatedMessageEvent.toErrorInfo()
         }
 
-        // (CHA-M11b) For MessageEvent the method must verify that the message.serial in the event matches the message's own serial. If they don't match, an error with code 40000 and status code 400 must be thrown.
+        // (CHA-M11i) For MessageEvent the method must verify that the message.serial in the event matches the message's own serial. If they don't match, an error with code InvalidArgument must be thrown.
         guard serial == messageEvent.message.serial else {
-            throw InternalError.cannotApplyEventForDifferentMessage.toErrorInfo()
+            throw InternalError.cannotApplyMessageEventForDifferentMessage.toErrorInfo()
         }
 
         // (CHA-M11c) For MessageEvent of type update and delete, if the event message is older or the same, the original message must be returned unchanged.

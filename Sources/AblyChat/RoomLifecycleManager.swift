@@ -397,8 +397,8 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
             // CHA-RL1b
             throw InternalError.roomIsReleasing.toErrorInfo()
         case .released:
-            // CHA-RL1c
-            throw InternalError.roomIsReleased.toErrorInfo()
+            // CHA-RL1l
+            throw InternalError.roomInInvalidStateForAttach(roomStatus).toErrorInfo()
         default:
             break
         }
@@ -459,12 +459,9 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
         case .releasing:
             // CHA-RL2b
             throw InternalError.roomIsReleasing.toErrorInfo()
-        case .released:
-            // CHA-RL2c
-            throw InternalError.roomIsReleased.toErrorInfo()
-        case .failed:
-            // CHA-RL2d
-            throw InternalError.roomInFailedState.toErrorInfo()
+        case .released, .failed:
+            // CHA-RL2l, CHA-RL2m
+            throw InternalError.roomInInvalidStateForDetach(roomStatus).toErrorInfo()
         case .initialized, .attaching, .attached, .detaching, .suspended:
             break
         }

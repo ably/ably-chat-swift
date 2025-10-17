@@ -167,7 +167,7 @@ internal class DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
             case let .roomMapEntry(existingRoomMapEntry):
                 // CHA-RC1f1
                 if existingRoomMapEntry.roomOptions.equatableBox != options.equatableBox {
-                    throw InternalError.inconsistentRoomOptions(
+                    throw InternalError.roomExistsWithDifferentOptions(
                         requested: options,
                         existing: existingRoomMapEntry.roomOptions,
                     )

@@ -171,13 +171,13 @@ struct DefaultRoomsTests {
         _ = try await rooms.get(named: name, options: options)
 
         // When: get(name:options:) is called with the same name but different options
-        // Then: It throws a `badRequest` error
+        // Then: It throws a `roomExistsWithDifferentOptions` error
         let differentOptions = RoomOptions(presence: .init(enableEvents: false))
 
         let thrownError = try await #require(throws: ErrorInfo.self) {
             try await rooms.get(named: name, options: differentOptions)
         }
-        #expect(thrownError.hasCodeAndStatusCode(.fixedStatusCode(.badRequest)))
+        #expect(thrownError.hasCodeAndStatusCode(.fixedStatusCode(.roomExistsWithDifferentOptions)))
     }
 
     // @specOneOf(2/2) CHA-RC1f1 - Tests the case where, per CHA-RC1f4, there is, in the spec's language, a _future_ in the room map
@@ -212,13 +212,13 @@ struct DefaultRoomsTests {
         }
 
         // When: get(name:options:) is called with the same name but different options
-        // Then: The second call to get(name:options:) throws a `badRequest` error
+        // Then: The second call to get(name:options:) throws a `roomExistsWithDifferentOptions` error
         let differentOptions = RoomOptions(presence: .init(enableEvents: false))
 
         let thrownError = try await #require(throws: ErrorInfo.self) {
             try await rooms.get(named: name, options: differentOptions)
         }
-        #expect(thrownError.hasCodeAndStatusCode(.fixedStatusCode(.badRequest)))
+        #expect(thrownError.hasCodeAndStatusCode(.fixedStatusCode(.roomExistsWithDifferentOptions)))
 
         // Post-test: Allow the CHA-RC1g release operation to complete
         roomReleaseOperation.complete()
