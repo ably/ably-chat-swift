@@ -16,19 +16,15 @@ internal final class DefaultRoomReactions: RoomReactions {
     // (CHA-ER3) Ephemeral room reactions are sent to Ably via the Realtime connection via a send method.
     // (CHA-ER3d) Reactions are sent on the channel using a message in a particular format - see spec for format.
     internal func send(withParams params: SendReactionParams) async throws(ErrorInfo) {
-        do {
-            logger.log(message: "Sending reaction with params: \(params)", level: .debug)
+        logger.log(message: "Sending reaction with params: \(params)", level: .debug)
 
-            let dto = RoomReactionDTO(name: params.name, metadata: params.metadata, headers: params.headers)
+        let dto = RoomReactionDTO(name: params.name, metadata: params.metadata, headers: params.headers)
 
-            try await channel.publish(
-                RoomReactionEvents.reaction.rawValue,
-                data: dto.data.toJSONValue,
-                extras: dto.extras.toJSONObject,
-            )
-        } catch {
-            throw error.toErrorInfo()
-        }
+        try await channel.publish(
+            RoomReactionEvents.reaction.rawValue,
+            data: dto.data.toJSONValue,
+            extras: dto.extras.toJSONObject,
+        )
     }
 
     // (CHA-ER4) A user may subscribe to reaction events in Realtime.

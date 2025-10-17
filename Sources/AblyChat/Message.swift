@@ -167,7 +167,7 @@ public struct MessageVersion: Sendable, Equatable {
 }
 
 extension Message: JSONObjectDecodable {
-    internal init(jsonObject: [String: JSONValue]) throws(InternalError) {
+    internal init(jsonObject: [String: JSONValue]) throws(ErrorInfo) {
         let serial = try jsonObject.stringValueForKey("serial")
         let reactionSummary: MessageReactionSummary = if let summaryJson = try? jsonObject.objectValueForKey("reactions"), !summaryJson.isEmpty {
             MessageReactionSummary(
@@ -178,7 +178,7 @@ extension Message: JSONObjectDecodable {
         }
         let rawAction = try jsonObject.stringValueForKey("action")
         guard let action = ChatMessageAction(rawValue: rawAction) else {
-            throw JSONValueDecodingError.failedToDecodeFromRawValue(rawAction).toInternalError()
+            throw JSONValueDecodingError.failedToDecodeFromRawValue(rawAction).toErrorInfo()
         }
         let timestamp = try jsonObject.optionalAblyProtocolDateValueForKey("timestamp") ?? Date(timeIntervalSince1970: 0) // CHA-M4k5
         try self.init(
@@ -187,7 +187,7 @@ extension Message: JSONObjectDecodable {
             clientID: jsonObject.stringValueForKey("clientId"),
             text: jsonObject.stringValueForKey("text"),
             metadata: jsonObject.objectValueForKey("metadata"),
-            headers: jsonObject.objectValueForKey("headers").ablyChat_mapValuesWithTypedThrow { jsonValue throws(InternalError) in
+            headers: jsonObject.objectValueForKey("headers").ablyChat_mapValuesWithTypedThrow { jsonValue throws(ErrorInfo) in
                 try .init(jsonValue: jsonValue)
             },
             version: .init(jsonObject: jsonObject.objectValueForKey("version"), defaultTimestamp: timestamp),
@@ -198,7 +198,7 @@ extension Message: JSONObjectDecodable {
 }
 
 internal extension MessageVersion {
-    init(jsonObject: [String: JSONValue], defaultTimestamp: Date) throws(InternalError) {
+    init(jsonObject: [String: JSONValue], defaultTimestamp: Date) throws(ErrorInfo) {
         try self.init(
             serial: jsonObject.stringValueForKey("serial"),
             timestamp: jsonObject.optionalAblyProtocolDateValueForKey("timestamp") ?? defaultTimestamp,
@@ -224,7 +224,7 @@ public extension Message {
     func with(_ summaryEvent: MessageReactionSummaryEvent) throws(ErrorInfo) -> Self {
         // (CHA-M11e) For MessageReactionSummaryEvent, the method must verify that the summary.messageSerial in the event matches the message's own serial. If they don't match, an error with code 40000 and status code 400 must be thrown.
         guard serial == summaryEvent.messageSerial else {
-            throw InternalError.internallyThrown(.cannotApplyEventForDifferentMessage).toErrorInfo()
+            throw InternalError.cannotApplyEventForDifferentMessage.toErrorInfo()
         }
 
         var newMessage = self
@@ -245,12 +245,12 @@ public extension Message {
     func with(_ messageEvent: ChatMessageEvent) throws(ErrorInfo) -> Self {
         // (CHA-M11a) When the method receives a MessageEvent of type created, it must throw an ErrorInfo with code 40000 and status code 400.
         if messageEvent.type == .created {
-            throw InternalError.internallyThrown(.cannotApplyCreatedMessageEvent).toErrorInfo()
+            throw InternalError.cannotApplyCreatedMessageEvent.toErrorInfo()
         }
 
         // (CHA-M11b) For MessageEvent the method must verify that the message.serial in the event matches the message's own serial. If they don't match, an error with code 40000 and status code 400 must be thrown.
         guard serial == messageEvent.message.serial else {
-            throw InternalError.internallyThrown(.cannotApplyEventForDifferentMessage).toErrorInfo()
+            throw InternalError.cannotApplyEventForDifferentMessage.toErrorInfo()
         }
 
         // (CHA-M11c) For MessageEvent of type update and delete, if the event message is older or the same, the original message must be returned unchanged.

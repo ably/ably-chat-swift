@@ -75,7 +75,7 @@ struct DefaultMessageReactionsTests {
         }
 
         // Then
-        #expect(thrownError == InternalError.internallyThrown(.other(.chatAPIChatError(.messageReactionInvalidMessageSerial))).toErrorInfo())
+        #expect(thrownError == InternalError.other(.chatAPIChatError(.messageReactionInvalidMessageSerial)).toErrorInfo())
     }
 
     // @spec CHA-MR11a1
@@ -95,7 +95,7 @@ struct DefaultMessageReactionsTests {
         }
 
         // Then
-        #expect(thrownError == InternalError.internallyThrown(.other(.chatAPIChatError(.messageReactionInvalidMessageSerial))).toErrorInfo())
+        #expect(thrownError == InternalError.other(.chatAPIChatError(.messageReactionInvalidMessageSerial)).toErrorInfo())
     }
 
     // @spec CHA-MR3
@@ -498,8 +498,12 @@ struct DefaultMessageReactionsTests {
         @Test
         func getClientReactionsThrowsErrorOnAPIFailure() async throws {
             // Given
-            let realtime = MockRealtime { @Sendable () throws(ARTErrorInfo) in
-                throw ARTErrorInfo(domain: "SomeDomain", code: 404)
+            let realtime = MockRealtime { @Sendable () throws(ErrorInfo) in
+                throw .init(
+                    code: 40400,
+                    message: "Some message", // arbitrary
+                    statusCode: 404, // arbitrary
+                )
             }
             let chatAPI = ChatAPI(realtime: realtime)
             let channel = MockRealtimeChannel(initialState: .attached)
@@ -509,7 +513,7 @@ struct DefaultMessageReactionsTests {
             let thrownError = await #expect(throws: ErrorInfo.self) {
                 _ = try await defaultMessages.reactions.clientReactions(forMessageWithSerial: "123456789-000@123456789:000", clientID: nil)
             }
-            #expect(thrownError?.code == 404)
+            #expect(thrownError?.code == 40400)
         }
     }
 }

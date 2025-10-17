@@ -46,15 +46,15 @@ To check formatting and code quality, run `swift run BuildTool lint`. Run with `
 ### Throwing errors
 
 - The public API of the SDK should use typed throws, and the thrown errors should be of type `ErrorInfo`.
-- Currently, we throw the `InternalError` type everywhere internally, and then convert it to `ErrorInfo` at the public API.
+- In order to throw a Chat-specific error (i.e. if you're not just re-throwing an ably-cocoa error) then you should create an `InternalError` and then call its `toErrorInfo()`, as opposed to using `ErrorInfo`'s memberwise initializer.
 
 If you haven't worked with typed throws before, be aware of a few sharp edges:
 
 - Some of the Swift standard library does not (yet?) interact as nicely with typed throws as you might hope.
   - It is not currently possible to create a `Task`, `CheckedContinuation`, or `AsyncThrowingStream` with a specific error type. You will need to instead return a `Result` and then call its `.get()` method.
   - `Dictionary.mapValues` does not support typed throws. We have our own extension `ablyChat_mapValuesWithTypedThrow` which does; use this.
-- There are times when the compiler struggles to infer the type of the error thrown within a `do` block. In these cases, you can disable type inference for a `do` block and explicitly specify the type of the thrown error, like: `do throws(InternalError) { … }`.
-- The compiler will never infer the type of the error thrown by a closure; you will need to specify this yourself; e.g. `let items = try jsonValues.map { jsonValue throws(InternalError) in … }`.
+- There are times when the compiler struggles to infer the type of the error thrown within a `do` block. In these cases, you can disable type inference for a `do` block and explicitly specify the type of the thrown error, like: `do throws(ErrorInfo) { … }`.
+- The compiler will never infer the type of the error thrown by a closure; you will need to specify this yourself; e.g. `let items = try jsonValues.map { jsonValue throws(ErrorInfo) in … }`.
 
 ### Swift concurrency rough edges
 

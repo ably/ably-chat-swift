@@ -50,11 +50,11 @@ struct ErrorInfoTests {
 
     @Test
     func whenUnderlyingErrorIsNotAblyCocoaError() {
-        let internalError = InternalError.internallyThrown(.other(.chatAPIChatError(.noItemInResponse)))
+        let internalError = InternalError.other(.chatAPIChatError(.noItemInResponse))
 
         let convertedToErrorInfo = internalError.toErrorInfo()
 
-        #expect(isChatError(convertedToErrorInfo, withCodeAndStatusCode: .fixedStatusCode(.badRequest)))
+        #expect(convertedToErrorInfo.hasCodeAndStatusCode(.fixedStatusCode(.badRequest)))
         // Just check that there's _something_ in the error message that allows us to identify the underlying error
         for message in [convertedToErrorInfo.message, convertedToErrorInfo.description, convertedToErrorInfo.localizedDescription] {
             #expect(message.contains("ChatAPI.ChatError.noItemInResponse"))

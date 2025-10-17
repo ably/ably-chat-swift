@@ -13,7 +13,7 @@ class MockRoomFactory: RoomFactory {
         self.room = room
     }
 
-    func createRoom(realtime: MockRealtime, chatAPI: ChatAPI, name: String, options: RoomOptions, logger: any InternalLogger) throws(InternalError) -> MockRoom {
+    func createRoom(realtime: MockRealtime, chatAPI: ChatAPI, name: String, options: RoomOptions, logger: any InternalLogger) throws(ErrorInfo) -> MockRoom {
         createRoomCallCount += 1
         createRoomArguments = (realtime: realtime, chatAPI: chatAPI, name: name, options: options, logger: logger)
 

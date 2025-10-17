@@ -176,8 +176,8 @@ struct DefaultMessagesTests {
     @Test
     func errorShouldBeThrownIfErrorIsReturnedFromSendRESTChatAPI() async throws {
         // Given
-        let apiError = ARTErrorInfo(domain: "SomeDomain", code: 123)
-        let realtime = MockRealtime { @Sendable () throws(ARTErrorInfo) in
+        let apiError = ErrorInfo.createArbitraryError()
+        let realtime = MockRealtime { @Sendable () throws(ErrorInfo) in
             throw apiError
         }
         let chatAPI = ChatAPI(realtime: realtime)
@@ -188,15 +188,15 @@ struct DefaultMessagesTests {
         let thrownError = await #expect(throws: ErrorInfo.self) {
             _ = try await defaultMessages.send(withParams: .init(text: "hey"))
         }
-        #expect(thrownError == .init(ablyCocoaError: apiError))
+        #expect(thrownError == apiError)
     }
 
     // @spec CHA-M8d
     @Test
     func errorShouldBeThrownIfErrorIsReturnedFromUpdateRESTChatAPI() async throws {
         // Given
-        let apiError = ARTErrorInfo(domain: "SomeDomain", code: 123)
-        let realtime = MockRealtime { @Sendable () throws(ARTErrorInfo) in
+        let apiError = ErrorInfo.createArbitraryError()
+        let realtime = MockRealtime { @Sendable () throws(ErrorInfo) in
             throw apiError
         }
         let chatAPI = ChatAPI(realtime: realtime)
@@ -211,15 +211,15 @@ struct DefaultMessagesTests {
                 details: .init(description: "", metadata: [:]),
             )
         }
-        #expect(thrownError == .init(ablyCocoaError: apiError))
+        #expect(thrownError == apiError)
     }
 
     // @spec CHA-M9c
     @Test
     func errorShouldBeThrownIfErrorIsReturnedFromDeleteRESTChatAPI() async throws {
         // Given
-        let apiError = ARTErrorInfo(domain: "SomeDomain", code: 123)
-        let realtime = MockRealtime { @Sendable () throws(ARTErrorInfo) in
+        let apiError = ErrorInfo.createArbitraryError()
+        let realtime = MockRealtime { @Sendable () throws(ErrorInfo) in
             throw apiError
         }
         let chatAPI = ChatAPI(realtime: realtime)
@@ -230,7 +230,7 @@ struct DefaultMessagesTests {
         let thrownError = await #expect(throws: ErrorInfo.self) {
             _ = try await defaultMessages.delete(withSerial: "0", details: nil)
         }
-        #expect(thrownError == .init(ablyCocoaError: apiError))
+        #expect(thrownError == apiError)
     }
 
     // @spec CHA-M13a
@@ -285,8 +285,8 @@ struct DefaultMessagesTests {
     @Test
     func errorShouldBeThrownIfErrorIsReturnedFromGetRESTChatAPI() async throws {
         // Given
-        let apiError = ARTErrorInfo(domain: "SomeDomain", code: 123)
-        let realtime = MockRealtime { @Sendable () throws(ARTErrorInfo) in
+        let apiError = ErrorInfo.createArbitraryError()
+        let realtime = MockRealtime { @Sendable () throws(ErrorInfo) in
             throw apiError
         }
         let chatAPI = ChatAPI(realtime: realtime)
@@ -297,7 +297,7 @@ struct DefaultMessagesTests {
         let thrownError = await #expect(throws: ErrorInfo.self) {
             _ = try await defaultMessages.get(withSerial: "123456789-000@123456789:000")
         }
-        #expect(thrownError == .init(ablyCocoaError: apiError))
+        #expect(thrownError == apiError)
     }
 
     // @spec CHA-M5a
@@ -337,7 +337,7 @@ struct DefaultMessagesTests {
         let channel = MockRealtimeChannel(
             properties: ARTChannelProperties(attachSerial: attachSerial, channelSerial: nil),
             initialState: .attaching,
-            stateChangeToEmitForListener: ARTChannelStateChange(current: .attached, previous: .attaching, event: .attached, reason: nil),
+            stateChangeToEmitForListener: ChannelStateChange(current: .attached, previous: .attaching, event: .attached, reason: nil, resumed: false /* arbitrary */ ),
         )
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", logger: TestLogger())
 
@@ -378,11 +378,11 @@ struct DefaultMessagesTests {
         ))
 
         channel.emitEvent(
-            ARTChannelStateChange(current: .detached, previous: .attached, event: .detached, reason: ARTErrorInfo(domain: "Some", code: 123)),
+            ChannelStateChange(current: .detached, previous: .attached, event: .detached, reason: .createArbitraryError(), resumed: false),
         )
 
         channel.emitEvent(
-            ARTChannelStateChange(current: .attached, previous: .detached, event: .attached, reason: nil, resumed: false),
+            ChannelStateChange(current: .attached, previous: .detached, event: .attached, reason: nil, resumed: false),
         )
 
         _ = try await subscription.historyBeforeSubscribe(withParams: .init())
@@ -421,7 +421,7 @@ struct DefaultMessagesTests {
 
         // When: UPDATE event received
         channel.emitEvent(
-            ARTChannelStateChange(current: .attached, previous: .attached, event: .update, reason: nil, resumed: false),
+            ChannelStateChange(current: .attached, previous: .attached, event: .update, reason: nil, resumed: false),
         )
 
         _ = try await subscription.historyBeforeSubscribe(withParams: .init())
@@ -477,9 +477,9 @@ struct DefaultMessagesTests {
     @Test
     func subscriptionhistoryBeforeSubscribeThrowsErrorInfoInCaseOfServerError() async throws {
         // Given
-        let artError = ARTErrorInfo.create(withCode: 50000, message: "Internal server error")
-        let realtime = MockRealtime { @Sendable () throws(ARTErrorInfo) in
-            throw artError
+        let restError = ErrorInfo.createArbitraryError()
+        let realtime = MockRealtime { @Sendable () throws(ErrorInfo) in
+            throw restError
         }
         let chatAPI = ChatAPI(realtime: realtime)
         let channel = MockRealtimeChannel(
@@ -495,7 +495,7 @@ struct DefaultMessagesTests {
         let thrownError = await #expect(throws: ErrorInfo.self) {
             _ = try await subscription.historyBeforeSubscribe(withParams: .init())
         }
-        #expect(thrownError == .init(ablyCocoaError: artError))
+        #expect(thrownError == restError)
     }
 
     // @spec CHA-M6a
@@ -531,9 +531,9 @@ struct DefaultMessagesTests {
     @Test
     func getMessagesThrowsErrorInfoInCaseOfServerError() async throws {
         // Given
-        let artError = ARTErrorInfo.create(withCode: 50000, message: "Internal server error")
-        let realtime = MockRealtime { @Sendable () throws(ARTErrorInfo) in
-            throw artError
+        let restError = ErrorInfo.createArbitraryError()
+        let realtime = MockRealtime { @Sendable () throws(ErrorInfo) in
+            throw restError
         }
         let chatAPI = ChatAPI(realtime: realtime)
         let channel = MockRealtimeChannel(
@@ -547,7 +547,7 @@ struct DefaultMessagesTests {
             _ = try await defaultMessages.history(withParams: .init())
         }
         // Then
-        #expect(thrownError == .init(ablyCocoaError: artError))
+        #expect(thrownError == restError)
     }
 
     // CHA-M4d is currently untestable due to not subscribing to those events on lower level

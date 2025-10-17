@@ -122,7 +122,7 @@ public struct OccupancyEvent: Sendable {
 }
 
 extension OccupancyData: JSONObjectDecodable {
-    internal init(jsonObject: [String: JSONValue]) throws(InternalError) {
+    internal init(jsonObject: [String: JSONValue]) throws(ErrorInfo) {
         try self.init(
             connections: Int(jsonObject.numberValueForKey("connections")),
             presenceMembers: Int(jsonObject.numberValueForKey("presenceMembers")),

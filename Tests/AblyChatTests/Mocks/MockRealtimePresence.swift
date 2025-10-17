@@ -16,7 +16,7 @@ final class MockRealtimePresence: InternalRealtimePresenceProtocol {
         // no-op since it's called automatically
     }
 
-    func get() async throws(InternalError) -> [PresenceMessage] {
+    func get() async throws(ErrorInfo) -> [PresenceMessage] {
         callRecorder.addRecord(
             signature: "get()",
             arguments: [:],
@@ -24,7 +24,7 @@ final class MockRealtimePresence: InternalRealtimePresenceProtocol {
         return []
     }
 
-    func get(_ query: ARTRealtimePresenceQuery) async throws(InternalError) -> [PresenceMessage] {
+    func get(_ query: ARTRealtimePresenceQuery) async throws(ErrorInfo) -> [PresenceMessage] {
         callRecorder.addRecord(
             signature: "get(_:)",
             arguments: ["query": "\(query.callRecorderDescription)"],
@@ -32,21 +32,21 @@ final class MockRealtimePresence: InternalRealtimePresenceProtocol {
         return []
     }
 
-    func leave(_ data: JSONObject?) async throws(InternalError) {
+    func leave(_ data: JSONObject?) async throws(ErrorInfo) {
         callRecorder.addRecord(
             signature: "leave(_:)",
             arguments: ["data": data],
         )
     }
 
-    func enter(_ data: JSONObject?) async throws(InternalError) {
+    func enter(_ data: JSONObject?) async throws(ErrorInfo) {
         callRecorder.addRecord(
             signature: "enter(_:)",
             arguments: ["data": data],
         )
     }
 
-    func update(_ data: JSONObject?) async throws(InternalError) {
+    func update(_ data: JSONObject?) async throws(ErrorInfo) {
         callRecorder.addRecord(
             signature: "update(_:)",
             arguments: ["data": data],

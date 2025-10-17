@@ -174,10 +174,10 @@ struct DefaultRoomsTests {
         // Then: It throws a `badRequest` error
         let differentOptions = RoomOptions(presence: .init(enableEvents: false))
 
-        let thrownError = await #expect(throws: (any Error).self) {
+        let thrownError = try await #require(throws: ErrorInfo.self) {
             try await rooms.get(named: name, options: differentOptions)
         }
-        #expect(isChatError(thrownError, withCodeAndStatusCode: .fixedStatusCode(.badRequest)))
+        #expect(thrownError.hasCodeAndStatusCode(.fixedStatusCode(.badRequest)))
     }
 
     // @specOneOf(2/2) CHA-RC1f1 - Tests the case where, per CHA-RC1f4, there is, in the spec's language, a _future_ in the room map
@@ -215,10 +215,10 @@ struct DefaultRoomsTests {
         // Then: The second call to get(name:options:) throws a `badRequest` error
         let differentOptions = RoomOptions(presence: .init(enableEvents: false))
 
-        let thrownError = await #expect(throws: (any Error).self) {
+        let thrownError = try await #require(throws: ErrorInfo.self) {
             try await rooms.get(named: name, options: differentOptions)
         }
-        #expect(isChatError(thrownError, withCodeAndStatusCode: .fixedStatusCode(.badRequest)))
+        #expect(thrownError.hasCodeAndStatusCode(.fixedStatusCode(.badRequest)))
 
         // Post-test: Allow the CHA-RC1g release operation to complete
         roomReleaseOperation.complete()
@@ -362,15 +362,15 @@ struct DefaultRoomsTests {
         async let secondReleaseResult: Void = rooms.release(named: name)
 
         // Then: The pending call to `get(name:options:)` that is waiting for the "CHA-RC1f future" of the "Given" fails with a RoomReleasedBeforeOperationCompleted error
-        let roomGetError: (any Error)?
+        let roomGetError: ErrorInfo?
         do {
             _ = try await fetchedRoom
             roomGetError = nil
         } catch {
-            roomGetError = error
+            roomGetError = error as? ErrorInfo
         }
 
-        #expect(isChatError(roomGetError, withCodeAndStatusCode: .fixedStatusCode(.roomReleasedBeforeOperationCompleted)))
+        #expect(try #require(roomGetError).hasCodeAndStatusCode(.fixedStatusCode(.roomReleasedBeforeOperationCompleted)))
 
         // and When: The previous CHA-RC1g release operation completes
 

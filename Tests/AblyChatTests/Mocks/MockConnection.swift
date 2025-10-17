@@ -4,14 +4,14 @@ import Ably
 final class MockConnection: InternalConnectionProtocol {
     let state: ARTRealtimeConnectionState
 
-    let errorReason: ARTErrorInfo?
+    let errorReason: ErrorInfo?
 
-    init(state: ARTRealtimeConnectionState = .initialized, errorReason: ARTErrorInfo? = nil) {
+    init(state: ARTRealtimeConnectionState = .initialized, errorReason: ErrorInfo? = nil) {
         self.state = state
         self.errorReason = errorReason
     }
 
-    func on(_: @escaping @MainActor (ARTConnectionStateChange) -> Void) -> ARTEventListener {
+    func on(_: @escaping @MainActor (ConnectionStateChange) -> Void) -> ARTEventListener {
         fatalError("Not implemented")
     }
 

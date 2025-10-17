@@ -16,7 +16,7 @@ internal extension MessageReactionSummary {
             do {
                 unique = try uniqueJson.mapValues { value in
                     guard let uniqueJsonItem = value.objectValue else {
-                        throw JSONValueDecodingError.noValueForKey("unique.<key>").toInternalError()
+                        throw JSONValueDecodingError.noValueForKey("unique.<key>").toErrorInfo()
                     }
                     return try MessageReactionSummary.ClientIDList(jsonObject: uniqueJsonItem)
                 }
@@ -33,7 +33,7 @@ internal extension MessageReactionSummary {
             do {
                 distinct = try distinctJson.mapValues { value in
                     guard let distinctJsonItem = value.objectValue else {
-                        throw JSONValueDecodingError.noValueForKey("distinct.<key>").toInternalError()
+                        throw JSONValueDecodingError.noValueForKey("distinct.<key>").toErrorInfo()
                     }
                     return try MessageReactionSummary.ClientIDList(jsonObject: distinctJsonItem)
                 }
@@ -50,7 +50,7 @@ internal extension MessageReactionSummary {
             do {
                 multiple = try multipleJson.mapValues { value in
                     guard let multipleJsonItem = value.objectValue else {
-                        throw JSONValueDecodingError.noValueForKey("multiple.<key>").toInternalError()
+                        throw JSONValueDecodingError.noValueForKey("multiple.<key>").toErrorInfo()
                     }
                     return try MessageReactionSummary.ClientIDCounts(jsonObject: multipleJsonItem)
                 }
@@ -70,7 +70,7 @@ extension MessageReactionSummary.ClientIDList: JSONObjectDecodable {
         case clipped
     }
 
-    internal init(jsonObject: [String: JSONValue]) throws(InternalError) {
+    internal init(jsonObject: [String: JSONValue]) throws(ErrorInfo) {
         total = try Int(jsonObject.numberValueForKey(JSONKey.total.rawValue))
         clientIDs = try jsonObject.arrayValueForKey(JSONKey.clientIds.rawValue).compactMap(\.stringValue)
         clipped = try jsonObject.optionalBoolValueForKey(JSONKey.clipped.rawValue) ?? false
@@ -86,7 +86,7 @@ extension MessageReactionSummary.ClientIDCounts: JSONObjectDecodable {
         case totalClientIds
     }
 
-    internal init(jsonObject: [String: JSONValue]) throws(InternalError) {
+    internal init(jsonObject: [String: JSONValue]) throws(ErrorInfo) {
         total = try Int(jsonObject.numberValueForKey(JSONKey.total.rawValue))
         clientIDs = try jsonObject.objectValueForKey(JSONKey.clientIds.rawValue).mapValues { Int($0.numberValue ?? 0) }
         totalUnidentified = try jsonObject.optionalNumberValueForKey(JSONKey.totalUnidentified.rawValue).map(Int.init) ?? 0
