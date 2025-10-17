@@ -105,7 +105,6 @@ internal final class DefaultInternalLogger: InternalLogger {
             return
         }
 
-        // I don't yet know what `context` is for (will figure out in https://github.com/ably-labs/ably-chat-swift/issues/8) so passing nil for now
         logHandler.simple.log(message: "(\(codeLocation.fileID):\(codeLocation.line)) \(message)", level: level)
     }
 }
