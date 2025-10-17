@@ -5,6 +5,9 @@ import Foundation
 public struct ErrorInfo: Error, CustomStringConvertible {
     /// The source of an `ErrorInfo`'s public properties (`code`, `statusCode` etc).
     internal indirect enum Source {
+        /// An error thrown by ably-cocoa that we wish to re-throw as an `ErrorInfo`, or an error thrown by ably-cocoa that we wish to use for the `cause` of an `ErrorInfo`, or the `cause` of an error thrown by ably-cocoa that we wish to use for the `cause` of an `ErrorInfo`.
+        case fromAblyCocoa(ARTErrorInfo)
+
         /// The public properties come from an `InternalError`.
         case internalError(InternalError)
 
@@ -22,13 +25,10 @@ public struct ErrorInfo: Error, CustomStringConvertible {
 
         internal var code: Int {
             switch self {
+            case let .fromAblyCocoa(ablyCocoaError):
+                ablyCocoaError.code
             case let .internalError(internalError):
-                switch internalError {
-                case let .fromAblyCocoa(ablyCocoaError):
-                    ablyCocoaError.code
-                case let .internallyThrown(internallyThrown):
-                    internallyThrown.codeAndStatusCode.code.rawValue
-                }
+                internalError.codeAndStatusCode.code.rawValue
             case let .initializer(args):
                 args.code
             }
@@ -36,13 +36,10 @@ public struct ErrorInfo: Error, CustomStringConvertible {
 
         internal var href: String? {
             switch self {
-            case let .internalError(internalError):
-                switch internalError {
-                case let .fromAblyCocoa(ablyCocoaError):
-                    ablyCocoaError.href
-                case .internallyThrown:
-                    nil
-                }
+            case let .fromAblyCocoa(ablyCocoaError):
+                ablyCocoaError.href
+            case .internalError:
+                nil
             case let .initializer(args):
                 args.href
             }
@@ -50,6 +47,8 @@ public struct ErrorInfo: Error, CustomStringConvertible {
 
         internal var message: String {
             switch self {
+            case let .fromAblyCocoa(ablyCocoaError):
+                ablyCocoaError.message
             case let .internalError(internalError):
                 internalError.message
             case let .initializer(args):
@@ -59,13 +58,10 @@ public struct ErrorInfo: Error, CustomStringConvertible {
 
         internal var cause: ErrorInfo? {
             switch self {
+            case let .fromAblyCocoa(ablyCocoaError):
+                .init(optionalAblyCocoaError: ablyCocoaError.cause)
             case let .internalError(internalError):
-                switch internalError {
-                case let .fromAblyCocoa(ablyCocoaError):
-                    .init(optionalAblyCocoaError: ablyCocoaError.cause)
-                case let .internallyThrown(internallyThrown):
-                    internallyThrown.cause
-                }
+                internalError.cause
             case let .initializer(args):
                 args.cause
             }
@@ -73,13 +69,10 @@ public struct ErrorInfo: Error, CustomStringConvertible {
 
         internal var statusCode: Int {
             switch self {
+            case let .fromAblyCocoa(ablyCocoaError):
+                ablyCocoaError.statusCode
             case let .internalError(internalError):
-                switch internalError {
-                case let .fromAblyCocoa(ablyCocoaError):
-                    ablyCocoaError.statusCode
-                case let .internallyThrown(internallyThrown):
-                    internallyThrown.codeAndStatusCode.statusCode
-                }
+                internalError.codeAndStatusCode.statusCode
             case let .initializer(args):
                 args.statusCode
             }
@@ -87,13 +80,10 @@ public struct ErrorInfo: Error, CustomStringConvertible {
 
         internal var requestID: String? {
             switch self {
-            case let .internalError(internalError):
-                switch internalError {
-                case let .fromAblyCocoa(ablyCocoaError):
-                    ablyCocoaError.requestId
-                case .internallyThrown:
-                    nil
-                }
+            case let .fromAblyCocoa(ablyCocoaError):
+                ablyCocoaError.requestId
+            case .internalError:
+                nil
             case let .initializer(args):
                 args.requestID
             }
@@ -110,7 +100,7 @@ public struct ErrorInfo: Error, CustomStringConvertible {
 
     /// Creates an `ErrorInfo` from an `ARTErrorInfo`.
     internal init(ablyCocoaError: ARTErrorInfo) {
-        self.init(internalError: .fromAblyCocoa(ablyCocoaError))
+        source = .fromAblyCocoa(ablyCocoaError)
     }
 
     /// Creates an `ErrorInfo` from an optional `ARTErrorInfo`, returning `nil` if the ably-cocoa error is `nil`.
@@ -182,13 +172,10 @@ public struct ErrorInfo: Error, CustomStringConvertible {
     /// Requirement of the `CustomStringConvertible` protocol.
     public var description: String {
         switch source {
+        case let .fromAblyCocoa(ablyCocoaError):
+            ablyCocoaError.localizedDescription
         case let .internalError(internalError):
-            switch internalError {
-            case let .fromAblyCocoa(ablyCocoaError):
-                ablyCocoaError.localizedDescription
-            case let .internallyThrown(internallyThrown):
-                "(\(statusCode):\(code)) \(message). See \(helpHref). Full error: \(internallyThrown)"
-            }
+            "(\(statusCode):\(code)) \(message). See \(helpHref). Full error: \(internalError)"
         case .initializer:
             "(\(statusCode):\(code)) \(message). See \(helpHref)."
         }

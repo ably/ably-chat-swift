@@ -50,7 +50,7 @@ struct ErrorInfoTests {
 
     @Test
     func whenUnderlyingErrorIsNotAblyCocoaError() {
-        let internalError = InternalError.internallyThrown(.other(.chatAPIChatError(.noItemInResponse)))
+        let internalError = InternalError.other(.chatAPIChatError(.noItemInResponse))
 
         let convertedToErrorInfo = internalError.toErrorInfo()
 

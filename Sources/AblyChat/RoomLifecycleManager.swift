@@ -16,9 +16,9 @@ internal protocol RoomLifecycleManager: Sendable {
     ///
     /// Implements the checks described by CHA-PR3d, CHA-PR3e, and CHA-PR3h (and similar ones described by other functionality that performs channel presence operations). Namely:
     ///
-    /// - CHA-RL9, which is invoked by CHA-PR3d, CHA-PR10d, CHA-PR6c: If the room is in the ATTACHING status, it waits for the next room status change. If the new status is ATTACHED, it returns. Else, it throws an `ErrorInfo` derived from ``InternalError/InternallyThrown/roomTransitionedToInvalidStateForPresenceOperation(cause:)``.
+    /// - CHA-RL9, which is invoked by CHA-PR3d, CHA-PR10d, CHA-PR6c: If the room is in the ATTACHING status, it waits for the next room status change. If the new status is ATTACHED, it returns. Else, it throws an `ErrorInfo` derived from ``InternalError/roomTransitionedToInvalidStateForPresenceOperation(cause:)``.
     /// - CHA-PR3e, CHA-PR10e, CHA-PR6d: If the room is in the ATTACHED status, it returns immediately.
-    /// - CHA-PR3h, CHA-PR10h, CHA-PR6h: If the room is in any other status, it throws an `ErrorInfo` derived from ``InternalError/InternallyThrown/presenceOperationRequiresRoomAttach(feature:)``.
+    /// - CHA-PR3h, CHA-PR10h, CHA-PR6h: If the room is in any other status, it throws an `ErrorInfo` derived from ``InternalError/presenceOperationRequiresRoomAttach(feature:)``.
     ///
     /// - Parameters:
     ///   - requester: The room feature that wishes to perform a presence operation. This is only used for customising the message of the thrown error.
@@ -213,7 +213,7 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
             //
             // Note that our mechanism for deciding whether a channel state event represents a discontinuity depends on the property that when we call attach() on a channel, the ATTACHED state change that this provokes is received before the call to attach() returns. This property is not in general guaranteed in ably-cocoa, which allows its callbacks to be dispatched to a user-provided queue as specified by the `dispatchQueue` client option. This is why we add the requirement that the ably-cocoa client be configured to use the main queue as its `dispatchQueue` (as enforced by toAblyCocoaCallback in InternalAblyCocoaTypes.swift).
             if !event.resumed, hasAttachedOnce, !isExplicitlyDetached {
-                let error = InternalError.internallyThrown(.roomDiscontinuity(cause: event.reason)).toErrorInfo()
+                let error = InternalError.roomDiscontinuity(cause: event.reason).toErrorInfo()
                 logger.log(message: "Emitting discontinuity event \(error)", level: .info)
                 emitDiscontinuity(error)
             }
@@ -395,10 +395,10 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
             return
         case .releasing:
             // CHA-RL1b
-            throw InternalError.internallyThrown(.roomIsReleasing).toErrorInfo()
+            throw InternalError.roomIsReleasing.toErrorInfo()
         case .released:
             // CHA-RL1c
-            throw InternalError.internallyThrown(.roomIsReleased).toErrorInfo()
+            throw InternalError.roomIsReleased.toErrorInfo()
         default:
             break
         }
@@ -458,13 +458,13 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
             return
         case .releasing:
             // CHA-RL2b
-            throw InternalError.internallyThrown(.roomIsReleasing).toErrorInfo()
+            throw InternalError.roomIsReleasing.toErrorInfo()
         case .released:
             // CHA-RL2c
-            throw InternalError.internallyThrown(.roomIsReleased).toErrorInfo()
+            throw InternalError.roomIsReleased.toErrorInfo()
         case .failed:
             // CHA-RL2d
-            throw InternalError.internallyThrown(.roomInFailedState).toErrorInfo()
+            throw InternalError.roomInFailedState.toErrorInfo()
         case .initialized, .attaching, .attached, .detaching, .suspended:
             break
         }
@@ -612,14 +612,14 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
             // CHA-RL9b
             guard case .attached = nextRoomStatusChange.current, nextRoomStatusChange.error == nil else {
                 // CHA-RL9c
-                throw InternalError.internallyThrown(.roomTransitionedToInvalidStateForPresenceOperation(cause: nextRoomStatusChange.error)).toErrorInfo()
+                throw InternalError.roomTransitionedToInvalidStateForPresenceOperation(cause: nextRoomStatusChange.error).toErrorInfo()
             }
         case .attached:
             // CHA-PR3e, CHA-PR10e, CHA-PR6d
             break
         default:
             // CHA-PR3h, CHA-PR10h, CHA-PR6h
-            throw InternalError.internallyThrown(.presenceOperationRequiresRoomAttach(feature: requester)).toErrorInfo()
+            throw InternalError.presenceOperationRequiresRoomAttach(feature: requester).toErrorInfo()
         }
     }
 

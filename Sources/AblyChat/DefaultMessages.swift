@@ -159,11 +159,11 @@ internal final class DefaultMessages: Messages {
                         continuation.resume(returning: .success(subscriptionPoint))
                     } else {
                         logger.log(message: "Channel is attached, but attachSerial is not defined", level: .error)
-                        continuation.resume(returning: .failure(InternalError.internallyThrown(.attachSerialIsNotDefined).toErrorInfo()))
+                        continuation.resume(returning: .failure(InternalError.attachSerialIsNotDefined.toErrorInfo()))
                     }
                 case .failed, .suspended:
                     // TODO: Revisit as part of https://github.com/ably-labs/ably-chat-swift/issues/32
-                    let error = InternalError.internallyThrown(.channelFailedToAttach(cause: stateChange.reason))
+                    let error = InternalError.channelFailedToAttach(cause: stateChange.reason)
                     logger.log(message: "\(error)", level: .error)
                     continuation.resume(returning: .failure(error.toErrorInfo()))
                 default:

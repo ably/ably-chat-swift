@@ -3,20 +3,20 @@ import Ably
 
 extension ErrorInfo {
     /**
-     Tests whether this `ErrorInfo` is backed by an internally-thrown `InternalError` with a given code and cause. Can optionally pass a message and it will check that it matches.
+     Tests whether this `ErrorInfo` is backed by an `InternalError` with a given code and cause. Can optionally pass a message and it will check that it matches.
      */
-    func hasCodeAndStatusCode(_ codeAndStatusCode: AblyChat.InternalError.InternallyThrown.ErrorCodeAndStatusCode, cause: ErrorInfo? = nil, message: String? = nil) -> Bool {
-        guard case let .internalError(internalError) = source, case let .internallyThrown(internallyThrownError) = internalError else {
+    func hasCodeAndStatusCode(_ codeAndStatusCode: AblyChat.InternalError.ErrorCodeAndStatusCode, cause: ErrorInfo? = nil, message: String? = nil) -> Bool {
+        guard case let .internalError(internalError) = source else {
             return false
         }
 
-        if internallyThrownError.codeAndStatusCode != codeAndStatusCode {
+        if internalError.codeAndStatusCode != codeAndStatusCode {
             return false
         }
-        if internallyThrownError.cause != cause {
+        if internalError.cause != cause {
             return false
         }
-        if let message, internallyThrownError.message != message {
+        if let message, internalError.message != message {
             return false
         }
 
@@ -33,7 +33,7 @@ extension InternalError {
 
     var enumCase: Case {
         switch self {
-        case .internallyThrown(.other(.jsonValueDecodingError)):
+        case .other(.jsonValueDecodingError):
             .jsonValueDecodingError
         default:
             .other
