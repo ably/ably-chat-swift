@@ -1,96 +1,5 @@
 import Ably
 
-// MARK: - Error codes
-
-/// The ```ErrorInfo/code`` values for errors thrown internally by the Chat SDK.
-internal enum ErrorCode: Int {
-    /// The user attempted to perform an invalid action.
-    case badRequest = 40000
-
-    /**
-     * Cannot perform operation because the room is in a failed state.
-     */
-    case roomInFailedState = 102_101
-
-    /**
-     * Cannot perform operation because the room is in a releasing state.
-     */
-    case roomIsReleasing = 102_102
-
-    /**
-     * Cannot perform operation because the room is in a released state.
-     */
-    case roomIsReleased = 102_103
-
-    /**
-     * Room was released before the operation could complete.
-     */
-    case roomReleasedBeforeOperationCompleted = 102_106
-
-    case roomInInvalidState = 102_107
-
-    /**
-     * The room has experienced a discontinuity.
-     */
-    case roomDiscontinuity = 102_100
-
-    /// Has a case for each of the ``ErrorCode`` cases that imply a fixed status code.
-    internal enum CaseThatImpliesFixedStatusCode {
-        case badRequest
-        case roomInFailedState
-        case roomIsReleasing
-        case roomIsReleased
-        case roomReleasedBeforeOperationCompleted
-        case roomDiscontinuity
-
-        internal var toNumericErrorCode: ErrorCode {
-            switch self {
-            case .badRequest:
-                .badRequest
-            case .roomInFailedState:
-                .roomInFailedState
-            case .roomIsReleasing:
-                .roomIsReleasing
-            case .roomIsReleased:
-                .roomIsReleased
-            case .roomReleasedBeforeOperationCompleted:
-                .roomReleasedBeforeOperationCompleted
-            case .roomDiscontinuity:
-                .roomDiscontinuity
-            }
-        }
-
-        /// The ``ErrorInfo/statusCode`` that should be returned for this error.
-        internal var statusCode: Int {
-            // These status codes are taken from the "Chat-specific Error Codes" section of the spec.
-            switch self {
-            case .badRequest,
-                 .roomInFailedState,
-                 .roomIsReleasing,
-                 .roomIsReleased,
-                 .roomReleasedBeforeOperationCompleted:
-                400
-            case .roomDiscontinuity:
-                500
-            }
-        }
-    }
-
-    /// Has a case for each of the ``ErrorCode`` cases that do not imply a fixed status code.
-    internal enum CaseThatImpliesVariableStatusCode {
-        case roomInInvalidState
-
-        internal var toNumericErrorCode: ErrorCode {
-            switch self {
-            case .roomInInvalidState:
-                .roomInInvalidState
-            }
-        }
-    }
-}
-
-// MARK: - InternalError
-
 /// An error thrown by the Chat SDK itself (as opposed to a re-thrown ably-cocoa error).
 ///
 /// Provides the rich error information that is stored inside an ``ErrorInfo``. `ErrorInfo` then maps these errors to its public properties (`code`, `statusCode` etc), but it also keeps hold of the original `InternalError` to aid with debugging.
@@ -124,6 +33,93 @@ internal enum InternalError {
         case jsonValueDecodingError(JSONValueDecodingError)
         case paginatedResultError(PaginatedResultError)
         case messagesError(DefaultMessages.MessagesError)
+    }
+
+    /// The ```ErrorInfo/code`` values used by `InternalError` cases.
+    internal enum ErrorCode: Int {
+        /// The user attempted to perform an invalid action.
+        case badRequest = 40000
+
+        /**
+         * Cannot perform operation because the room is in a failed state.
+         */
+        case roomInFailedState = 102_101
+
+        /**
+         * Cannot perform operation because the room is in a releasing state.
+         */
+        case roomIsReleasing = 102_102
+
+        /**
+         * Cannot perform operation because the room is in a released state.
+         */
+        case roomIsReleased = 102_103
+
+        /**
+         * Room was released before the operation could complete.
+         */
+        case roomReleasedBeforeOperationCompleted = 102_106
+
+        case roomInInvalidState = 102_107
+
+        /**
+         * The room has experienced a discontinuity.
+         */
+        case roomDiscontinuity = 102_100
+
+        /// Has a case for each of the ``ErrorCode`` cases that imply a fixed status code.
+        internal enum CaseThatImpliesFixedStatusCode {
+            case badRequest
+            case roomInFailedState
+            case roomIsReleasing
+            case roomIsReleased
+            case roomReleasedBeforeOperationCompleted
+            case roomDiscontinuity
+
+            internal var toNumericErrorCode: ErrorCode {
+                switch self {
+                case .badRequest:
+                    .badRequest
+                case .roomInFailedState:
+                    .roomInFailedState
+                case .roomIsReleasing:
+                    .roomIsReleasing
+                case .roomIsReleased:
+                    .roomIsReleased
+                case .roomReleasedBeforeOperationCompleted:
+                    .roomReleasedBeforeOperationCompleted
+                case .roomDiscontinuity:
+                    .roomDiscontinuity
+                }
+            }
+
+            /// The ``ErrorInfo/statusCode`` that should be returned for this error.
+            internal var statusCode: Int {
+                // These status codes are taken from the "Chat-specific Error Codes" section of the spec.
+                switch self {
+                case .badRequest,
+                     .roomInFailedState,
+                     .roomIsReleasing,
+                     .roomIsReleased,
+                     .roomReleasedBeforeOperationCompleted:
+                    400
+                case .roomDiscontinuity:
+                    500
+                }
+            }
+        }
+
+        /// Has a case for each of the ``ErrorCode`` cases that do not imply a fixed status code.
+        internal enum CaseThatImpliesVariableStatusCode {
+            case roomInInvalidState
+
+            internal var toNumericErrorCode: ErrorCode {
+                switch self {
+                case .roomInInvalidState:
+                    .roomInInvalidState
+                }
+            }
+        }
     }
 
     /**
