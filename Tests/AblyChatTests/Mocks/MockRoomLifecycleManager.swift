@@ -30,7 +30,7 @@ class MockRoomLifecycleManager: RoomLifecycleManager {
         do {
             try attachResult.get()
         } catch {
-            throw error.toInternalError()
+            throw InternalError.fromAblyCocoa(error)
         }
     }
 
@@ -42,7 +42,7 @@ class MockRoomLifecycleManager: RoomLifecycleManager {
         do {
             try detachResult.get()
         } catch {
-            throw error.toInternalError()
+            throw InternalError.fromAblyCocoa(error)
         }
     }
 
@@ -76,7 +76,7 @@ class MockRoomLifecycleManager: RoomLifecycleManager {
         do {
             try resultOfWaitToBeAbleToPerformPresenceOperations.get()
         } catch {
-            throw error.toInternalError()
+            throw InternalError.fromAblyCocoa(error)
         }
     }
 

@@ -168,9 +168,12 @@ internal class DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
                 case let .roomMapEntry(existingRoomMapEntry):
                     // CHA-RC1f1
                     if existingRoomMapEntry.roomOptions.equatableBox != options.equatableBox {
-                        throw ARTErrorInfo(
-                            chatError: .inconsistentRoomOptions(requested: options, existing: existingRoomMapEntry.roomOptions),
-                        ).toInternalError()
+                        throw InternalError.internallyThrown(
+                            .inconsistentRoomOptions(
+                                requested: options,
+                                existing: existingRoomMapEntry.roomOptions,
+                            ),
+                        )
                     }
 
                     // CHA-RC1f2
@@ -342,7 +345,7 @@ internal class DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
         ):
             // CHA-RC1g4
             logger.log(message: "Release operation requesting failure of in-progress room creation request", level: .debug)
-            failCreation(ARTErrorInfo(chatError: .roomReleasedBeforeOperationCompleted).toInternalError())
+            failCreation(InternalError.internallyThrown(.roomReleasedBeforeOperationCompleted))
             await waitForOperation(releaseTask, waitingOperationType: .release, waitedOperationType: .release)
         case let .roomMapEntry(.created(room: room)):
             let releaseTask = Task {

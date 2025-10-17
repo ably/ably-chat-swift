@@ -82,7 +82,7 @@ final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
             case .success:
                 break
             case let .failure(error):
-                throw error.toInternalError()
+                throw InternalError.fromAblyCocoa(error)
             }
         }
     }

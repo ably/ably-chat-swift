@@ -44,7 +44,7 @@ final class MockRealtime: InternalRealtimeClientProtocol {
             )
             return try paginatedCallback()
         } catch {
-            throw error.toInternalError()
+            throw InternalError.fromAblyCocoa(error)
         }
     }
 }

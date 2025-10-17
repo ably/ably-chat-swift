@@ -75,7 +75,7 @@ struct DefaultMessageReactionsTests {
         }
 
         // Then
-        #expect(thrownError == ARTErrorInfo(chatError: .nonErrorInfoInternalError(.chatAPIChatError(.messageReactionInvalidMessageSerial))))
+        #expect(thrownError == InternalError.internallyThrown(.other(.chatAPIChatError(.messageReactionInvalidMessageSerial))).toARTErrorInfo())
     }
 
     // @spec CHA-MR11a1
@@ -95,7 +95,7 @@ struct DefaultMessageReactionsTests {
         }
 
         // Then
-        #expect(thrownError == ARTErrorInfo(chatError: .nonErrorInfoInternalError(.chatAPIChatError(.messageReactionInvalidMessageSerial))))
+        #expect(thrownError == InternalError.internallyThrown(.other(.chatAPIChatError(.messageReactionInvalidMessageSerial))).toARTErrorInfo())
     }
 
     // @spec CHA-MR3

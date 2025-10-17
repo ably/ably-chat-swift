@@ -164,7 +164,7 @@ internal final class InternalRealtimeClientAdapter<Underlying: ProxyRealtimeClie
                 }
             }.get()
         } catch {
-            throw error.toInternalError()
+            throw InternalError.fromAblyCocoa(error)
         }
     }
 }
@@ -234,7 +234,7 @@ internal final class InternalRealtimePresenceAdapter<Underlying: RealtimePresenc
                 }
             }.get()
         } catch {
-            throw error.toInternalError()
+            throw InternalError.fromAblyCocoa(error)
         }
     }
 
@@ -252,7 +252,7 @@ internal final class InternalRealtimePresenceAdapter<Underlying: RealtimePresenc
                 }
             }.get()
         } catch {
-            throw error.toInternalError()
+            throw InternalError.fromAblyCocoa(error)
         }
     }
 
@@ -268,7 +268,7 @@ internal final class InternalRealtimePresenceAdapter<Underlying: RealtimePresenc
                 }
             }.get()
         } catch {
-            throw error.toInternalError()
+            throw InternalError.fromAblyCocoa(error)
         }
     }
 
@@ -284,7 +284,7 @@ internal final class InternalRealtimePresenceAdapter<Underlying: RealtimePresenc
                 }
             }.get()
         } catch {
-            throw error.toInternalError()
+            throw InternalError.fromAblyCocoa(error)
         }
     }
 
@@ -300,7 +300,7 @@ internal final class InternalRealtimePresenceAdapter<Underlying: RealtimePresenc
                 }
             }.get()
         } catch {
-            throw error.toInternalError()
+            throw InternalError.fromAblyCocoa(error)
         }
     }
 
@@ -358,7 +358,7 @@ internal final class InternalRealtimeChannelAdapter<Underlying: ProxyRealtimeCha
                 }
             }.get()
         } catch {
-            throw error.toInternalError()
+            throw InternalError.fromAblyCocoa(error)
         }
     }
 
@@ -374,7 +374,7 @@ internal final class InternalRealtimeChannelAdapter<Underlying: ProxyRealtimeCha
                 }
             }.get()
         } catch {
-            throw error.toInternalError()
+            throw InternalError.fromAblyCocoa(error)
         }
     }
 
@@ -390,7 +390,7 @@ internal final class InternalRealtimeChannelAdapter<Underlying: ProxyRealtimeCha
                 }
             }.get()
         } catch {
-            throw error.toInternalError()
+            throw InternalError.fromAblyCocoa(error)
         }
     }
 

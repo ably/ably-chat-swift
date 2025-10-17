@@ -35,7 +35,7 @@ internal struct ARTHTTPPaginatedCallbackWrapper<Response: JSONDecodable & Sendab
         // (CHA-M5i) If the REST API returns an error, then the method must throw its ErrorInfo representation.
         // (CHA-M6b) If the REST API returns an error, then the method must throw its ErrorInfo representation.
         if let error {
-            continuation.resume(returning: .failure(error.toInternalError()))
+            continuation.resume(returning: .failure(.fromAblyCocoa(error)))
             return
         }
 
