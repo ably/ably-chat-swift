@@ -8,7 +8,7 @@ final class MockRealtime: InternalRealtimeClientProtocol {
 
     let connection: MockConnection
     let channels: MockChannels
-    let paginatedCallback: (@Sendable () throws(ARTErrorInfo) -> ARTHTTPPaginatedResponse)?
+    let paginatedCallback: (@Sendable () throws(ErrorInfo) -> ARTHTTPPaginatedResponse)?
 
     private(set) var requestArguments: [(method: String, path: String, params: [String: String]?, body: Any?, headers: [String: String]?)] = []
 
@@ -19,7 +19,7 @@ final class MockRealtime: InternalRealtimeClientProtocol {
     init(
         channels: MockChannels = .init(channels: []),
         connection: MockConnection = .init(),
-        paginatedCallback: (@Sendable () throws(ARTErrorInfo) -> ARTHTTPPaginatedResponse)? = nil,
+        paginatedCallback: (@Sendable () throws(ErrorInfo) -> ARTHTTPPaginatedResponse)? = nil,
     ) {
         self.channels = channels
         self.paginatedCallback = paginatedCallback
@@ -31,20 +31,16 @@ final class MockRealtime: InternalRealtimeClientProtocol {
         guard let paginatedCallback else {
             fatalError("Paginated callback not set")
         }
-        do {
-            callRecorder.addRecord(
-                signature: "request(_:path:params:body:headers:)",
-                arguments: [
-                    "method": method,
-                    "path": path,
-                    "params": params ?? [:],
-                    "body": body == nil ? [:] : body as? [String: Any],
-                    "headers": headers ?? [:],
-                ],
-            )
-            return try paginatedCallback()
-        } catch {
-            throw .init(ablyCocoaError: error)
-        }
+        callRecorder.addRecord(
+            signature: "request(_:path:params:body:headers:)",
+            arguments: [
+                "method": method,
+                "path": path,
+                "params": params ?? [:],
+                "body": body == nil ? [:] : body as? [String: Any],
+                "headers": headers ?? [:],
+            ],
+        )
+        return try paginatedCallback()
     }
 }

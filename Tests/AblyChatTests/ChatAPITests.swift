@@ -177,9 +177,9 @@ struct ChatAPITests {
     @Test
     func getMessages_whenGetMessagesReturnsServerError_throwsARTError() async throws {
         // Given
-        let artError = ARTErrorInfo.create(withCode: 50000, message: "Internal server error")
-        let realtime = MockRealtime { () throws(ARTErrorInfo) in
-            throw artError
+        let error = ErrorInfo.createArbitraryError()
+        let realtime = MockRealtime { () throws(ErrorInfo) in
+            throw error
         }
         let chatAPI = ChatAPI(realtime: realtime)
         let roomName = "basketball"
@@ -190,6 +190,6 @@ struct ChatAPITests {
         }
 
         // Then
-        #expect(thrownError.wrapsAblyCocoaError(artError))
+        #expect(thrownError == error)
     }
 }

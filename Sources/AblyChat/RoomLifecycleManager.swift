@@ -194,7 +194,7 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
     // MARK: - Handling channel state changes
 
     /// Implements CHA-RL11 and CHA-RL12's channel event handling.
-    private func didReceiveChannelStateEvent(_ event: ARTChannelStateChange) {
+    private func didReceiveChannelStateEvent(_ event: ChannelStateChange) {
         logger.log(message: "Got channel state event \(event)", level: .info)
 
         // CHA-RL11b
@@ -202,7 +202,7 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
             // CHA-RL11c
             changeStatus(
                 to: .init(channelState: event.current),
-                error: .init(optionalAblyCocoaError: event.reason),
+                error: event.reason,
             )
         }
 

@@ -149,14 +149,14 @@ internal enum InternalError {
         case roomReleasedBeforeOperationCompleted
         case presenceOperationRequiresRoomAttach(feature: RoomFeature)
         case roomTransitionedToInvalidStateForPresenceOperation(cause: ErrorInfo?)
-        case roomDiscontinuity(cause: ARTErrorInfo?)
+        case roomDiscontinuity(cause: ErrorInfo?)
         case unableDeleteReactionWithoutName(reactionType: String)
         case cannotApplyEventForDifferentMessage
         case cannotApplyCreatedMessageEvent
         case messageRejectedByBeforePublishRule
         case messageRejectedByModeration
         case attachSerialIsNotDefined
-        case channelFailedToAttach(cause: ARTErrorInfo?)
+        case channelFailedToAttach(cause: ErrorInfo?)
 
         /// This was originally created to represent any of the various internal types that existed at the time of converting the public API of the SDK to throw ErrorInfo. We may rethink this when we do a broader rethink of the errors thrown by the SDK in https://github.com/ably/ably-chat-swift/issues/32. For now, feel free to introduce further internal error types and add them to the `Other` enum.
         internal enum Other {
@@ -301,9 +301,9 @@ internal enum InternalError {
             case let .roomTransitionedToInvalidStateForPresenceOperation(cause):
                 cause
             case let .roomDiscontinuity(cause):
-                .init(optionalAblyCocoaError: cause)
+                cause
             case let .channelFailedToAttach(cause):
-                .init(optionalAblyCocoaError: cause)
+                cause
             case .other,
                  .inconsistentRoomOptions,
                  .roomInFailedState,

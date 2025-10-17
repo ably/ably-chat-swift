@@ -22,14 +22,6 @@ extension ErrorInfo {
 
         return true
     }
-
-    func wrapsAblyCocoaError(_ expectedErrorInfo: ARTErrorInfo) -> Bool {
-        if case let .internalError(internalError) = source, case let .fromAblyCocoa(actualErrorInfo) = internalError, expectedErrorInfo == actualErrorInfo {
-            true
-        } else {
-            false
-        }
-    }
 }
 
 extension InternalError {
