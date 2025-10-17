@@ -39,7 +39,7 @@ internal protocol InternalRealtimeChannelsProtocol: AnyObject, Sendable {
 
 /// Expresses the requirements of the object returned by ``InternalRealtimeChannelsProtocol/get(_:options:)``.
 ///
-/// We choose to mark the channel’s mutable state as `async`. This is a way of highlighting at the call site of accessing this state that, since `ARTRealtimeChannel` mutates this state on a separate thread, it’s possible for this state to have changed since the last time you checked it, or since the last time you performed an operation that might have mutated it, or since the last time you recieved an event informing you that it changed. To be clear, marking these as `async` doesn’t _solve_ these issues; it just makes them a bit more visible. We’ll decide how to address them in https://github.com/ably-labs/ably-chat-swift/issues/49.
+/// We choose to mark the channel's mutable state as `async`. This is a way of highlighting at the call site of accessing this state that, since `ARTRealtimeChannel` mutates this state on a separate thread, it's possible for this state to have changed since the last time you checked it, or since the last time you performed an operation that might have mutated it, or since the last time you recieved an event informing you that it changed. To be clear, marking these as `async` doesn't _solve_ these issues; it just makes them a bit more visible. We'll decide how to address them in https://github.com/ably-labs/ably-chat-swift/issues/49.
 @MainActor
 internal protocol InternalRealtimeChannelProtocol: AnyObject, Sendable {
     associatedtype Proxied: RealtimeChannelProtocol

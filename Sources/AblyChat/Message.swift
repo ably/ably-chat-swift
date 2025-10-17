@@ -222,7 +222,7 @@ public extension Message {
      * - Returns: A new message instance with the event applied.
      */
     func with(_ summaryEvent: MessageReactionSummaryEvent) throws(ErrorInfo) -> Self {
-        // (CHA-M11e) For MessageReactionSummaryEvent, the method must verify that the summary.messageSerial in the event matches the message’s own serial. If they don’t match, an error with code 40000 and status code 400 must be thrown.
+        // (CHA-M11e) For MessageReactionSummaryEvent, the method must verify that the summary.messageSerial in the event matches the message's own serial. If they don't match, an error with code 40000 and status code 400 must be thrown.
         guard serial == summaryEvent.messageSerial else {
             throw InternalError.internallyThrown(.cannotApplyEventForDifferentMessage).toErrorInfo()
         }

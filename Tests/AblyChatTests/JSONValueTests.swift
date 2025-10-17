@@ -101,7 +101,7 @@ struct JSONValueTests {
         #expect(resultAsNSObject == expectedResultAsNSObject)
     }
 
-    // Tests that it creates an object that can be serialized by `JSONSerialization` (which is what ably-cocoa uses for serialization), and that the result of this serialization is what we’d expect.
+    // Tests that it creates an object that can be serialized by `JSONSerialization` (which is what ably-cocoa uses for serialization), and that the result of this serialization is what we'd expect.
     @Test
     func toAblyCocoaData_endToEnd() throws {
         let value: JSONValue = [

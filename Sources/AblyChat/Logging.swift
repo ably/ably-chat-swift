@@ -48,7 +48,7 @@ public enum LogLevel: Sendable, Comparable {
 
 /// A reference to a line within a source code file.
 internal struct CodeLocation: Equatable {
-    /// A file identifier in the format used by Swift’s `#fileID` macro. For example, `"AblyChat/Room.swift"`.
+    /// A file identifier in the format used by Swift's `#fileID` macro. For example, `"AblyChat/Room.swift"`.
     internal var fileID: String
     /// The line number in the source code file referred to by ``fileID``.
     internal var line: Int
@@ -67,7 +67,7 @@ internal protocol InternalLogger: Sendable {
 }
 
 extension InternalLogger {
-    /// A convenience logging method that uses the call site’s #file and #line values.
+    /// A convenience logging method that uses the call site's #file and #line values.
     public func log(message: String, level: LogLevel, fileID: String = #fileID, line: Int = #line) {
         let codeLocation = CodeLocation(fileID: fileID, line: line)
         log(message: message, level: level, codeLocation: codeLocation)
@@ -105,12 +105,12 @@ internal final class DefaultInternalLogger: InternalLogger {
             return
         }
 
-        // I don’t yet know what `context` is for (will figure out in https://github.com/ably-labs/ably-chat-swift/issues/8) so passing nil for now
+        // I don't yet know what `context` is for (will figure out in https://github.com/ably-labs/ably-chat-swift/issues/8) so passing nil for now
         logHandler.simple.log(message: "(\(codeLocation.fileID):\(codeLocation.line)) \(message)", level: level)
     }
 }
 
-/// The logging backend used by ``DefaultInternalLogHandler`` if the user has not provided their own. Uses Swift’s `Logger` type for logging.
+/// The logging backend used by ``DefaultInternalLogHandler`` if the user has not provided their own. Uses Swift's `Logger` type for logging.
 internal final class DefaultSimpleLogHandler: LogHandler.Simple {
     private let logger = Logger()
 

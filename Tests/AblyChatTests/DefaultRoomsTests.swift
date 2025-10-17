@@ -7,11 +7,11 @@ import Testing
 struct DefaultRoomsTests {
     // MARK: - Test helpers
 
-    /// A mock implementation of an `InternalRoom`’s `release` operation. Its ``complete()`` method allows you to signal to the mock that the release should complete.
+    /// A mock implementation of an `InternalRoom`'s `release` operation. Its ``complete()`` method allows you to signal to the mock that the release should complete.
     final class SignallableReleaseOperation: Sendable {
         private let continuation: AsyncStream<Void>.Continuation
 
-        /// When this function is set as a ``MockRoom``’s `releaseImplementation`, calling ``complete()`` will cause the corresponding `release()` to complete with the result passed to that method.
+        /// When this function is set as a ``MockRoom``'s `releaseImplementation`, calling ``complete()`` will cause the corresponding `release()` to complete with the result passed to that method.
         ///
         /// ``release`` will respond to task cancellation by throwing `CancellationError`.
         let releaseImplementation: @Sendable () async -> Void
@@ -107,7 +107,7 @@ struct DefaultRoomsTests {
         #expect(secondRoom === firstRoom)
     }
 
-    // @specOneOf(2/2) CHA-RC1f2 - Tests the case where, per CHA-RC1f4, there is, in the spec’s language, a _future_ in the room map
+    // @specOneOf(2/2) CHA-RC1f2 - Tests the case where, per CHA-RC1f4, there is, in the spec's language, a _future_ in the room map
     @Test
     func get_whenFutureExistsInRoomMap_returnsExistingRoomWithGivenName() async throws {
         // Given: an instance of DefaultRooms, for which, per CHA-RC1f4, a previous call to get(name:options:) with a given name is waiting for a CHA-RC1g release operation to complete
@@ -132,9 +132,9 @@ struct DefaultRoomsTests {
         _ = await roomReleaseCalls.first { @Sendable _ in true }
 
         let operationWaitSubscription = rooms.testsOnly_subscribeToOperationWaitEvents()
-        // This is the "Given"’s "previous call to get(name:options:)"
+        // This is the "Given"'s "previous call to get(name:options:)"
         async let firstRoom = try await rooms.get(named: name, options: options)
-        // Wait for the `firstRoom` fetch to start waiting for the CHA-RC1g release operation, to know that we’ve fulfilled the conditions of the "Given"
+        // Wait for the `firstRoom` fetch to start waiting for the CHA-RC1g release operation, to know that we've fulfilled the conditions of the "Given"
         _ = await operationWaitSubscription.first { @Sendable operationWaitEvent in
             operationWaitEvent.waitingOperationType == .get && operationWaitEvent.waitedOperationType == .release
         }
@@ -180,7 +180,7 @@ struct DefaultRoomsTests {
         #expect(isChatError(thrownError, withCodeAndStatusCode: .fixedStatusCode(.badRequest)))
     }
 
-    // @specOneOf(2/2) CHA-RC1f1 - Tests the case where, per CHA-RC1f4, there is, in the spec’s language, a _future_ in the room map
+    // @specOneOf(2/2) CHA-RC1f1 - Tests the case where, per CHA-RC1f4, there is, in the spec's language, a _future_ in the room map
     @Test
     func get_whenFutureExistsInRoomMap_throwsErrorWhenOptionsDoNotMatch() async throws {
         // Given: an instance of DefaultRooms, for which, per CHA-RC1f4, a previous call to get(name:options:) with a given name and options is waiting for a CHA-RC1g release operation to complete
@@ -204,9 +204,9 @@ struct DefaultRoomsTests {
         _ = await roomReleaseCalls.first { @Sendable _ in true }
 
         let operationWaitSubscription = rooms.testsOnly_subscribeToOperationWaitEvents()
-        // This is the "Given"’s "previous call to get(name:options:)"
+        // This is the "Given"'s "previous call to get(name:options:)"
         async let _ = try await rooms.get(named: name, options: options)
-        // Wait for the `firstRoom` fetch to start waiting for the CHA-RC1g release operation, to know that we’ve fulfilled the conditions of the "Given"
+        // Wait for the `firstRoom` fetch to start waiting for the CHA-RC1g release operation, to know that we've fulfilled the conditions of the "Given"
         _ = await operationWaitSubscription.first { @Sendable operationWaitEvent in
             operationWaitEvent.waitingOperationType == .get && operationWaitEvent.waitedOperationType == .release
         }
@@ -279,7 +279,7 @@ struct DefaultRoomsTests {
         let rooms = DefaultRooms(realtime: realtime, logger: TestLogger(), roomFactory: roomFactory)
 
         // When: `release(name:)` is called with this room name
-        // Then: The call to `release(name:)` completes (this is as much as I can do to test the spec’s “no-op”; i.e. check it doesn’t seem to wait for anything or have any obvious side effects)
+        // Then: The call to `release(name:)` completes (this is as much as I can do to test the spec's "no-op"; i.e. check it doesn't seem to wait for anything or have any obvious side effects)
         let name = "basketball"
         await rooms.release(named: name)
     }
@@ -321,7 +321,7 @@ struct DefaultRoomsTests {
         // Allow the previous release operation to complete
         roomReleaseOperation.complete()
 
-        // Then: The second call to `release(name:)` completes, and this second release call does not trigger a CHA-RL3 room release operation (i.e. in the language of the spec it reuses the “future” of the existing CHA-RC1g release operation)
+        // Then: The second call to `release(name:)` completes, and this second release call does not trigger a CHA-RL3 room release operation (i.e. in the language of the spec it reuses the "future" of the existing CHA-RC1g release operation)
         await secondReleaseResult
         #expect(roomToReturn.releaseCallCount == 1)
     }
@@ -350,7 +350,7 @@ struct DefaultRoomsTests {
         _ = await roomReleaseCalls.first { @Sendable _ in true }
 
         let operationWaitSubscription = rooms.testsOnly_subscribeToOperationWaitEvents()
-        // This is the “CHA-RC1f future” of the “Given”
+        // This is the "CHA-RC1f future" of the "Given"
         async let fetchedRoom = rooms.get(named: name, options: options)
 
         // Wait for the call to `get(name:options:)` to start waiting for the CHA-RC1g release operation to complete
@@ -361,7 +361,7 @@ struct DefaultRoomsTests {
         // When: `release(name:)` is called on the room, with the same room name
         async let secondReleaseResult: Void = rooms.release(named: name)
 
-        // Then: The pending call to `get(name:options:)` that is waiting for the “CHA-RC1f future” of the “Given” fails with a RoomReleasedBeforeOperationCompleted error
+        // Then: The pending call to `get(name:options:)` that is waiting for the "CHA-RC1f future" of the "Given" fails with a RoomReleasedBeforeOperationCompleted error
         let roomGetError: (any Error)?
         do {
             _ = try await fetchedRoom
@@ -377,7 +377,7 @@ struct DefaultRoomsTests {
         // Allow the previous release operation to complete
         roomReleaseOperation.complete()
 
-        // Then: The second call to `release(name:)` completes, and this second release call does not trigger a CHA-RL3 room release operation (i.e. in the language of the spec it reuses the “future” of the existing CHA-RC1g release operation)
+        // Then: The second call to `release(name:)` completes, and this second release call does not trigger a CHA-RL3 room release operation (i.e. in the language of the spec it reuses the "future" of the existing CHA-RC1g release operation)
         await secondReleaseResult
         #expect(roomToReturn.releaseCallCount == 1)
     }

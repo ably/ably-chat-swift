@@ -7,11 +7,11 @@ import Testing
 struct DefaultRoomLifecycleManagerTests {
     // MARK: - Test helpers
 
-    /// A mock implementation of a realtime channel’s `attach` or `detach` operation. Its ``complete(behavior:)`` method allows you to signal to the mock that the mocked operation should perform a given behavior (e.g. complete with a given result).
+    /// A mock implementation of a realtime channel's `attach` or `detach` operation. Its ``complete(behavior:)`` method allows you to signal to the mock that the mocked operation should perform a given behavior (e.g. complete with a given result).
     final class SignallableChannelOperation: Sendable {
         private let continuation: AsyncStream<MockRealtimeChannel.AttachOrDetachBehavior>.Continuation
 
-        /// When this behavior is set as a ``MockRealtimeChannel``’s `attachBehavior` or `detachBehavior`, calling ``complete(behavior:)`` will cause the corresponding channel operation to perform the behavior passed to that method.
+        /// When this behavior is set as a ``MockRealtimeChannel``'s `attachBehavior` or `detachBehavior`, calling ``complete(behavior:)`` will cause the corresponding channel operation to perform the behavior passed to that method.
         let behavior: MockRealtimeChannel.AttachOrDetachBehavior
 
         init() {
@@ -84,7 +84,7 @@ struct DefaultRoomLifecycleManagerTests {
         // When: `performAttachOperation()` is called on the lifecycle manager
         try await manager.performAttachOperation()
 
-        // Then: The room attach operation succeeds, and no attempt is made to attach the channel (which we’ll consider as satisfying the spec’s requirement that a "no-op" happen)
+        // Then: The room attach operation succeeds, and no attempt is made to attach the channel (which we'll consider as satisfying the spec's requirement that a "no-op" happen)
         #expect(channel.attachCallCount == 0)
     }
 
@@ -155,7 +155,7 @@ struct DefaultRoomLifecycleManagerTests {
 
         // Then:
         // - the manager informs us that the ATTACH operation is waiting for the DETACH operation to complete
-        // - when the DETACH completes, the ATTACH operation proceeds (which we check here by verifying that it eventually completes) — note that (as far as I can tell) there is no way to test that the ATTACH operation would have proceeded _only if_ the DETACH had completed; the best we can do is allow the manager to tell us that that this is indeed what it’s doing (which is what we check for in the previous bullet)
+        // - when the DETACH completes, the ATTACH operation proceeds (which we check here by verifying that it eventually completes) — note that (as far as I can tell) there is no way to test that the ATTACH operation would have proceeded _only if_ the DETACH had completed; the best we can do is allow the manager to tell us that that this is indeed what it's doing (which is what we check for in the previous bullet)
 
         _ = try #require(await attachWaitingForDetachEvent)
 
@@ -187,7 +187,7 @@ struct DefaultRoomLifecycleManagerTests {
         #expect(manager.roomStatus == .attaching)
         #expect(manager.error == nil)
 
-        // Post-test: Now that we’ve seen the ATTACHING status, allow the channel `attach` call to complete
+        // Post-test: Now that we've seen the ATTACHING status, allow the channel `attach` call to complete
         channelAttachOperation.complete(behavior: .success)
     }
 
@@ -245,8 +245,8 @@ struct DefaultRoomLifecycleManagerTests {
         }
 
         // Then:
-        // 1. the room status transitions to the same state as the channel entered (i.e. FAILED in this example), with the status change’s `error` equal to the error thrown by the channel `attach` call
-        // 2. the manager’s `error` is set to this same error
+        // 1. the room status transitions to the same state as the channel entered (i.e. FAILED in this example), with the status change's `error` equal to the error thrown by the channel `attach` call
+        // 2. the manager's `error` is set to this same error
         // 3. the room attach operation fails with this same error
         let failedStatusChange = try #require(await maybeFailedStatusChange)
 
@@ -269,7 +269,7 @@ struct DefaultRoomLifecycleManagerTests {
         // When: `performDetachOperation()` is called on the lifecycle manager
         try await manager.performDetachOperation()
 
-        // Then: The room detach operation succeeds, and no attempt is made to detach the channel (which we’ll consider as satisfying the spec’s requirement that a "no-op" happen)
+        // Then: The room detach operation succeeds, and no attempt is made to detach the channel (which we'll consider as satisfying the spec's requirement that a "no-op" happen)
         #expect(channel.detachCallCount == 0)
     }
 
@@ -357,7 +357,7 @@ struct DefaultRoomLifecycleManagerTests {
 
         // Then:
         // - the manager informs us that the DETACH operation is waiting for the ATTACH operation to complete
-        // - when the ATTACH completes, the DETACH operation proceeds (which we check here by verifying that it eventually completes) — note that (as far as I can tell) there is no way to test that the DETACH operation would have proceeded _only if_ the ATTACH had completed; the best we can do is allow the manager to tell us that that this is indeed what it’s doing (which is what we check for in the previous bullet)
+        // - when the ATTACH completes, the DETACH operation proceeds (which we check here by verifying that it eventually completes) — note that (as far as I can tell) there is no way to test that the DETACH operation would have proceeded _only if_ the ATTACH had completed; the best we can do is allow the manager to tell us that that this is indeed what it's doing (which is what we check for in the previous bullet)
 
         _ = try #require(await detachWaitingForAttachEvent)
 
@@ -388,7 +388,7 @@ struct DefaultRoomLifecycleManagerTests {
         #expect(manager.roomStatus == .detaching)
         #expect(manager.error == nil)
 
-        // Post-test: Now that we’ve seen the DETACHING status, allow the channel `detach` call to complete
+        // Post-test: Now that we've seen the DETACHING status, allow the channel `detach` call to complete
         channelDetachOperation.complete(behavior: .success)
     }
 
@@ -445,8 +445,8 @@ struct DefaultRoomLifecycleManagerTests {
         }
 
         // Then:
-        // 1. the room status transitions to the same state as the channel entered (i.e. FAILED in this example), with the status change’s `error` equal to the error thrown by the channel `detach` call
-        // 2. the manager’s `error` is set to this same error
+        // 1. the room status transitions to the same state as the channel entered (i.e. FAILED in this example), with the status change's `error` equal to the error thrown by the channel `detach` call
+        // 2. the manager's `error` is set to this same error
         // 3. the room detach operation fails with this same error
         let failedStatusChange = try #require(await maybeFailedStatusChange)
 
@@ -469,7 +469,7 @@ struct DefaultRoomLifecycleManagerTests {
         // When: `performReleaseOperation()` is called on the lifecycle manager
         await manager.performReleaseOperation()
 
-        // Then: The room release operation succeeds, and no attempt is made to detach the channel (which we’ll consider as satisfying the spec’s requirement that a "no-op" happen)
+        // Then: The room release operation succeeds, and no attempt is made to detach the channel (which we'll consider as satisfying the spec's requirement that a "no-op" happen)
         #expect(channel.detachCallCount == 0)
     }
 
@@ -535,7 +535,7 @@ struct DefaultRoomLifecycleManagerTests {
 
         // Then:
         // - the manager informs us that the RELEASE operation is waiting for the ATTACH operation to complete
-        // - when the ATTACH completes, the RELEASE operation proceeds (which we check here by verifying that it eventually completes) — note that (as far as I can tell) there is no way to test that the RELEASE operation would have proceeded _only if_ the ATTACH had completed; the best we can do is allow the manager to tell us that that this is indeed what it’s doing (which is what we check for in the previous bullet)
+        // - when the ATTACH completes, the RELEASE operation proceeds (which we check here by verifying that it eventually completes) — note that (as far as I can tell) there is no way to test that the RELEASE operation would have proceeded _only if_ the ATTACH had completed; the best we can do is allow the manager to tell us that that this is indeed what it's doing (which is what we check for in the previous bullet)
 
         _ = try #require(await releaseWaitingForAttachEvent)
 
@@ -569,7 +569,7 @@ struct DefaultRoomLifecycleManagerTests {
         #expect(manager.roomStatus == .releasing)
         #expect(manager.error == nil)
 
-        // Post-test: Now that we’ve seen the RELEASING status, allow the channel `detach` call to complete
+        // Post-test: Now that we've seen the RELEASING status, allow the channel `detach` call to complete
         channelDetachOperation.complete(behavior: .success)
     }
 

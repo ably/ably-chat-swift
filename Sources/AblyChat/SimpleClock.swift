@@ -2,7 +2,7 @@ import Foundation
 
 /// A clock that causes the current task to sleep.
 ///
-/// Exists for mocking in tests. Note that we can’t use the Swift `Clock` type since it doesn’t exist in our minimum supported OS versions.
+/// Exists for mocking in tests. Note that we can't use the Swift `Clock` type since it doesn't exist in our minimum supported OS versions.
 @MainActor
 internal protocol SimpleClock: Sendable {
     /// Behaves like `Task.sleep(nanoseconds:)`. Uses seconds instead of nanoseconds for readability at call site (we have no need for that level of precision).

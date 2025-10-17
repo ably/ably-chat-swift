@@ -6,7 +6,7 @@ public typealias JSONObject = [String: JSONValue]
 
 /// A JSON value (where "value" has the meaning defined by the [JSON specification](https://www.json.org)).
 ///
-/// `JSONValue` provides a type-safe API for working with JSON values. It implements Swift’s `ExpressibleBy*Literal` protocols. This allows you to write type-safe JSON values using familiar syntax. For example:
+/// `JSONValue` provides a type-safe API for working with JSON values. It implements Swift's `ExpressibleBy*Literal` protocols. This allows you to write type-safe JSON values using familiar syntax. For example:
 ///
 /// ```swift
 /// let jsonValue: JSONValue = [
@@ -148,8 +148,8 @@ internal extension JSONValue {
     ///
     /// Specifically, `ablyCocoaData` can be:
     ///
-    /// - a non-`nil` value of `ARTBaseMessage`’s `data` property
-    /// - an element of `ARTHTTPPaginatedResult`’s `items` array
+    /// - a non-`nil` value of `ARTBaseMessage`'s `data` property
+    /// - an element of `ARTHTTPPaginatedResult`'s `items` array
     init(ablyCocoaData: Any) {
         switch ablyCocoaData {
         case let dictionary as [String: Any]:
@@ -175,9 +175,9 @@ internal extension JSONValue {
         }
     }
 
-    /// Creates a `JSONValue` from an ably-cocoa deserialized JSON message extras object. Specifically, `ablyCocoaExtras` can be a non-`nil` value of `ARTBaseMessage`’s `extras` property.
+    /// Creates a `JSONValue` from an ably-cocoa deserialized JSON message extras object. Specifically, `ablyCocoaExtras` can be a non-`nil` value of `ARTBaseMessage`'s `extras` property.
     static func objectFromAblyCocoaExtras(_ ablyCocoaExtras: any ARTJsonCompatible) -> [String: JSONValue] {
-        // (This is based on the fact that, in reality, I believe that `extras` is always a JSON object; see https://github.com/ably/ably-cocoa/issues/2002 for improving ably-cocoa’s API to reflect this)
+        // (This is based on the fact that, in reality, I believe that `extras` is always a JSON object; see https://github.com/ably/ably-cocoa/issues/2002 for improving ably-cocoa's API to reflect this)
 
         let jsonValue = JSONValue(ablyCocoaData: ablyCocoaExtras)
         guard case let .object(jsonObject) = jsonValue else {
@@ -192,9 +192,9 @@ internal extension JSONValue {
     ///
     /// Specifically, the value of this property can be used as:
     ///
-    /// - `ARTBaseMessage`’s `data` property
-    /// - the `data` argument that’s passed to `ARTRealtime`’s `request(…)` method
-    /// - the `data` argument that’s passed to `ARTRealtime`’s `publish(…)` method
+    /// - `ARTBaseMessage`'s `data` property
+    /// - the `data` argument that's passed to `ARTRealtime`'s `request(…)` method
+    /// - the `data` argument that's passed to `ARTRealtime`'s `publish(…)` method
     var toAblyCocoaData: Any {
         switch self {
         case let .object(underlying):
@@ -218,9 +218,9 @@ internal extension JSONObject {
     ///
     /// Specifically, the value of this property can be used as:
     ///
-    /// - `ARTBaseMessage`’s `data` property
-    /// - the `data` argument that’s passed to `ARTRealtime`’s `request(…)` method
-    /// - the `data` argument that’s passed to `ARTRealtime`’s `publish(…)` method
+    /// - `ARTBaseMessage`'s `data` property
+    /// - the `data` argument that's passed to `ARTRealtime`'s `request(…)` method
+    /// - the `data` argument that's passed to `ARTRealtime`'s `publish(…)` method
     var toAblyCocoaDataDictionary: [String: Any] {
         mapValues(\.toAblyCocoaData)
     }

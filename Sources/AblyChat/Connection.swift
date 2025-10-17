@@ -66,7 +66,7 @@ public extension Connection {
  * The different states that the connection can be in through its lifecycle.
  */
 public enum ConnectionStatus: Sendable {
-    // (CHA-CS1a) The INITIALIZED status is a default status when the realtime client is first initialized. This value will only (likely) be seen if the realtime client doesn’t have autoconnect turned on.
+    // (CHA-CS1a) The INITIALIZED status is a default status when the realtime client is first initialized. This value will only (likely) be seen if the realtime client doesn't have autoconnect turned on.
 
     /**
      * A temporary state for when the library is first initialized.
