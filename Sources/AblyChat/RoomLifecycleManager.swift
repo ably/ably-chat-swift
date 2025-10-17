@@ -296,7 +296,7 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
 
     /// Waits for the operation with ID `waitedOperationID` to complete, re-throwing any error thrown by that operation.
     ///
-    /// Note that this method currently treats all waited operations as throwing. If you wish to wait for an operation that you _know_ to be non-throwing (which the RELEASE operation currently is) then you’ll need to call this method with `try!` or equivalent. (It might be possible to improve this in the future, but I didn’t want to put much time into figuring it out.)
+    /// Note that this method currently treats all waited operations as throwing. If you wish to wait for an operation that you _know_ to be non-throwing (which the RELEASE operation currently is) then you'll need to call this method with `try!` or equivalent. (It might be possible to improve this in the future, but I didn't want to put much time into figuring it out.)
     ///
     /// It is guaranteed that if you call this method from a manager-isolated method, and subsequently call ``operationWithID(_:,didCompleteWithResult:)`` from another manager-isolated method, then the call to this method will return.
     ///
@@ -311,7 +311,7 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
 
         do {
             let result = await withCheckedContinuation { (continuation: OperationResultContinuations.Continuation) in
-                // My “it is guaranteed” in the documentation for this method is really more of an “I hope that”, because it’s based on my pretty vague understanding of Swift concurrency concepts; namely, I believe that if you call this manager-isolated `async` method from another manager-isolated method, the initial synchronous part of this method — in particular the call to `addContinuation` below — will occur _before_ the call to this method suspends. (I think this can be roughly summarised as “calls to async methods on self don’t do actor hopping” but I could be completely misusing a load of Swift concurrency vocabulary there.)
+                // My "it is guaranteed" in the documentation for this method is really more of an "I hope that", because it's based on my pretty vague understanding of Swift concurrency concepts; namely, I believe that if you call this manager-isolated `async` method from another manager-isolated method, the initial synchronous part of this method — in particular the call to `addContinuation` below — will occur _before_ the call to this method suspends. (I think this can be roughly summarised as "calls to async methods on self don't do actor hopping" but I could be completely misusing a load of Swift concurrency vocabulary there.)
                 operationResultContinuations.addContinuation(continuation, forResultOfOperationWithID: waitedOperationID)
 
                 #if DEBUG
@@ -343,11 +343,11 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
     ///
     /// - Note: Note that `DefaultRoomLifecycleManager` does not implement any sort of mutual exclusion mechanism that _enforces_ that one room lifecycle operation must wait for another (e.g. it is _not_ a queue); each operation needs to implement its own logic for whether it should proceed in the presence of other in-progress operations.
     ///
-    /// Note that this method currently treats all performed operations as throwing. If you wish to wait for an operation that you _know_ to be non-throwing (which the RELEASE operation currently is) then you’ll need to call this method with `try!` or equivalent. (It might be possible to improve this in the future, but I didn’t want to put much time into figuring it out.)
+    /// Note that this method currently treats all performed operations as throwing. If you wish to wait for an operation that you _know_ to be non-throwing (which the RELEASE operation currently is) then you'll need to call this method with `try!` or equivalent. (It might be possible to improve this in the future, but I didn't want to put much time into figuring it out.)
     ///
     /// - Parameters:
     ///   - forcedOperationID: Forces the operation to have a given ID. In combination with the ``testsOnly_subscribeToOperationWaitEvents`` API, this allows tests to verify that one test-initiated operation is waiting for another test-initiated operation.
-    ///   - body: The implementation of the operation to be performed. Once this function returns or throws an error, the operation is considered to have completed, and any waits for this operation’s completion initiated via ``waitForCompletionOfOperationWithID(_:waitingOperationID:)`` will complete.
+    ///   - body: The implementation of the operation to be performed. Once this function returns or throws an error, the operation is considered to have completed, and any waits for this operation's completion initiated via ``waitForCompletionOfOperationWithID(_:waitingOperationID:)`` will complete.
     private func performAnOperation(
         forcingOperationID forcedOperationID: UUID?,
         _ body: (UUID) async throws(InternalError) -> Void,
@@ -356,7 +356,7 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
         logger.log(message: "Performing operation \(operationID)", level: .debug)
         let result: Result<Void, InternalError>
         do {
-            // My understanding (based on what the compiler allows me to do, and a vague understanding of how actors work) is that inside this closure you can write code as if it were a method on the manager itself — i.e. with synchronous access to the manager’s state. But I currently lack the Swift concurrency vocabulary to explain exactly why this is the case.
+            // My understanding (based on what the compiler allows me to do, and a vague understanding of how actors work) is that inside this closure you can write code as if it were a method on the manager itself — i.e. with synchronous access to the manager's state. But I currently lack the Swift concurrency vocabulary to explain exactly why this is the case.
             try await body(operationID)
             result = .success(())
         } catch {
@@ -378,7 +378,7 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
         try await _performAttachOperation(forcingOperationID: forcedOperationID)
     }
 
-    /// Implements CHA-RL1’s `ATTACH` operation.
+    /// Implements CHA-RL1's `ATTACH` operation.
     ///
     /// - Parameters:
     ///   - forcedOperationID: Allows tests to force the operation to have a given ID. In combination with the ``testsOnly_subscribeToOperationWaitEvents`` API, this allows tests to verify that one test-initiated operation is waiting for another test-initiated operation.
@@ -441,7 +441,7 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
         try await _performDetachOperation(forcingOperationID: forcedOperationID)
     }
 
-    /// Implements CHA-RL2’s DETACH operation.
+    /// Implements CHA-RL2's DETACH operation.
     ///
     /// - Parameters:
     ///   - forcedOperationID: Allows tests to force the operation to have a given ID. In combination with the ``testsOnly_subscribeToOperationWaitEvents`` API, this allows tests to verify that one test-initiated operation is waiting for another test-initiated operation.
@@ -506,7 +506,7 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
         await _performReleaseOperation(forcingOperationID: forcedOperationID)
     }
 
-    /// Implements CHA-RL3’s RELEASE operation.
+    /// Implements CHA-RL3's RELEASE operation.
     ///
     /// - Parameters:
     ///   - forcedOperationID: Allows tests to force the operation to have a given ID. In combination with the ``testsOnly_subscribeToOperationWaitEvents`` API, this allows tests to verify that one test-initiated operation is waiting for another test-initiated operation.
@@ -584,9 +584,9 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
     // MARK: - Waiting to be able to perform presence operations
 
     internal func waitToBeAbleToPerformPresenceOperations(requestedByFeature requester: RoomFeature) async throws(InternalError) {
-        // Although this method’s implementation only uses the manager’s public
-        // API, it’s implemented as a method on the manager itself, so that the
-        // implementation is isolated to the manager and hence doesn’t “miss”
+        // Although this method's implementation only uses the manager's public
+        // API, it's implemented as a method on the manager itself, so that the
+        // implementation is isolated to the manager and hence doesn't "miss"
         // any status changes. (There may be other ways to achieve the same
         // effect; can revisit.)
 

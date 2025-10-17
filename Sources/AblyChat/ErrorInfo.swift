@@ -196,7 +196,7 @@ public struct ErrorInfo: Error, CustomStringConvertible {
 
     /// Overrides the default implementation of this property that Foundation provides for the `Error` protocol.
     ///
-    /// Foundation's default implementation is not very useful; it just returns "The operation couldn’t be completed. (AblyChat.ErrorInfo error 1.)" for all errors.
+    /// Foundation's default implementation is not very useful; it just returns "The operation couldn't be completed. (AblyChat.ErrorInfo error 1.)" for all errors.
     public var localizedDescription: String {
         description
     }

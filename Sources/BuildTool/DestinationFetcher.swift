@@ -11,7 +11,7 @@ enum DestinationFetcher {
         let matchingDevices = (simctlAvailableDevicesOutput.devices[runtimeIdentifier] ?? []).filter { $0.deviceTypeIdentifier == deviceTypeIdentifier }
 
         guard !matchingDevices.isEmpty else {
-            throw Error.simulatorLookupFailed(message: "Couldn’t find a simulator with runtime \(runtimeIdentifier) and device type \(deviceTypeIdentifier); available devices are \(simctlAvailableDevicesOutput.devices)")
+            throw Error.simulatorLookupFailed(message: "Couldn't find a simulator with runtime \(runtimeIdentifier) and device type \(deviceTypeIdentifier); available devices are \(simctlAvailableDevicesOutput.devices)")
         }
 
         guard matchingDevices.count == 1 else {

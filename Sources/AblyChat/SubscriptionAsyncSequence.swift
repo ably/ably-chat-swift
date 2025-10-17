@@ -4,9 +4,9 @@ import Foundation
 //
 // This should respect the `BufferingPolicy` passed to the `subscribe(bufferingPolicy:)` method.
 //
-// At some point we should define how this thing behaves when you iterate over it from multiple loops, or when you pass it around. I’m not yet sufficiently experienced with `AsyncSequence` to know what’s idiomatic. I tried the same thing out with `AsyncStream` (two tasks iterating over a single stream) and it appears that each element is delivered to precisely one consumer. But we can leave that for later. On a similar note consider whether it makes a difference whether this is a struct or a class.
+// At some point we should define how this thing behaves when you iterate over it from multiple loops, or when you pass it around. I'm not yet sufficiently experienced with `AsyncSequence` to know what's idiomatic. I tried the same thing out with `AsyncStream` (two tasks iterating over a single stream) and it appears that each element is delivered to precisely one consumer. But we can leave that for later. On a similar note consider whether it makes a difference whether this is a struct or a class.
 //
-// I wanted to implement this as a protocol (from which `MessageSubscription` would then inherit) but struggled to do so (see https://forums.swift.org/t/struggling-to-create-a-protocol-that-inherits-from-asyncsequence-with-primary-associated-type/73950 where someone suggested it’s a compiler bug), hence the struct. I was also hoping that upon switching to Swift 6 we could use AsyncSequence’s `Failure` associated type to simplify the way in which we show that the subscription is non-throwing, but it turns out this can only be done in macOS 15 etc. So I think that for now we’re stuck with things the way they are.
+// I wanted to implement this as a protocol (from which `MessageSubscription` would then inherit) but struggled to do so (see https://forums.swift.org/t/struggling-to-create-a-protocol-that-inherits-from-asyncsequence-with-primary-associated-type/73950 where someone suggested it's a compiler bug), hence the struct. I was also hoping that upon switching to Swift 6 we could use AsyncSequence's `Failure` associated type to simplify the way in which we show that the subscription is non-throwing, but it turns out this can only be done in macOS 15 etc. So I think that for now we're stuck with things the way they are.
 
 /// A non-throwing `AsyncSequence`. The Chat SDK uses this type as the return value of the `AsyncSequence` convenience variants of methods that allow you to find out about events such as typing events, connection status changes, discontinuity events etc.
 ///
@@ -17,7 +17,7 @@ public final class SubscriptionAsyncSequence<Element: Sendable>: Sendable, Async
         case mockAsyncSequence(AnyNonThrowingAsyncSequence)
     }
 
-    /// A type-erased AsyncSequence that doesn’t throw any errors.
+    /// A type-erased AsyncSequence that doesn't throw any errors.
     fileprivate struct AnyNonThrowingAsyncSequence: AsyncSequence, Sendable {
         private var makeAsyncIteratorImpl: @Sendable () -> AsyncIterator
 

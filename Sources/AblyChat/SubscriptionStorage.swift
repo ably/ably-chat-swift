@@ -33,7 +33,7 @@ internal class SubscriptionStorage<Element: Sendable> {
         _ = subscriptions.removeValue(forKey: id)
     }
 
-    /// Emits an element on all of the subscriptions in the reciever’s managed list.
+    /// Emits an element on all of the subscriptions in the reciever's managed list.
     internal func emit(_ element: Element) {
         for subscriptionItem in subscriptions.values {
             subscriptionItem.callback(element)
@@ -74,7 +74,7 @@ internal class StatusSubscriptionStorage<Element: Sendable> {
         _ = subscriptions.removeValue(forKey: id)
     }
 
-    /// Emits an element on all of the subscriptions in the reciever’s managed list.
+    /// Emits an element on all of the subscriptions in the reciever's managed list.
     internal func emit(_ element: Element) {
         for subscriptionItem in subscriptions.values {
             subscriptionItem.callback(element)

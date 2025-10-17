@@ -114,7 +114,7 @@ struct GenerateMatrices: ParsableCommand {
     static let configuration = CommandConfiguration(
         abstract: "Generate a build matrix that can be used for specifying which GitHub jobs to run",
         discussion: """
-        Outputs a key=value string which, when appended to $GITHUB_OUTPUT, sets the job’s `matrix` output to a JSON object which can be used for generating builds. This allows us to make sure that our various matrix jobs use consistent parameters.
+        Outputs a key=value string which, when appended to $GITHUB_OUTPUT, sets the job's `matrix` output to a JSON object which can be used for generating builds. This allows us to make sure that our various matrix jobs use consistent parameters.
 
         This object has the following structure:
 
@@ -150,7 +150,7 @@ struct GenerateMatrices: ParsableCommand {
             ],
         ]
 
-        // I’m assuming the JSONSerialization output has no newlines
+        // I'm assuming the JSONSerialization output has no newlines
         let keyValue = try "matrix=\(String(data: JSONSerialization.data(withJSONObject: matrix), encoding: .utf8))"
         fputs("\(keyValue)\n", stderr)
         print(keyValue)
@@ -195,7 +195,7 @@ struct Lint: AsyncParsableCommand {
         try await ProcessRunner.run(executableName: "npm", arguments: ["run", "prettier:fix"])
     }
 
-    /// Checks that the Swift version specified by the `Package.swift`’s `"swift-tools-version"` matches that in the `.swift-version` file (which is used to tell SwiftFormat the minimum version of Swift supported by our code). Per [SwiftFormat#1496](https://github.com/nicklockwood/SwiftFormat/issues/1496) it’s currently our responsibility to make sure they’re kept in sync.///
+    /// Checks that the Swift version specified by the `Package.swift`'s `"swift-tools-version"` matches that in the `.swift-version` file (which is used to tell SwiftFormat the minimum version of Swift supported by our code). Per [SwiftFormat#1496](https://github.com/nicklockwood/SwiftFormat/issues/1496) it's currently our responsibility to make sure they're kept in sync.///
     func checkSwiftVersionFile() async throws {
         async let swiftVersionFileContents = loadUTF8StringFromFile(at: ".swift-version")
         async let packageManifestFileContents = loadUTF8StringFromFile(at: "Package.swift")
@@ -220,9 +220,9 @@ struct Lint: AsyncParsableCommand {
         }
     }
 
-    /// Checks that the SPM-managed Package.resolved matches the Xcode-managed one. (I still don’t fully understand _why_ there are two files).
+    /// Checks that the SPM-managed Package.resolved matches the Xcode-managed one. (I still don't fully understand _why_ there are two files).
     ///
-    /// Ignores the `originHash` property of the Package.resolved file, because this property seems to frequently be different between the SPM version and the Xcode version, and I don’t know enough about SPM to know what this property means or whether there’s a reproducible way to get them to match.
+    /// Ignores the `originHash` property of the Package.resolved file, because this property seems to frequently be different between the SPM version and the Xcode version, and I don't know enough about SPM to know what this property means or whether there's a reproducible way to get them to match.
     func comparePackageLockfiles() async throws {
         let lockfilePaths = ["Package.resolved", "AblyChat.xcworkspace/xcshareddata/swiftpm/Package.resolved"]
         let lockfileContents = try await withThrowingTaskGroup(of: Data.self) { group in
@@ -299,7 +299,7 @@ struct SpecCoverage: AsyncParsableCommand {
             init?(specLine: String) {
                 // example line that corresponds to a testable spec point:
                 // ** @(CHA-RS4b)@ @[Testable]@ Room status update events must contain the previous room status.
-                // (This `Testable` is a convention that’s being used only in the Chat spec)
+                // (This `Testable` is a convention that's being used only in the Chat spec)
 
                 let specPointLineRegex = /^\s*\*+ @\((.*?)\)@( @\[Testable\]@ )?/
 
@@ -323,7 +323,7 @@ struct SpecCoverage: AsyncParsableCommand {
     }
 
     /**
-     * A tag, extracted from a comment in the SDK’s test code, which indicates conformance to a spec point, as described in the "Attributing tests to a spec point" section of `CONTRIBUTING.md`.
+     * A tag, extracted from a comment in the SDK's test code, which indicates conformance to a spec point, as described in the "Attributing tests to a spec point" section of `CONTRIBUTING.md`.
      */
     private struct ConformanceTag {
         enum `Type` {
@@ -434,7 +434,7 @@ struct SpecCoverage: AsyncParsableCommand {
         var testableSpecPointCoverages: [SpecPointCoverage]
 
         /**
-         * The IDs of spec points that are not marked as Testable but which have a conformance tag. We’ll emit a warning for these, because it might mean that the spec point they refer to has been replaced or deleted; might need to re-think this approach if it turns out there are other good reasons for testing non-testable points).
+         * The IDs of spec points that are not marked as Testable but which have a conformance tag. We'll emit a warning for these, because it might mean that the spec point they refer to has been replaced or deleted; might need to re-think this approach if it turns out there are other good reasons for testing non-testable points).
          */
         var nonTestableSpecPointIDsWithConformanceTags: Set<String>
 
@@ -610,12 +610,12 @@ struct SpecCoverage: AsyncParsableCommand {
             let headers = ["Spec point ID", "Coverage level", "Comments"]
 
             let rows = report.testableSpecPointCoverages.map { coverage in
-                // TODO: https://github.com/ably-labs/ably-chat-swift/issues/94 - Improve the output of comments. The Table library doesn’t:
+                // TODO: https://github.com/ably-labs/ably-chat-swift/issues/94 - Improve the output of comments. The Table library doesn't:
                 //
                 // 1. offer the ability to wrap long lines
                 // 2. handle multi-line strings
                 //
-                // so I’m currently just combining all the comments into a single line and then truncating this line.
+                // so I'm currently just combining all the comments into a single line and then truncating this line.
                 let comments = coverage.comments.joined(separator: ",")
 
                 let truncateCommentsToLength = 80
@@ -675,7 +675,7 @@ struct SpecCoverage: AsyncParsableCommand {
     }
 
     /**
-     * The response from GitHub’s [“get a commit” endpoint](https://docs.github.com/en/rest/commits/commits?apiVersion=2022-11-28#get-a-commit).
+     * The response from GitHub's ["get a commit" endpoint](https://docs.github.com/en/rest/commits/commits?apiVersion=2022-11-28#get-a-commit).
      */
     private struct GitHubCommitResponseDTO: Codable {
         var sha: String
@@ -755,12 +755,12 @@ struct SpecCoverage: AsyncParsableCommand {
             var name: String
 
             /**
-             * The path of this target’s sources, relative to ``PackageDescribeOutput/path``.
+             * The path of this target's sources, relative to ``PackageDescribeOutput/path``.
              */
             var path: String
 
             /**
-             * The paths of each of this target’s sources, relative to ``path``.
+             * The paths of each of this target's sources, relative to ``path``.
              */
             var sources: [String]
         }
@@ -769,7 +769,7 @@ struct SpecCoverage: AsyncParsableCommand {
     }
 
     /**
-     * Fetches the absolute file URLs of all of the source files for the SDK’s tests.
+     * Fetches the absolute file URLs of all of the source files for the SDK's tests.
      */
     private func fetchTestSourceFilePaths() async throws -> [URL] {
         let packageDescribeOutputData = try await ProcessRunner.runAndReturnStdout(
@@ -797,7 +797,7 @@ struct BuildDocumentation: AsyncParsableCommand {
     )
 
     mutating func run() async throws {
-        // For now, this is intended to just perform some validation of the documentation comments. We’ll generate HTML output in https://github.com/ably/ably-chat-swift/issues/2.
+        // For now, this is intended to just perform some validation of the documentation comments. We'll generate HTML output in https://github.com/ably/ably-chat-swift/issues/2.
 
         try await ProcessRunner.run(
             executableName: "swift",
@@ -815,7 +815,7 @@ struct BuildDocumentation: AsyncParsableCommand {
                 // - a table at the end of the CLI output
                 // - as a JSON file in ./.build/plugins/Swift-DocC/outputs/AblyChat.doccarchive/documentation-coverage.json
                 //
-                // I do not yet know how to make use of these (there’s all sorts of unexpected symbols that we didn’t directly declare there, e.g. `compactMap(_:)`), but maybe it’ll be a bit helpful still.
+                // I do not yet know how to make use of these (there's all sorts of unexpected symbols that we didn't directly declare there, e.g. `compactMap(_:)`), but maybe it'll be a bit helpful still.
                 "--experimental-documentation-coverage",
 
                 // Increases the detail level of the aforementioned coverage table in CLI output.

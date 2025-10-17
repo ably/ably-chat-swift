@@ -137,7 +137,7 @@ internal enum InternalError: Error {
 
     /// A specific error thrown by the internals of the Chat SDK.
     ///
-    /// This type exists in addition to ``ErrorCode`` to allow us to attach metadata which can be incorporated into the error’s `message` and `cause`.
+    /// This type exists in addition to ``ErrorCode`` to allow us to attach metadata which can be incorporated into the error's `message` and `cause`.
     internal enum InternallyThrown {
         case other(Other)
         case inconsistentRoomOptions(requested: RoomOptions, existing: RoomOptions)

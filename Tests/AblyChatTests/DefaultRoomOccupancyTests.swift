@@ -52,7 +52,7 @@ struct DefaultRoomOccupancyTests {
         ))
     }
 
-    // @specUntested CHA-O4e - We chose to implement this failure with an idiomatic fatalError instead of throwing, but we can’t test this.
+    // @specUntested CHA-O4e - We chose to implement this failure with an idiomatic fatalError instead of throwing, but we can't test this.
 
     // @spec CHA-O4a
     // @spec CHA-O4c
@@ -134,5 +134,5 @@ struct DefaultRoomOccupancyTests {
         #expect(occupancyEvent.occupancy.presenceMembers == 0)
     }
 
-    // @specUntested CHA-O7c - We chose to implement this failure with an idiomatic fatalError instead of throwing, but we can’t test this.
+    // @specUntested CHA-O7c - We chose to implement this failure with an idiomatic fatalError instead of throwing, but we can't test this.
 }

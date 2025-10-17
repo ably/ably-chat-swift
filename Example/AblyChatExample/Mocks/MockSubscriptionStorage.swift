@@ -1,7 +1,7 @@
 import Ably
 import AblyChat
 
-// This is copied from ably-chat’s internal class `SubscriptionStorage`.
+// This is copied from ably-chat's internal class `SubscriptionStorage`.
 @MainActor
 class MockSubscriptionStorage<Element: Sendable> {
     @MainActor
@@ -59,7 +59,7 @@ class MockSubscriptionStorage<Element: Sendable> {
     }
 }
 
-// This is copied from ably-chat’s internal class `StatusSubscriptionStorage`.
+// This is copied from ably-chat's internal class `StatusSubscriptionStorage`.
 @MainActor
 class MockStatusSubscriptionStorage<Element: Sendable> {
     @MainActor

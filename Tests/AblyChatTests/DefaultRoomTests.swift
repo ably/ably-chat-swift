@@ -209,7 +209,7 @@ struct DefaultRoomTests {
 
     // MARK: - Release
 
-    // @spec CHA-RL3h - I haven’t explicitly tested that `performReleaseOperation()` happens _before_ releasing the channels (i.e. the “upon operation completion” part of the spec point), because it would require me to spend extra time on mock-writing which I can’t really afford to spend right now. I think we can live with it at least for the time being; I’m pretty sure there are other tests where the spec mentions or requires an order where I also haven’t tested the order.
+    // @spec CHA-RL3h - I haven't explicitly tested that `performReleaseOperation()` happens _before_ releasing the channels (i.e. the "upon operation completion" part of the spec point), because it would require me to spend extra time on mock-writing which I can't really afford to spend right now. I think we can live with it at least for the time being; I'm pretty sure there are other tests where the spec mentions or requires an order where I also haven't tested the order.
     @Test
     func release() async throws {
         // Given: a DefaultRoom instance
@@ -229,7 +229,7 @@ struct DefaultRoomTests {
 
         // Then: It:
         // 1. calls `performReleaseOperation()` on the room lifecycle manager
-        // 2. calls `channels.release()` with the name of each of the features’ channels
+        // 2. calls `channels.release()` with the name of each of the features' channels
         #expect(lifecycleManager.releaseCallCount == 1)
         #expect(Set(channels.releaseArguments) == Set(channelsList.map(\.name)))
     }

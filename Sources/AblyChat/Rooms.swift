@@ -85,7 +85,7 @@ internal class DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
         case roomMapEntry(RoomMapEntry)
     }
 
-    /// An entry in the “room map” that CHA-RC1f and CHA-RC1g refer to.
+    /// An entry in the "room map" that CHA-RC1f and CHA-RC1g refer to.
     private enum RoomMapEntry {
         /// The room has been requested, but is awaiting the completion of a CHA-RC1g release operation.
         case requestAwaitingRelease(
@@ -216,7 +216,7 @@ internal class DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
                                     // This task is rather messy but its aim can be summarised as the following:
                                     //
                                     // - if releaseTask completes, then complete
-                                    // - if the task is cancelled, then do not propagate the cancellation to releaseTask (because we haven’t properly thought through whether it can handle task cancellation; see existing TODO: https://github.com/ably/ably-chat-swift/issues/29), and do not wait for releaseTask to complete (because the CHA-RC1g4 failure is meant to happen immediately, not only once the release operation completes)
+                                    // - if the task is cancelled, then do not propagate the cancellation to releaseTask (because we haven't properly thought through whether it can handle task cancellation; see existing TODO: https://github.com/ably/ably-chat-swift/issues/29), and do not wait for releaseTask to complete (because the CHA-RC1g4 failure is meant to happen immediately, not only once the release operation completes)
 
                                     logger.log(message: "Room creation waiting for completion of release operation", level: .debug)
                                     #if DEBUG
@@ -356,7 +356,7 @@ internal class DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
                 logger.log(message: "Release operation completed waiting for room release operation to complete", level: .debug)
             }
 
-            // Note that, since we’re in an actor (specifically, the MainActor), we expect `releaseTask` to always be executed _after_ this synchronous code section, meaning that the `roomStates` mutations happen in the correct order
+            // Note that, since we're in an actor (specifically, the MainActor), we expect `releaseTask` to always be executed _after_ this synchronous code section, meaning that the `roomStates` mutations happen in the correct order
 
             // This also achieves CHA-RC1g5 (remove room from room map)
             roomStates[name] = .releaseOperationInProgress(releaseTask: releaseTask)
