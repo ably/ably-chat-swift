@@ -6,21 +6,19 @@ enum RoomReactionDTOTests {
         // MARK: - JSONDecodable
 
         @Test
-        func initWithJSONValue_failsIfNotObject() {
-            #expect {
+        func initWithJSONValue_failsIfNotObject() throws {
+            let thrownError = try #require(throws: ErrorInfo.self) {
                 try RoomReactionDTO.Data(jsonValue: "hello")
-            } throws: { error in
-                isErrorInfoWithInternalErrorCase(error, .jsonValueDecodingError)
             }
+            #expect(thrownError.hasInternalErrorCase(.jsonValueDecodingError))
         }
 
         @Test
-        func initWithJSONValue_withNoTypeKey() {
-            #expect {
+        func initWithJSONValue_withNoTypeKey() throws {
+            let thrownError = try #require(throws: ErrorInfo.self) {
                 try RoomReactionDTO.Data(jsonValue: [:])
-            } throws: { error in
-                isErrorInfoWithInternalErrorCase(error, .jsonValueDecodingError)
             }
+            #expect(thrownError.hasInternalErrorCase(.jsonValueDecodingError))
         }
 
         @Test
@@ -69,12 +67,11 @@ enum RoomReactionDTOTests {
         // MARK: - JSONDecodable
 
         @Test
-        func initWithJSONValue_failsIfNotObject() {
-            #expect {
+        func initWithJSONValue_failsIfNotObject() throws {
+            let thrownError = try #require(throws: ErrorInfo.self) {
                 try RoomReactionDTO.Extras(jsonValue: "hello")
-            } throws: { error in
-                isErrorInfoWithInternalErrorCase(error, .jsonValueDecodingError)
             }
+            #expect(thrownError.hasInternalErrorCase(.jsonValueDecodingError))
         }
 
         @Test

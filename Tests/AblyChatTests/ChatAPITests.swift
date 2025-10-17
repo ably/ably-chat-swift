@@ -15,19 +15,18 @@ struct ChatAPITests {
         let chatAPI = ChatAPI(realtime: realtime)
         let roomName = "basketball"
 
-        await #expect(
-            performing: {
-                // When
-                try await chatAPI.sendMessage(roomName: roomName, params: .init(text: "hello", headers: [:]))
-            }, throws: { error in
-                // Then
-                if let errorInfo = error as? ErrorInfo, case .internalError(.internallyThrown(.other(.chatAPIChatError(.noItemInResponse)))) = errorInfo.source {
-                    true
-                } else {
-                    false
-                }
-            },
-        )
+        let thrownError = await #expect(throws: ErrorInfo.self) {
+            // When
+            try await chatAPI.sendMessage(roomName: roomName, params: .init(text: "hello", headers: [:]))
+        }
+
+        // Then
+        let isExpectedError = if case .internalError(.internallyThrown(.other(.chatAPIChatError(.noItemInResponse)))) = thrownError?.source {
+            true
+        } else {
+            false
+        }
+        #expect(isExpectedError)
     }
 
     // @spec CHA-M3a
@@ -176,7 +175,7 @@ struct ChatAPITests {
 
     // @spec CHA-M5i
     @Test
-    func getMessages_whenGetMessagesReturnsServerError_throwsARTError() async {
+    func getMessages_whenGetMessagesReturnsServerError_throwsARTError() async throws {
         // Given
         let artError = ARTErrorInfo.create(withCode: 50000, message: "Internal server error")
         let realtime = MockRealtime { () throws(ARTErrorInfo) in
@@ -185,14 +184,12 @@ struct ChatAPITests {
         let chatAPI = ChatAPI(realtime: realtime)
         let roomName = "basketball"
 
-        await #expect(
-            performing: {
-                // When
-                try await chatAPI.getMessages(roomName: roomName, params: .init()) as? PaginatedResultWrapper<Message>
-            }, throws: { error in
-                // Then
-                isErrorInfoWrappingAblyCocoaError(error, artError)
-            },
-        )
+        let thrownError = try await #require(throws: ErrorInfo.self) {
+            // When
+            try await chatAPI.getMessages(roomName: roomName, params: .init()) as? PaginatedResultWrapper<Message>
+        }
+
+        // Then
+        #expect(thrownError.wrapsAblyCocoaError(artError))
     }
 }

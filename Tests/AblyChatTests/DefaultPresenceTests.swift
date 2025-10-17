@@ -97,12 +97,12 @@ struct DefaultPresenceTests {
             options: .init(),
         )
 
-        let thrownError = await #expect(throws: (any Error).self) {
+        let thrownError = try await #require(throws: ErrorInfo.self) {
             // When
             try await defaultPresence.enter()
         }
         // Then
-        #expect(isChatError(thrownError, withCodeAndStatusCode: .variableStatusCode(.roomInInvalidState, statusCode: 500), cause: attachError))
+        #expect(thrownError.hasCodeAndStatusCode(.variableStatusCode(.roomInInvalidState, statusCode: 500), cause: attachError))
 
         // Then
         #expect(roomLifecycleManager.callRecorder.hasRecord(
@@ -128,10 +128,10 @@ struct DefaultPresenceTests {
         )
 
         // Then
-        let thrownError = await #expect(throws: (any Error).self) {
+        let thrownError = try await #require(throws: ErrorInfo.self) {
             _ = try await defaultPresence.enter()
         }
-        #expect(isChatError(thrownError, withCodeAndStatusCode: .variableStatusCode(.roomInInvalidState, statusCode: 400)))
+        #expect(thrownError.hasCodeAndStatusCode(.variableStatusCode(.roomInInvalidState, statusCode: 400)))
     }
 
     // MARK: CHA-PR10
@@ -204,12 +204,12 @@ struct DefaultPresenceTests {
             options: .init(),
         )
 
-        let thrownError = await #expect(throws: (any Error).self) {
+        let thrownError = try await #require(throws: ErrorInfo.self) {
             // When
             try await defaultPresence.update()
         }
         // Then
-        #expect(isChatError(thrownError, withCodeAndStatusCode: .variableStatusCode(.roomInInvalidState, statusCode: 500), cause: attachError))
+        #expect(thrownError.hasCodeAndStatusCode(.variableStatusCode(.roomInInvalidState, statusCode: 500), cause: attachError))
 
         // Then
         #expect(roomLifecycleManager.callRecorder.hasRecord(
@@ -235,10 +235,10 @@ struct DefaultPresenceTests {
         )
 
         // Then
-        let thrownError = await #expect(throws: (any Error).self) {
+        let thrownError = try await #require(throws: ErrorInfo.self) {
             _ = try await defaultPresence.update()
         }
-        #expect(isChatError(thrownError, withCodeAndStatusCode: .variableStatusCode(.roomInInvalidState, statusCode: 400)))
+        #expect(thrownError.hasCodeAndStatusCode(.variableStatusCode(.roomInInvalidState, statusCode: 400)))
     }
 
     // MARK: CHA-PR4
@@ -340,10 +340,10 @@ struct DefaultPresenceTests {
         )
 
         // Then
-        let thrownError = await #expect(throws: (any Error).self) {
+        let thrownError = try await #require(throws: ErrorInfo.self) {
             _ = try await defaultPresence.get()
         }
-        #expect(isChatError(thrownError, withCodeAndStatusCode: .variableStatusCode(.roomInInvalidState, statusCode: 400)))
+        #expect(thrownError.hasCodeAndStatusCode(.variableStatusCode(.roomInInvalidState, statusCode: 400)))
     }
 
     // @specOneOf(3/4) CHA-PR6c
@@ -389,12 +389,12 @@ struct DefaultPresenceTests {
             options: .init(),
         )
 
-        let thrownError = await #expect(throws: (any Error).self) {
+        let thrownError = try await #require(throws: ErrorInfo.self) {
             // When
             try await defaultPresence.get()
         }
         // Then
-        #expect(isChatError(thrownError, withCodeAndStatusCode: .variableStatusCode(.roomInInvalidState, statusCode: 500), cause: attachError))
+        #expect(thrownError.hasCodeAndStatusCode(.variableStatusCode(.roomInInvalidState, statusCode: 500), cause: attachError))
 
         // Then
         #expect(roomLifecycleManager.callRecorder.hasRecord(
