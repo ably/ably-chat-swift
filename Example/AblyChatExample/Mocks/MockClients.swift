@@ -26,7 +26,7 @@ class MockRooms: Rooms {
     let clientOptions: ChatClientOptions
     private var rooms = [String: MockRoom]()
 
-    func get(named name: String, options: RoomOptions) async throws(ARTErrorInfo) -> MockRoom {
+    func get(named name: String, options: RoomOptions) async throws(ErrorInfo) -> MockRoom {
         if let room = rooms[name] {
             return room
         }
@@ -72,21 +72,21 @@ class MockRoom: Room {
     }
 
     var status: RoomStatus = .initialized
-    var error: ARTErrorInfo?
+    var error: ErrorInfo?
 
     private func randomStatusInterval() -> Double { 8.0 }
 
     private let randomStatusChange = { @Sendable in
         let newStatus: RoomStatus = [.attached, .attached, .attached, .attached, .attaching, .attaching, .suspended].randomElement()!
-        let error: ARTErrorInfo? = (newStatus == .suspended) ? ARTErrorInfo.createUnknownError() : nil
+        let error: ErrorInfo? = (newStatus == .suspended) ? .init(code: 0, href: nil, message: "Mock error message", cause: nil, statusCode: 0, requestID: nil) : nil
         return RoomStatusChange(current: newStatus, previous: .attaching, error: error)
     }
 
-    func attach() async throws(ARTErrorInfo) {
+    func attach() async throws(ErrorInfo) {
         print("Mock client attached to room with roomName: \(name)")
     }
 
-    func detach() async throws(ARTErrorInfo) {
+    func detach() async throws(ErrorInfo) {
         fatalError("Not yet implemented")
     }
 
@@ -111,7 +111,7 @@ class MockRoom: Room {
     }
 
     @discardableResult
-    func onDiscontinuity(_: @escaping @MainActor (ARTErrorInfo) -> Void) -> DefaultStatusSubscription {
+    func onDiscontinuity(_: @escaping @MainActor (ErrorInfo) -> Void) -> DefaultStatusSubscription {
         fatalError("Not yet implemented")
     }
 }
@@ -161,11 +161,11 @@ class MockMessages: Messages {
         )
     }
 
-    func history(withParams _: HistoryParams) async throws(ARTErrorInfo) -> some PaginatedResult<Message> {
+    func history(withParams _: HistoryParams) async throws(ErrorInfo) -> some PaginatedResult<Message> {
         MockMessagesPaginatedResult(clientID: clientID, roomName: roomName)
     }
 
-    func send(withParams params: SendMessageParams) async throws(ARTErrorInfo) -> Message {
+    func send(withParams params: SendMessageParams) async throws(ErrorInfo) -> Message {
         let message = Message(
             serial: "\(Date().timeIntervalSince1970)",
             action: .messageCreate,
@@ -184,7 +184,7 @@ class MockMessages: Messages {
         return message
     }
 
-    func update(withSerial serial: String, params: UpdateMessageParams, details _: OperationDetails?) async throws(ARTErrorInfo) -> Message {
+    func update(withSerial serial: String, params: UpdateMessageParams, details _: OperationDetails?) async throws(ErrorInfo) -> Message {
         let message = Message(
             serial: serial,
             action: .messageUpdate,
@@ -204,7 +204,7 @@ class MockMessages: Messages {
         return message
     }
 
-    func delete(withSerial serial: String, details _: OperationDetails?) async throws(ARTErrorInfo) -> Message {
+    func delete(withSerial serial: String, details _: OperationDetails?) async throws(ErrorInfo) -> Message {
         let message = Message(
             serial: serial,
             action: .messageDelete,
@@ -220,7 +220,7 @@ class MockMessages: Messages {
         return message
     }
 
-    func get(withSerial serial: String) async throws(ARTErrorInfo) -> Message {
+    func get(withSerial serial: String) async throws(ErrorInfo) -> Message {
         Message(
             serial: serial,
             action: .messageCreate,
@@ -272,7 +272,7 @@ class MockMessageReactions: MessageReactions {
         self.roomName = roomName
     }
 
-    func send(forMessageWithSerial messageSerial: String, params: SendMessageReactionParams) async throws(ARTErrorInfo) {
+    func send(forMessageWithSerial messageSerial: String, params: SendMessageReactionParams) async throws(ErrorInfo) {
         reactions.append(
             MessageReactionRawEvent.Reaction(
                 type: .distinct,
@@ -291,7 +291,7 @@ class MockMessageReactions: MessageReactions {
         )
     }
 
-    func delete(fromMessageWithSerial messageSerial: String, params: DeleteMessageReactionParams) async throws(ARTErrorInfo) {
+    func delete(fromMessageWithSerial messageSerial: String, params: DeleteMessageReactionParams) async throws(ErrorInfo) {
         reactions.removeAll { reaction in
             reaction.messageSerial == messageSerial && reaction.name == params.name && reaction.clientID == clientID
         }
@@ -334,7 +334,7 @@ class MockMessageReactions: MessageReactions {
         fatalError("Not implemented")
     }
 
-    func clientReactions(forMessageWithSerial _: String, clientID _: String?) async throws(ARTErrorInfo) -> MessageReactionSummary {
+    func clientReactions(forMessageWithSerial _: String, clientID _: String?) async throws(ErrorInfo) -> MessageReactionSummary {
         fatalError("Not implemented")
     }
 }
@@ -350,7 +350,7 @@ class MockRoomReactions: RoomReactions {
         self.roomName = roomName
     }
 
-    func send(withParams params: SendReactionParams) async throws(ARTErrorInfo) {
+    func send(withParams params: SendReactionParams) async throws(ErrorInfo) {
         let reaction = RoomReaction(
             name: params.name,
             metadata: [:],
@@ -416,7 +416,7 @@ class MockTyping: Typing {
         Set(MockStrings.names.shuffled().prefix(2))
     }
 
-    func keystroke() async throws(ARTErrorInfo) {
+    func keystroke() async throws(ErrorInfo) {
         mockSubscriptions.emit(
             TypingSetEvent(
                 type: .setChanged,
@@ -426,7 +426,7 @@ class MockTyping: Typing {
         )
     }
 
-    func stop() async throws(ARTErrorInfo) {
+    func stop() async throws(ErrorInfo) {
         mockSubscriptions.emit(
             TypingSetEvent(
                 type: .setChanged,
@@ -468,7 +468,7 @@ class MockPresence: Presence {
         )
     }
 
-    func get() async throws(ARTErrorInfo) -> [PresenceMember] {
+    func get() async throws(ErrorInfo) -> [PresenceMember] {
         MockStrings.names.shuffled().map { name in
             PresenceMember(
                 clientID: name,
@@ -480,7 +480,7 @@ class MockPresence: Presence {
         }
     }
 
-    func get(withParams _: PresenceParams) async throws(ARTErrorInfo) -> [PresenceMember] {
+    func get(withParams _: PresenceParams) async throws(ErrorInfo) -> [PresenceMember] {
         MockStrings.names.shuffled().map { name in
             PresenceMember(
                 clientID: name,
@@ -492,19 +492,19 @@ class MockPresence: Presence {
         }
     }
 
-    func isUserPresent(withClientID _: String) async throws(ARTErrorInfo) -> Bool {
+    func isUserPresent(withClientID _: String) async throws(ErrorInfo) -> Bool {
         fatalError("Not yet implemented")
     }
 
-    func enter() async throws(ARTErrorInfo) {
+    func enter() async throws(ErrorInfo) {
         try await enter(dataForEvent: nil)
     }
 
-    func enter(withData data: PresenceData) async throws(ARTErrorInfo) {
+    func enter(withData data: PresenceData) async throws(ErrorInfo) {
         try await enter(dataForEvent: data)
     }
 
-    private func enter(dataForEvent: PresenceData?) async throws(ARTErrorInfo) {
+    private func enter(dataForEvent: PresenceData?) async throws(ErrorInfo) {
         let member = PresenceMember(
             clientID: clientID,
             connectionID: "someConnectionID",
@@ -520,15 +520,15 @@ class MockPresence: Presence {
         )
     }
 
-    func update() async throws(ARTErrorInfo) {
+    func update() async throws(ErrorInfo) {
         try await update(dataForEvent: nil)
     }
 
-    func update(withData data: PresenceData) async throws(ARTErrorInfo) {
+    func update(withData data: PresenceData) async throws(ErrorInfo) {
         try await update(dataForEvent: data)
     }
 
-    private func update(dataForEvent: PresenceData? = nil) async throws(ARTErrorInfo) {
+    private func update(dataForEvent: PresenceData? = nil) async throws(ErrorInfo) {
         let member = PresenceMember(
             clientID: clientID,
             connectionID: "someConnectionID",
@@ -544,15 +544,15 @@ class MockPresence: Presence {
         )
     }
 
-    func leave() async throws(ARTErrorInfo) {
+    func leave() async throws(ErrorInfo) {
         try await leave(dataForEvent: nil)
     }
 
-    func leave(withData data: PresenceData) async throws(ARTErrorInfo) {
+    func leave(withData data: PresenceData) async throws(ErrorInfo) {
         try await leave(dataForEvent: data)
     }
 
-    func leave(dataForEvent: PresenceData? = nil) async throws(ARTErrorInfo) {
+    func leave(dataForEvent: PresenceData? = nil) async throws(ErrorInfo) {
         let member = PresenceMember(
             clientID: clientID,
             connectionID: "someConnectionID",
@@ -597,7 +597,7 @@ class MockOccupancy: Occupancy {
         )
     }
 
-    func get() async throws(ARTErrorInfo) -> OccupancyData {
+    func get() async throws(ErrorInfo) -> OccupancyData {
         OccupancyData(connections: 10, presenceMembers: 5)
     }
 
@@ -608,11 +608,11 @@ class MockOccupancy: Occupancy {
 
 class MockConnection: Connection {
     let status: ConnectionStatus
-    let error: ARTErrorInfo?
+    let error: ErrorInfo?
 
     private let mockSubscriptions = MockStatusSubscriptionStorage<ConnectionStatusChange>()
 
-    init(status: ConnectionStatus, error: ARTErrorInfo?) {
+    init(status: ConnectionStatus, error: ErrorInfo?) {
         self.status = status
         self.error = error
     }

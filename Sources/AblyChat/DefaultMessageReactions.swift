@@ -17,7 +17,7 @@ internal final class DefaultMessageReactions: MessageReactions {
     }
 
     // (CHA-MR4) Users should be able to send a reaction to a message via the `send` method of the `MessagesReactions` object
-    internal func send(forMessageWithSerial messageSerial: String, params: SendMessageReactionParams) async throws(ARTErrorInfo) {
+    internal func send(forMessageWithSerial messageSerial: String, params: SendMessageReactionParams) async throws(ErrorInfo) {
         do {
             var count = params.count
             if params.type == .multiple, params.count == nil {
@@ -33,15 +33,15 @@ internal final class DefaultMessageReactions: MessageReactions {
 
             logger.log(message: "Added message reaction (annotation serial: \(response.serial))", level: .info)
         } catch {
-            throw error.toARTErrorInfo()
+            throw error.toErrorInfo()
         }
     }
 
     // (CHA-MR11) Users should be able to delete a reaction from a message via the `delete` method of the `MessagesReactions` object
-    internal func delete(fromMessageWithSerial messageSerial: String, params: DeleteMessageReactionParams) async throws(ARTErrorInfo) {
+    internal func delete(fromMessageWithSerial messageSerial: String, params: DeleteMessageReactionParams) async throws(ErrorInfo) {
         let reactionType = params.type ?? options.defaultMessageReactionType
         if reactionType != .unique, params.name == nil {
-            throw InternalError.internallyThrown(.unableDeleteReactionWithoutName(reactionType: reactionType.rawValue)).toARTErrorInfo()
+            throw InternalError.internallyThrown(.unableDeleteReactionWithoutName(reactionType: reactionType.rawValue)).toErrorInfo()
         }
         do {
             let apiParams: ChatAPI.DeleteMessageReactionParams = .init(
@@ -52,7 +52,7 @@ internal final class DefaultMessageReactions: MessageReactions {
 
             logger.log(message: "Deleted message reaction (annotation serial: \(response.serial))", level: .info)
         } catch {
-            throw error.toARTErrorInfo()
+            throw error.toErrorInfo()
         }
     }
 
@@ -147,7 +147,7 @@ internal final class DefaultMessageReactions: MessageReactions {
     }
 
     // CHA-MR13
-    internal func clientReactions(forMessageWithSerial messageSerial: String, clientID: String?) async throws(ARTErrorInfo) -> MessageReactionSummary {
+    internal func clientReactions(forMessageWithSerial messageSerial: String, clientID: String?) async throws(ErrorInfo) -> MessageReactionSummary {
         do {
             logger.log(message: "Fetching client reactions for message serial: \(messageSerial), clientId: \(clientID ?? "current client")", level: .debug)
 
@@ -159,7 +159,7 @@ internal final class DefaultMessageReactions: MessageReactions {
             return summary
         } catch {
             // CHA-MR13c
-            throw error.toARTErrorInfo()
+            throw error.toErrorInfo()
         }
     }
 }

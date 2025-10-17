@@ -31,11 +31,11 @@ final class MockMessagesPaginatedResult: PaginatedResult {
 
     var isLast: Bool { fatalError("Not implemented") }
 
-    func next() async throws(ARTErrorInfo) -> Self? { fatalError("Not implemented") }
+    func next() async throws(ErrorInfo) -> Self? { fatalError("Not implemented") }
 
-    func first() async throws(ARTErrorInfo) -> Self { fatalError("Not implemented") }
+    func first() async throws(ErrorInfo) -> Self { fatalError("Not implemented") }
 
-    func current() async throws(ARTErrorInfo) -> Self { fatalError("Not implemented") }
+    func current() async throws(ErrorInfo) -> Self { fatalError("Not implemented") }
 
     init(clientID: String, roomName: String, numberOfMockMessages: Int = 3) {
         self.clientID = clientID

@@ -150,10 +150,10 @@ struct DefaultRoomTests {
     @Test(
         arguments: [
             .success(()),
-            .failure(ARTErrorInfo.createUnknownError() /* arbitrary */ ),
-        ] as[Result<Void, ARTErrorInfo>],
+            .failure(.createArbitraryError()),
+        ] as[Result<Void, InternalError>],
     )
-    func attach(managerAttachResult: Result<Void, ARTErrorInfo>) async throws {
+    func attach(managerAttachResult: Result<Void, InternalError>) async throws {
         // Given: a DefaultRoom instance
         let channelsList = [
             MockRealtimeChannel(name: "basketball::$chat"),
@@ -167,17 +167,12 @@ struct DefaultRoomTests {
         let room = try DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), name: "basketball", options: .init(), logger: TestLogger(), lifecycleManagerFactory: lifecycleManagerFactory)
 
         // When: `attach()` is called on the room
-        let result = await Result { @Sendable () async throws(ARTErrorInfo) in
-            do {
-                try await room.attach()
-            } catch {
-                // swiftlint:disable:next force_cast
-                throw error as! ARTErrorInfo
-            }
+        let result = await Result { @Sendable () async throws(ErrorInfo) in
+            try await room.attach()
         }
 
         // Then: It calls through to the `performAttachOperation()` method on the room lifecycle manager
-        #expect(Result.areIdentical(result, managerAttachResult))
+        #expect(result == managerAttachResult.mapError { .init(internalError: $0) })
         #expect(lifecycleManager.attachCallCount == 1)
     }
 
@@ -186,10 +181,10 @@ struct DefaultRoomTests {
     @Test(
         arguments: [
             .success(()),
-            .failure(ARTErrorInfo.createUnknownError() /* arbitrary */ ),
-        ] as[Result<Void, ARTErrorInfo>],
+            .failure(.createArbitraryError()),
+        ] as[Result<Void, InternalError>],
     )
-    func detach(managerDetachResult: Result<Void, ARTErrorInfo>) async throws {
+    func detach(managerDetachResult: Result<Void, InternalError>) async throws {
         // Given: a DefaultRoom instance
         let channelsList = [
             MockRealtimeChannel(name: "basketball::$chat"),
@@ -203,17 +198,12 @@ struct DefaultRoomTests {
         let room = try DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), name: "basketball", options: .init(), logger: TestLogger(), lifecycleManagerFactory: lifecycleManagerFactory)
 
         // When: `detach()` is called on the room
-        let result = await Result { @Sendable () async throws(ARTErrorInfo) in
-            do {
-                try await room.detach()
-            } catch {
-                // swiftlint:disable:next force_cast
-                throw error as! ARTErrorInfo
-            }
+        let result = await Result { @Sendable () async throws(ErrorInfo) in
+            try await room.detach()
         }
 
         // Then: It calls through to the `performDetachOperation()` method on the room lifecycle manager
-        #expect(Result.areIdentical(result, managerDetachResult))
+        #expect(result == managerDetachResult.mapError { .init(internalError: $0) })
         #expect(lifecycleManager.detachCallCount == 1)
     }
 
@@ -256,7 +246,7 @@ struct DefaultRoomTests {
         let realtime = MockRealtime(channels: channels)
 
         let lifecycleManagerRoomStatus = RoomStatus.attached // arbitrary
-        let lifecycleManagerError = ARTErrorInfo.createUnknownError() // arbitrary
+        let lifecycleManagerError = ErrorInfo.createArbitraryError()
 
         let lifecycleManager = MockRoomLifecycleManager(roomStatus: lifecycleManagerRoomStatus, error: lifecycleManagerError)
         let lifecycleManagerFactory = MockRoomLifecycleManagerFactory(manager: lifecycleManager)
@@ -265,7 +255,7 @@ struct DefaultRoomTests {
 
         // Then: The `status` and `error` properties return those of the room lifecycle manager
         #expect(room.status == lifecycleManagerRoomStatus)
-        #expect(room.error === lifecycleManagerError)
+        #expect(room.error == lifecycleManagerError)
     }
 
     @Test
@@ -310,13 +300,13 @@ struct DefaultRoomTests {
         let room = try DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), name: "basketball", options: .init(), logger: TestLogger(), lifecycleManagerFactory: lifecycleManagerFactory)
 
         // When: The room lifecycle manager emits a discontinuity event through `onDiscontinuity`
-        let managerDiscontinuityError = ARTErrorInfo.createUnknownError() // arbitrary
+        let managerDiscontinuityError = ErrorInfo.createArbitraryError()
         let roomDiscontinuitiesSubscription = room.onDiscontinuity()
         lifecycleManager.emitDiscontinuity(managerDiscontinuityError)
 
         // Then: The room emits this discontinuity event through `onDiscontinuity`
         let roomDiscontinuityError = try #require(await roomDiscontinuitiesSubscription.first { @Sendable _ in true })
-        #expect(roomDiscontinuityError === managerDiscontinuityError)
+        #expect(roomDiscontinuityError == managerDiscontinuityError)
     }
 
     // @specNotApplicable CHA-RL15b - We do not have an explicit unsubscribe API, since we use AsyncSequence instead of listeners.
@@ -335,15 +325,15 @@ private extension Result {
     }
 }
 
-private extension Result where Success == Void, Failure == ARTErrorInfo {
-    static func areIdentical(_ lhs: Result<Void, ARTErrorInfo>, _ rhs: Result<Void, ARTErrorInfo>) -> Bool {
+private extension Result where Success == Void, Failure: Equatable {
+    static func == (_ lhs: Self, _ rhs: Self) -> Bool {
         switch (lhs, rhs) {
         case (.success, .success):
             true
         case let (.failure(lhsError), .failure(rhsError)):
-            lhsError === rhsError
+            lhsError == rhsError
         default:
-            fatalError("Mis-implemented")
+            false
         }
     }
 }

@@ -111,7 +111,7 @@ internal final class DefaultTyping: Typing {
     }
 
     // (CHA-T4) Users may indicate that they have started typing using the keystroke method.
-    internal func keystroke() async throws(ARTErrorInfo) {
+    internal func keystroke() async throws(ErrorInfo) {
         do {
             try await keyboardOperationQueue.enqueue { [weak self] () throws(InternalError) in
                 guard let self else {
@@ -128,7 +128,7 @@ internal final class DefaultTyping: Typing {
                 try await publishStartedEvent()
             }
         } catch {
-            throw error.toARTErrorInfo()
+            throw error.toErrorInfo()
         }
     }
 
@@ -147,7 +147,7 @@ internal final class DefaultTyping: Typing {
     }
 
     // (CHA-T5) Users may explicitly indicate that they have stopped typing using stop method.
-    internal func stop() async throws(ARTErrorInfo) {
+    internal func stop() async throws(ErrorInfo) {
         do throws(InternalError) {
             try await keyboardOperationQueue.enqueue { [weak self] () throws(InternalError) in
                 guard let self else {
@@ -174,7 +174,7 @@ internal final class DefaultTyping: Typing {
         } catch {
             // (CHA-T5d1) The client must wait for the publish to succeed or fail before returning the result to the caller. If the publish fails, the client must throw an ErrorInfo.
             logger.log(message: "Error publishing typing.stopped event: \(error)", level: .error)
-            throw error.toARTErrorInfo()
+            throw error.toErrorInfo()
         }
     }
 }

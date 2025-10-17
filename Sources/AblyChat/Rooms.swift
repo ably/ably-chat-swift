@@ -29,14 +29,14 @@ public protocol Rooms<Channel>: AnyObject, Sendable {
      *
      * - Returns: A new or existing `Room` object.
      *
-     * - Throws: `ARTErrorInfo` if a room with the same name but different options already exists.
+     * - Throws: `ErrorInfo` if a room with the same name but different options already exists.
      */
-    func get(named name: String, options: RoomOptions) async throws(ARTErrorInfo) -> Room
+    func get(named name: String, options: RoomOptions) async throws(ErrorInfo) -> Room
 
     /// Same as calling ``get(named:options:)`` with `RoomOptions()`.
     ///
     /// The `Rooms` protocol provides a default implementation of this method.
-    func get(named name: String) async throws(ARTErrorInfo) -> Room
+    func get(named name: String) async throws(ErrorInfo) -> Room
 
     /**
      * Release the ``Room`` object if it exists. This method only releases the reference
@@ -57,7 +57,7 @@ public protocol Rooms<Channel>: AnyObject, Sendable {
 // swiftlint:disable:next missing_docs
 public extension Rooms {
     // swiftlint:disable:next missing_docs
-    func get(named name: String) async throws(ARTErrorInfo) -> Room {
+    func get(named name: String) async throws(ErrorInfo) -> Room {
         // CHA-RC4a
         try await get(named: name, options: .init())
     }
@@ -161,7 +161,7 @@ internal class DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
         }
     #endif
 
-    internal func get(named name: String, options: RoomOptions) async throws(ARTErrorInfo) -> RoomFactory.Room {
+    internal func get(named name: String, options: RoomOptions) async throws(ErrorInfo) -> RoomFactory.Room {
         do throws(InternalError) {
             if let existingRoomState = roomStates[name] {
                 switch existingRoomState {
@@ -269,7 +269,7 @@ internal class DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
             // CHA-RC1f3
             return try createRoom(name: name, options: options)
         } catch {
-            throw error.toARTErrorInfo()
+            throw error.toErrorInfo()
         }
     }
 

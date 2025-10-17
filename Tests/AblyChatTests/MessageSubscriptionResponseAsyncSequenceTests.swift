@@ -11,11 +11,11 @@ private final class MockPaginatedResult<Item: Equatable>: PaginatedResult, @Main
 
     var isLast: Bool { fatalError("Not implemented") }
 
-    func next() async throws(ARTErrorInfo) -> MockPaginatedResult<Item>? { fatalError("Not implemented") }
+    func next() async throws(ErrorInfo) -> MockPaginatedResult<Item>? { fatalError("Not implemented") }
 
-    func first() async throws(ARTErrorInfo) -> MockPaginatedResult<Item> { fatalError("Not implemented") }
+    func first() async throws(ErrorInfo) -> MockPaginatedResult<Item> { fatalError("Not implemented") }
 
-    func current() async throws(ARTErrorInfo) -> MockPaginatedResult<Item> { fatalError("Not implemented") }
+    func current() async throws(ErrorInfo) -> MockPaginatedResult<Item> { fatalError("Not implemented") }
 
     init() {}
 

@@ -16,7 +16,7 @@ public protocol Connection: AnyObject, Sendable {
     /**
      * The current error, if any, that caused the connection to enter the current status.
      */
-    var error: ARTErrorInfo? { get }
+    var error: ErrorInfo? { get }
 
     /**
      * Subscribes a given listener to a connection status changes.
@@ -146,7 +146,7 @@ public struct ConnectionStatusChange: Sendable {
      * An error that provides a reason why the connection has
      * entered the new status, if applicable.
      */
-    public var error: ARTErrorInfo?
+    public var error: ErrorInfo?
 
     /**
      * The time in milliseconds that the client will wait before attempting to reconnect.
@@ -156,7 +156,7 @@ public struct ConnectionStatusChange: Sendable {
     /// Memberwise initializer to create a `ConnectionStatusChange`.
     ///
     /// - Note: You should not need to use this initializer when using the Chat SDK. It is exposed only to allow users to create mock versions of the SDK's protocols.
-    public init(current: ConnectionStatus, previous: ConnectionStatus, error: ARTErrorInfo? = nil, retryIn: TimeInterval?) {
+    public init(current: ConnectionStatus, previous: ConnectionStatus, error: ErrorInfo? = nil, retryIn: TimeInterval?) {
         self.current = current
         self.previous = previous
         self.error = error

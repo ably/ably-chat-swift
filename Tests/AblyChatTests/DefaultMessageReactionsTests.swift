@@ -69,13 +69,13 @@ struct DefaultMessageReactionsTests {
         let channel = MockRealtimeChannel(initialState: .attached)
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", logger: TestLogger())
 
-        let thrownError = await #expect(throws: ARTErrorInfo.self) {
+        let thrownError = await #expect(throws: ErrorInfo.self) {
             // When
             try await defaultMessages.reactions.send(forMessageWithSerial: "", params: .init(name: "😐", type: .distinct))
         }
 
         // Then
-        #expect(thrownError == InternalError.internallyThrown(.other(.chatAPIChatError(.messageReactionInvalidMessageSerial))).toARTErrorInfo())
+        #expect(thrownError == InternalError.internallyThrown(.other(.chatAPIChatError(.messageReactionInvalidMessageSerial))).toErrorInfo())
     }
 
     // @spec CHA-MR11a1
@@ -89,13 +89,13 @@ struct DefaultMessageReactionsTests {
         let channel = MockRealtimeChannel(initialState: .attached)
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", logger: TestLogger())
 
-        let thrownError = await #expect(throws: ARTErrorInfo.self) {
+        let thrownError = await #expect(throws: ErrorInfo.self) {
             // When
             try await defaultMessages.reactions.delete(fromMessageWithSerial: "", params: .init(name: "😐", type: .distinct))
         }
 
         // Then
-        #expect(thrownError == InternalError.internallyThrown(.other(.chatAPIChatError(.messageReactionInvalidMessageSerial))).toARTErrorInfo())
+        #expect(thrownError == InternalError.internallyThrown(.other(.chatAPIChatError(.messageReactionInvalidMessageSerial))).toErrorInfo())
     }
 
     // @spec CHA-MR3
@@ -506,10 +506,10 @@ struct DefaultMessageReactionsTests {
             let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", logger: TestLogger())
 
             // When/Then
-            let thrownError = await #expect(throws: ARTErrorInfo.self) {
+            let thrownError = await #expect(throws: ErrorInfo.self) {
                 _ = try await defaultMessages.reactions.clientReactions(forMessageWithSerial: "123456789-000@123456789:000", clientID: nil)
             }
-            #expect(thrownError?.domain == "SomeDomain" && thrownError?.code == 404)
+            #expect(thrownError?.code == 404)
         }
     }
 }

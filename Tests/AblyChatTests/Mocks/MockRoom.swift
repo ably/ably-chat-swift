@@ -40,15 +40,15 @@ class MockRoom: InternalRoom {
         fatalError("Not implemented")
     }
 
-    var error: ARTErrorInfo? {
+    var error: ErrorInfo? {
         fatalError("Not implemented")
     }
 
-    func attach() async throws(ARTErrorInfo) {
+    func attach() async throws(ErrorInfo) {
         fatalError("Not implemented")
     }
 
-    func detach() async throws(ARTErrorInfo) {
+    func detach() async throws(ErrorInfo) {
         fatalError("Not implemented")
     }
 
@@ -74,7 +74,7 @@ class MockRoom: InternalRoom {
     }
 
     @discardableResult
-    func onDiscontinuity(_: @escaping @MainActor (ARTErrorInfo) -> Void) -> DefaultStatusSubscription {
+    func onDiscontinuity(_: @escaping @MainActor (ErrorInfo) -> Void) -> DefaultStatusSubscription {
         fatalError("Not implemented")
     }
 

@@ -8,7 +8,7 @@ internal protocol RoomLifecycleManager: Sendable {
     func performDetachOperation() async throws(InternalError)
     func performReleaseOperation() async
     var roomStatus: RoomStatus { get }
-    var error: ARTErrorInfo? { get }
+    var error: ErrorInfo? { get }
     @discardableResult
     func onRoomStatusChange(_ callback: @escaping @MainActor (RoomStatusChange) -> Void) -> StatusSubscription
 
@@ -25,7 +25,7 @@ internal protocol RoomLifecycleManager: Sendable {
     func waitToBeAbleToPerformPresenceOperations(requestedByFeature requester: RoomFeature) async throws(InternalError)
 
     @discardableResult
-    func onDiscontinuity(_ callback: @escaping @MainActor (ARTErrorInfo) -> Void) -> StatusSubscription
+    func onDiscontinuity(_ callback: @escaping @MainActor (ErrorInfo) -> Void) -> StatusSubscription
 }
 
 @MainActor
@@ -86,7 +86,7 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
     // MARK: - Variable properties
 
     internal private(set) var roomStatus: RoomStatus
-    internal private(set) var error: ARTErrorInfo?
+    internal private(set) var error: ErrorInfo?
     private var currentOperationID: UUID?
 
     // CHA-RL13
@@ -103,7 +103,7 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
 
     private var channelStateEventListener: ARTEventListener!
     private let roomStatusChangeSubscriptions = StatusSubscriptionStorage<RoomStatusChange>()
-    private let discontinuitySubscriptions = StatusSubscriptionStorage<ARTErrorInfo>()
+    private let discontinuitySubscriptions = StatusSubscriptionStorage<ErrorInfo>()
     private var operationResultContinuations = OperationResultContinuations()
 
     // MARK: - Initializers and `deinit`
@@ -181,7 +181,7 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
     }
 
     /// Updates ``roomStatus`` and emits a status change event.
-    private func changeStatus(to new: RoomStatus, error: ARTErrorInfo? = nil) {
+    private func changeStatus(to new: RoomStatus, error: ErrorInfo? = nil) {
         logger.log(message: "Transitioning from \(roomStatus) to \(new)", level: .info)
         let previous = roomStatus
         roomStatus = new
@@ -200,7 +200,10 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
         // CHA-RL11b
         if event.event != .update, !hasOperationInProgress {
             // CHA-RL11c
-            changeStatus(to: .init(channelState: event.current), error: event.reason)
+            changeStatus(
+                to: .init(channelState: event.current),
+                error: .init(optionalAblyCocoaError: event.reason),
+            )
         }
 
         switch event.event {
@@ -210,7 +213,7 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
             //
             // Note that our mechanism for deciding whether a channel state event represents a discontinuity depends on the property that when we call attach() on a channel, the ATTACHED state change that this provokes is received before the call to attach() returns. This property is not in general guaranteed in ably-cocoa, which allows its callbacks to be dispatched to a user-provided queue as specified by the `dispatchQueue` client option. This is why we add the requirement that the ably-cocoa client be configured to use the main queue as its `dispatchQueue` (as enforced by toAblyCocoaCallback in InternalAblyCocoaTypes.swift).
             if !event.resumed, hasAttachedOnce, !isExplicitlyDetached {
-                let error = InternalError.internallyThrown(.roomDiscontinuity(cause: event.reason)).toARTErrorInfo()
+                let error = InternalError.internallyThrown(.roomDiscontinuity(cause: event.reason)).toErrorInfo()
                 logger.log(message: "Emitting discontinuity event \(error)", level: .info)
                 emitDiscontinuity(error)
             }
@@ -220,11 +223,11 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
     }
 
     @discardableResult
-    internal func onDiscontinuity(_ callback: @escaping @MainActor (ARTErrorInfo) -> Void) -> DefaultStatusSubscription {
+    internal func onDiscontinuity(_ callback: @escaping @MainActor (ErrorInfo) -> Void) -> DefaultStatusSubscription {
         discontinuitySubscriptions.create(callback)
     }
 
-    private func emitDiscontinuity(_ error: ARTErrorInfo) {
+    private func emitDiscontinuity(_ error: ErrorInfo) {
         discontinuitySubscriptions.emit(error)
     }
 
@@ -418,7 +421,7 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
             // CHA-RL1k2, CHA-RL1k3
             let channelState = channel.state
             logger.log(message: "Failed to attach channel, error \(error), channel now in \(channelState)", level: .info)
-            changeStatus(to: .init(channelState: channelState), error: error.toARTErrorInfo())
+            changeStatus(to: .init(channelState: channelState), error: error.toErrorInfo())
             throw error
         }
 
@@ -484,7 +487,7 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
             // CHA-RL2k2, CHA-RL2k3
             let channelState = channel.state
             logger.log(message: "Failed to detach channel, error \(error), channel now in \(channelState)", level: .info)
-            changeStatus(to: .init(channelState: channelState), error: error.toARTErrorInfo())
+            changeStatus(to: .init(channelState: channelState), error: error.toErrorInfo())
             throw error
         }
 

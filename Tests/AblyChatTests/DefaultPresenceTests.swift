@@ -83,8 +83,8 @@ struct DefaultPresenceTests {
     @Test
     func usersMayEnterPresenceWhileAttachingWithFailure() async throws {
         // Given
-        let attachError = ARTErrorInfo(domain: "SomeDomain", code: 123)
-        let error = InternalError.internallyThrown(.roomTransitionedToInvalidStateForPresenceOperation(cause: attachError)).toARTErrorInfo()
+        let attachError = ErrorInfo.createArbitraryError()
+        let error = InternalError.internallyThrown(.roomTransitionedToInvalidStateForPresenceOperation(cause: attachError))
 
         let channel = await MockRealtimeChannel(name: "basketball::$chat")
         let logger = TestLogger()
@@ -115,7 +115,7 @@ struct DefaultPresenceTests {
     @Test
     func failToEnterPresenceWhenRoomInInvalidState() async throws {
         // Given
-        let error = InternalError.internallyThrown(.presenceOperationRequiresRoomAttach(feature: .presence)).toARTErrorInfo()
+        let error = InternalError.internallyThrown(.presenceOperationRequiresRoomAttach(feature: .presence))
         let channel = await MockRealtimeChannel(name: "basketball::$chat")
         let logger = TestLogger()
         let roomLifecycleManager = await MockRoomLifecycleManager(resultOfWaitToBeAbleToPerformPresenceOperations: .failure(error))
@@ -190,8 +190,8 @@ struct DefaultPresenceTests {
     @Test
     func usersMayUpdatePresenceWhileAttachingWithFailure() async throws {
         // Given
-        let attachError = ARTErrorInfo(domain: "SomeDomain", code: 123)
-        let error = InternalError.internallyThrown(.roomTransitionedToInvalidStateForPresenceOperation(cause: attachError)).toARTErrorInfo()
+        let attachError = ErrorInfo.createArbitraryError()
+        let error = InternalError.internallyThrown(.roomTransitionedToInvalidStateForPresenceOperation(cause: attachError))
 
         let channel = await MockRealtimeChannel(name: "basketball::$chat")
         let logger = TestLogger()
@@ -222,7 +222,7 @@ struct DefaultPresenceTests {
     @Test
     func failToUpdatePresenceWhenRoomInInvalidState() async throws {
         // Given
-        let error = InternalError.internallyThrown(.presenceOperationRequiresRoomAttach(feature: .presence)).toARTErrorInfo()
+        let error = InternalError.internallyThrown(.presenceOperationRequiresRoomAttach(feature: .presence))
         let channel = await MockRealtimeChannel(name: "basketball::$chat")
         let logger = TestLogger()
         let roomLifecycleManager = await MockRoomLifecycleManager(resultOfWaitToBeAbleToPerformPresenceOperations: .failure(error))
@@ -327,7 +327,7 @@ struct DefaultPresenceTests {
     @Test
     func failToRetrieveAllTheMembersOfThePresenceSetWhenRoomInInvalidState() async throws {
         // Given
-        let error = InternalError.internallyThrown(.presenceOperationRequiresRoomAttach(feature: .presence)).toARTErrorInfo()
+        let error = InternalError.internallyThrown(.presenceOperationRequiresRoomAttach(feature: .presence))
         let channel = await MockRealtimeChannel(name: "basketball::$chat")
         let logger = TestLogger()
         let roomLifecycleManager = await MockRoomLifecycleManager(resultOfWaitToBeAbleToPerformPresenceOperations: .failure(error))
@@ -375,8 +375,8 @@ struct DefaultPresenceTests {
     @Test
     func retrieveAllTheMembersOfThePresenceSetWhileAttachingWithFailure() async throws {
         // Given
-        let attachError = ARTErrorInfo(domain: "SomeDomain", code: 123)
-        let error = InternalError.internallyThrown(.roomTransitionedToInvalidStateForPresenceOperation(cause: attachError)).toARTErrorInfo()
+        let attachError = ErrorInfo.createArbitraryError()
+        let error = InternalError.internallyThrown(.roomTransitionedToInvalidStateForPresenceOperation(cause: attachError))
 
         let channel = await MockRealtimeChannel(name: "basketball::$chat")
         let logger = TestLogger()

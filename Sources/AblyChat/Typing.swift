@@ -38,17 +38,17 @@ public protocol Typing: AnyObject, Sendable {
      * It will show the current user as typing for the duration of the throttle, plus an internally defined timeout.
      * Any keystrokes within the throttle period will be ignored, with no new events being sent.
      *
-     * - Throws: An `ARTErrorInfo`.
+     * - Throws: An `ErrorInfo`.
      */
-    func keystroke() async throws(ARTErrorInfo)
+    func keystroke() async throws(ErrorInfo)
 
     /**
      * Stop indicates that the current user has stopped typing. This will emit a ``TypingEvent`` event to inform listening clients,
      * and immediately clear the typing timeout timer.
      *
-     * - Throws: An `ARTErrorInfo`.
+     * - Throws: An `ErrorInfo`.
      */
-    func stop() async throws(ARTErrorInfo)
+    func stop() async throws(ErrorInfo)
 }
 
 /// `AsyncSequence` variant of receiving room typing events.

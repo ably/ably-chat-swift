@@ -46,7 +46,7 @@ struct MessageTests {
         let messageEvent = ChatMessageEvent(type: .created, message: createdMessage)
 
         // When/Then: Applying a created event should throw an error
-        #expect(throws: ARTErrorInfo.self) {
+        #expect(throws: ErrorInfo.self) {
             try originalMessage.with(messageEvent)
         }
 
@@ -99,7 +99,7 @@ struct MessageTests {
         let messageEvent = ChatMessageEvent(type: .updated, message: differentMessage)
 
         // When/Then: Applying the event should throw an error
-        #expect(throws: ARTErrorInfo.self) {
+        #expect(throws: ErrorInfo.self) {
             try originalMessage.with(messageEvent)
         }
 
@@ -421,7 +421,7 @@ struct MessageTests {
         let summaryEvent = MessageReactionSummaryEvent(type: .summary, messageSerial: "msg-002", reactions: reactionSummary)
 
         // When/Then: Applying the event should throw an error
-        #expect(throws: ARTErrorInfo.self) {
+        #expect(throws: ErrorInfo.self) {
             try message.with(summaryEvent)
         }
 
