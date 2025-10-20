@@ -178,7 +178,7 @@ extension Message: JSONObjectDecodable {
         }
         let rawAction = try jsonObject.stringValueForKey("action")
         guard let action = ChatMessageAction(rawValue: rawAction) else {
-            throw JSONValueDecodingError.failedToDecodeFromRawValue(rawAction).toErrorInfo()
+            throw JSONValueDecodingError.failedToDecodeFromRawValue(type: ChatMessageAction.self, rawValue: rawAction).toErrorInfo()
         }
         let timestamp = try jsonObject.optionalAblyProtocolDateValueForKey("timestamp") ?? Date(timeIntervalSince1970: 0) // CHA-M4k5
         try self.init(

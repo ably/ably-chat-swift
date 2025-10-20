@@ -33,7 +33,7 @@ extension InternalError {
 
     var enumCase: Case {
         switch self {
-        case .other(.jsonValueDecodingError):
+        case .jsonValueDecodingError:
             .jsonValueDecodingError
         default:
             .other

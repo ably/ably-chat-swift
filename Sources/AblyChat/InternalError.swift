@@ -6,10 +6,7 @@ import Ably
 ///
 /// This type does not conform to `Error` and cannot be thrown directly. It serves as the backing storage for ``ErrorInfo``, which is the actual error type thrown by the SDK.
 internal enum InternalError {
-    /// Some other internal error that does not fall into any of the below cases.
-    ///
-    /// These are all errors for which the spec does not specify any particular handling.
-    case other(Other)
+    // MARK: Errors from the spec
 
     /// Not proceeding with `Room.attach()` because the room has the following invalid status, per CHA-RL1l.
     ///
@@ -76,12 +73,19 @@ internal enum InternalError {
     /// Error code is `roomDiscontinuity`.
     case roomDiscontinuity(cause: ErrorInfo?)
 
+    // MARK: - Errors not from the spec
+
     // TODO: Revisit the non-specified errors as part of https://github.com/ably/ably-chat-swift/issues/438
 
     /// The user attempted to delete a reaction of type different than `unique`, without specifying the reaction identifier. This is not allowed per CHA-MR11b1.
     ///
     /// Error code is `badRequest` (this is not specified by the spec, which does not make it explicit that the SDK should throw an error in this scenario).
     case unableDeleteReactionWithoutName(reactionType: String)
+
+    /// Unable to fetch `historyBeforeSubscribe` because the `DefaultMessages` instance that stores the subscription points has been deallocated.
+    ///
+    /// Error code is `badRequest` (this is our own error, which is not specified by the spec).
+    case failedToResolveSubscriptionPointBecauseMessagesInstanceGone
 
     /// Unable to fetch `historyBeforeSubscribe` because a channel in the `ATTACHED` state has violated our expectations by its `attachSerial` not being populated, so we cannot resolve its "subscription point" per CHA-M5b.
     ///
@@ -93,18 +97,31 @@ internal enum InternalError {
     /// Error code is `badRequest` (this is not specified by the spec, which does not make it explicit that the SDK should throw an error in this scenario).
     case failedToResolveSubscriptionPointBecauseChannelFailedToAttach(cause: ErrorInfo?)
 
+    /// Attempted to load a resource from the given `path`, expecting to get a single item back, but the returned `PaginatedResult` is empty.
+    ///
+    /// Error code is `badRequest` (this is not specified by the spec, which does not make it explicit that the SDK should throw an error in this scenario).
+    case noItemInResponse(path: String)
+
+    /// An ably-cocoa `ARTHTTPPaginatedResponse` was received with the given non-200 status code.
+    ///
+    /// Error code is `badRequest` (this is not specified by the spec, which does not make it explicit that the SDK should throw an error in this scenario).
+    case paginatedResultStatusCode(Int)
+
+    // Failed to decode a `HeadersValue` from a `JSONValue`.
+    ///
+    /// Error code is `badRequest` (this is our own error, which is not specified by the spec).
+    case headersValueJSONDecodingError(HeadersValue.JSONDecodingError)
+
+    /// Failed to decode a type from a `JSONValue`.
+    ///
+    /// Error code is `badRequest` (this is our own error, which is not specified by the spec).
+    case jsonValueDecodingError(JSONValueDecodingError)
+
+    // MARK: - Representation as ErrorInfo
+
     /// Returns the error that this should be converted to when exposed via the SDK's public API.
     internal func toErrorInfo() -> ErrorInfo {
         .init(internalError: self)
-    }
-
-    /// This was originally created to represent any of the various internal types that existed at the time of converting the public API of the SDK to throw ErrorInfo. We may rethink this when we do a broader rethink of the errors thrown by the SDK in https://github.com/ably/ably-chat-swift/issues/32. For now, feel free to introduce further internal error types and add them to the `Other` enum.
-    internal enum Other {
-        case chatAPIChatError(ChatAPI.ChatError)
-        case headersValueJSONDecodingError(HeadersValue.JSONDecodingError)
-        case jsonValueDecodingError(JSONValueDecodingError)
-        case paginatedResultError(PaginatedResultError)
-        case messagesError(DefaultMessages.MessagesError)
     }
 
     /// The ```ErrorInfo/code`` values used by `InternalError` cases.
@@ -198,9 +215,6 @@ internal enum InternalError {
 
     internal var codeAndStatusCode: ErrorCodeAndStatusCode {
         switch self {
-        case .other:
-            // For now we just treat all miscellaneous internally-thrown errors as non-recoverable user errors
-            .fixedStatusCode(.badRequest)
         case .roomExistsWithDifferentOptions:
             .fixedStatusCode(.roomExistsWithDifferentOptions)
         case .roomIsReleasing:
@@ -234,6 +248,16 @@ internal enum InternalError {
         case .failedToResolveSubscriptionPointBecauseAttachSerialNotDefined:
             .fixedStatusCode(.badRequest)
         case .failedToResolveSubscriptionPointBecauseChannelFailedToAttach:
+            .fixedStatusCode(.badRequest)
+        case .noItemInResponse:
+            .fixedStatusCode(.badRequest)
+        case .paginatedResultStatusCode:
+            .fixedStatusCode(.badRequest)
+        case .failedToResolveSubscriptionPointBecauseMessagesInstanceGone:
+            .fixedStatusCode(.badRequest)
+        case .headersValueJSONDecodingError:
+            .fixedStatusCode(.badRequest)
+        case .jsonValueDecodingError:
             .fixedStatusCode(.badRequest)
         }
     }
@@ -285,9 +309,6 @@ internal enum InternalError {
     /// The ``ErrorInfo/message`` that should be returned for this error.
     internal var message: String {
         switch self {
-        case let .other(otherInternalError):
-            // This will contain the name of the underlying enum case (we have a test to verify this); this will do for now
-            "\(otherInternalError)"
         case let .roomExistsWithDifferentOptions(requested, existing):
             "Rooms.get(roomName:options:) was called with a different set of room options than was used on a previous call. You must first release the existing room instance using Rooms.release(roomName:). Requested options: \(requested), existing options: \(existing)"
         case let .roomInInvalidStateForAttach(roomStatus):
@@ -312,6 +333,8 @@ internal enum InternalError {
             "Cannot apply MessageReactionSummaryEvent for a different message."
         case .cannotApplyCreatedMessageEvent:
             "Cannot apply created message event."
+        case .failedToResolveSubscriptionPointBecauseMessagesInstanceGone:
+            "Cannot resolve subscription point because the Messages instance has been deallocated"
         case .failedToResolveSubscriptionPointBecauseAttachSerialNotDefined:
             "Channel is attached, but attachSerial is not defined."
         case let .failedToResolveSubscriptionPointBecauseChannelFailedToAttach(cause):
@@ -320,6 +343,26 @@ internal enum InternalError {
             "Failed to send message reaction: message serial must not be empty"
         case .deleteMessageReactionEmptyMessageSerial:
             "Failed to delete message reaction: message serial must not be empty"
+        case let .noItemInResponse(path):
+            "Paginated result from path \(path) is empty"
+        case let .paginatedResultStatusCode(statusCode):
+            "Resource load gave status code \(statusCode)"
+        case let .headersValueJSONDecodingError(error):
+            switch error {
+            case let .unsupportedJSONValue(jsonValue):
+                "Headers contain unsupported JSON value \(jsonValue)"
+            }
+        case let .jsonValueDecodingError(error):
+            switch error {
+            case .valueIsNotObject:
+                "Value is not object"
+            case let .noValueForKey(key):
+                "No value for key \(key)"
+            case let .wrongTypeForKey(key, actualValue: actualValue):
+                "Wrong type for key \(key), got \(actualValue)"
+            case let .failedToDecodeFromRawValue(type: type, rawValue: rawValue):
+                "Failed to decode \(type) from raw value \(rawValue)"
+            }
         }
     }
 
@@ -332,7 +375,8 @@ internal enum InternalError {
             cause
         case let .failedToResolveSubscriptionPointBecauseChannelFailedToAttach(cause):
             cause
-        case .other,
+        case .jsonValueDecodingError,
+             .headersValueJSONDecodingError,
              .roomExistsWithDifferentOptions,
              .roomIsReleasing,
              .roomReleasedBeforeOperationCompleted,
@@ -345,7 +389,10 @@ internal enum InternalError {
              .cannotApplyMessageEventForDifferentMessage,
              .cannotApplyReactionSummaryEventForDifferentMessage,
              .sendMessageReactionEmptyMessageSerial,
-             .deleteMessageReactionEmptyMessageSerial:
+             .deleteMessageReactionEmptyMessageSerial,
+             .noItemInResponse,
+             .paginatedResultStatusCode,
+             .failedToResolveSubscriptionPointBecauseMessagesInstanceGone:
             nil
         }
     }
@@ -364,32 +411,14 @@ internal extension ConvertibleToInternalError {
     }
 }
 
-extension ChatAPI.ChatError: ConvertibleToInternalError {
-    internal func toInternalError() -> InternalError {
-        .other(.chatAPIChatError(self))
-    }
-}
-
 extension HeadersValue.JSONDecodingError: ConvertibleToInternalError {
     internal func toInternalError() -> InternalError {
-        .other(.headersValueJSONDecodingError(self))
+        .headersValueJSONDecodingError(self)
     }
 }
 
 extension JSONValueDecodingError: ConvertibleToInternalError {
     internal func toInternalError() -> InternalError {
-        .other(.jsonValueDecodingError(self))
-    }
-}
-
-extension PaginatedResultError: ConvertibleToInternalError {
-    internal func toInternalError() -> InternalError {
-        .other(.paginatedResultError(self))
-    }
-}
-
-extension DefaultMessages.MessagesError: ConvertibleToInternalError {
-    internal func toInternalError() -> InternalError {
-        .other(.messagesError(self))
+        .jsonValueDecodingError(self)
     }
 }

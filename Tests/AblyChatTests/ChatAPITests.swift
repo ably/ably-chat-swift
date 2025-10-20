@@ -21,7 +21,7 @@ struct ChatAPITests {
         }
 
         // Then
-        let isExpectedError = if case .internalError(.other(.chatAPIChatError(.noItemInResponse))) = thrownError?.source {
+        let isExpectedError = if case .internalError(.noItemInResponse) = thrownError?.source {
             true
         } else {
             false

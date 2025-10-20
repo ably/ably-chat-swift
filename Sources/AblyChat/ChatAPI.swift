@@ -193,7 +193,7 @@ internal final class ChatAPI {
         }
     }
 
-    private func makeRequest<Response: JSONDecodable>(_ url: String, method: String, params: [String: String]? = nil, body: RequestBody? = nil) async throws(ErrorInfo) -> Response {
+    private func makeRequest<Response: JSONDecodable>(_ path: String, method: String, params: [String: String]? = nil, body: RequestBody? = nil) async throws(ErrorInfo) -> Response {
         let ablyCocoaBody: Any? = if let body {
             switch body {
             case let .jsonObject(jsonObject):
@@ -206,10 +206,10 @@ internal final class ChatAPI {
         }
 
         // (CHA-M3e & CHA-M8d & CHA-M9c) If an error is returned from the REST API, its ErrorInfo representation shall be thrown as the result of the send call.
-        let paginatedResponse = try await realtime.request(method, path: url, params: params, body: ablyCocoaBody, headers: [:])
+        let paginatedResponse = try await realtime.request(method, path: path, params: params, body: ablyCocoaBody, headers: [:])
 
         guard let firstItem = paginatedResponse.items.first else {
-            throw ChatError.noItemInResponse.toErrorInfo()
+            throw InternalError.noItemInResponse(path: path).toErrorInfo()
         }
 
         let jsonValue = JSONValue(ablyCocoaData: firstItem)
@@ -226,9 +226,5 @@ internal final class ChatAPI {
             try Response(jsonValue: jsonValue)
         }
         return paginatedResponse.toPaginatedResult(items: items)
-    }
-
-    internal enum ChatError: Error {
-        case noItemInResponse
     }
 }

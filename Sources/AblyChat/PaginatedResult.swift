@@ -39,8 +39,12 @@ internal struct ARTHTTPPaginatedCallbackWrapper<Response: JSONDecodable & Sendab
             return
         }
 
-        guard let paginatedResponse, paginatedResponse.statusCode == 200 else {
-            continuation.resume(returning: .failure(PaginatedResultError.noErrorWithInvalidResponse.toErrorInfo()))
+        guard let paginatedResponse else {
+            preconditionFailure("ARTHTTPPaginatedResponse gave neither error nor response")
+        }
+
+        guard paginatedResponse.statusCode == 200 else {
+            continuation.resume(returning: .failure(InternalError.paginatedResultStatusCode(paginatedResponse.statusCode).toErrorInfo()))
             return
         }
 
@@ -53,10 +57,6 @@ internal struct ARTHTTPPaginatedCallbackWrapper<Response: JSONDecodable & Sendab
             continuation.resume(returning: .failure(error))
         }
     }
-}
-
-internal enum PaginatedResultError: Error {
-    case noErrorWithInvalidResponse
 }
 
 /// `PaginatedResult` protocol implementation allowing access to the underlying items from a lower level paginated response object e.g. `ARTHTTPPaginatedResponse`, whilst succinctly handling errors through the use of `ARTHTTPPaginatedCallbackWrapper`.

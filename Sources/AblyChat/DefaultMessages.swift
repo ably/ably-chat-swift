@@ -97,7 +97,7 @@ internal final class DefaultMessages: Messages {
             roomName: roomName,
             subscriptionStartSerial: { [weak self] () throws(ErrorInfo) in
                 guard let self else {
-                    throw MessagesError.noReferenceToSelf.toErrorInfo()
+                    throw InternalError.failedToResolveSubscriptionPointBecauseMessagesInstanceGone.toErrorInfo()
                 }
                 if channel.state == .attached, let startSerial = subscriptionPoints[uuid] {
                     return startSerial
