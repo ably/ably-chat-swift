@@ -74,8 +74,8 @@ struct DefaultPresenceTests {
 
         // Then
         #expect(roomLifecycleManager.callRecorder.hasRecord(
-            matching: "waitToBeAbleToPerformPresenceOperations(requestedByFeature:)",
-            arguments: ["requestedByFeature": "presence"],
+            matching: "waitToBeAbleToPerformPresenceOperations()",
+            arguments: [:],
         ))
     }
 
@@ -84,7 +84,7 @@ struct DefaultPresenceTests {
     func usersMayEnterPresenceWhileAttachingWithFailure() async throws {
         // Given
         let attachError = ErrorInfo.createArbitraryError()
-        let error = InternalError.roomTransitionedToInvalidStateForPresenceOperation(cause: attachError).toErrorInfo()
+        let error = InternalError.roomTransitionedToInvalidStateForPresenceOperation(newState: .failed /* arbitrary */, cause: attachError).toErrorInfo()
 
         let channel = await MockRealtimeChannel(name: "basketball::$chat")
         let logger = TestLogger()
@@ -106,8 +106,8 @@ struct DefaultPresenceTests {
 
         // Then
         #expect(roomLifecycleManager.callRecorder.hasRecord(
-            matching: "waitToBeAbleToPerformPresenceOperations(requestedByFeature:)",
-            arguments: ["requestedByFeature": "presence"],
+            matching: "waitToBeAbleToPerformPresenceOperations()",
+            arguments: [:],
         ))
     }
 
@@ -115,7 +115,7 @@ struct DefaultPresenceTests {
     @Test
     func failToEnterPresenceWhenRoomInInvalidState() async throws {
         // Given
-        let error = InternalError.presenceOperationRequiresRoomAttach(feature: .presence).toErrorInfo()
+        let error = InternalError.presenceOperationRequiresRoomAttach.toErrorInfo()
         let channel = await MockRealtimeChannel(name: "basketball::$chat")
         let logger = TestLogger()
         let roomLifecycleManager = await MockRoomLifecycleManager(resultOfWaitToBeAbleToPerformPresenceOperations: .failure(error))
@@ -181,8 +181,8 @@ struct DefaultPresenceTests {
 
         // Then
         #expect(roomLifecycleManager.callRecorder.hasRecord(
-            matching: "waitToBeAbleToPerformPresenceOperations(requestedByFeature:)",
-            arguments: ["requestedByFeature": "presence"],
+            matching: "waitToBeAbleToPerformPresenceOperations()",
+            arguments: [:],
         ))
     }
 
@@ -191,7 +191,7 @@ struct DefaultPresenceTests {
     func usersMayUpdatePresenceWhileAttachingWithFailure() async throws {
         // Given
         let attachError = ErrorInfo.createArbitraryError()
-        let error = InternalError.roomTransitionedToInvalidStateForPresenceOperation(cause: attachError).toErrorInfo()
+        let error = InternalError.roomTransitionedToInvalidStateForPresenceOperation(newState: .failed /* arbitrary */, cause: attachError).toErrorInfo()
 
         let channel = await MockRealtimeChannel(name: "basketball::$chat")
         let logger = TestLogger()
@@ -213,8 +213,8 @@ struct DefaultPresenceTests {
 
         // Then
         #expect(roomLifecycleManager.callRecorder.hasRecord(
-            matching: "waitToBeAbleToPerformPresenceOperations(requestedByFeature:)",
-            arguments: ["requestedByFeature": "presence"],
+            matching: "waitToBeAbleToPerformPresenceOperations()",
+            arguments: [:],
         ))
     }
 
@@ -222,7 +222,7 @@ struct DefaultPresenceTests {
     @Test
     func failToUpdatePresenceWhenRoomInInvalidState() async throws {
         // Given
-        let error = InternalError.presenceOperationRequiresRoomAttach(feature: .presence).toErrorInfo()
+        let error = InternalError.presenceOperationRequiresRoomAttach.toErrorInfo()
         let channel = await MockRealtimeChannel(name: "basketball::$chat")
         let logger = TestLogger()
         let roomLifecycleManager = await MockRoomLifecycleManager(resultOfWaitToBeAbleToPerformPresenceOperations: .failure(error))
@@ -327,7 +327,7 @@ struct DefaultPresenceTests {
     @Test
     func failToRetrieveAllTheMembersOfThePresenceSetWhenRoomInInvalidState() async throws {
         // Given
-        let error = InternalError.presenceOperationRequiresRoomAttach(feature: .presence).toErrorInfo()
+        let error = InternalError.presenceOperationRequiresRoomAttach.toErrorInfo()
         let channel = await MockRealtimeChannel(name: "basketball::$chat")
         let logger = TestLogger()
         let roomLifecycleManager = await MockRoomLifecycleManager(resultOfWaitToBeAbleToPerformPresenceOperations: .failure(error))
@@ -366,8 +366,8 @@ struct DefaultPresenceTests {
 
         // Then
         #expect(roomLifecycleManager.callRecorder.hasRecord(
-            matching: "waitToBeAbleToPerformPresenceOperations(requestedByFeature:)",
-            arguments: ["requestedByFeature": "presence"],
+            matching: "waitToBeAbleToPerformPresenceOperations()",
+            arguments: [:],
         ))
     }
 
@@ -376,7 +376,7 @@ struct DefaultPresenceTests {
     func retrieveAllTheMembersOfThePresenceSetWhileAttachingWithFailure() async throws {
         // Given
         let attachError = ErrorInfo.createArbitraryError()
-        let error = InternalError.roomTransitionedToInvalidStateForPresenceOperation(cause: attachError).toErrorInfo()
+        let error = InternalError.roomTransitionedToInvalidStateForPresenceOperation(newState: .failed /* arbitrary */, cause: attachError).toErrorInfo()
 
         let channel = await MockRealtimeChannel(name: "basketball::$chat")
         let logger = TestLogger()
@@ -398,8 +398,8 @@ struct DefaultPresenceTests {
 
         // Then
         #expect(roomLifecycleManager.callRecorder.hasRecord(
-            matching: "waitToBeAbleToPerformPresenceOperations(requestedByFeature:)",
-            arguments: ["requestedByFeature": "presence"],
+            matching: "waitToBeAbleToPerformPresenceOperations()",
+            arguments: [:],
         ))
     }
 

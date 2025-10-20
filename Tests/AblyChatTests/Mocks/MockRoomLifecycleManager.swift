@@ -57,13 +57,13 @@ class MockRoomLifecycleManager: RoomLifecycleManager {
         roomStatusSubscriptions.emit(statusChange)
     }
 
-    func waitToBeAbleToPerformPresenceOperations(requestedByFeature: RoomFeature) async throws(ErrorInfo) {
+    func waitToBeAbleToPerformPresenceOperations() async throws(ErrorInfo) {
         guard let resultOfWaitToBeAbleToPerformPresenceOperations else {
             fatalError("resultOfWaitToBeAblePerformPresenceOperations must be set before waitToBeAbleToPerformPresenceOperations is called")
         }
         callRecorder.addRecord(
-            signature: "waitToBeAbleToPerformPresenceOperations(requestedByFeature:)",
-            arguments: ["requestedByFeature": "\(requestedByFeature)"],
+            signature: "waitToBeAbleToPerformPresenceOperations()",
+            arguments: [:],
         )
         try resultOfWaitToBeAbleToPerformPresenceOperations.get()
     }

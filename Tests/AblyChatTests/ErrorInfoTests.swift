@@ -48,6 +48,7 @@ struct ErrorInfoTests {
         )
     }
 
+    // @spec CHA-GP6
     @Test
     func whenUnderlyingErrorIsNotAblyCocoaError() {
         let internalError = InternalError.headersValueJSONDecodingError(.unsupportedJSONValue(.null))
@@ -56,7 +57,7 @@ struct ErrorInfoTests {
 
         #expect(convertedToErrorInfo.hasCode(.badRequest))
         for message in [convertedToErrorInfo.message, convertedToErrorInfo.description, convertedToErrorInfo.localizedDescription] {
-            #expect(message.contains("Headers contain unsupported JSON value null"))
+            #expect(message.contains("unable to decode headers; unsupported JSON value null"))
         }
     }
 }

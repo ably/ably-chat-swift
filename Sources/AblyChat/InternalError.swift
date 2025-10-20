@@ -51,7 +51,7 @@ internal enum InternalError {
     /// The user tried to attach or detach a room which is in the RELEASING state, which is not allowed per CHA-RL1b or CHA-RL2b respectively.
     ///
     /// Error code is `roomInInvalidState` (note that the spec point said `roomIsReleasing`, but this spec point no longer exists and this error code no longer exists in the spec, so use `roomInInvalidState` instead).
-    case roomIsReleasing
+    case roomIsReleasing(operation: AttachOrDetach)
 
     /// The user attempted to release a room whilst a release operation was already in progress, causing the release operation to fail per CHA-RC1g4.
     ///
@@ -61,12 +61,12 @@ internal enum InternalError {
     /// The user attempted to perform a presence operation whilst the room was not ATTACHED or ATTACHING, resulting in this error per CHA-PR3h, CHA-PR10h, CHA-PR6h.
     ///
     /// Error code is `roomInInvalidState`.
-    case presenceOperationRequiresRoomAttach(feature: RoomFeature)
+    case presenceOperationRequiresRoomAttach
 
     /// The user attempted to perform a presence operation whilst the room was ATTACHING, and after waiting for a room status change the next status was not ATTACHED, resulting in this error per CHA-RL9c.
     ///
     /// Error code is `roomInInvalidState`.
-    case roomTransitionedToInvalidStateForPresenceOperation(cause: ErrorInfo?)
+    case roomTransitionedToInvalidStateForPresenceOperation(newState: RoomStatus, cause: ErrorInfo?)
 
     /// The room's channel emitted an event representing a discontinuity, and so the room emitted this error per CHA-RL12b.
     ///
@@ -200,114 +200,137 @@ internal enum InternalError {
         }
     }
 
-    private static func descriptionOfFeature(_ feature: RoomFeature) -> String {
-        switch feature {
-        case .messages:
-            "messages"
-        case .occupancy:
-            "occupancy"
-        case .presence:
-            "presence"
-        case .reactions:
-            "reactions"
-        case .typing:
-            "typing"
-        }
-    }
-
     private static func descriptionOfRoomStatus(_ roomStatus: RoomStatus) -> String {
         switch roomStatus {
         case .initialized:
-            "initialized"
+            "INITIALIZED"
         case .attaching:
-            "attaching"
+            "ATTACHING"
         case .attached:
-            "attached"
+            "ATTACHED"
         case .detaching:
-            "detaching"
+            "DETACHING"
         case .detached:
-            "detached"
+            "DETACHED"
         case .suspended:
-            "suspended"
+            "SUSPENDED"
         case .failed:
-            "failed"
+            "FAILED"
         case .releasing:
-            "releasing"
+            "RELEASING"
         case .released:
-            "released"
+            "RELEASED"
         }
     }
 
     /// A helper type for parameterising the construction of error messages.
-    private enum AttachOrDetach {
+    internal enum AttachOrDetach {
         case attach
         case detach
+
+        /// The `op` to be inserted into an error message of CHA-GP6's prescribed format `"unable to <op>; <reason>"`.
+        internal var opForMessage: String {
+            switch self {
+            case .attach:
+                "attach room"
+            case .detach:
+                "detach room"
+            }
+        }
     }
 
     /// The ``ErrorInfo/message`` that should be returned for this error.
+    ///
+    /// This message follows the format specified by CHA-GP6 of `"unable to <op>; <reason>"`.
     internal var message: String {
+        let op: String
+        let reason: String
+
         switch self {
         case let .roomExistsWithDifferentOptions(requested, existing):
-            "Rooms.get(named:options:) was called with a different set of room options than was used on a previous call. You must first release the existing room instance using Rooms.release(named:). Requested options: \(requested), existing options: \(existing)"
+            op = "get room"
+            reason = "room already exists with different options. You must release the existing room instance before requesting with different options. Requested: \(requested), existing: \(existing)"
         case let .roomInInvalidStateForAttach(roomStatus):
-            "Cannot attach room because the room is in a \(Self.descriptionOfRoomStatus(roomStatus)) state."
+            op = "attach room"
+            reason = "room is in \(Self.descriptionOfRoomStatus(roomStatus)) state"
         case let .roomInInvalidStateForDetach(roomStatus):
-            "Cannot detach room because the room is in a \(Self.descriptionOfRoomStatus(roomStatus)) state."
-        case .roomIsReleasing:
-            "Cannot perform operation because the room is in a releasing state."
+            op = "detach room"
+            reason = "room is in \(Self.descriptionOfRoomStatus(roomStatus)) state"
+        case let .roomIsReleasing(operation):
+            op = operation.opForMessage
+            reason = "room is releasing"
         case .roomReleasedBeforeOperationCompleted:
-            "Room was released before the operation could complete."
-        case let .presenceOperationRequiresRoomAttach(feature):
-            "To perform this \(Self.descriptionOfFeature(feature)) operation, you must first attach the room."
-        case .roomTransitionedToInvalidStateForPresenceOperation:
-            "The room operation failed because the room was in an invalid state."
-        case .roomDiscontinuity:
-            "The room has experienced a discontinuity."
+            op = "release room"
+            reason = "another room release operation was started"
+        case .presenceOperationRequiresRoomAttach:
+            op = "perform presence operation"
+            reason = "room must be in ATTACHED or ATTACHING status"
+        case let .roomTransitionedToInvalidStateForPresenceOperation(newState: newState, cause: cause):
+            op = "perform presence operation"
+            reason = "room transitioned to invalid state \(newState): \(cause, default: "(nil cause)")"
+        case let .roomDiscontinuity(cause):
+            op = "maintain room message continuity"
+            reason = "room experienced a discontinuity: \(cause, default: "(nil cause)")"
         case let .unableDeleteReactionWithoutName(reactionType: reactionType):
-            "Cannot delete reaction of type '\(reactionType)' without a reaction name."
+            op = "delete reaction"
+            reason = "reaction of type '\(reactionType)' requires a name to be specified"
         case .cannotApplyMessageEventForDifferentMessage:
-            "Cannot apply MessageEvent for a different message."
+            op = "apply MessageEvent"
+            reason = "message serial does not match the event's message serial"
         case .cannotApplyReactionSummaryEventForDifferentMessage:
-            "Cannot apply MessageReactionSummaryEvent for a different message."
+            op = "apply ReactionSummaryEvent"
+            reason = "message serial does not match the event's message serial"
         case .cannotApplyCreatedMessageEvent:
-            "Cannot apply created message event."
+            op = "apply message event"
+            reason = "cannot apply created event to existing message"
         case .failedToResolveSubscriptionPointBecauseMessagesInstanceGone:
-            "Cannot resolve subscription point because the Messages instance has been deallocated"
+            op = "fetch message history from before subscription"
+            reason = "Messages instance has been deallocated"
         case .failedToResolveSubscriptionPointBecauseAttachSerialNotDefined:
-            "Channel is attached, but attachSerial is not defined."
+            op = "fetch message history from before subscription"
+            reason = "channel is attached but attachSerial is not defined"
         case let .failedToResolveSubscriptionPointBecauseChannelFailedToAttach(cause):
-            "Channel failed to attach: \(String(describing: cause))"
+            op = "fetch message history from before subscription"
+            reason = "channel failed to attach: \(cause, default: "(nil cause)")"
         case .sendMessageReactionEmptyMessageSerial:
-            "Failed to send message reaction: message serial must not be empty"
+            op = "send message reaction"
+            reason = "message serial must not be empty"
         case .deleteMessageReactionEmptyMessageSerial:
-            "Failed to delete message reaction: message serial must not be empty"
+            op = "delete message reaction"
+            reason = "message serial must not be empty"
         case let .noItemInResponse(path):
-            "Paginated result from path \(path) is empty"
+            op = "load resource"
+            reason = "paginated result from path \(path) is empty"
         case let .paginatedResultStatusCode(statusCode):
-            "Resource load gave status code \(statusCode)"
+            op = "load resource"
+            reason = "received status code \(statusCode)"
         case let .headersValueJSONDecodingError(error):
+            op = "decode headers"
             switch error {
             case let .unsupportedJSONValue(jsonValue):
-                "Headers contain unsupported JSON value \(jsonValue)"
+                reason = "unsupported JSON value \(jsonValue)"
             }
         case let .jsonValueDecodingError(error):
+            op = "decode JSON"
             switch error {
             case .valueIsNotObject:
-                "Value is not object"
+                reason = "value is not an object"
             case let .noValueForKey(key):
-                "No value for key \(key)"
+                reason = "no value for key '\(key)'"
             case let .wrongTypeForKey(key, actualValue: actualValue):
-                "Wrong type for key \(key), got \(actualValue)"
+                reason = "wrong type for key '\(key)', got \(actualValue)"
             case let .failedToDecodeFromRawValue(type: type, rawValue: rawValue):
-                "Failed to decode \(type) from raw value \(rawValue)"
+                reason = "could not decode \(type) from raw value \(rawValue)"
             }
         }
+
+        return "unable to \(op); \(reason)"
     }
 
     /// The ``ErrorInfo/cause`` that should be returned for this error.
     internal var cause: ErrorInfo? {
         switch self {
-        case let .roomTransitionedToInvalidStateForPresenceOperation(cause):
+        case let .roomTransitionedToInvalidStateForPresenceOperation(newState: _, cause: cause):
             cause
         case let .roomDiscontinuity(cause):
             cause
