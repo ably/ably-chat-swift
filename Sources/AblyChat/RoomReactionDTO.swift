@@ -40,7 +40,7 @@ extension RoomReactionDTO.Data: JSONObjectCodable {
         case metadata
     }
 
-    internal init(jsonObject: [String: JSONValue]) throws(InternalError) {
+    internal init(jsonObject: [String: JSONValue]) throws(ErrorInfo) {
         name = try jsonObject.stringValueForKey(JSONKey.name.rawValue)
         metadata = try jsonObject.optionalObjectValueForKey(JSONKey.metadata.rawValue)
     }
@@ -59,8 +59,8 @@ extension RoomReactionDTO.Extras: JSONObjectCodable {
         case ephemeral
     }
 
-    internal init(jsonObject: [String: JSONValue]) throws(InternalError) {
-        headers = try jsonObject.optionalObjectValueForKey(JSONKey.headers.rawValue)?.ablyChat_mapValuesWithTypedThrow { jsonValue throws(InternalError) in
+    internal init(jsonObject: [String: JSONValue]) throws(ErrorInfo) {
+        headers = try jsonObject.optionalObjectValueForKey(JSONKey.headers.rawValue)?.ablyChat_mapValuesWithTypedThrow { jsonValue throws(ErrorInfo) in
             try .init(jsonValue: jsonValue)
         }
     }

@@ -13,8 +13,8 @@ final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
     var properties: ARTChannelProperties { .init(attachSerial: attachSerial, channelSerial: channelSerial) }
 
     private var _state: ARTRealtimeChannelState?
-    private let stateChangeToEmitForListener: ARTChannelStateChange?
-    var errorReason: ARTErrorInfo?
+    private let stateChangeToEmitForListener: ChannelStateChange?
+    var errorReason: ErrorInfo?
 
     var publishedMessages: [TestMessage] = []
 
@@ -28,12 +28,12 @@ final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
         name: String? = nil,
         properties: ARTChannelProperties = .init(),
         initialState: ARTRealtimeChannelState? = nil,
-        initialErrorReason: ARTErrorInfo? = nil,
+        initialErrorReason: ErrorInfo? = nil,
         attachBehavior: AttachOrDetachBehavior? = nil,
         detachBehavior: AttachOrDetachBehavior? = nil,
         messageToEmitOnSubscribe: ARTMessage? = nil,
         annotationToEmitOnSubscribe: ARTAnnotation? = nil,
-        stateChangeToEmitForListener: ARTChannelStateChange? = nil,
+        stateChangeToEmitForListener: ChannelStateChange? = nil,
     ) {
         _name = name
         _state = initialState
@@ -68,21 +68,21 @@ final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
             .complete(.success)
         }
 
-        static func failure(_ error: ARTErrorInfo) -> Self {
+        static func failure(_ error: ErrorInfo) -> Self {
             .complete(.failure(error))
         }
     }
 
     enum AttachOrDetachResult {
         case success
-        case failure(ARTErrorInfo)
+        case failure(ErrorInfo)
 
-        func get() throws(InternalError) {
+        func get() throws(ErrorInfo) {
             switch self {
             case .success:
                 break
             case let .failure(error):
-                throw InternalError.fromAblyCocoa(error)
+                throw error
             }
         }
     }
@@ -91,7 +91,7 @@ final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
 
     var attachCallCount = 0
 
-    func attach() async throws(InternalError) {
+    func attach() async throws(ErrorInfo) {
         attachCallCount += 1
 
         guard let attachBehavior else {
@@ -105,7 +105,7 @@ final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
 
     var detachCallCount = 0
 
-    func detach() async throws(InternalError) {
+    func detach() async throws(ErrorInfo) {
         detachCallCount += 1
 
         guard let detachBehavior else {
@@ -115,7 +115,7 @@ final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
         try await performBehavior(detachBehavior, callCount: detachCallCount)
     }
 
-    private func performBehavior(_ behavior: AttachOrDetachBehavior, callCount: Int) async throws(InternalError) {
+    private func performBehavior(_ behavior: AttachOrDetachBehavior, callCount: Int) async throws(ErrorInfo) {
         let result: AttachOrDetachResult
         switch behavior {
         case let .fromFunction(function):
@@ -161,22 +161,14 @@ final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
         channelSubscriptions.removeAll() // make more strict when needed
     }
 
-    private var stateSubscriptionCallbacks: [@MainActor (ARTChannelStateChange) -> Void] = []
+    private var stateSubscriptionCallbacks: [@MainActor (ChannelStateChange) -> Void] = []
 
-    func on(_: ARTChannelEvent, callback: @escaping @MainActor (ARTChannelStateChange) -> Void) -> ARTEventListener {
+    func on(_: ARTChannelEvent, callback: @escaping @MainActor (ChannelStateChange) -> Void) -> ARTEventListener {
         stateSubscriptionCallbacks.append(callback)
         return ARTEventListener()
     }
 
-    func on(_ callback: @escaping @MainActor (ARTChannelStateChange) -> Void) -> ARTEventListener {
-        stateSubscriptionCallbacks.append(callback)
-        if let stateChangeToEmitForListener {
-            callback(stateChangeToEmitForListener)
-        }
-        return ARTEventListener()
-    }
-
-    func once(_ callback: @escaping @MainActor @Sendable (ARTChannelStateChange) -> Void) -> ARTEventListener {
+    func on(_ callback: @escaping @MainActor (ChannelStateChange) -> Void) -> ARTEventListener {
         stateSubscriptionCallbacks.append(callback)
         if let stateChangeToEmitForListener {
             callback(stateChangeToEmitForListener)
@@ -184,11 +176,19 @@ final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
         return ARTEventListener()
     }
 
-    func once(_: ARTChannelEvent, callback _: @escaping @MainActor @Sendable (ARTChannelStateChange) -> Void) -> ARTEventListener {
+    func once(_ callback: @escaping @MainActor @Sendable (ChannelStateChange) -> Void) -> ARTEventListener {
+        stateSubscriptionCallbacks.append(callback)
+        if let stateChangeToEmitForListener {
+            callback(stateChangeToEmitForListener)
+        }
+        return ARTEventListener()
+    }
+
+    func once(_: ARTChannelEvent, callback _: @escaping @MainActor @Sendable (ChannelStateChange) -> Void) -> ARTEventListener {
         fatalError("Not implemented")
     }
 
-    func emitEvent(_ event: ARTChannelStateChange) {
+    func emitEvent(_ event: ChannelStateChange) {
         for callback in stateSubscriptionCallbacks {
             callback(event)
         }

@@ -83,7 +83,7 @@ extension HeadersValue: JSONDecodable {
         case unsupportedJSONValue(JSONValue)
     }
 
-    internal init(jsonValue: JSONValue) throws(InternalError) {
+    internal init(jsonValue: JSONValue) throws(ErrorInfo) {
         self = switch jsonValue {
         case let .string(value):
             .string(value)
@@ -94,7 +94,7 @@ extension HeadersValue: JSONDecodable {
         case .null:
             .null
         default:
-            throw JSONDecodingError.unsupportedJSONValue(jsonValue).toInternalError()
+            throw JSONDecodingError.unsupportedJSONValue(jsonValue).toErrorInfo()
         }
     }
 }

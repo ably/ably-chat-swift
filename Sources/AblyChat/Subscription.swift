@@ -84,7 +84,7 @@ internal struct DefaultStatusSubscription: StatusSubscription, Sendable {
 internal struct DefaultMessageSubscriptionResponse: MessageSubscriptionResponse, Sendable {
     private let chatAPI: ChatAPI
     private let roomName: String
-    private let subscriptionStartSerial: @MainActor @Sendable () async throws(InternalError) -> String
+    private let subscriptionStartSerial: @MainActor @Sendable () async throws(ErrorInfo) -> String
     private let _unsubscribe: () -> Void
 
     internal func unsubscribe() {
@@ -92,25 +92,21 @@ internal struct DefaultMessageSubscriptionResponse: MessageSubscriptionResponse,
     }
 
     internal func historyBeforeSubscribe(withParams params: HistoryBeforeSubscribeParams) async throws(ErrorInfo) -> some PaginatedResult<Message> {
-        do {
-            let fromSerial = try await subscriptionStartSerial()
+        let fromSerial = try await subscriptionStartSerial()
 
-            // (CHA-M5f) This method must accept any of the standard history query options, except for direction
-            var queryOptions = params.toHistoryParams()
+        // (CHA-M5f) This method must accept any of the standard history query options, except for direction
+        var queryOptions = params.toHistoryParams()
 
-            // (CHA-M5g) The subscribers subscription point must be additionally specified (internally, by us) in the fromSerial query parameter.
-            queryOptions.fromSerial = fromSerial
+        // (CHA-M5g) The subscribers subscription point must be additionally specified (internally, by us) in the fromSerial query parameter.
+        queryOptions.fromSerial = fromSerial
 
-            return try await chatAPI.getMessages(roomName: roomName, params: queryOptions)
-        } catch {
-            throw error.toErrorInfo()
-        }
+        return try await chatAPI.getMessages(roomName: roomName, params: queryOptions)
     }
 
     internal init(
         chatAPI: ChatAPI,
         roomName: String,
-        subscriptionStartSerial: @MainActor @escaping @Sendable () async throws(InternalError) -> String,
+        subscriptionStartSerial: @MainActor @escaping @Sendable () async throws(ErrorInfo) -> String,
         unsubscribe: @MainActor @Sendable @escaping () -> Void,
     ) {
         self.chatAPI = chatAPI

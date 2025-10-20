@@ -95,9 +95,9 @@ internal final class DefaultMessages: Messages {
         let subscription = DefaultMessageSubscriptionResponse(
             chatAPI: chatAPI,
             roomName: roomName,
-            subscriptionStartSerial: { [weak self] () throws(InternalError) in
+            subscriptionStartSerial: { [weak self] () throws(ErrorInfo) in
                 guard let self else {
-                    throw MessagesError.noReferenceToSelf.toInternalError()
+                    throw MessagesError.noReferenceToSelf.toErrorInfo()
                 }
                 if channel.state == .attached, let startSerial = subscriptionPoints[uuid] {
                     return startSerial
@@ -116,47 +116,27 @@ internal final class DefaultMessages: Messages {
 
     // (CHA-M6a) A method must be exposed that accepts the standard Ably REST API query parameters. It shall call the "REST API"#rest-fetching-messages and return a PaginatedResult containing messages, which can then be paginated through.
     internal func history(withParams params: HistoryParams) async throws(ErrorInfo) -> some PaginatedResult<Message> {
-        do {
-            return try await chatAPI.getMessages(roomName: roomName, params: params)
-        } catch {
-            throw error.toErrorInfo()
-        }
+        try await chatAPI.getMessages(roomName: roomName, params: params)
     }
 
     internal func send(withParams params: SendMessageParams) async throws(ErrorInfo) -> Message {
-        do {
-            return try await chatAPI.sendMessage(roomName: roomName, params: params)
-        } catch {
-            throw error.toErrorInfo()
-        }
+        try await chatAPI.sendMessage(roomName: roomName, params: params)
     }
 
     internal func update(withSerial serial: String, params: UpdateMessageParams, details: OperationDetails?) async throws(ErrorInfo) -> Message {
-        do {
-            return try await chatAPI.updateMessage(roomName: roomName, serial: serial, updateParams: params, details: details)
-        } catch {
-            throw error.toErrorInfo()
-        }
+        try await chatAPI.updateMessage(roomName: roomName, serial: serial, updateParams: params, details: details)
     }
 
     internal func delete(withSerial serial: String, details: OperationDetails?) async throws(ErrorInfo) -> Message {
-        do {
-            return try await chatAPI.deleteMessage(roomName: roomName, serial: serial, details: details)
-        } catch {
-            throw error.toErrorInfo()
-        }
+        try await chatAPI.deleteMessage(roomName: roomName, serial: serial, details: details)
     }
 
     // (CHA-M13) A single message must be retrievable from the REST API.
     internal func get(withSerial serial: String) async throws(ErrorInfo) -> Message {
-        do {
-            return try await chatAPI.getMessage(roomName: roomName, serial: serial)
-        } catch {
-            throw error.toErrorInfo()
-        }
+        try await chatAPI.getMessage(roomName: roomName, serial: serial)
     }
 
-    private func resolveSubscriptionStart() async throws(InternalError) -> String {
+    private func resolveSubscriptionStart() async throws(ErrorInfo) -> String {
         logger.log(message: "Resolving subscription start serial", level: .debug)
         // (CHA-M5a) If a subscription is added when the underlying realtime channel is ATTACHED, then the subscription point is the current channelSerial of the realtime channel.
         if channel.state == .attached, let currentSubscriptionPoint {
@@ -165,7 +145,7 @@ internal final class DefaultMessages: Messages {
         }
 
         // (CHA-M5b) If a subscription is added when the underlying realtime channel is in any other state, then its subscription point becomes the attachSerial at the the point of channel attachment.
-        return try await withCheckedContinuation { (continuation: CheckedContinuation<Result<String, InternalError>, Never>) in
+        return try await withCheckedContinuation { (continuation: CheckedContinuation<Result<String, ErrorInfo>, Never>) in
             _ = channel.once { [weak self] stateChange in
                 guard let self else {
                     return
@@ -179,13 +159,13 @@ internal final class DefaultMessages: Messages {
                         continuation.resume(returning: .success(subscriptionPoint))
                     } else {
                         logger.log(message: "Channel is attached, but attachSerial is not defined", level: .error)
-                        continuation.resume(returning: .failure(InternalError.internallyThrown(.attachSerialIsNotDefined)))
+                        continuation.resume(returning: .failure(InternalError.attachSerialIsNotDefined.toErrorInfo()))
                     }
                 case .failed, .suspended:
                     // TODO: Revisit as part of https://github.com/ably-labs/ably-chat-swift/issues/32
-                    let error = InternalError.internallyThrown(.channelFailedToAttach(cause: stateChange.reason))
+                    let error = InternalError.channelFailedToAttach(cause: stateChange.reason)
                     logger.log(message: "\(error)", level: .error)
-                    continuation.resume(returning: .failure(error))
+                    continuation.resume(returning: .failure(error.toErrorInfo()))
                 default:
                     break
                 }

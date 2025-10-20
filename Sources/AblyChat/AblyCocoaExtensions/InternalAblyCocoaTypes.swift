@@ -5,7 +5,7 @@ import Ably
 /// The idea is to translate ably-cocoa's `ARTRealtimeProtocol` interface into something that's more pleasant to use from Swift (and easier to mock), by using:
 ///
 /// - `async` methods instead of callbacks
-/// - typed throws
+/// - typed throws (of our error type `ErrorInfo`)
 /// - `JSONValue` instead of `Any`
 ///
 /// Hopefully we will eventually be able to remove this interface once we've improved the experience of using ably-cocoa from Swift (https://github.com/ably/ably-cocoa/issues/1967).
@@ -21,7 +21,7 @@ internal protocol InternalRealtimeClientProtocol: AnyObject, Sendable {
     associatedtype Connection: InternalConnectionProtocol
 
     var clientId: String? { get }
-    func request(_ method: String, path: String, params: [String: String]?, body: Any?, headers: [String: String]?) async throws(InternalError) -> ARTHTTPPaginatedResponse
+    func request(_ method: String, path: String, params: [String: String]?, body: Any?, headers: [String: String]?) async throws(ErrorInfo) -> ARTHTTPPaginatedResponse
 
     var channels: Channels { get }
     var connection: Connection { get }
@@ -55,17 +55,17 @@ internal protocol InternalRealtimeChannelProtocol: AnyObject, Sendable {
 
     var annotations: Annotations { get }
 
-    func attach() async throws(InternalError)
-    func detach() async throws(InternalError)
+    func attach() async throws(ErrorInfo)
+    func detach() async throws(ErrorInfo)
     var name: String { get }
     var state: ARTRealtimeChannelState { get }
-    var errorReason: ARTErrorInfo? { get }
-    func on(_ cb: @escaping @MainActor (ARTChannelStateChange) -> Void) -> ARTEventListener
-    func on(_ event: ARTChannelEvent, callback cb: @escaping @MainActor (ARTChannelStateChange) -> Void) -> ARTEventListener
-    func once(_ cb: @escaping @MainActor (ARTChannelStateChange) -> Void) -> ARTEventListener
-    func once(_ event: ARTChannelEvent, callback cb: @escaping @MainActor (ARTChannelStateChange) -> Void) -> ARTEventListener
+    var errorReason: ErrorInfo? { get }
+    func on(_ cb: @escaping @MainActor (ChannelStateChange) -> Void) -> ARTEventListener
+    func on(_ event: ARTChannelEvent, callback cb: @escaping @MainActor (ChannelStateChange) -> Void) -> ARTEventListener
+    func once(_ cb: @escaping @MainActor (ChannelStateChange) -> Void) -> ARTEventListener
+    func once(_ event: ARTChannelEvent, callback cb: @escaping @MainActor (ChannelStateChange) -> Void) -> ARTEventListener
     func unsubscribe(_: ARTEventListener?)
-    func publish(_ name: String?, data: JSONValue?, extras: [String: JSONValue]?) async throws(InternalError)
+    func publish(_ name: String?, data: JSONValue?, extras: [String: JSONValue]?) async throws(ErrorInfo)
     func subscribe(_ callback: @escaping @MainActor (ARTMessage) -> Void) -> ARTEventListener?
     func subscribe(_ name: String, callback: @escaping @MainActor (ARTMessage) -> Void) -> ARTEventListener?
     var properties: ARTChannelProperties { get }
@@ -75,11 +75,11 @@ internal protocol InternalRealtimeChannelProtocol: AnyObject, Sendable {
 /// Expresses the requirements of the object returned by ``InternalRealtimeChannelProtocol/presence``.
 @MainActor
 internal protocol InternalRealtimePresenceProtocol: AnyObject, Sendable {
-    func get() async throws(InternalError) -> [PresenceMessage]
-    func get(_ query: ARTRealtimePresenceQuery) async throws(InternalError) -> [PresenceMessage]
-    func enter(_ data: JSONObject?) async throws(InternalError)
-    func leave(_ data: JSONObject?) async throws(InternalError)
-    func update(_ data: JSONObject?) async throws(InternalError)
+    func get() async throws(ErrorInfo) -> [PresenceMessage]
+    func get(_ query: ARTRealtimePresenceQuery) async throws(ErrorInfo) -> [PresenceMessage]
+    func enter(_ data: JSONObject?) async throws(ErrorInfo)
+    func leave(_ data: JSONObject?) async throws(ErrorInfo)
+    func update(_ data: JSONObject?) async throws(ErrorInfo)
     func subscribe(_ callback: @escaping @MainActor (ARTPresenceMessage) -> Void) -> ARTEventListener?
     func subscribe(_ action: ARTPresenceAction, callback: @escaping @MainActor (ARTPresenceMessage) -> Void) -> ARTEventListener?
     func unsubscribe(_ listener: ARTEventListener)
@@ -96,9 +96,9 @@ internal protocol InternalRealtimeAnnotationsProtocol: AnyObject, Sendable {
 @MainActor
 internal protocol InternalConnectionProtocol: AnyObject, Sendable {
     var state: ARTRealtimeConnectionState { get }
-    var errorReason: ARTErrorInfo? { get }
+    var errorReason: ErrorInfo? { get }
 
-    func on(_ cb: @escaping @MainActor (ARTConnectionStateChange) -> Void) -> ARTEventListener
+    func on(_ cb: @escaping @MainActor (ConnectionStateChange) -> Void) -> ARTEventListener
     func off(_ listener: ARTEventListener)
 }
 
@@ -145,7 +145,7 @@ internal final class InternalRealtimeClientAdapter<Underlying: ProxyRealtimeClie
         underlying.clientId
     }
 
-    internal func request(_ method: String, path: String, params: [String: String]?, body: Any?, headers: [String: String]?) async throws(InternalError) -> ARTHTTPPaginatedResponse {
+    internal func request(_ method: String, path: String, params: [String: String]?, body: Any?, headers: [String: String]?) async throws(ErrorInfo) -> ARTHTTPPaginatedResponse {
         do {
             return try await withCheckedContinuation { (continuation: CheckedContinuation<Result<ARTHTTPPaginatedResponse, ARTErrorInfo>, _>) in
                 do {
@@ -164,7 +164,7 @@ internal final class InternalRealtimeClientAdapter<Underlying: ProxyRealtimeClie
                 }
             }.get()
         } catch {
-            throw InternalError.fromAblyCocoa(error)
+            throw .init(ablyCocoaError: error)
         }
     }
 }
@@ -180,12 +180,14 @@ internal final class InternalConnectionAdapter<Underlying: CoreConnectionProtoco
         underlying.state
     }
 
-    internal var errorReason: ARTErrorInfo? {
-        underlying.errorReason
+    internal var errorReason: ErrorInfo? {
+        .init(optionalAblyCocoaError: underlying.errorReason)
     }
 
-    internal func on(_ cb: @escaping @MainActor (ARTConnectionStateChange) -> Void) -> ARTEventListener {
-        underlying.on(toAblyCocoaCallback(cb))
+    internal func on(_ cb: @escaping @MainActor (ConnectionStateChange) -> Void) -> ARTEventListener {
+        underlying.on(toAblyCocoaCallback { artConnectionStateChange in
+            cb(.init(ablyCocoaConnectionStateChange: artConnectionStateChange))
+        })
     }
 
     internal func off(_ listener: ARTEventListener) {
@@ -220,7 +222,7 @@ internal final class InternalRealtimePresenceAdapter<Underlying: RealtimePresenc
         self.underlying = underlying
     }
 
-    internal func get() async throws(InternalError) -> [PresenceMessage] {
+    internal func get() async throws(ErrorInfo) -> [PresenceMessage] {
         do {
             return try await withCheckedContinuation { (continuation: CheckedContinuation<Result<[PresenceMessage], ARTErrorInfo>, _>) in
                 underlying.get { members, error in
@@ -234,11 +236,11 @@ internal final class InternalRealtimePresenceAdapter<Underlying: RealtimePresenc
                 }
             }.get()
         } catch {
-            throw InternalError.fromAblyCocoa(error)
+            throw .init(ablyCocoaError: error)
         }
     }
 
-    internal func get(_ query: ARTRealtimePresenceQuery) async throws(InternalError) -> [PresenceMessage] {
+    internal func get(_ query: ARTRealtimePresenceQuery) async throws(ErrorInfo) -> [PresenceMessage] {
         do {
             return try await withCheckedContinuation { (continuation: CheckedContinuation<Result<[PresenceMessage], ARTErrorInfo>, _>) in
                 underlying.get(query) { members, error in
@@ -252,11 +254,11 @@ internal final class InternalRealtimePresenceAdapter<Underlying: RealtimePresenc
                 }
             }.get()
         } catch {
-            throw InternalError.fromAblyCocoa(error)
+            throw .init(ablyCocoaError: error)
         }
     }
 
-    internal func leave(_ data: JSONObject?) async throws(InternalError) {
+    internal func leave(_ data: JSONObject?) async throws(ErrorInfo) {
         do {
             try await withCheckedContinuation { (continuation: CheckedContinuation<Result<Void, ARTErrorInfo>, _>) in
                 underlying.leave(data?.toAblyCocoaData) { error in
@@ -268,11 +270,11 @@ internal final class InternalRealtimePresenceAdapter<Underlying: RealtimePresenc
                 }
             }.get()
         } catch {
-            throw InternalError.fromAblyCocoa(error)
+            throw .init(ablyCocoaError: error)
         }
     }
 
-    internal func enter(_ data: JSONObject?) async throws(InternalError) {
+    internal func enter(_ data: JSONObject?) async throws(ErrorInfo) {
         do {
             try await withCheckedContinuation { (continuation: CheckedContinuation<Result<Void, ARTErrorInfo>, _>) in
                 underlying.enter(data?.toAblyCocoaData) { error in
@@ -284,11 +286,11 @@ internal final class InternalRealtimePresenceAdapter<Underlying: RealtimePresenc
                 }
             }.get()
         } catch {
-            throw InternalError.fromAblyCocoa(error)
+            throw .init(ablyCocoaError: error)
         }
     }
 
-    internal func update(_ data: JSONObject?) async throws(InternalError) {
+    internal func update(_ data: JSONObject?) async throws(ErrorInfo) {
         do {
             try await withCheckedContinuation { (continuation: CheckedContinuation<Result<Void, ARTErrorInfo>, _>) in
                 underlying.update(data?.toAblyCocoaData) { error in
@@ -300,7 +302,7 @@ internal final class InternalRealtimePresenceAdapter<Underlying: RealtimePresenc
                 }
             }.get()
         } catch {
-            throw InternalError.fromAblyCocoa(error)
+            throw .init(ablyCocoaError: error)
         }
     }
 
@@ -338,15 +340,15 @@ internal final class InternalRealtimeChannelAdapter<Underlying: ProxyRealtimeCha
         underlying.state
     }
 
-    internal var errorReason: ARTErrorInfo? {
-        underlying.errorReason
+    internal var errorReason: ErrorInfo? {
+        .init(optionalAblyCocoaError: underlying.errorReason)
     }
 
     internal var properties: ARTChannelProperties {
         underlying.properties
     }
 
-    internal func attach() async throws(InternalError) {
+    internal func attach() async throws(ErrorInfo) {
         do {
             try await withCheckedContinuation { (continuation: CheckedContinuation<Result<Void, ARTErrorInfo>, _>) in
                 underlying.attach { error in
@@ -358,11 +360,11 @@ internal final class InternalRealtimeChannelAdapter<Underlying: ProxyRealtimeCha
                 }
             }.get()
         } catch {
-            throw InternalError.fromAblyCocoa(error)
+            throw .init(ablyCocoaError: error)
         }
     }
 
-    internal func detach() async throws(InternalError) {
+    internal func detach() async throws(ErrorInfo) {
         do {
             try await withCheckedContinuation { (continuation: CheckedContinuation<Result<Void, ARTErrorInfo>, _>) in
                 underlying.detach { error in
@@ -374,11 +376,11 @@ internal final class InternalRealtimeChannelAdapter<Underlying: ProxyRealtimeCha
                 }
             }.get()
         } catch {
-            throw InternalError.fromAblyCocoa(error)
+            throw .init(ablyCocoaError: error)
         }
     }
 
-    internal func publish(_ name: String?, data: JSONValue?, extras: [String: JSONValue]?) async throws(InternalError) {
+    internal func publish(_ name: String?, data: JSONValue?, extras: [String: JSONValue]?) async throws(ErrorInfo) {
         do {
             try await withCheckedContinuation { (continuation: CheckedContinuation<Result<Void, ARTErrorInfo>, _>) in
                 underlying.publish(name, data: data?.toAblyCocoaData, extras: extras?.toARTJsonCompatible) { error in
@@ -390,24 +392,32 @@ internal final class InternalRealtimeChannelAdapter<Underlying: ProxyRealtimeCha
                 }
             }.get()
         } catch {
-            throw InternalError.fromAblyCocoa(error)
+            throw .init(ablyCocoaError: error)
         }
     }
 
-    internal func on(_ cb: @escaping @MainActor (ARTChannelStateChange) -> Void) -> ARTEventListener {
-        underlying.on(toAblyCocoaCallback(cb))
+    internal func on(_ cb: @escaping @MainActor (ChannelStateChange) -> Void) -> ARTEventListener {
+        underlying.on(toAblyCocoaCallback { artChannelStateChange in
+            cb(.init(ablyCocoaChannelStateChange: artChannelStateChange))
+        })
     }
 
-    internal func on(_ event: ARTChannelEvent, callback cb: @escaping @MainActor (ARTChannelStateChange) -> Void) -> ARTEventListener {
-        underlying.on(event, callback: toAblyCocoaCallback(cb))
+    internal func on(_ event: ARTChannelEvent, callback cb: @escaping @MainActor (ChannelStateChange) -> Void) -> ARTEventListener {
+        underlying.on(event, callback: toAblyCocoaCallback { artChannelStateChange in
+            cb(.init(ablyCocoaChannelStateChange: artChannelStateChange))
+        })
     }
 
-    internal func once(_ cb: @escaping @MainActor (ARTChannelStateChange) -> Void) -> ARTEventListener {
-        underlying.once(toAblyCocoaCallback(cb))
+    internal func once(_ cb: @escaping @MainActor (ChannelStateChange) -> Void) -> ARTEventListener {
+        underlying.once(toAblyCocoaCallback { artChannelStateChange in
+            cb(.init(ablyCocoaChannelStateChange: artChannelStateChange))
+        })
     }
 
-    internal func once(_ event: ARTChannelEvent, callback cb: @escaping @MainActor (ARTChannelStateChange) -> Void) -> ARTEventListener {
-        underlying.once(event, callback: toAblyCocoaCallback(cb))
+    internal func once(_ event: ARTChannelEvent, callback cb: @escaping @MainActor (ChannelStateChange) -> Void) -> ARTEventListener {
+        underlying.once(event, callback: toAblyCocoaCallback { artChannelStateChange in
+            cb(.init(ablyCocoaChannelStateChange: artChannelStateChange))
+        })
     }
 
     internal func unsubscribe(_ listener: ARTEventListener?) {
@@ -493,5 +503,43 @@ internal extension Annotation {
         if let ablyCocoaExtras = ablyCocoaAnnotation.extras {
             extras = JSONValue.objectFromAblyCocoaExtras(ablyCocoaExtras)
         }
+    }
+}
+
+/// A version of `ARTChannelStateChange` that uses our `ErrorInfo` type instead of `ARTErrorInfo`.
+internal struct ChannelStateChange {
+    internal var current: ARTRealtimeChannelState
+    internal var previous: ARTRealtimeChannelState
+    internal var event: ARTChannelEvent
+    internal var reason: ErrorInfo?
+    internal var resumed: Bool
+}
+
+internal extension ChannelStateChange {
+    init(ablyCocoaChannelStateChange: ARTChannelStateChange) {
+        current = ablyCocoaChannelStateChange.current
+        previous = ablyCocoaChannelStateChange.previous
+        event = ablyCocoaChannelStateChange.event
+        reason = .init(optionalAblyCocoaError: ablyCocoaChannelStateChange.reason)
+        resumed = ablyCocoaChannelStateChange.resumed
+    }
+}
+
+/// A version of `ARTConnectionStateChange` that uses our `ErrorInfo` type instead of `ARTErrorInfo`.
+internal struct ConnectionStateChange {
+    internal var current: ARTRealtimeConnectionState
+    internal var previous: ARTRealtimeConnectionState
+    internal var event: ARTRealtimeConnectionEvent
+    internal var reason: ErrorInfo?
+    internal var retryIn: TimeInterval
+}
+
+internal extension ConnectionStateChange {
+    init(ablyCocoaConnectionStateChange: ARTConnectionStateChange) {
+        current = ablyCocoaConnectionStateChange.current
+        previous = ablyCocoaConnectionStateChange.previous
+        event = ablyCocoaConnectionStateChange.event
+        reason = .init(optionalAblyCocoaError: ablyCocoaConnectionStateChange.reason)
+        retryIn = ablyCocoaConnectionStateChange.retryIn
     }
 }

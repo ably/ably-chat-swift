@@ -242,13 +242,13 @@ internal protocol RoomFactory: Sendable {
     associatedtype Realtime: InternalRealtimeClientProtocol where Realtime.Channels.Channel.Proxied == Room.Channel
     associatedtype Room: AblyChat.InternalRoom
 
-    func createRoom(realtime: Realtime, chatAPI: ChatAPI, name: String, options: RoomOptions, logger: any InternalLogger) throws(InternalError) -> Room
+    func createRoom(realtime: Realtime, chatAPI: ChatAPI, name: String, options: RoomOptions, logger: any InternalLogger) throws(ErrorInfo) -> Room
 }
 
 internal final class DefaultRoomFactory<Realtime: InternalRealtimeClientProtocol>: Sendable, RoomFactory {
     private let lifecycleManagerFactory = DefaultRoomLifecycleManagerFactory()
 
-    internal func createRoom(realtime: Realtime, chatAPI: ChatAPI, name: String, options: RoomOptions, logger: any InternalLogger) throws(InternalError) -> DefaultRoom<Realtime, DefaultRoomLifecycleManager> {
+    internal func createRoom(realtime: Realtime, chatAPI: ChatAPI, name: String, options: RoomOptions, logger: any InternalLogger) throws(ErrorInfo) -> DefaultRoom<Realtime, DefaultRoomLifecycleManager> {
         try DefaultRoom(
             realtime: realtime,
             chatAPI: chatAPI,
@@ -290,7 +290,7 @@ internal class DefaultRoom<Realtime: InternalRealtimeClientProtocol, LifecycleMa
 
     private let logger: any InternalLogger
 
-    internal init<LifecycleManagerFactory: RoomLifecycleManagerFactory>(realtime: Realtime, chatAPI: ChatAPI, name: String, options: RoomOptions, logger: any InternalLogger, lifecycleManagerFactory: LifecycleManagerFactory) throws(InternalError) where LifecycleManagerFactory.Manager == LifecycleManager {
+    internal init<LifecycleManagerFactory: RoomLifecycleManagerFactory>(realtime: Realtime, chatAPI: ChatAPI, name: String, options: RoomOptions, logger: any InternalLogger, lifecycleManagerFactory: LifecycleManagerFactory) throws(ErrorInfo) where LifecycleManagerFactory.Manager == LifecycleManager {
         self.realtime = realtime
         self.name = name
         self.options = options
@@ -375,20 +375,12 @@ internal class DefaultRoom<Realtime: InternalRealtimeClientProtocol, LifecycleMa
 
     // swiftlint:disable:next missing_docs
     public func attach() async throws(ErrorInfo) {
-        do {
-            try await lifecycleManager.performAttachOperation()
-        } catch {
-            throw error.toErrorInfo()
-        }
+        try await lifecycleManager.performAttachOperation()
     }
 
     // swiftlint:disable:next missing_docs
     public func detach() async throws(ErrorInfo) {
-        do {
-            try await lifecycleManager.performDetachOperation()
-        } catch {
-            throw error.toErrorInfo()
-        }
+        try await lifecycleManager.performDetachOperation()
     }
 
     internal func release() async {

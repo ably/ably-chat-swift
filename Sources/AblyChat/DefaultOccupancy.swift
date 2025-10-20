@@ -59,12 +59,8 @@ internal final class DefaultOccupancy: Occupancy {
 
     // (CHA-O3) Users can request an instantaneous occupancy check via the REST API. The request is detailed here (https://sdk.ably.com/builds/ably/specification/main/chat-features/#rest-occupancy-request), with the response format being a simple occupancy data
     internal func get() async throws(ErrorInfo) -> OccupancyData {
-        do {
-            logger.log(message: "Getting occupancy for room: \(roomName)", level: .debug)
-            return try await chatAPI.getOccupancy(roomName: roomName)
-        } catch {
-            throw error.toErrorInfo()
-        }
+        logger.log(message: "Getting occupancy for room: \(roomName)", level: .debug)
+        return try await chatAPI.getOccupancy(roomName: roomName)
     }
 
     // (CHA-O7a) The current method should return the latest occupancy numbers received over the realtime connection in a [meta]occupancy event.

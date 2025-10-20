@@ -48,7 +48,7 @@ struct DefaultRoomLifecycleManagerTests {
 
     private func createChannel(
         initialState: ARTRealtimeChannelState = .initialized,
-        initialErrorReason: ARTErrorInfo? = nil,
+        initialErrorReason: ErrorInfo? = nil,
         attachBehavior: MockRealtimeChannel.AttachOrDetachBehavior? = nil,
         detachBehavior: MockRealtimeChannel.AttachOrDetachBehavior? = nil,
     ) -> MockRealtimeChannel {
@@ -98,11 +98,10 @@ struct DefaultRoomLifecycleManagerTests {
 
         // When: `performAttachOperation()` is called on the lifecycle manager
         // Then: It throws a roomIsReleasing error
-        await #expect {
+        let thrownError = try await #require(throws: ErrorInfo.self) {
             try await manager.performAttachOperation()
-        } throws: { error in
-            isChatError(error, withCodeAndStatusCode: .fixedStatusCode(.roomIsReleasing))
         }
+        #expect(thrownError.hasCodeAndStatusCode(.fixedStatusCode(.roomIsReleasing)))
     }
 
     // @spec CHA-RL1c
@@ -113,11 +112,10 @@ struct DefaultRoomLifecycleManagerTests {
 
         // When: `performAttachOperation()` is called on the lifecycle manager
         // Then: It throws a roomIsReleased error
-        await #expect {
+        let thrownError = try await #require(throws: ErrorInfo.self) {
             try await manager.performAttachOperation()
-        } throws: { error in
-            isChatError(error, withCodeAndStatusCode: .fixedStatusCode(.roomIsReleased))
         }
+        #expect(thrownError.hasCodeAndStatusCode(.fixedStatusCode(.roomIsReleased)))
     }
 
     // @spec CHA-RL1d
@@ -226,7 +224,7 @@ struct DefaultRoomLifecycleManagerTests {
     @Test
     func attach_whenChannelFailsToAttach() async throws {
         // Given: A DefaultRoomLifecycleManager, whose channel's call to `attach` fails causing it to enter the FAILED state (arbitrarily chosen)
-        let channelAttachError = ARTErrorInfo(domain: "SomeDomain", code: 123)
+        let channelAttachError = ErrorInfo.createArbitraryError()
         let channel = createChannel(
             attachBehavior: .completeAndChangeState(.failure(channelAttachError), newState: .failed),
         )
@@ -237,7 +235,7 @@ struct DefaultRoomLifecycleManagerTests {
         async let maybeFailedStatusChange = statusChangeSubscription.first { $0.current == .failed }
 
         // When: `performAttachOperation()` is called on the lifecycle manager
-        var roomAttachError: InternalError?
+        var roomAttachError: ErrorInfo?
         do {
             try await manager.performAttachOperation()
         } catch {
@@ -252,8 +250,8 @@ struct DefaultRoomLifecycleManagerTests {
 
         #expect(manager.roomStatus == .failed)
 
-        for error in [failedStatusChange.error, manager.error, roomAttachError?.toErrorInfo()] {
-            #expect(error == .init(ablyCocoaError: channelAttachError))
+        for error in [failedStatusChange.error, manager.error, roomAttachError] {
+            #expect(error == channelAttachError)
         }
     }
 
@@ -283,11 +281,10 @@ struct DefaultRoomLifecycleManagerTests {
 
         // When: `performDetachOperation()` is called on the lifecycle manager
         // Then: It throws a roomIsReleasing error
-        await #expect {
+        let thrownError = try await #require(throws: ErrorInfo.self) {
             try await manager.performDetachOperation()
-        } throws: { error in
-            isChatError(error, withCodeAndStatusCode: .fixedStatusCode(.roomIsReleasing))
         }
+        #expect(thrownError.hasCodeAndStatusCode(.fixedStatusCode(.roomIsReleasing)))
     }
 
     // @spec CHA-RL2c
@@ -298,11 +295,10 @@ struct DefaultRoomLifecycleManagerTests {
 
         // When: `performAttachOperation()` is called on the lifecycle manager
         // Then: It throws a roomIsReleased error
-        await #expect {
+        let thrownError = try await #require(throws: ErrorInfo.self) {
             try await manager.performDetachOperation()
-        } throws: { error in
-            isChatError(error, withCodeAndStatusCode: .fixedStatusCode(.roomIsReleased))
         }
+        #expect(thrownError.hasCodeAndStatusCode(.fixedStatusCode(.roomIsReleased)))
     }
 
     // @spec CHA-RL2d
@@ -315,11 +311,10 @@ struct DefaultRoomLifecycleManagerTests {
 
         // When: `performAttachOperation()` is called on the lifecycle manager
         // Then: It throws a roomInFailedState error
-        await #expect {
+        let thrownError = try await #require(throws: ErrorInfo.self) {
             try await manager.performDetachOperation()
-        } throws: { error in
-            isChatError(error, withCodeAndStatusCode: .fixedStatusCode(.roomInFailedState))
         }
+        #expect(thrownError.hasCodeAndStatusCode(.fixedStatusCode(.roomInFailedState)))
     }
 
     // @spec CHA-RL2i
@@ -426,7 +421,7 @@ struct DefaultRoomLifecycleManagerTests {
     @Test
     func detach_whenChannelFailsToDetach() async throws {
         // Given: A DefaultRoomLifecycleManager, whose channel's call to `detach` fails causing it to enter the FAILED state (arbitrarily chosen)
-        let channelDetachError = ARTErrorInfo(domain: "SomeDomain", code: 123)
+        let channelDetachError = ErrorInfo.createArbitraryError()
         let channel = createChannel(
             detachBehavior: .completeAndChangeState(.failure(channelDetachError), newState: .failed),
         )
@@ -437,7 +432,7 @@ struct DefaultRoomLifecycleManagerTests {
         async let maybeFailedStatusChange = statusChangeSubscription.first { $0.current == .failed }
 
         // When: `performDetachOperation()` is called on the lifecycle manager
-        var roomDetachError: InternalError?
+        var roomDetachError: ErrorInfo?
         do {
             try await manager.performDetachOperation()
         } catch {
@@ -452,8 +447,8 @@ struct DefaultRoomLifecycleManagerTests {
 
         #expect(manager.roomStatus == .failed)
 
-        for error in [failedStatusChange.error, manager.error, roomDetachError?.toErrorInfo()] {
-            #expect(error == .init(ablyCocoaError: channelDetachError))
+        for error in [failedStatusChange.error, manager.error, roomDetachError] {
+            #expect(error == channelDetachError)
         }
     }
 
@@ -643,7 +638,7 @@ struct DefaultRoomLifecycleManagerTests {
         // - the third time that `detach()` is called, it succeeds
         let detachImpl = { @Sendable (callCount: Int) async -> MockRealtimeChannel.AttachOrDetachBehavior in
             if callCount < 3 {
-                return .failure(ARTErrorInfo(domain: "SomeDomain", code: 123)) // exact error is unimportant
+                return .failure(.createArbitraryError())
             }
             return .success
         }
@@ -671,7 +666,7 @@ struct DefaultRoomLifecycleManagerTests {
     @Test
     func release_whenDetachFails_ifChannelIsFailed_doesNotRetry() async {
         // Given: A DefaultRoomLifecycleManager, with a channel for which, when `detach()` is called, it fails, causing the channel to enter the FAILED state
-        let channel = createChannel(detachBehavior: .completeAndChangeState(.failure(.init(domain: "SomeDomain", code: 123) /* arbitrary error */ ), newState: .failed))
+        let channel = createChannel(detachBehavior: .completeAndChangeState(.failure(.createArbitraryError()), newState: .failed))
 
         let clock = MockSimpleClock()
 
@@ -726,11 +721,11 @@ struct DefaultRoomLifecycleManagerTests {
         let originalError = manager.error
 
         // When: The channel emits a state change
-        let channelStateChange = ARTChannelStateChange(
+        let channelStateChange = ChannelStateChange(
             current: .detaching, // arbitrary, just different to the ATTACHING we started off in
             previous: .attached, // arbitrary
             event: .detaching,
-            reason: ARTErrorInfo(domain: "SomeDomain", code: 123), // arbitrary
+            reason: .createArbitraryError(),
             resumed: false,
         )
 
@@ -755,8 +750,8 @@ struct DefaultRoomLifecycleManagerTests {
         let roomStatusSubscription = manager.onRoomStatusChange(bufferingPolicy: .unbounded)
 
         // When: The channel emits a state change
-        let channelStateChangeError = ARTErrorInfo(domain: "SomeDomain", code: 123) // arbitrary
-        let channelStateChange = ARTChannelStateChange(
+        let channelStateChangeError = ErrorInfo.createArbitraryError()
+        let channelStateChange = ChannelStateChange(
             current: .attaching, // arbitrary
             previous: .attached, // arbitrary
             event: .attaching,
@@ -770,7 +765,7 @@ struct DefaultRoomLifecycleManagerTests {
         let roomStatusChange = try #require(await roomStatusSubscription.first { @Sendable _ in true })
         #expect(roomStatusChange.current == .attaching)
         #expect(manager.roomStatus == .attaching)
-        #expect(manager.error == .init(ablyCocoaError: channelStateChangeError))
+        #expect(manager.error == channelStateChangeError)
     }
 
     // @specOneOf(3/3) CHA-RL11a - Tests that only state change events can cause a room status change
@@ -789,11 +784,11 @@ struct DefaultRoomLifecycleManagerTests {
         let roomStatusSubscription = manager.onRoomStatusChange(bufferingPolicy: .unbounded)
 
         // When: The channel emits an UPDATE event (i.e. not a state change)
-        let channelUpdateEvent = ARTChannelStateChange(
+        let channelUpdateEvent = ChannelStateChange(
             current: .attached, // arbitrary
             previous: .attached, // arbitrary
             event: .update,
-            reason: ARTErrorInfo(domain: "SomeDomain", code: 123), // arbitrary
+            reason: .createArbitraryError(),
             resumed: false,
         )
 
@@ -816,11 +811,11 @@ struct DefaultRoomLifecycleManagerTests {
             isExplicitlyDetached: false,
 
             // State change to ATTACHED, resumed false
-            channelEvent: ARTChannelStateChange(
+            channelEvent: ChannelStateChange(
                 current: .attached,
                 previous: .attaching, // arbitrary
                 event: .attached,
-                reason: ARTErrorInfo(domain: "SomeDomain", code: 123), // arbitrary
+                reason: .createArbitraryError(),
                 resumed: false,
             ),
 
@@ -831,11 +826,11 @@ struct DefaultRoomLifecycleManagerTests {
             isExplicitlyDetached: false,
 
             // UPDATE event, resumed false
-            channelEvent: ARTChannelStateChange(
+            channelEvent: ChannelStateChange(
                 current: .attached, // arbitrary
                 previous: .attached,
                 event: .update,
-                reason: ARTErrorInfo(domain: "SomeDomain", code: 123), // arbitrary
+                reason: .createArbitraryError(),
                 resumed: false,
             ),
 
@@ -846,7 +841,7 @@ struct DefaultRoomLifecycleManagerTests {
             isExplicitlyDetached: false,
 
             // UPDATE event, resumed true (so ineligible for a discontinuity) - not sure if this happens in reality, but RTL12 suggests it's possible
-            channelEvent: ARTChannelStateChange(
+            channelEvent: ChannelStateChange(
                 current: .attached, // arbitrary
                 previous: .attached,
                 event: .update,
@@ -861,7 +856,7 @@ struct DefaultRoomLifecycleManagerTests {
             isExplicitlyDetached: false,
 
             // non-(UPDATE or ATTACHED) event (so ineligible for a discontinuity)
-            channelEvent: ARTChannelStateChange(
+            channelEvent: ChannelStateChange(
                 current: .attaching, // arbitrary non-(UPDATE or ATTACHED)
                 previous: .attached,
                 event: .attaching,
@@ -876,11 +871,11 @@ struct DefaultRoomLifecycleManagerTests {
             isExplicitlyDetached: false,
 
             // State change to ATTACHED, resumed false (i.e. an event eligible for a discontinuity, but which will be excluded because of hasAttachedOnce)
-            channelEvent: ARTChannelStateChange(
+            channelEvent: ChannelStateChange(
                 current: .attaching, // arbitrary
                 previous: .attached,
                 event: .attached,
-                reason: ARTErrorInfo(domain: "SomeDomain", code: 123), // arbitrary
+                reason: .createArbitraryError(),
                 resumed: false,
             ),
 
@@ -891,11 +886,11 @@ struct DefaultRoomLifecycleManagerTests {
             isExplicitlyDetached: true,
 
             // State change to ATTACHED, resumed false (i.e. an event eligible for a discontinuity, but which will be excluded because of isExplicitlyDetached)
-            channelEvent: ARTChannelStateChange(
+            channelEvent: ChannelStateChange(
                 current: .attaching, // arbitrary
                 previous: .attached,
                 event: .attached,
-                reason: ARTErrorInfo(domain: "SomeDomain", code: 123), // arbitrary
+                reason: .createArbitraryError(),
                 resumed: false,
             ),
 
@@ -905,7 +900,7 @@ struct DefaultRoomLifecycleManagerTests {
     func channelStateEvent_discontinuity(
         hasAttachedOnce: Bool,
         isExplicitlyDetached: Bool,
-        channelEvent: ARTChannelStateChange,
+        channelEvent: ChannelStateChange,
         expectDiscontinuity: Bool,
     ) async throws {
         // Given: A DefaultRoomLifecycleManager, whose hasAttachedOnce and isExplicitlyDetached internal state is set per test arguments
@@ -939,10 +934,9 @@ struct DefaultRoomLifecycleManagerTests {
             let discontinuityError = emittedDiscontinuities[0]
 
             #expect(
-                isChatError(
-                    discontinuityError,
-                    withCodeAndStatusCode: .fixedStatusCode(.roomDiscontinuity),
-                    cause: .init(optionalAblyCocoaError: channelEvent.reason),
+                discontinuityError.hasCodeAndStatusCode(
+                    .fixedStatusCode(.roomDiscontinuity),
+                    cause: channelEvent.reason,
                 ),
             )
         } else {
@@ -1024,19 +1018,19 @@ struct DefaultRoomLifecycleManagerTests {
         _ = try #require(await statusChangeWaitSubscription.first { @Sendable _ in true })
 
         // and When: The ATTACH operation fails, thus putting the room in the FAILED status (i.e. a non-ATTACHED status)
-        let channelAttachError = ARTErrorInfo.createUnknownError() // arbitrary
+        let channelAttachError = ErrorInfo.createArbitraryError()
         channelAttachOperation.complete(behavior: .completeAndChangeState(.failure(channelAttachError), newState: .failed))
 
         // Then: The call to `waitToBeAbleToPerformPresenceOperations(requestedByFeature:)` fails with a `roomInInvalidState` error with status code 500, whose cause is the error associated with the room status change
-        var caughtError: (any Error)?
+        var caughtError: ErrorInfo?
         do {
             try await waitToBeAbleToPerformPresenceOperationsResult
         } catch {
-            caughtError = error
+            caughtError = error as? ErrorInfo
         }
 
-        let expectedCause = ErrorInfo(internalError: .fromAblyCocoa(channelAttachError)) // using our knowledge of CHA-RL1k2
-        #expect(isChatError(caughtError, withCodeAndStatusCode: .variableStatusCode(.roomInInvalidState, statusCode: 500), cause: expectedCause))
+        let expectedCause = channelAttachError // using our knowledge of CHA-RL1k2
+        #expect(try #require(caughtError).hasCodeAndStatusCode(.variableStatusCode(.roomInInvalidState, statusCode: 500), cause: expectedCause))
     }
 
     // @specOneOf(1/2) CHA-PR3e - Tests the wait described in the spec point, but not that the feature actually performs this wait nor the side effect.
@@ -1067,14 +1061,11 @@ struct DefaultRoomLifecycleManagerTests {
         // (Note: I wanted to use #expect(…, throws:) below, but for some reason it made the compiler _crash_! No idea why. So, gave up on that.)
 
         // When: `waitToBeAbleToPerformPresenceOperations(requestedByFeature:)` is called on the lifecycle manager
-        var caughtError: (any Error)?
-        do {
+        let caughtError = try await #require(throws: ErrorInfo.self) {
             try await manager.waitToBeAbleToPerformPresenceOperations(requestedByFeature: .messages /* arbitrary */ )
-        } catch {
-            caughtError = error
         }
 
         // Then: It throws a roomInInvalidState error for that feature, with status code 400, and a message explaining that the room must first be attached
-        #expect(isChatError(caughtError, withCodeAndStatusCode: .variableStatusCode(.roomInInvalidState, statusCode: 400), message: "To perform this messages operation, you must first attach the room."))
+        #expect(caughtError.hasCodeAndStatusCode(.variableStatusCode(.roomInInvalidState, statusCode: 400), message: "To perform this messages operation, you must first attach the room."))
     }
 }

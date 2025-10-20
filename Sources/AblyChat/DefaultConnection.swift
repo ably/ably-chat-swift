@@ -11,7 +11,7 @@ internal final class DefaultConnection: Connection {
 
     // (CHA-CS2b) The chat client must expose the latest error, if any, associated with its current status.
     internal var error: ErrorInfo? {
-        .init(optionalAblyCocoaError: realtime.connection.errorReason)
+        realtime.connection.errorReason
     }
 
     internal init(realtime: any InternalRealtimeClientProtocol) {
@@ -36,7 +36,7 @@ internal final class DefaultConnection: Connection {
             let statusChange = ConnectionStatusChange(
                 current: currentState,
                 previous: previousState,
-                error: .init(optionalAblyCocoaError: stateChange.reason),
+                error: stateChange.reason,
                 // TODO: Actually emit `nil` when appropriate (we can't currently since ably-cocoa's corresponding property is mis-typed): https://github.com/ably/ably-chat-swift/issues/394
                 retryIn: stateChange.retryIn,
             )

@@ -15,7 +15,7 @@ internal final class DefaultTyping: Typing {
     // (CHA-TM14a) When a call to keystroke or stop is made, it should attempt to acquire a mutex lock.
     // (CHA-TM14b) Once the lock is acquired, if another call is made to either function, the second call shall be queued and wait until it can acquire the lock before executing.
     // (CHA-TM14b1) During this time, each new subsequent call to either function shall abort the previously queued call. In doing so, there shall only ever be one pending call and while the mutex is held, thus the most recent call shall "win" and execute once the mutex is released.
-    private let keyboardOperationQueue = TypingOperationQueue<InternalError>()
+    private let keyboardOperationQueue = TypingOperationQueue<ErrorInfo>()
 
     internal init(channel: any InternalRealtimeChannelProtocol, roomName: String, logger: any InternalLogger, heartbeatThrottle: TimeInterval, clock: some ClockProtocol) {
         self.roomName = roomName
@@ -112,27 +112,23 @@ internal final class DefaultTyping: Typing {
 
     // (CHA-T4) Users may indicate that they have started typing using the keystroke method.
     internal func keystroke() async throws(ErrorInfo) {
-        do {
-            try await keyboardOperationQueue.enqueue { [weak self] () throws(InternalError) in
-                guard let self else {
-                    return
-                }
-
-                guard !typingTimerManager.isHeartbeatTimerActive else {
-                    // (CHA-T4c) If typing is already in progress (i.e. a heartbeat timer set according to CHA-T4a4 exists and has not expired):
-                    // (CHA-T4c1) The client must not send a typing.started event.
-                    logger.log(message: "Throttle time hasn't passed, skipping typing event.", level: .debug)
-                    return
-                }
-
-                try await publishStartedEvent()
+        try await keyboardOperationQueue.enqueue { [weak self] () throws(ErrorInfo) in
+            guard let self else {
+                return
             }
-        } catch {
-            throw error.toErrorInfo()
+
+            guard !typingTimerManager.isHeartbeatTimerActive else {
+                // (CHA-T4c) If typing is already in progress (i.e. a heartbeat timer set according to CHA-T4a4 exists and has not expired):
+                // (CHA-T4c1) The client must not send a typing.started event.
+                logger.log(message: "Throttle time hasn't passed, skipping typing event.", level: .debug)
+                return
+            }
+
+            try await publishStartedEvent()
         }
     }
 
-    private func publishStartedEvent() async throws(InternalError) {
+    private func publishStartedEvent() async throws(ErrorInfo) {
         logger.log(message: "Starting typing indicator", level: .debug)
         // (CHA-T4a3) The client shall publish an ephemeral message to the channel with the name field set to typing.started, the format of which is detailed here.
         // (CHA-T4a5) The client must wait for the publish to succeed or fail before returning the result to the caller. If the publish fails, the client must throw an ErrorInfo.
@@ -148,8 +144,8 @@ internal final class DefaultTyping: Typing {
 
     // (CHA-T5) Users may explicitly indicate that they have stopped typing using stop method.
     internal func stop() async throws(ErrorInfo) {
-        do throws(InternalError) {
-            try await keyboardOperationQueue.enqueue { [weak self] () throws(InternalError) in
+        do {
+            try await keyboardOperationQueue.enqueue { [weak self] () throws(ErrorInfo) in
                 guard let self else {
                     return
                 }
@@ -174,7 +170,7 @@ internal final class DefaultTyping: Typing {
         } catch {
             // (CHA-T5d1) The client must wait for the publish to succeed or fail before returning the result to the caller. If the publish fails, the client must throw an ErrorInfo.
             logger.log(message: "Error publishing typing.stopped event: \(error)", level: .error)
-            throw error.toErrorInfo()
+            throw error
         }
     }
 }
