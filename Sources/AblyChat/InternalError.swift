@@ -248,7 +248,7 @@ internal enum InternalError {
     internal var message: String {
         switch self {
         case let .roomExistsWithDifferentOptions(requested, existing):
-            "Rooms.get(roomName:options:) was called with a different set of room options than was used on a previous call. You must first release the existing room instance using Rooms.release(roomName:). Requested options: \(requested), existing options: \(existing)"
+            "Rooms.get(named:options:) was called with a different set of room options than was used on a previous call. You must first release the existing room instance using Rooms.release(named:). Requested options: \(requested), existing options: \(existing)"
         case let .roomInInvalidStateForAttach(roomStatus):
             "Cannot attach room because the room is in a \(Self.descriptionOfRoomStatus(roomStatus)) state."
         case let .roomInInvalidStateForDetach(roomStatus):
