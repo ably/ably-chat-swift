@@ -101,7 +101,7 @@ struct DefaultRoomLifecycleManagerTests {
         let thrownError = try await #require(throws: ErrorInfo.self) {
             try await manager.performAttachOperation()
         }
-        #expect(thrownError.hasCodeAndStatusCode(.fixedStatusCode(.roomInInvalidState)))
+        #expect(thrownError.hasCode(.roomInInvalidState))
     }
 
     // @spec CHA-RL1l
@@ -115,7 +115,7 @@ struct DefaultRoomLifecycleManagerTests {
         let thrownError = try await #require(throws: ErrorInfo.self) {
             try await manager.performAttachOperation()
         }
-        #expect(thrownError.hasCodeAndStatusCode(.fixedStatusCode(.roomInInvalidState)))
+        #expect(thrownError.hasCode(.roomInInvalidState))
     }
 
     // @spec CHA-RL1d
@@ -284,7 +284,7 @@ struct DefaultRoomLifecycleManagerTests {
         let thrownError = try await #require(throws: ErrorInfo.self) {
             try await manager.performDetachOperation()
         }
-        #expect(thrownError.hasCodeAndStatusCode(.fixedStatusCode(.roomInInvalidState)))
+        #expect(thrownError.hasCode(.roomInInvalidState))
     }
 
     // @spec CHA-RL2l
@@ -298,7 +298,7 @@ struct DefaultRoomLifecycleManagerTests {
         let thrownError = try await #require(throws: ErrorInfo.self) {
             try await manager.performDetachOperation()
         }
-        #expect(thrownError.hasCodeAndStatusCode(.fixedStatusCode(.roomInInvalidState)))
+        #expect(thrownError.hasCode(.roomInInvalidState))
     }
 
     // @spec CHA-RL2m
@@ -314,7 +314,7 @@ struct DefaultRoomLifecycleManagerTests {
         let thrownError = try await #require(throws: ErrorInfo.self) {
             try await manager.performDetachOperation()
         }
-        #expect(thrownError.hasCodeAndStatusCode(.fixedStatusCode(.roomInInvalidState)))
+        #expect(thrownError.hasCode(.roomInInvalidState))
     }
 
     // @spec CHA-RL2i
@@ -934,8 +934,8 @@ struct DefaultRoomLifecycleManagerTests {
             let discontinuityError = emittedDiscontinuities[0]
 
             #expect(
-                discontinuityError.hasCodeAndStatusCode(
-                    .fixedStatusCode(.roomDiscontinuity),
+                discontinuityError.hasCode(
+                    .roomDiscontinuity,
                     cause: channelEvent.reason,
                 ),
             )
@@ -1030,7 +1030,7 @@ struct DefaultRoomLifecycleManagerTests {
         }
 
         let expectedCause = channelAttachError // using our knowledge of CHA-RL1k2
-        #expect(try #require(caughtError).hasCodeAndStatusCode(.fixedStatusCode(.roomInInvalidState), cause: expectedCause))
+        #expect(try #require(caughtError).hasCode(.roomInInvalidState, cause: expectedCause))
     }
 
     // @specOneOf(1/2) CHA-PR3e - Tests the wait described in the spec point, but not that the feature actually performs this wait nor the side effect.
@@ -1066,6 +1066,6 @@ struct DefaultRoomLifecycleManagerTests {
         }
 
         // Then: It throws a roomInInvalidState error for that feature, with a message explaining that the room must first be attached
-        #expect(caughtError.hasCodeAndStatusCode(.fixedStatusCode(.roomInInvalidState), message: "To perform this messages operation, you must first attach the room."))
+        #expect(caughtError.hasCode(.roomInInvalidState, message: "To perform this messages operation, you must first attach the room."))
     }
 }

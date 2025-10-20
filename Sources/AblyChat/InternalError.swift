@@ -135,130 +135,68 @@ internal enum InternalError {
         case roomExistsWithDifferentOptions = 102_107
         case roomInInvalidState = 102_112
 
-        /// Has a case for each of the ``ErrorCode`` cases that imply a fixed status code.
-        internal enum CaseThatImpliesFixedStatusCode {
-            case badRequest
-            case invalidArgument
-            case roomDiscontinuity
-            case roomReleasedBeforeOperationCompleted
-            case roomExistsWithDifferentOptions
-            case roomInInvalidState
-
-            internal var toNumericErrorCode: ErrorCode {
-                switch self {
-                case .badRequest:
-                    .badRequest
-                case .invalidArgument:
-                    .invalidArgument
-                case .roomReleasedBeforeOperationCompleted:
-                    .roomReleasedBeforeOperationCompleted
-                case .roomExistsWithDifferentOptions:
-                    .roomExistsWithDifferentOptions
-                case .roomInInvalidState:
-                    .roomInInvalidState
-                case .roomDiscontinuity:
-                    .roomDiscontinuity
-                }
-            }
-
-            /// The ``ErrorInfo/statusCode`` that should be returned for this error.
-            internal var statusCode: Int {
-                /// These status codes are taken from the "Common Error Codes used by Chat" and "Chat-specific Error Codes" sections of the chat spec.
-                switch self {
-                case .badRequest,
-                     .invalidArgument,
-                     .roomReleasedBeforeOperationCompleted,
-                     .roomInInvalidState,
-                     .roomExistsWithDifferentOptions:
-                    400
-                case .roomDiscontinuity:
-                    500
-                }
-            }
-        }
-
-        /// Has a case for each of the ``ErrorCode`` cases that do not imply a fixed status code.
-        internal enum CaseThatImpliesVariableStatusCode: Equatable {
-            internal var toNumericErrorCode: Never {
-                switch self {}
-            }
-        }
-    }
-
-    /**
-     * Represents a case of ``ErrorCode`` plus a status code.
-     */
-    internal enum ErrorCodeAndStatusCode: Equatable {
-        case fixedStatusCode(ErrorCode.CaseThatImpliesFixedStatusCode)
-        case variableStatusCode(ErrorCode.CaseThatImpliesVariableStatusCode, statusCode: Int)
-
-        /// The ``ErrorInfo/code`` that should be returned for this error.
-        internal var code: ErrorCode {
-            switch self {
-            case let .fixedStatusCode(code):
-                code.toNumericErrorCode
-            case let .variableStatusCode(code, _):
-                code.toNumericErrorCode
-            }
-        }
-
         /// The ``ErrorInfo/statusCode`` that should be returned for this error.
         internal var statusCode: Int {
+            /// These status codes are taken from the "Common Error Codes used by Chat" and "Chat-specific Error Codes" sections of the chat spec.
             switch self {
-            case let .fixedStatusCode(code):
-                code.statusCode
-            case let .variableStatusCode(_, statusCode):
-                statusCode
+            case .badRequest,
+                 .invalidArgument,
+                 .roomReleasedBeforeOperationCompleted,
+                 .roomInInvalidState,
+                 .roomExistsWithDifferentOptions:
+                400
+            case .roomDiscontinuity:
+                500
             }
         }
     }
 
-    internal var codeAndStatusCode: ErrorCodeAndStatusCode {
+    internal var code: ErrorCode {
         switch self {
         case .roomExistsWithDifferentOptions:
-            .fixedStatusCode(.roomExistsWithDifferentOptions)
+            .roomExistsWithDifferentOptions
         case .roomIsReleasing:
-            .fixedStatusCode(.roomInInvalidState)
+            .roomInInvalidState
         case .roomReleasedBeforeOperationCompleted:
-            .fixedStatusCode(.roomReleasedBeforeOperationCompleted)
+            .roomReleasedBeforeOperationCompleted
         case .roomInInvalidStateForAttach:
-            .fixedStatusCode(.roomInInvalidState)
+            .roomInInvalidState
         case .roomInInvalidStateForDetach:
-            .fixedStatusCode(.roomInInvalidState)
+            .roomInInvalidState
         case .sendMessageReactionEmptyMessageSerial:
-            .fixedStatusCode(.invalidArgument)
+            .invalidArgument
         case .deleteMessageReactionEmptyMessageSerial:
-            .fixedStatusCode(.invalidArgument)
+            .invalidArgument
         case .roomTransitionedToInvalidStateForPresenceOperation:
             // CHA-RL9c
-            .fixedStatusCode(.roomInInvalidState)
+            .roomInInvalidState
         case .presenceOperationRequiresRoomAttach:
             // CHA-PR3h, CHA-PR10h, CHA-PR6h
-            .fixedStatusCode(.roomInInvalidState)
+            .roomInInvalidState
         case .roomDiscontinuity:
-            .fixedStatusCode(.roomDiscontinuity)
+            .roomDiscontinuity
         case .unableDeleteReactionWithoutName:
-            .fixedStatusCode(.badRequest)
+            .badRequest
         case .cannotApplyMessageEventForDifferentMessage:
-            .fixedStatusCode(.invalidArgument)
+            .invalidArgument
         case .cannotApplyReactionSummaryEventForDifferentMessage:
-            .fixedStatusCode(.invalidArgument)
+            .invalidArgument
         case .cannotApplyCreatedMessageEvent:
-            .fixedStatusCode(.invalidArgument)
+            .invalidArgument
         case .failedToResolveSubscriptionPointBecauseAttachSerialNotDefined:
-            .fixedStatusCode(.badRequest)
+            .badRequest
         case .failedToResolveSubscriptionPointBecauseChannelFailedToAttach:
-            .fixedStatusCode(.badRequest)
+            .badRequest
         case .noItemInResponse:
-            .fixedStatusCode(.badRequest)
+            .badRequest
         case .paginatedResultStatusCode:
-            .fixedStatusCode(.badRequest)
+            .badRequest
         case .failedToResolveSubscriptionPointBecauseMessagesInstanceGone:
-            .fixedStatusCode(.badRequest)
+            .badRequest
         case .headersValueJSONDecodingError:
-            .fixedStatusCode(.badRequest)
+            .badRequest
         case .jsonValueDecodingError:
-            .fixedStatusCode(.badRequest)
+            .badRequest
         }
     }
 

@@ -102,7 +102,7 @@ struct DefaultPresenceTests {
             try await defaultPresence.enter()
         }
         // Then
-        #expect(thrownError.hasCodeAndStatusCode(.fixedStatusCode(.roomInInvalidState), cause: attachError))
+        #expect(thrownError.hasCode(.roomInInvalidState, cause: attachError))
 
         // Then
         #expect(roomLifecycleManager.callRecorder.hasRecord(
@@ -131,7 +131,7 @@ struct DefaultPresenceTests {
         let thrownError = try await #require(throws: ErrorInfo.self) {
             _ = try await defaultPresence.enter()
         }
-        #expect(thrownError.hasCodeAndStatusCode(.fixedStatusCode(.roomInInvalidState)))
+        #expect(thrownError.hasCode(.roomInInvalidState))
     }
 
     // MARK: CHA-PR10
@@ -209,7 +209,7 @@ struct DefaultPresenceTests {
             try await defaultPresence.update()
         }
         // Then
-        #expect(thrownError.hasCodeAndStatusCode(.fixedStatusCode(.roomInInvalidState), cause: attachError))
+        #expect(thrownError.hasCode(.roomInInvalidState, cause: attachError))
 
         // Then
         #expect(roomLifecycleManager.callRecorder.hasRecord(
@@ -238,7 +238,7 @@ struct DefaultPresenceTests {
         let thrownError = try await #require(throws: ErrorInfo.self) {
             _ = try await defaultPresence.update()
         }
-        #expect(thrownError.hasCodeAndStatusCode(.fixedStatusCode(.roomInInvalidState)))
+        #expect(thrownError.hasCode(.roomInInvalidState))
     }
 
     // MARK: CHA-PR4
@@ -343,7 +343,7 @@ struct DefaultPresenceTests {
         let thrownError = try await #require(throws: ErrorInfo.self) {
             _ = try await defaultPresence.get()
         }
-        #expect(thrownError.hasCodeAndStatusCode(.fixedStatusCode(.roomInInvalidState)))
+        #expect(thrownError.hasCode(.roomInInvalidState))
     }
 
     // @specOneOf(3/4) CHA-PR6c
@@ -394,7 +394,7 @@ struct DefaultPresenceTests {
             try await defaultPresence.get()
         }
         // Then
-        #expect(thrownError.hasCodeAndStatusCode(.fixedStatusCode(.roomInInvalidState), cause: attachError))
+        #expect(thrownError.hasCode(.roomInInvalidState, cause: attachError))
 
         // Then
         #expect(roomLifecycleManager.callRecorder.hasRecord(

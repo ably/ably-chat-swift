@@ -54,7 +54,7 @@ struct ErrorInfoTests {
 
         let convertedToErrorInfo = internalError.toErrorInfo()
 
-        #expect(convertedToErrorInfo.hasCodeAndStatusCode(.fixedStatusCode(.badRequest)))
+        #expect(convertedToErrorInfo.hasCode(.badRequest))
         for message in [convertedToErrorInfo.message, convertedToErrorInfo.description, convertedToErrorInfo.localizedDescription] {
             #expect(message.contains("Headers contain unsupported JSON value null"))
         }

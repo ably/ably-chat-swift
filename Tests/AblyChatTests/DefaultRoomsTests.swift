@@ -177,7 +177,7 @@ struct DefaultRoomsTests {
         let thrownError = try await #require(throws: ErrorInfo.self) {
             try await rooms.get(named: name, options: differentOptions)
         }
-        #expect(thrownError.hasCodeAndStatusCode(.fixedStatusCode(.roomExistsWithDifferentOptions)))
+        #expect(thrownError.hasCode(.roomExistsWithDifferentOptions))
     }
 
     // @specOneOf(2/2) CHA-RC1f1 - Tests the case where, per CHA-RC1f4, there is, in the spec's language, a _future_ in the room map
@@ -218,7 +218,7 @@ struct DefaultRoomsTests {
         let thrownError = try await #require(throws: ErrorInfo.self) {
             try await rooms.get(named: name, options: differentOptions)
         }
-        #expect(thrownError.hasCodeAndStatusCode(.fixedStatusCode(.roomExistsWithDifferentOptions)))
+        #expect(thrownError.hasCode(.roomExistsWithDifferentOptions))
 
         // Post-test: Allow the CHA-RC1g release operation to complete
         roomReleaseOperation.complete()
@@ -370,7 +370,7 @@ struct DefaultRoomsTests {
             roomGetError = error as? ErrorInfo
         }
 
-        #expect(try #require(roomGetError).hasCodeAndStatusCode(.fixedStatusCode(.roomReleasedBeforeOperationCompleted)))
+        #expect(try #require(roomGetError).hasCode(.roomReleasedBeforeOperationCompleted))
 
         // and When: The previous CHA-RC1g release operation completes
 

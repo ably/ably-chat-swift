@@ -28,7 +28,7 @@ public struct ErrorInfo: Error, CustomStringConvertible {
             case let .fromAblyCocoa(ablyCocoaError):
                 ablyCocoaError.code
             case let .internalError(internalError):
-                internalError.codeAndStatusCode.code.rawValue
+                internalError.code.rawValue
             case let .initializer(args):
                 args.code
             }
@@ -72,7 +72,7 @@ public struct ErrorInfo: Error, CustomStringConvertible {
             case let .fromAblyCocoa(ablyCocoaError):
                 ablyCocoaError.statusCode
             case let .internalError(internalError):
-                internalError.codeAndStatusCode.statusCode
+                internalError.code.statusCode
             case let .initializer(args):
                 args.statusCode
             }
