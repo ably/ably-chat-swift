@@ -138,9 +138,9 @@ internal final class ChatAPI {
 
     // (CHA-MR4) Users should be able to send a reaction to a message via the `send` method of the `MessagesReactions` object
     internal func sendReactionToMessage(_ messageSerial: String, roomName: String, params: SendMessageReactionParams) async throws(ErrorInfo) -> MessageReactionResponse {
-        // (CHA-MR4a1) If the serial passed to this method is invalid: undefined, null, empty string, an error with code 40000 must be thrown.
+        // (CHA-MR4a2) If the serial passed to this method is invalid: undefined, null, empty string, an error with code InvalidArgument must be thrown.
         guard !messageSerial.isEmpty else {
-            throw ChatError.messageReactionInvalidMessageSerial.toErrorInfo()
+            throw InternalError.sendMessageReactionEmptyMessageSerial.toErrorInfo()
         }
 
         let endpoint = messageUrl(roomName: roomName, serial: messageSerial, suffix: "/reactions")
@@ -156,9 +156,9 @@ internal final class ChatAPI {
 
     // (CHA-MR11) Users should be able to delete a reaction from a message via the `delete` method of the `MessagesReactions` object
     internal func deleteReactionFromMessage(_ messageSerial: String, roomName: String, params: DeleteMessageReactionParams) async throws(ErrorInfo) -> MessageReactionResponse {
-        // (CHA-MR11a1) If the serial passed to this method is invalid: undefined, null, empty string, an error with code 40000 must be thrown.
+        // (CHA-MR11a2) If the serial passed to this method is invalid: undefined, null, empty string, an error with code InvalidArgument must be thrown.
         guard !messageSerial.isEmpty else {
-            throw ChatError.messageReactionInvalidMessageSerial.toErrorInfo()
+            throw InternalError.deleteMessageReactionEmptyMessageSerial.toErrorInfo()
         }
 
         let endpoint = messageUrl(roomName: roomName, serial: messageSerial, suffix: "/reactions")
@@ -193,7 +193,7 @@ internal final class ChatAPI {
         }
     }
 
-    private func makeRequest<Response: JSONDecodable>(_ url: String, method: String, params: [String: String]? = nil, body: RequestBody? = nil) async throws(ErrorInfo) -> Response {
+    private func makeRequest<Response: JSONDecodable>(_ path: String, method: String, params: [String: String]? = nil, body: RequestBody? = nil) async throws(ErrorInfo) -> Response {
         let ablyCocoaBody: Any? = if let body {
             switch body {
             case let .jsonObject(jsonObject):
@@ -206,10 +206,10 @@ internal final class ChatAPI {
         }
 
         // (CHA-M3e & CHA-M8d & CHA-M9c) If an error is returned from the REST API, its ErrorInfo representation shall be thrown as the result of the send call.
-        let paginatedResponse = try await realtime.request(method, path: url, params: params, body: ablyCocoaBody, headers: [:])
+        let paginatedResponse = try await realtime.request(method, path: path, params: params, body: ablyCocoaBody, headers: [:])
 
         guard let firstItem = paginatedResponse.items.first else {
-            throw ChatError.noItemInResponse.toErrorInfo()
+            throw InternalError.noItemInResponse(path: path).toErrorInfo()
         }
 
         let jsonValue = JSONValue(ablyCocoaData: firstItem)
@@ -226,12 +226,5 @@ internal final class ChatAPI {
             try Response(jsonValue: jsonValue)
         }
         return paginatedResponse.toPaginatedResult(items: items)
-    }
-
-    internal enum ChatError: Error {
-        case noItemInResponse
-        case messageReactionInvalidMessageSerial
-        case messageReactionTypeRequired
-        case messageReactionNameRequired
     }
 }

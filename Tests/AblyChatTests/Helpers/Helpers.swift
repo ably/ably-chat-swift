@@ -4,13 +4,15 @@ import Ably
 extension ErrorInfo {
     /**
      Tests whether this `ErrorInfo` is backed by an `InternalError` with a given code and cause. Can optionally pass a message and it will check that it matches.
+
+     - Note: Favour this over checking the error's `code` directly, because it also implicitly checks that the correct `statusCode` is being used.
      */
-    func hasCodeAndStatusCode(_ codeAndStatusCode: AblyChat.InternalError.ErrorCodeAndStatusCode, cause: ErrorInfo? = nil, message: String? = nil) -> Bool {
+    func hasCode(_ code: AblyChat.InternalError.ErrorCode, cause: ErrorInfo? = nil, message: String? = nil) -> Bool {
         guard case let .internalError(internalError) = source else {
             return false
         }
 
-        if internalError.codeAndStatusCode != codeAndStatusCode {
+        if internalError.code != code {
             return false
         }
         if internalError.cause != cause {
@@ -33,7 +35,7 @@ extension InternalError {
 
     var enumCase: Case {
         switch self {
-        case .other(.jsonValueDecodingError):
+        case .jsonValueDecodingError:
             .jsonValueDecodingError
         default:
             .other

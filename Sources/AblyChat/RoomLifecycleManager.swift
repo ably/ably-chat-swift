@@ -16,13 +16,10 @@ internal protocol RoomLifecycleManager: Sendable {
     ///
     /// Implements the checks described by CHA-PR3d, CHA-PR3e, and CHA-PR3h (and similar ones described by other functionality that performs channel presence operations). Namely:
     ///
-    /// - CHA-RL9, which is invoked by CHA-PR3d, CHA-PR10d, CHA-PR6c: If the room is in the ATTACHING status, it waits for the next room status change. If the new status is ATTACHED, it returns. Else, it throws an `ErrorInfo` derived from ``InternalError/roomTransitionedToInvalidStateForPresenceOperation(cause:)``.
+    /// - CHA-RL9, which is invoked by CHA-PR3d, CHA-PR10d, CHA-PR6c: If the room is in the ATTACHING status, it waits for the next room status change. If the new status is ATTACHED, it returns. Else, it throws an `ErrorInfo` derived from ``InternalError/roomTransitionedToInvalidStateForPresenceOperation(newState:cause:)``.
     /// - CHA-PR3e, CHA-PR10e, CHA-PR6d: If the room is in the ATTACHED status, it returns immediately.
-    /// - CHA-PR3h, CHA-PR10h, CHA-PR6h: If the room is in any other status, it throws an `ErrorInfo` derived from ``InternalError/presenceOperationRequiresRoomAttach(feature:)``.
-    ///
-    /// - Parameters:
-    ///   - requester: The room feature that wishes to perform a presence operation. This is only used for customising the message of the thrown error.
-    func waitToBeAbleToPerformPresenceOperations(requestedByFeature requester: RoomFeature) async throws(ErrorInfo)
+    /// - CHA-PR3h, CHA-PR10h, CHA-PR6h: If the room is in any other status, it throws an `ErrorInfo` derived from ``InternalError/presenceOperationRequiresRoomAttach``.
+    func waitToBeAbleToPerformPresenceOperations() async throws(ErrorInfo)
 
     @discardableResult
     func onDiscontinuity(_ callback: @escaping @MainActor (ErrorInfo) -> Void) -> StatusSubscription
@@ -395,10 +392,10 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
             return
         case .releasing:
             // CHA-RL1b
-            throw InternalError.roomIsReleasing.toErrorInfo()
+            throw InternalError.roomIsReleasing(operation: .attach).toErrorInfo()
         case .released:
-            // CHA-RL1c
-            throw InternalError.roomIsReleased.toErrorInfo()
+            // CHA-RL1l
+            throw InternalError.roomInInvalidStateForAttach(roomStatus).toErrorInfo()
         default:
             break
         }
@@ -458,13 +455,10 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
             return
         case .releasing:
             // CHA-RL2b
-            throw InternalError.roomIsReleasing.toErrorInfo()
-        case .released:
-            // CHA-RL2c
-            throw InternalError.roomIsReleased.toErrorInfo()
-        case .failed:
-            // CHA-RL2d
-            throw InternalError.roomInFailedState.toErrorInfo()
+            throw InternalError.roomIsReleasing(operation: .detach).toErrorInfo()
+        case .released, .failed:
+            // CHA-RL2l, CHA-RL2m
+            throw InternalError.roomInInvalidStateForDetach(roomStatus).toErrorInfo()
         case .initialized, .attaching, .attached, .detaching, .suspended:
             break
         }
@@ -583,7 +577,7 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
 
     // MARK: - Waiting to be able to perform presence operations
 
-    internal func waitToBeAbleToPerformPresenceOperations(requestedByFeature requester: RoomFeature) async throws(ErrorInfo) {
+    internal func waitToBeAbleToPerformPresenceOperations() async throws(ErrorInfo) {
         // Although this method's implementation only uses the manager's public
         // API, it's implemented as a method on the manager itself, so that the
         // implementation is isolated to the manager and hence doesn't "miss"
@@ -612,19 +606,23 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
             // CHA-RL9b
             guard case .attached = nextRoomStatusChange.current, nextRoomStatusChange.error == nil else {
                 // CHA-RL9c
-                throw InternalError.roomTransitionedToInvalidStateForPresenceOperation(cause: nextRoomStatusChange.error).toErrorInfo()
+                throw InternalError.roomTransitionedToInvalidStateForPresenceOperation(
+                    newState: nextRoomStatusChange.current,
+                    cause: nextRoomStatusChange.error,
+                )
+                .toErrorInfo()
             }
         case .attached:
             // CHA-PR3e, CHA-PR10e, CHA-PR6d
             break
         default:
             // CHA-PR3h, CHA-PR10h, CHA-PR6h
-            throw InternalError.presenceOperationRequiresRoomAttach(feature: requester).toErrorInfo()
+            throw InternalError.presenceOperationRequiresRoomAttach.toErrorInfo()
         }
     }
 
     #if DEBUG
-        /// The manager emits a `StatusChangeWaitEvent` each time ``waitToBeAbleToPerformPresenceOperations(requestedByFeature:)`` is going to wait for a room status change. These events are emitted to support testing of the manager; see ``testsOnly_subscribeToStatusChangeWaitEvents``.
+        /// The manager emits a `StatusChangeWaitEvent` each time ``waitToBeAbleToPerformPresenceOperations()`` is going to wait for a room status change. These events are emitted to support testing of the manager; see ``testsOnly_subscribeToStatusChangeWaitEvents``.
         internal struct StatusChangeWaitEvent: Equatable {
             // Nothing here currently, just created this type for consistency with OperationWaitEvent
         }
@@ -632,7 +630,7 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
         /// Supports the ``testsOnly_subscribeToStatusChangeWaitEvents()`` method.
         private let statusChangeWaitEventSubscriptions = SubscriptionStorage<StatusChangeWaitEvent>()
 
-        /// Returns a subscription which emits an event each time ``waitToBeAbleToPerformPresenceOperations(requestedByFeature:)`` is going to wait for a room status change.
+        /// Returns a subscription which emits an event each time ``waitToBeAbleToPerformPresenceOperations()`` is going to wait for a room status change.
         internal func testsOnly_subscribeToStatusChangeWaitEvents(_ callback: @escaping @MainActor (StatusChangeWaitEvent) -> Void) -> any Subscription {
             statusChangeWaitEventSubscriptions.create(callback)
         }

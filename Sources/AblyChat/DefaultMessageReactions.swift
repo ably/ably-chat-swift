@@ -37,6 +37,7 @@ internal final class DefaultMessageReactions: MessageReactions {
     internal func delete(fromMessageWithSerial messageSerial: String, params: DeleteMessageReactionParams) async throws(ErrorInfo) {
         let reactionType = params.type ?? options.defaultMessageReactionType
         if reactionType != .unique, params.name == nil {
+            // CHA-MR11b1
             throw InternalError.unableDeleteReactionWithoutName(reactionType: reactionType.rawValue).toErrorInfo()
         }
         let apiParams: ChatAPI.DeleteMessageReactionParams = .init(
@@ -94,7 +95,7 @@ internal final class DefaultMessageReactions: MessageReactions {
     internal func subscribeRaw(_ callback: @escaping @MainActor @Sendable (MessageReactionRawEvent) -> Void) -> DefaultSubscription {
         logger.log(message: "Subscribing to reaction events", level: .debug)
         guard options.rawMessageReactions else {
-            // (CHA-MR7a) The attempt to subscribe to raw message reactions must throw an ErrorInfo with code 40000 and status code 400 if the room is not configured to support raw message reactions
+            // CHA-MR7c
             // I'm replacing throwing with `fatalError` because it's a programmer error to call this method with invalid options.
             fatalError("Room is not configured to support raw message reactions")
         }

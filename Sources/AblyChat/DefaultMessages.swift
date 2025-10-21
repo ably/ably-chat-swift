@@ -97,7 +97,7 @@ internal final class DefaultMessages: Messages {
             roomName: roomName,
             subscriptionStartSerial: { [weak self] () throws(ErrorInfo) in
                 guard let self else {
-                    throw MessagesError.noReferenceToSelf.toErrorInfo()
+                    throw InternalError.failedToResolveSubscriptionPointBecauseMessagesInstanceGone.toErrorInfo()
                 }
                 if channel.state == .attached, let startSerial = subscriptionPoints[uuid] {
                     return startSerial
@@ -159,11 +159,10 @@ internal final class DefaultMessages: Messages {
                         continuation.resume(returning: .success(subscriptionPoint))
                     } else {
                         logger.log(message: "Channel is attached, but attachSerial is not defined", level: .error)
-                        continuation.resume(returning: .failure(InternalError.attachSerialIsNotDefined.toErrorInfo()))
+                        continuation.resume(returning: .failure(InternalError.failedToResolveSubscriptionPointBecauseAttachSerialNotDefined.toErrorInfo()))
                     }
                 case .failed, .suspended:
-                    // TODO: Revisit as part of https://github.com/ably-labs/ably-chat-swift/issues/32
-                    let error = InternalError.channelFailedToAttach(cause: stateChange.reason)
+                    let error = InternalError.failedToResolveSubscriptionPointBecauseChannelFailedToAttach(cause: stateChange.reason)
                     logger.log(message: "\(error)", level: .error)
                     continuation.resume(returning: .failure(error.toErrorInfo()))
                 default:

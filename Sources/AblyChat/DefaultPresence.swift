@@ -20,7 +20,7 @@ internal final class DefaultPresence: Presence {
 
         // CHA-PR6b to CHA-PR6f
         do {
-            try await roomLifecycleManager.waitToBeAbleToPerformPresenceOperations(requestedByFeature: .presence)
+            try await roomLifecycleManager.waitToBeAbleToPerformPresenceOperations()
         } catch {
             logger.log(message: "Error waiting to be able to perform presence get operation: \(error)", level: .error)
             throw error
@@ -41,7 +41,7 @@ internal final class DefaultPresence: Presence {
 
         // CHA-PR6b to CHA-PR6f
         do {
-            try await roomLifecycleManager.waitToBeAbleToPerformPresenceOperations(requestedByFeature: .presence)
+            try await roomLifecycleManager.waitToBeAbleToPerformPresenceOperations()
         } catch {
             logger.log(message: "Error waiting to be able to perform presence get operation: \(error)", level: .error)
             throw error
@@ -63,7 +63,7 @@ internal final class DefaultPresence: Presence {
 
         // CHA-PR6b to CHA-PR6f
         do {
-            try await roomLifecycleManager.waitToBeAbleToPerformPresenceOperations(requestedByFeature: .presence)
+            try await roomLifecycleManager.waitToBeAbleToPerformPresenceOperations()
         } catch {
             logger.log(message: "Error waiting to be able to perform presence get operation: \(error)", level: .error)
             throw error
@@ -94,7 +94,7 @@ internal final class DefaultPresence: Presence {
 
         // CHA-PR3c to CHA-PR3g
         do {
-            try await roomLifecycleManager.waitToBeAbleToPerformPresenceOperations(requestedByFeature: .presence)
+            try await roomLifecycleManager.waitToBeAbleToPerformPresenceOperations()
         } catch {
             logger.log(message: "Error waiting to be able to perform presence enter operation: \(error)", level: .error)
             throw error
@@ -122,7 +122,7 @@ internal final class DefaultPresence: Presence {
 
         // CHA-PR10c to CHA-PR10g
         do {
-            try await roomLifecycleManager.waitToBeAbleToPerformPresenceOperations(requestedByFeature: .presence)
+            try await roomLifecycleManager.waitToBeAbleToPerformPresenceOperations()
         } catch {
             logger.log(message: "Error waiting to be able to perform presence update operation: \(error)", level: .error)
             throw error
@@ -150,7 +150,7 @@ internal final class DefaultPresence: Presence {
 
         // CHA-PR6b to CHA-PR6f
         do {
-            try await roomLifecycleManager.waitToBeAbleToPerformPresenceOperations(requestedByFeature: .presence)
+            try await roomLifecycleManager.waitToBeAbleToPerformPresenceOperations()
         } catch {
             logger.log(message: "Error waiting to be able to perform presence leave operation: \(error)", level: .error)
             throw error

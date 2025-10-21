@@ -30,7 +30,7 @@ internal enum JSONValueDecodingError: Error {
     case valueIsNotObject
     case noValueForKey(String)
     case wrongTypeForKey(String, actualValue: JSONValue)
-    case failedToDecodeFromRawValue(String)
+    case failedToDecodeFromRawValue(type: Any.Type, rawValue: String)
 }
 
 // Default implementation of `JSONDecodable` conformance for `JSONObjectDecodable`
@@ -293,7 +293,7 @@ internal extension [String: JSONValue] {
 
     private func rawRepresentableValueFromRawValue<T: RawRepresentable>(_ rawValue: String, type _: T.Type = T.self) throws(ErrorInfo) -> T where T.RawValue == String {
         guard let value = T(rawValue: rawValue) else {
-            throw JSONValueDecodingError.failedToDecodeFromRawValue(rawValue).toErrorInfo()
+            throw JSONValueDecodingError.failedToDecodeFromRawValue(type: T.self, rawValue: rawValue).toErrorInfo()
         }
 
         return value

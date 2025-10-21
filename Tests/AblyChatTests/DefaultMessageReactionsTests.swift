@@ -58,7 +58,7 @@ struct DefaultMessageReactionsTests {
         ))
     }
 
-    // @spec CHA-MR4a1
+    // @spec CHA-MR4a2
     @Test
     func errorShouldBeThrownIfMessageSerialIsEmptyWhenSend() async throws {
         // Given
@@ -75,10 +75,10 @@ struct DefaultMessageReactionsTests {
         }
 
         // Then
-        #expect(thrownError == InternalError.other(.chatAPIChatError(.messageReactionInvalidMessageSerial)).toErrorInfo())
+        #expect(thrownError == InternalError.sendMessageReactionEmptyMessageSerial.toErrorInfo())
     }
 
-    // @spec CHA-MR11a1
+    // @spec CHA-MR11a2
     @Test
     func errorShouldBeThrownIfMessageSerialIsEmptyWhenDelete() async throws {
         // Given
@@ -95,7 +95,7 @@ struct DefaultMessageReactionsTests {
         }
 
         // Then
-        #expect(thrownError == InternalError.other(.chatAPIChatError(.messageReactionInvalidMessageSerial)).toErrorInfo())
+        #expect(thrownError == InternalError.deleteMessageReactionEmptyMessageSerial.toErrorInfo())
     }
 
     // @spec CHA-MR3
