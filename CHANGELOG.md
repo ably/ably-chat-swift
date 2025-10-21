@@ -1,5 +1,13 @@
 # Change Log
 
+## [0.9.1](https://github.com/ably/ably-chat-swift/tree/0.9.1)
+
+### What's Changed
+
+This fixes the compilation error <code>error: conflicting options '-warnings-as-errors' and '-suppress-warnings'</code> that occurs when using Xcode to build an app that uses version 0.9.0 of this SDK.
+
+**Full Changelog**: https://github.com/ably/ably-chat-swift/compare/0.9.0...0.9.1
+
 ## [0.9.0](https://github.com/ably/ably-chat-swift/tree/0.9.0)
 
 ### What's Changed
