@@ -65,7 +65,7 @@ public extension Rooms {
 
 internal class DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
     private let realtime: RoomFactory.Realtime
-    private let chatAPI: ChatAPI
+    private let chatAPI: ChatAPI<RoomFactory.Realtime>
 
     #if DEBUG
         internal var testsOnly_realtime: RoomFactory.Realtime {

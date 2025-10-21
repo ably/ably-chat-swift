@@ -1,54 +1,34 @@
 import Ably
+@testable import AblyChat
 
-final class MockHTTPPaginatedResponse: ARTHTTPPaginatedResponse, @unchecked Sendable {
-    private let _items: [NSDictionary]
-    private let _statusCode: Int
-    private let _headers: [String: String]
-    private let _hasNext: Bool
+final class MockHTTPPaginatedResponse: InternalHTTPPaginatedResponseProtocol {
+    let items: [JSONValue]
+    let statusCode: Int
+    let headers: [String: String]
+    let hasNext: Bool
 
     init(
-        items: [NSDictionary],
+        items: [[String: JSONValue]],
         statusCode: Int = 200,
         headers: [String: String] = [:],
         hasNext: Bool = false,
     ) {
-        _items = items
-        _statusCode = statusCode
-        _headers = headers
-        _hasNext = hasNext
-        super.init()
+        self.items = items.map { .object($0) }
+        self.statusCode = statusCode
+        self.headers = headers
+        self.hasNext = hasNext
     }
 
-    override var items: [NSDictionary] {
-        _items
+    var isLast: Bool {
+        !hasNext
     }
 
-    override var statusCode: Int {
-        _statusCode
+    func next() async throws(ErrorInfo) -> MockHTTPPaginatedResponse? {
+        hasNext ? MockHTTPPaginatedResponse.nextPage : nil
     }
 
-    override var headers: [String: String] {
-        _headers
-    }
-
-    override var success: Bool {
-        (statusCode >= 200) && (statusCode < 300)
-    }
-
-    override var hasNext: Bool {
-        _hasNext
-    }
-
-    override var isLast: Bool {
-        !_hasNext
-    }
-
-    override func next(_ callback: @escaping ARTHTTPPaginatedCallback) {
-        callback(hasNext ? MockHTTPPaginatedResponse.nextPage : nil, nil)
-    }
-
-    override func first(_ callback: @escaping ARTHTTPPaginatedCallback) {
-        callback(self, nil)
+    func first() async throws(ErrorInfo) -> MockHTTPPaginatedResponse {
+        self
     }
 }
 

@@ -1,17 +1,36 @@
 import Ably
 
+internal struct ChatAPISendMessageReactionParams: Sendable {
+    internal let type: MessageReactionType
+    internal let name: String
+    internal let count: Int?
+}
+
+internal struct ChatAPIDeleteMessageReactionParams: Sendable {
+    internal let type: MessageReactionType
+    internal let name: String?
+}
+
+internal struct ChatAPIMessageReactionResponse: JSONObjectDecodable {
+    internal let serial: String
+
+    internal init(jsonObject: [String: JSONValue]) throws(ErrorInfo) {
+        serial = try jsonObject.stringValueForKey("serial")
+    }
+}
+
 @MainActor
-internal final class ChatAPI {
+internal final class ChatAPI<Realtime: InternalRealtimeClientProtocol> {
     internal enum RequestBody {
         case jsonObject([String: JSONValue])
         /// Contains an object that can be used the same way as a value returned from `JSONValue.object(…).toAblyCocoaData`. Workaround for JSONValue not being able to indicate to ably-cocoa that a property should be serialized as a MessagePack integer type; TODO revisit in (create an issue for this)
         case ablyCocoaData(Any)
     }
 
-    private let realtime: any InternalRealtimeClientProtocol
+    private let realtime: Realtime
     private let apiVersionV4 = "/chat/v4"
 
-    internal init(realtime: any InternalRealtimeClientProtocol) {
+    internal init(realtime: Realtime) {
         self.realtime = realtime
     }
 
@@ -28,7 +47,7 @@ internal final class ChatAPI {
     }
 
     // (CHA-M6) Messages should be queryable from a paginated REST API.
-    internal func getMessages(roomName: String, params: HistoryParams) async throws(ErrorInfo) -> some PaginatedResult<Message> {
+    internal func getMessages(roomName: String, params: HistoryParams) async throws(ErrorInfo) -> DefaultPaginatedResult<Realtime.HTTPPaginatedResponse, Message> {
         let endpoint = roomUrl(roomName: roomName, suffix: "/messages")
         return try await makePaginatedRequest(endpoint, params: params.asQueryItems())
     }
@@ -37,25 +56,6 @@ internal final class ChatAPI {
     internal func getMessage(roomName: String, serial: String) async throws(ErrorInfo) -> Message {
         let endpoint = messageUrl(roomName: roomName, serial: serial)
         return try await makeRequest(endpoint, method: "GET")
-    }
-
-    internal struct SendMessageReactionParams: Sendable {
-        internal let type: MessageReactionType
-        internal let name: String
-        internal let count: Int?
-    }
-
-    internal struct DeleteMessageReactionParams: Sendable {
-        internal let type: MessageReactionType
-        internal let name: String?
-    }
-
-    internal struct MessageReactionResponse: JSONObjectDecodable {
-        internal let serial: String
-
-        internal init(jsonObject: [String: JSONValue]) throws(ErrorInfo) {
-            serial = try jsonObject.stringValueForKey("serial")
-        }
     }
 
     // (CHA-M3) Messages are sent to Ably via the Chat REST API, using the send method.
@@ -137,7 +137,7 @@ internal final class ChatAPI {
     }
 
     // (CHA-MR4) Users should be able to send a reaction to a message via the `send` method of the `MessagesReactions` object
-    internal func sendReactionToMessage(_ messageSerial: String, roomName: String, params: SendMessageReactionParams) async throws(ErrorInfo) -> MessageReactionResponse {
+    internal func sendReactionToMessage(_ messageSerial: String, roomName: String, params: ChatAPISendMessageReactionParams) async throws(ErrorInfo) -> ChatAPIMessageReactionResponse {
         // (CHA-MR4a2) If the serial passed to this method is invalid: undefined, null, empty string, an error with code InvalidArgument must be thrown.
         guard !messageSerial.isEmpty else {
             throw InternalError.sendMessageReactionEmptyMessageSerial.toErrorInfo()
@@ -155,7 +155,7 @@ internal final class ChatAPI {
     }
 
     // (CHA-MR11) Users should be able to delete a reaction from a message via the `delete` method of the `MessagesReactions` object
-    internal func deleteReactionFromMessage(_ messageSerial: String, roomName: String, params: DeleteMessageReactionParams) async throws(ErrorInfo) -> MessageReactionResponse {
+    internal func deleteReactionFromMessage(_ messageSerial: String, roomName: String, params: ChatAPIDeleteMessageReactionParams) async throws(ErrorInfo) -> ChatAPIMessageReactionResponse {
         // (CHA-MR11a2) If the serial passed to this method is invalid: undefined, null, empty string, an error with code InvalidArgument must be thrown.
         guard !messageSerial.isEmpty else {
             throw InternalError.deleteMessageReactionEmptyMessageSerial.toErrorInfo()
@@ -193,7 +193,7 @@ internal final class ChatAPI {
         }
     }
 
-    private func makeRequest<Response: JSONDecodable>(_ path: String, method: String, params: [String: String]? = nil, body: RequestBody? = nil) async throws(ErrorInfo) -> Response {
+    private func makeRequest<Item: JSONDecodable>(_ path: String, method: String, params: [String: String]? = nil, body: RequestBody? = nil) async throws(ErrorInfo) -> Item {
         let ablyCocoaBody: Any? = if let body {
             switch body {
             case let .jsonObject(jsonObject):
@@ -208,23 +208,18 @@ internal final class ChatAPI {
         // (CHA-M3e & CHA-M8d & CHA-M9c) If an error is returned from the REST API, its ErrorInfo representation shall be thrown as the result of the send call.
         let paginatedResponse = try await realtime.request(method, path: path, params: params, body: ablyCocoaBody, headers: [:])
 
-        guard let firstItem = paginatedResponse.items.first else {
+        guard let firstItemJSONValue = paginatedResponse.items.first else {
             throw InternalError.noItemInResponse(path: path).toErrorInfo()
         }
 
-        let jsonValue = JSONValue(ablyCocoaData: firstItem)
-        return try Response(jsonValue: jsonValue)
+        return try Item(jsonValue: firstItemJSONValue)
     }
 
-    private func makePaginatedRequest<Response: JSONDecodable & Sendable & Equatable>(
+    private func makePaginatedRequest<Item: JSONDecodable & Sendable>(
         _ url: String,
         params: [String: String]? = nil,
-    ) async throws(ErrorInfo) -> some PaginatedResult<Response> {
+    ) async throws(ErrorInfo) -> DefaultPaginatedResult<Realtime.HTTPPaginatedResponse, Item> {
         let paginatedResponse = try await realtime.request("GET", path: url, params: params, body: nil, headers: [:])
-        let jsonValues = paginatedResponse.items.map { JSONValue(ablyCocoaData: $0) }
-        let items = try jsonValues.map { jsonValue throws(ErrorInfo) in
-            try Response(jsonValue: jsonValue)
-        }
-        return paginatedResponse.toPaginatedResult(items: items)
+        return try DefaultPaginatedResult(response: paginatedResponse)
     }
 }

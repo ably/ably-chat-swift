@@ -8,7 +8,7 @@ final class MockRealtime: InternalRealtimeClientProtocol {
 
     let connection: MockConnection
     let channels: MockChannels
-    let paginatedCallback: (@Sendable () throws(ErrorInfo) -> ARTHTTPPaginatedResponse)?
+    let paginatedCallback: (@MainActor () throws(ErrorInfo) -> MockHTTPPaginatedResponse)?
 
     private(set) var requestArguments: [(method: String, path: String, params: [String: String]?, body: Any?, headers: [String: String]?)] = []
 
@@ -19,14 +19,14 @@ final class MockRealtime: InternalRealtimeClientProtocol {
     init(
         channels: MockChannels = .init(channels: []),
         connection: MockConnection = .init(),
-        paginatedCallback: (@Sendable () throws(ErrorInfo) -> ARTHTTPPaginatedResponse)? = nil,
+        paginatedCallback: (@MainActor () throws(ErrorInfo) -> MockHTTPPaginatedResponse)? = nil,
     ) {
         self.channels = channels
         self.paginatedCallback = paginatedCallback
         self.connection = connection
     }
 
-    func request(_ method: String, path: String, params: [String: String]?, body: Any?, headers: [String: String]?) async throws(ErrorInfo) -> ARTHTTPPaginatedResponse {
+    func request(_ method: String, path: String, params: [String: String]?, body: Any?, headers: [String: String]?) async throws(ErrorInfo) -> MockHTTPPaginatedResponse {
         requestArguments.append((method: method, path: path, params: params, body: body, headers: headers))
         guard let paginatedCallback else {
             fatalError("Paginated callback not set")

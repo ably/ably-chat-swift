@@ -242,13 +242,13 @@ internal protocol RoomFactory: Sendable {
     associatedtype Realtime: InternalRealtimeClientProtocol where Realtime.Channels.Channel.Proxied == Room.Channel
     associatedtype Room: AblyChat.InternalRoom
 
-    func createRoom(realtime: Realtime, chatAPI: ChatAPI, name: String, options: RoomOptions, logger: any InternalLogger) throws(ErrorInfo) -> Room
+    func createRoom(realtime: Realtime, chatAPI: ChatAPI<Realtime>, name: String, options: RoomOptions, logger: any InternalLogger) throws(ErrorInfo) -> Room
 }
 
 internal final class DefaultRoomFactory<Realtime: InternalRealtimeClientProtocol>: Sendable, RoomFactory {
     private let lifecycleManagerFactory = DefaultRoomLifecycleManagerFactory()
 
-    internal func createRoom(realtime: Realtime, chatAPI: ChatAPI, name: String, options: RoomOptions, logger: any InternalLogger) throws(ErrorInfo) -> DefaultRoom<Realtime, DefaultRoomLifecycleManager> {
+    internal func createRoom(realtime: Realtime, chatAPI: ChatAPI<Realtime>, name: String, options: RoomOptions, logger: any InternalLogger) throws(ErrorInfo) -> DefaultRoom<Realtime, DefaultRoomLifecycleManager> {
         try DefaultRoom(
             realtime: realtime,
             chatAPI: chatAPI,
@@ -263,12 +263,12 @@ internal final class DefaultRoomFactory<Realtime: InternalRealtimeClientProtocol
 internal class DefaultRoom<Realtime: InternalRealtimeClientProtocol, LifecycleManager: RoomLifecycleManager>: InternalRoom {
     internal let name: String
     internal let options: RoomOptions
-    private let chatAPI: ChatAPI
+    private let chatAPI: ChatAPI<Realtime>
 
-    internal let messages: DefaultMessages
+    internal let messages: DefaultMessages<Realtime>
     internal let reactions: DefaultRoomReactions
     internal let presence: DefaultPresence
-    internal let occupancy: DefaultOccupancy
+    internal let occupancy: DefaultOccupancy<Realtime>
     internal let typing: DefaultTyping
 
     // Exposed for testing.
@@ -290,7 +290,7 @@ internal class DefaultRoom<Realtime: InternalRealtimeClientProtocol, LifecycleMa
 
     private let logger: any InternalLogger
 
-    internal init<LifecycleManagerFactory: RoomLifecycleManagerFactory>(realtime: Realtime, chatAPI: ChatAPI, name: String, options: RoomOptions, logger: any InternalLogger, lifecycleManagerFactory: LifecycleManagerFactory) throws(ErrorInfo) where LifecycleManagerFactory.Manager == LifecycleManager {
+    internal init<LifecycleManagerFactory: RoomLifecycleManagerFactory>(realtime: Realtime, chatAPI: ChatAPI<Realtime>, name: String, options: RoomOptions, logger: any InternalLogger, lifecycleManagerFactory: LifecycleManagerFactory) throws(ErrorInfo) where LifecycleManagerFactory.Manager == LifecycleManager {
         self.realtime = realtime
         self.name = name
         self.options = options

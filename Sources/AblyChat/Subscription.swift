@@ -81,8 +81,8 @@ internal struct DefaultStatusSubscription: StatusSubscription, Sendable {
     }
 }
 
-internal struct DefaultMessageSubscriptionResponse: MessageSubscriptionResponse, Sendable {
-    private let chatAPI: ChatAPI
+internal struct DefaultMessageSubscriptionResponse<Realtime: InternalRealtimeClientProtocol>: MessageSubscriptionResponse, Sendable {
+    private let chatAPI: ChatAPI<Realtime>
     private let roomName: String
     private let subscriptionStartSerial: @MainActor @Sendable () async throws(ErrorInfo) -> String
     private let _unsubscribe: () -> Void
@@ -104,7 +104,7 @@ internal struct DefaultMessageSubscriptionResponse: MessageSubscriptionResponse,
     }
 
     internal init(
-        chatAPI: ChatAPI,
+        chatAPI: ChatAPI<Realtime>,
         roomName: String,
         subscriptionStartSerial: @MainActor @escaping @Sendable () async throws(ErrorInfo) -> String,
         unsubscribe: @MainActor @Sendable @escaping () -> Void,

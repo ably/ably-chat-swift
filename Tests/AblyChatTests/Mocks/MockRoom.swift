@@ -16,7 +16,7 @@ class MockRoom: InternalRoom {
         fatalError("Not implemented")
     }
 
-    var messages: DefaultMessages {
+    var messages: DefaultMessages<MockRealtime> {
         fatalError("Not implemented")
     }
 
@@ -32,7 +32,7 @@ class MockRoom: InternalRoom {
         fatalError("Not implemented")
     }
 
-    var occupancy: DefaultOccupancy {
+    var occupancy: DefaultOccupancy<MockRealtime> {
         fatalError("Not implemented")
     }
 

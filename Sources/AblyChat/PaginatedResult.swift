@@ -24,90 +24,58 @@ public protocol PaginatedResult<Item>: AnyObject, Sendable {
     func current() async throws(ErrorInfo) -> Self
 }
 
-/// Used internally to reduce the amount of duplicate code when interacting with `ARTHTTPPaginatedCallback`'s. The wrapper takes in the callback result from the caller e.g. `realtime.request` and either throws the appropriate error, or decodes and returns the response.
-internal struct ARTHTTPPaginatedCallbackWrapper<Response: JSONDecodable & Sendable & Equatable> {
-    internal let callbackResult: (ARTHTTPPaginatedResponse?, ARTErrorInfo?)
-
-    @MainActor
-    internal func handleResponse(continuation: CheckedContinuation<Result<PaginatedResultWrapper<Response>, ErrorInfo>, Never>) {
-        let (paginatedResponse, error) = callbackResult
-
-        // (CHA-M5i) If the REST API returns an error, then the method must throw its ErrorInfo representation.
-        // (CHA-M6b) If the REST API returns an error, then the method must throw its ErrorInfo representation.
-        if let error {
-            continuation.resume(returning: .failure(ErrorInfo(ablyCocoaError: error)))
-            return
-        }
-
-        guard let paginatedResponse else {
-            preconditionFailure("ARTHTTPPaginatedResponse gave neither error nor response")
-        }
-
-        guard paginatedResponse.statusCode == 200 else {
-            continuation.resume(returning: .failure(InternalError.paginatedResultStatusCode(paginatedResponse.statusCode).toErrorInfo()))
-            return
-        }
-
-        do {
-            let jsonValues = paginatedResponse.items.map { JSONValue(ablyCocoaData: $0) }
-            let decodedResponse = try jsonValues.map { jsonValue throws(ErrorInfo) in try Response(jsonValue: jsonValue) }
-            let result = paginatedResponse.toPaginatedResult(items: decodedResponse)
-            continuation.resume(returning: .success(result))
-        } catch {
-            continuation.resume(returning: .failure(error))
-        }
-    }
-}
-
-/// `PaginatedResult` protocol implementation allowing access to the underlying items from a lower level paginated response object e.g. `ARTHTTPPaginatedResponse`, whilst succinctly handling errors through the use of `ARTHTTPPaginatedCallbackWrapper`.
-internal final class PaginatedResultWrapper<Item: JSONDecodable & Sendable & Equatable>: PaginatedResult, @MainActor Equatable {
+/// `PaginatedResult` protocol implementation that wraps an `InternalHTTPPaginatedResponseProtocol` and converts its items to the desired type.
+@MainActor
+internal final class DefaultPaginatedResult<Underlying: InternalHTTPPaginatedResponseProtocol, Item: JSONDecodable & Sendable>: PaginatedResult {
     internal let items: [Item]
     internal let hasNext: Bool
     internal let isLast: Bool
-    internal let paginatedResponse: ARTHTTPPaginatedResponse
+    private let underlying: Underlying
 
-    internal init(paginatedResponse: ARTHTTPPaginatedResponse, items: [Item]) {
+    internal init(underlying: Underlying, items: [Item]) {
+        self.underlying = underlying
         self.items = items
-        hasNext = paginatedResponse.hasNext
-        isLast = paginatedResponse.isLast
-        self.paginatedResponse = paginatedResponse
+        hasNext = underlying.hasNext
+        isLast = underlying.isLast
+    }
+
+    /// Convenience initializer that checks status code and decodes items from the response.
+    internal convenience init(response: Underlying) throws(ErrorInfo) {
+        // TODO: We've had this check since the start of the codebase, but it's not specified anywhere; rectify this in https://github.com/ably/ably-chat-swift/issues/453
+        guard response.statusCode == 200 else {
+            throw InternalError.paginatedResultStatusCode(response.statusCode).toErrorInfo()
+        }
+
+        let items = try response.items.map { jsonValue throws(ErrorInfo) in
+            try Item(jsonValue: jsonValue)
+        }
+
+        self.init(underlying: response, items: items)
     }
 
     /// Asynchronously fetch the next page if available
-    internal func next() async throws(ErrorInfo) -> PaginatedResultWrapper<Item>? {
-        try await withCheckedContinuation { continuation in
-            paginatedResponse.next { paginatedResponse, error in
-                ARTHTTPPaginatedCallbackWrapper(callbackResult: (paginatedResponse, error)).handleResponse(continuation: continuation)
-            }
-        }.get()
+    internal func next() async throws(ErrorInfo) -> DefaultPaginatedResult<Underlying, Item>? {
+        guard let nextUnderlying = try await underlying.next() else {
+            return nil
+        }
+        return try DefaultPaginatedResult(response: nextUnderlying)
     }
 
     /// Asynchronously fetch the first page
-    internal func first() async throws(ErrorInfo) -> PaginatedResultWrapper<Item> {
-        try await withCheckedContinuation { continuation in
-            paginatedResponse.first { paginatedResponse, error in
-                ARTHTTPPaginatedCallbackWrapper(callbackResult: (paginatedResponse, error)).handleResponse(continuation: continuation)
-            }
-        }.get()
+    internal func first() async throws(ErrorInfo) -> DefaultPaginatedResult<Underlying, Item> {
+        try await DefaultPaginatedResult(response: underlying.first())
     }
 
     /// Asynchronously fetch the current page
-    internal func current() async throws(ErrorInfo) -> PaginatedResultWrapper<Item> {
+    internal func current() async throws(ErrorInfo) -> DefaultPaginatedResult<Underlying, Item> {
         self
-    }
-
-    internal static func == (lhs: PaginatedResultWrapper<Item>, rhs: PaginatedResultWrapper<Item>) -> Bool {
-        lhs.items == rhs.items &&
-            lhs.hasNext == rhs.hasNext &&
-            lhs.isLast == rhs.isLast &&
-            lhs.paginatedResponse == rhs.paginatedResponse
     }
 }
 
-internal extension ARTHTTPPaginatedResponse {
-    /// Converts an `ARTHTTPPaginatedResponse` to a `PaginatedResultWrapper` allowing for access to operations as per conformance to `PaginatedResult`.
-    @MainActor
-    func toPaginatedResult<Item: JSONDecodable & Sendable>(items: [Item]) -> PaginatedResultWrapper<Item> {
-        PaginatedResultWrapper(paginatedResponse: self, items: items)
+extension DefaultPaginatedResult: Equatable where Item: Equatable {
+    internal nonisolated static func == (lhs: DefaultPaginatedResult<Underlying, Item>, rhs: DefaultPaginatedResult<Underlying, Item>) -> Bool {
+        lhs.items == rhs.items &&
+            lhs.hasNext == rhs.hasNext &&
+            lhs.isLast == rhs.isLast
     }
 }

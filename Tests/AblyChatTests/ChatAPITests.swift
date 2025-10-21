@@ -108,7 +108,7 @@ struct ChatAPITests {
 
     // @specOneOf(1/2) CHA-M6
     @Test
-    func getMessages_whenGetMessagesReturnsNoItems_returnsEmptyPaginatedResult() async {
+    func getMessages_whenGetMessagesReturnsNoItems_returnsEmptyPaginatedResult() async throws {
         // Given
         let paginatedResponse = MockHTTPPaginatedResponse.successGetMessagesWithNoItems
         let realtime = MockRealtime {
@@ -116,13 +116,13 @@ struct ChatAPITests {
         }
         let chatAPI = ChatAPI(realtime: realtime)
         let roomName = "basketball"
-        let expectedPaginatedResult = PaginatedResultWrapper<Message>(
-            paginatedResponse: paginatedResponse,
+        let expectedPaginatedResult = DefaultPaginatedResult<MockHTTPPaginatedResponse, Message>(
+            underlying: paginatedResponse,
             items: [],
         )
 
         // When
-        let getMessages = try? await chatAPI.getMessages(roomName: roomName, params: .init()) as? PaginatedResultWrapper<Message>
+        let getMessages = try await chatAPI.getMessages(roomName: roomName, params: .init())
 
         // Then
         #expect(getMessages == expectedPaginatedResult)
@@ -138,8 +138,8 @@ struct ChatAPITests {
         }
         let chatAPI = ChatAPI(realtime: realtime)
         let roomName = "basketball"
-        let expectedPaginatedResult = PaginatedResultWrapper<Message>(
-            paginatedResponse: paginatedResponse,
+        let expectedPaginatedResult = DefaultPaginatedResult<MockHTTPPaginatedResponse, Message>(
+            underlying: paginatedResponse,
             items: [
                 Message(
                     serial: "123456789-000@123456789:000",
@@ -167,10 +167,10 @@ struct ChatAPITests {
         )
 
         // When
-        let getMessagesResult = try #require(await chatAPI.getMessages(roomName: roomName, params: .init()) as? PaginatedResultWrapper<Message>)
+        let getMessagesResult = try await chatAPI.getMessages(roomName: roomName, params: .init())
 
         // Then
-        #expect(getMessagesResult.items == expectedPaginatedResult.items)
+        #expect(getMessagesResult == expectedPaginatedResult)
     }
 
     // @spec CHA-M5i
@@ -186,7 +186,7 @@ struct ChatAPITests {
 
         let thrownError = try await #require(throws: ErrorInfo.self) {
             // When
-            try await chatAPI.getMessages(roomName: roomName, params: .init()) as? PaginatedResultWrapper<Message>
+            _ = try await chatAPI.getMessages(roomName: roomName, params: .init())
         }
 
         // Then

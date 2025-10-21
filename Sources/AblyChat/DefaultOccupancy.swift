@@ -1,15 +1,15 @@
 import Ably
 
-internal final class DefaultOccupancy: Occupancy {
+internal final class DefaultOccupancy<Realtime: InternalRealtimeClientProtocol>: Occupancy {
     private let channel: any InternalRealtimeChannelProtocol
-    private let chatAPI: ChatAPI
+    private let chatAPI: ChatAPI<Realtime>
     private let roomName: String
     private let logger: any InternalLogger
     private let options: OccupancyOptions
 
     private var lastOccupancyData: OccupancyData?
 
-    internal init(channel: any InternalRealtimeChannelProtocol, chatAPI: ChatAPI, roomName: String, logger: any InternalLogger, options: OccupancyOptions) {
+    internal init(channel: any InternalRealtimeChannelProtocol, chatAPI: ChatAPI<Realtime>, roomName: String, logger: any InternalLogger, options: OccupancyOptions) {
         self.channel = channel
         self.chatAPI = chatAPI
         self.roomName = roomName
