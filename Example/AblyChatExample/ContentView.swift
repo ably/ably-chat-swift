@@ -181,6 +181,10 @@ struct ContentView: View {
                                 startTyping()
                             }
                         }
+                        // Send message when user presses Enter
+                        .onSubmit {
+                            sendButtonAction()
+                        }
                     #if !os(tvOS)
                         .textFieldStyle(.roundedBorder)
                     #endif
