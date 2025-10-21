@@ -45,6 +45,7 @@ struct ContentView: View {
     @State private var chatClient = Environment.current.createChatClient()
     @State private var currentClientID: String?
 
+    @State private var isLoadingHistory = true
     @State private var reactions: [Reaction] = []
     @State private var newMessage = ""
     @State private var typingInfo = ""
@@ -114,41 +115,58 @@ struct ContentView: View {
                 .font(.footnote)
                 .frame(height: 12)
                 .padding(.horizontal, 8)
-                List(listItems, id: \.id) { item in
-                    switch item {
-                    case let .message(messageItem):
-                        if messageItem.message.action == .messageDelete {
-                            DeletedMessageView(item: messageItem)
-                                .flip()
-                        } else {
-                            MessageView(
-                                currentClientID: currentClientID,
-                                item: messageItem,
-                                isEditing: Binding(get: {
-                                    editingItemID == messageItem.message.serial
-                                }, set: { editing in
-                                    editingItemID = editing ? messageItem.message.serial : nil
-                                    newMessage = editing ? messageItem.message.text : ""
-                                }),
-                                onDeleteMessage: {
-                                    deleteMessage(messageItem.message)
-                                },
-                                onAddReaction: { reaction in
-                                    addMessageReaction(reaction, messageSerial: messageItem.message.serial)
-                                },
-                                onDeleteReaction: { reaction in
-                                    deleteMessageReaction(reaction, messageSerial: messageItem.message.serial)
-                                },
-                            ).id(item.id)
-                                .flip()
-                        }
-                    case let .presence(item):
-                        PresenceMessageView(item: item)
-                            .flip()
+                if isLoadingHistory {
+                    VStack(spacing: 16) {
+                        ProgressView()
+                        Text("Loading messages...")
+                            .foregroundStyle(.secondary)
                     }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    // Don't show the scroll view until we've loaded history, since the defaultScrollAnchor doesn't behave well when you insert a load of messages (i.e. it doesn't remain anchored at bottom).
+                    ScrollView {
+                        // The ideal here would be to use LazyVStack, but that seems to not interact very well with the defaultScrollAnchor; sometimes (e.g. presence message display) new content arrives in the scroll view and it doesn't scroll to the bottom.
+                        //
+                        // No doubt there are performance implications of not using LazyVStack, but we can deal with that some other time.
+                        VStack(alignment: .leading, spacing: 8) {
+                            ForEach(listItems, id: \.id) { item in
+                                Group {
+                                    switch item {
+                                    case let .message(messageItem):
+                                        if messageItem.message.action == .messageDelete {
+                                            DeletedMessageView(item: messageItem)
+                                        } else {
+                                            MessageView(
+                                                currentClientID: currentClientID,
+                                                item: messageItem,
+                                                isEditing: Binding(get: {
+                                                    editingItemID == messageItem.message.serial
+                                                }, set: { editing in
+                                                    editingItemID = editing ? messageItem.message.serial : nil
+                                                    newMessage = editing ? messageItem.message.text : ""
+                                                }),
+                                                onDeleteMessage: {
+                                                    deleteMessage(messageItem.message)
+                                                },
+                                                onAddReaction: { reaction in
+                                                    addMessageReaction(reaction, messageSerial: messageItem.message.serial)
+                                                },
+                                                onDeleteReaction: { reaction in
+                                                    deleteMessageReaction(reaction, messageSerial: messageItem.message.serial)
+                                                },
+                                            ).id(item.id)
+                                        }
+                                    case let .presence(item):
+                                        PresenceMessageView(item: item)
+                                    }
+                                }
+                                .padding(.horizontal, 12)
+                            }
+                        }
+                    }
+                    // Keep the scroll view scrolled to the bottom (unless the user manually scrolls away).
+                    .defaultScrollAnchor(.bottom)
                 }
-                .flip()
-                .listStyle(PlainListStyle())
                 HStack {
                     TextField("Type a message...", text: $newMessage)
                         .onChange(of: newMessage) {
@@ -260,14 +278,13 @@ struct ContentView: View {
             switch event.type {
             case .created:
                 withAnimation {
-                    listItems.insert(
+                    listItems.append(
                         .message(
                             .init(
                                 message: message,
                                 isSender: message.clientID == currentClientID,
                             ),
                         ),
-                        at: 0,
                     )
                 }
             case .updated, .deleted:
@@ -288,14 +305,15 @@ struct ContentView: View {
                 }
             }
         }
-        let previousMessages = try await subscription.historyBeforeSubscribe(withParams: .init())
 
+        let previousMessages = try await subscription.historyBeforeSubscribe(withParams: .init())
+        defer { isLoadingHistory = false }
+
+        // previousMessages are in newest-to-oldest order
         for message in previousMessages.items {
             switch message.action {
             case .messageCreate, .messageUpdate, .messageDelete:
-                withAnimation {
-                    listItems.append(.message(.init(message: message, isSender: message.clientID == currentClientID)))
-                }
+                listItems.insert(.message(.init(message: message, isSender: message.clientID == currentClientID)), at: 0)
             }
         }
     }
@@ -332,13 +350,12 @@ struct ContentView: View {
     func subscribeToPresence(room: any Room) {
         room.presence.subscribe { event in
             withAnimation {
-                listItems.insert(
+                listItems.append(
                     .presence(
                         .init(
                             presence: event,
                         ),
                     ),
-                    at: 0,
                 )
             }
         }
@@ -537,12 +554,5 @@ extension PresenceEventType {
         case .update:
             "has updated presence"
         }
-    }
-}
-
-extension View {
-    func flip() -> some View {
-        rotationEffect(.radians(.pi))
-            .scaleEffect(x: -1, y: 1, anchor: .center)
     }
 }
