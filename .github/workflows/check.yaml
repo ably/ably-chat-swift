@@ -53,8 +53,7 @@ jobs:
           xcode-version: 26.0
 
       - name: Spec coverage
-        # TODO: Remove spec-commit-sha once https://github.com/ably/specification/pull/387 and https://github.com/ably/specification/pull/393 merged
-        run: swift run BuildTool spec-coverage --spec-commit-sha 9cf3d9c
+        run: swift run BuildTool spec-coverage
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
