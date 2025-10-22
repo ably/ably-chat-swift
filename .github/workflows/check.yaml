@@ -92,8 +92,7 @@ jobs:
 
       # https://forums.swift.org/t/warnings-as-errors-for-libraries-frameworks/58393/2
       - run: swift build -Xswiftc -warnings-as-errors
-      # Disabling testing temporarily due to intermittent hangs on CI (https://github.com/ably/ably-chat-swift/issues/295)
-      #- run: swift test -Xswiftc -warnings-as-errors
+      - run: swift test -Xswiftc -warnings-as-errors
 
   build-release-configuration-spm:
     name: SPM, `release` configuration (Xcode ${{ matrix.tooling.xcodeVersion }})
