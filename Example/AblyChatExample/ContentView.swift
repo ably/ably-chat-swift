@@ -167,50 +167,50 @@ struct ContentView: View {
                     // Keep the scroll view scrolled to the bottom (unless the user manually scrolls away).
                     .defaultScrollAnchor(.bottom)
                 }
-                HStack {
-                    TextField("Type a message...", text: $newMessage)
-                        .onChange(of: newMessage) {
-                            // this ensures that typing events are sent only when the message is actually changed whilst editing
-                            if let index = listItems.firstIndex(where: { $0.id == editingItemID }) {
-                                if case let .message(messageItem) = listItems[index] {
-                                    if newMessage != messageItem.message.text {
-                                        startTyping()
+                #if !os(tvOS)
+                    HStack {
+                        TextField("Type a message...", text: $newMessage)
+                            .onChange(of: newMessage) {
+                                // this ensures that typing events are sent only when the message is actually changed whilst editing
+                                if let index = listItems.firstIndex(where: { $0.id == editingItemID }) {
+                                    if case let .message(messageItem) = listItems[index] {
+                                        if newMessage != messageItem.message.text {
+                                            startTyping()
+                                        }
                                     }
+                                } else {
+                                    startTyping()
                                 }
-                            } else {
-                                startTyping()
                             }
+                            // Send message when user presses Enter
+                            .onSubmit {
+                                sendButtonAction()
+                            }
+                            .textFieldStyle(.roundedBorder)
+                        Button(action: sendButtonAction) {
+                            #if os(iOS)
+                                Text(sendTitle)
+                                    .foregroundColor(.white)
+                                    .padding(.vertical, 6)
+                                    .padding(.horizontal, 12)
+                                    .background(Color.blue)
+                                    .cornerRadius(15)
+                            #else
+                                Text(sendTitle)
+                            #endif
                         }
-                        // Send message when user presses Enter
-                        .onSubmit {
-                            sendButtonAction()
+                        if editingItemID != nil {
+                            Button("", systemImage: "xmark.circle.fill") {
+                                editingItemID = nil
+                                newMessage = ""
+                            }
+                            .foregroundStyle(.red.opacity(0.8))
+                            .transition(.scale.combined(with: .opacity))
                         }
-                    #if !os(tvOS)
-                        .textFieldStyle(.roundedBorder)
-                    #endif
-                    Button(action: sendButtonAction) {
-                        #if os(iOS)
-                            Text(sendTitle)
-                                .foregroundColor(.white)
-                                .padding(.vertical, 6)
-                                .padding(.horizontal, 12)
-                                .background(Color.blue)
-                                .cornerRadius(15)
-                        #else
-                            Text(sendTitle)
-                        #endif
                     }
-                    if editingItemID != nil {
-                        Button("", systemImage: "xmark.circle.fill") {
-                            editingItemID = nil
-                            newMessage = ""
-                        }
-                        .foregroundStyle(.red.opacity(0.8))
-                        .transition(.scale.combined(with: .opacity))
-                    }
-                }
-                .animation(.easeInOut, value: editingItemID)
-                .padding(.horizontal, 12)
+                    .animation(.easeInOut, value: editingItemID)
+                    .padding(.horizontal, 12)
+                #endif
                 HStack {
                     Text(typingInfo)
                         .font(.footnote)
