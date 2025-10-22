@@ -1,6 +1,7 @@
 @testable import AblyChat
 import Clocks
 import Foundation
+import Semaphore
 import Testing
 
 @MainActor
@@ -89,8 +90,10 @@ final class TypingTimerManagerTests {
 
         var handlerCalled = false
 
+        let semaphoreSignalledByHandler = AsyncSemaphore(value: 0)
         timerManager.startTypingTimer(for: "client1") {
             handlerCalled = true
+            semaphoreSignalledByHandler.signal()
         }
 
         #expect(timerManager.isCurrentlyTyping(clientID: "client1"))
@@ -98,6 +101,7 @@ final class TypingTimerManagerTests {
         // Advance time to trigger timer expiration (heartbeatThrottle + gracePeriod)
         await mockClock.advance(by: 1.6)
 
+        await semaphoreSignalledByHandler.wait()
         #expect(handlerCalled)
         #expect(!timerManager.isCurrentlyTyping(clientID: "client1"))
         #expect(timerManager.currentlyTypingClientIDs().isEmpty)
@@ -149,8 +153,10 @@ final class TypingTimerManagerTests {
 
         var handlerCalled = false
 
+        let semaphoreSignalledByHandler = AsyncSemaphore(value: 0)
         timerManager.startTypingTimer(for: "client1") {
             handlerCalled = true
+            semaphoreSignalledByHandler.signal()
         }
 
         // Advance by heartbeatThrottle only - should still be typing
@@ -162,6 +168,7 @@ final class TypingTimerManagerTests {
         // Advance by grace period - now should expire
         await mockClock.advance(by: 0.5)
 
+        await semaphoreSignalledByHandler.wait()
         #expect(handlerCalled)
         #expect(!timerManager.isCurrentlyTyping(clientID: "client1"))
     }
