@@ -105,7 +105,7 @@ final class TypingTimerManagerTests {
 
     // @spec CHA-T13b2 - Tests that each additional typing heartbeat resets the timeout
     // @spec CHA-T4b - Tests extending the timeout when typing is already in progress
-    @Test(.disabled())
+    @Test
     @available(iOS 16.0, tvOS 16, *)
     func timerReset() async {
         let mockClock = MockTestClock()

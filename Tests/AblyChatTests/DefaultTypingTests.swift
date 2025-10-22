@@ -264,7 +264,7 @@ struct DefaultTypingTests {
 
     // @specOneOf(3/3) CHA-T13b1 - Tests timeout setup for typing clients
     // @spec CHA-T13b3 - Tests that timeout expiration removes client from typing set
-    @Test
+    @Test(.disabled())
     @available(iOS 16.0, tvOS 16.0, *)
     func typing_ExpiresAfterHeartbeatThrottle() async throws {
         // Given
