@@ -1,0 +1,556 @@
+􀟈  Test run started.
+􀄵  Swift Version: 6.2.0
+􀄵  Testing Library Version: 1085
+􀄵  Target Platform: arm64e-apple-macos14.0
+􀄵  OS Version: 26.0.1 (25A362)
+􀟈  Suite DefaultInternalLoggerTests started.
+􀟈  Suite DefaultRoomTests started.
+􀟈  Suite InternalLoggerTests started.
+􀟈  Suite ChatAPITests started.
+􀟈  Suite RoomReactionDTOTests started.
+􀟈  Suite DefaultMessagesTests started.
+􀟈  Suite SubscriptionStorageTests started.
+􀟈  Suite TypingOperationQueueTests started.
+􀟈  Suite DefaultTypingTests started.
+􀟈  Suite MessageSubscriptionResponseAsyncSequenceTests started.
+􀟈  Suite DefaultRoomLifecycleManagerTests started.
+􀟈  Suite RoomOptionsTests started.
+􀟈  Suite ChatClientTests started.
+􀟈  Suite IntegrationTests started.
+􀟈  Suite DefaultPresenceTests started.
+􀟈  Suite DefaultRoomsTests started.
+􀟈  Suite StringEncodeTests started.
+􀟈  Suite MessageTests started.
+􀟈  Suite DefaultMessageReactionsTests started.
+􀟈  Suite ErrorInfoTests started.
+􀟈  Suite DefaultRoomOccupancyTests started.
+􀟈  Suite SubscriptionAsyncSequenceTests started.
+􀟈  Suite DefaultRoomReactionsTests started.
+􀟈  Suite ExtrasTests started.
+􀟈  Suite TypingTimerManagerTests started.
+􀟈  Suite DataTests started.
+􀟈  Suite JSONValueTests started.
+􀟈  Suite ClientReactions started.
+􀟈  Test log_whenLogLevelArgumentIsNil_itDoesNotLog() started.
+􀟈  Test defaults() started.
+􀟈  Test disablesImplicitAttach() started.
+􀟈  Test attach(managerAttachResult:) started.
+􀟈  Test log() started.
+􀟈  Test protocolExtension_logMessage_defaultArguments_populatesFileIDAndLine() started.
+􀟈  Test log_whenLogLevelArgumentIsLessSevereThanLogLevelProperty_itDoesNotLog() started.
+􀟈  Test release() started.
+􀟈  Test passesChannelToLifecycleManager() started.
+􀟈  Test getMessages_whenGetMessagesReturnsServerError_throwsARTError() started.
+􀟈  Test fetchesChannelOnce() started.
+􀟈  Test channel() started.
+􀟈  Test detach(managerDetachResult:) started.
+􀟈  Test onStatusChange() started.
+􀟈  Test channelName() started.
+􀟈  Test sendMessage_returnsMessage() started.
+􀟈  Test sendMessage_whenSendMessageReturnsNoItems_throwsNoItemInResponse() started.
+􀟈  Test presenceEnableEvents(enableEvents:expectedChannelModes:) started.
+􀟈  Test onDiscontinuity() started.
+􀟈  Test subscriptionPointIsAttachSerialWhenUnderlyingRealtimeChannelIsNotAttached() started.
+􀟈  Test occupancyEnableEvents(enableEvents:expectedOccupancyChannelParam:) started.
+􀟈  Test statusAndError() started.
+􀟈  Test errorShouldBeThrownIfErrorIsReturnedFromSendRESTChatAPI() started.
+􀟈  Test updateMessage() started.
+􀟈  Test sendMessage_includesHeadersInBody() started.
+􀟈  Test getMessages_whenGetMessagesReturnsNoItems_returnsEmptyPaginatedResult() started.
+􀟈  Test sendMessage() started.
+􀟈  Test errorShouldBeThrownIfErrorIsReturnedFromDeleteRESTChatAPI() started.
+􀟈  Test getMessage() started.
+􀟈  Test whenChannelReentersATTACHEDWithResumedFalseThenSubscriptionPointResetsToAttachSerial() started.
+􀟈  Test errorShouldBeThrownIfErrorIsReturnedFromUpdateRESTChatAPI() started.
+􀟈  Test getMessagesAcceptsStandardHistoryQueryOptions() started.
+􀟈  Test deleteMessage() started.
+􀟈  Test getMessages_whenGetMessagesReturnsItems_returnsItemsInPaginatedResult() started.
+􀟈  Test sendMessage_includesMetadataInBody() started.
+􀟈  Test emit() started.
+􀟈  Test removesSubscriptionOnUnsubscribe() started.
+􀟈  Test errorShouldBeThrownIfErrorIsReturnedFromGetRESTChatAPI() started.
+􀟈  Test subscriptionhistoryBeforeSubscribeAcceptsStandardHistoryQueryOptionsExceptForDirection() started.
+􀟈  Test whenChannelUPDATEReceivedWithResumedFalseThenSubscriptionPointResetsToAttachSerial() started.
+􀟈  Test malformedEventsWithIncompleteDataStillEmittedWithDefaultValues() started.
+􀟈  Test subscriptionhistoryBeforeSubscribeThrowsErrorInfoInCaseOfServerError() started.
+􀟈  Test stop_PublishesStoppedEvent() started.
+􀟈  Test enqueue_whenAnOperationThrows_itDoesNotAffectPendingOperations() started.
+􀟈  Test subscriptionPointIsChannelSerialWhenUnderlyingRealtimeChannelIsAttached() started.
+􀟈  Test enqueue_whenExecutingAnOperation_enqueues() started.
+􀟈  Test keystroke_PublishesWithEphemeralFlag() started.
+􀟈  Test subscriptionCanBeRegisteredToReceiveIncomingMessages() started.
+􀟈  Test getMessagesThrowsErrorInfoInCaseOfServerError() started.
+􀟈  Test keystroke_multipleKeystroke_onlySends1WithinThrottleAllowance() started.
+􀟈  Test enqueue_whenExecutingAnOperation_replacesAnyPendingRequest() started.
+􀟈  Test detach_whenReleasing() started.
+􀟈  Test release_transitionsToReleasing() started.
+􀟈  Test get_ReturnsCurrentlyTypingClients() started.
+􀟈  Test keystroke_PublishesStartedEvent() started.
+􀟈  Test subscribe_ReceivesStoppedTypingEvent() started.
+􀟈  Test channelStateChange_withOperationInProgress() started.
+􀟈  Test mockGetPreviousMessages() started.
+􀟈  Test stop_PublishesCorrectFormatMessage() started.
+􀟈  Test typing_ExpiresAfterHeartbeatThrottle() started.
+􀟈  Test release_whenDetachFails_ifChannelIsFailed_doesNotRetry() started.
+􀟈  Test release_whenDetachFails_ifChannelIsNotFailed_retriesAfterPause() started.
+􀟈  Test stop_UnsetsHeartbeatTimer() started.
+􀟈  Test channelStateChange_withNoOperationInProgress() started.
+􀟈  Test subscribe_ReceivesStartedTypingEvent() started.
+􀟈  Test enqueue_rethrowsOperationError_whenOperationExecutedFromPending() started.
+􀟈  Test enqueue_whenExecutingAPreviouslyPendingOperation() started.
+􀟈  Test detach_transitionsToDetaching() started.
+􀟈  Test subscribe_ReturnsSubscriptionForTypingEvents() started.
+􀟈  Test attach_attachesChannel_andWhenItAttachesSuccessfully_transitionsToAttached() started.
+􀟈  Test attach_transitionsToAttaching() started.
+􀟈  Test enqueue_whenIdle_executesOperation() started.
+􀟈  Test withMockAsyncSequence() started.
+􀟈  Test keystroke_SetsHeartbeatTimer() started.
+􀟈  Test attach_ifOtherOperationInProgress_waitsForItToComplete() started.
+􀟈  Test release_whenChannelIsFailed() started.
+􀟈  Test stop_IsNoOpWhenNotTyping() started.
+􀟈  Test channelStateEvent_discontinuity(hasAttachedOnce:isExplicitlyDetached:channelEvent:expectDiscontinuity:) started.
+􀟈  Test detach_detachesChannel_andWhenItDetachesSuccessfully_transitionsToDetached() started.
+􀟈  Test detach_whenChannelFailsToDetach() started.
+􀟈  Test attach_whenReleased() started.
+􀟈  Test detach_whenReleased() started.
+􀟈  Test waitToBeAbleToPerformPresenceOperations_whenAnyOtherStatus() started.
+􀟈  Test attach_whenReleasing() started.
+􀟈  Test release_whenAlreadyReleased() started.
+􀟈  Test release_whenDetachedOrInitialized(status:) started.
+􀟈  Test attach_whenAlreadyAttached() started.
+􀟈  Test release_ifOtherOperationInProgress_waitsForItToComplete() started.
+􀟈  Test attach_whenChannelFailsToAttach() started.
+􀟈  Test channel_nonStateChangeEvent_doesNotCauseRoomStatusChange() started.
+􀟈  Test current_startsAsInitialized() started.
+􀟈  Test detach_ifOtherOperationInProgress_waitsForItToComplete() started.
+􀟈  Test detach_whenAlreadyDetached() started.
+􀟈  Test emit() started.
+􀟈  Test release_whenChannelIsNotFailed() started.
+􀟈  Test waitToBeAbleToPerformPresenceOperations_whenAttached() started.
+􀟈  Test waitToBeAbleToPerformPresenceOperations_whenAttaching_whenTransitionsToAttached() started.
+􀟈  Test defaultValue_presence_enableEvents() started.
+􀟈  Test defaultValue_occupancy_enableEvents() started.
+􀟈  Test preservesStaticTypeInformation() started.
+􀟈  Test detach_whenFailed() started.
+􀟈  Test rooms() started.
+􀟈  Test test_realtime() started.
+􀟈  Test usersMayUpdatePresenceWhileAttachingWithFailure() started.
+􀟈  Test init_withoutClientOptions() started.
+􀟈  Test usersMayEnterPresenceWithoutData() started.
+􀟈  Test basicIntegrationTest() started.
+􀟈  Test waitToBeAbleToPerformPresenceOperations_whenAttaching_whenTransitionsToNonAttachedStatus() started.
+􀟈  Test roomNameWithSlashInTheName() started.
+􀟈  Test usersMayUpdatePresenceWhileAttaching() started.
+􀟈  Test usersMayEnterPresenceWhileAttaching() started.
+􀟈  Test usersMayUpdatePresence() started.
+􀟈  Test usersMayEnterPresenceWhileAttachingWithFailure() started.
+􀟈  Test usersMayEnterPresence() started.
+􀟈  Test get_whenRoomExistsInRoomMap_throwsErrorWhenOptionsDoNotMatch() started.
+􀟈  Test retrieveAllTheMembersOfThePresenceSetWhileAttaching() started.
+􀟈  Test createsWrapperSDKProxyRealtimeClientWithAgents() started.
+􀟈  Test retrieveAllTheMembersOfThePresenceSet() started.
+􀟈  Test release() started.
+􀟈  Test usersMayLeavePresence() started.
+􀟈  Test encodeUsesUppercaseHex() started.
+􀟈  Test retrieveAllTheMembersOfThePresenceSetWhileAttachingWithFailure() started.
+􀟈  Test ifUserIsPresent() started.
+􀟈  Test failToUpdatePresenceWhenRoomInInvalidState() started.
+􀟈  Test encodeValidSurrogatePairs() started.
+􀟈  Test get_whenRoomExistsInRoomMap_returnsExistingRoomWithGivenName() started.
+􀟈  Test failToEnterPresenceWhenRoomInInvalidState() started.
+􀟈  Test get_withoutOptions_usesDefaultOptions() started.
+􀟈  Test encodeEmoji() started.
+􀟈  Test get_whenFutureExistsInRoomMap_returnsExistingRoomWithGivenName() started.
+􀟈  Test get_returnsRoomWithGivenNameAndOptions() started.
+􀟈  Test get_whenFutureExistsInRoomMap_throwsErrorWhenOptionsDoNotMatch() started.
+􀟈  Test reactionTypeForRoomIsDistinctByDefault() started.
+􀟈  Test withChatMessageEventOlderReturnsOriginal() started.
+􀟈  Test failToRetrieveAllTheMembersOfThePresenceSetWhenRoomInInvalidState() started.
+􀟈  Test encodeUTF8ThreeByteCharacters() started.
+􀟈  Test errorShouldBeThrownIfMessageSerialIsEmptyWhenDelete() started.
+􀟈  Test release_withNoRoomMapEntry_andReleaseInProgress() started.
+􀟈  Test withMessageReactionSummaryEventThrowsForDifferentMessage() started.
+􀟈  Test release_withReleaseInProgress_failsPendingGetOperations() started.
+􀟈  Test encodeOnlySpecialCharacters() started.
+􀟈  Test subscribeToMessageReactionSummaries() started.
+􀟈  Test sendAndDeleteReactionForMessage() started.
+􀟈  Test withMessageReactionSummaryEvent() started.
+􀟈  Test withChatMessageEventThrowsForDifferentMessage() started.
+􀟈  Test release_withNoRoomMapEntry_andNoReleaseInProgress() started.
+􀟈  Test configureDefaultMessageReactionTypeForRoom() started.
+􀟈  Test get_whenReleaseInProgress() started.
+􀟈  Test withChatMessageEventCreatedThrowsError() started.
+􀟈  Test encodeQueryString() started.
+􀟈  Test withChatMessageEventDeleted() started.
+􀟈  Test invalidReactionEventsMustStillProduceEventWithDefaultValues() started.
+􀟈  Test ifReactionTypeIsUnknownTheEventShallBeIgnored() started.
+􀟈  Test enqueue_rethrowsOperationError_whenOperationExecutedFromIdle() started.
+􀟈  Test encodeMixedContent() started.
+􀟈  Test encodeMultipleSurrogatePairs() started.
+􀟈  Test invalidReactionSummaryEventsMustStillProduceEventWithDefaultValues() started.
+􀟈  Test encodeSpecialCharacters() started.
+􀟈  Test withChatMessageEventSameAgeReturnsOriginal() started.
+􀟈  Test encodeUTF8TwoByteCharacters() started.
+􀟈  Test encodeURLComponents() started.
+􀟈  Test subscribeToRawMessageReactions() started.
+􀟈  Test whenUnderlyingErrorIsNotAblyCocoaError() started.
+􀟈  Test encodeSlash() started.
+􀟈  Test whenUnderlyingErrorIsAblyCocoaError() started.
+􀟈  Test occupancyGet() started.
+􀟈  Test encodeRoomName() started.
+􀟈  Test encodeSpaces() started.
+􀟈  Test ifInvalidOccupancyEventReceivedItMustBeEmittedWithZeroValues() started.
+􀟈  Test emit() started.
+􀟈  Test addTerminationHandler_terminationHandlerCalledWhenSubscriptionDiscarded() started.
+􀟈  Test addTerminationHandler_terminationHandlerCalledWhenIterationTaskCancelled() started.
+􀟈  Test errorShouldBeThrownIfMessageSerialIsEmptyWhenSend() started.
+􀟈  Test withChatMessageEventUpdatedNewer() started.
+􀟈  Test reactionsAreSentInTheCorrectFormat() started.
+􀟈  Test usersCanSubscribeToRealtimeOccupancyUpdates() started.
+􀟈  Test withMockAsyncSequence() started.
+􀟈  Test encodeEmptyString() started.
+􀟈  Test malformedEventsWithIncompleteDataStillEmittedWithDefaultValues() started.
+􀟈  Test encodeBasicASCIICharacters() started.
+􀟈  Test subscriptionCanBeRegisteredToReceiveReactionEvents() started.
+􀟈  Test case passing 1 argument managerAttachResult → success() (Swift.Result<(), AblyChat.ErrorInfo>) to attach(managerAttachResult:) started.
+􀟈  Test case passing 1 argument managerDetachResult → failure((500:50000) Internal error. See https://help.ably.io/error/50000.) (Swift.Result<(), AblyChat.ErrorInfo>) to detach(managerDetachResult:) started.
+􀟈  Test case passing 1 argument managerAttachResult → failure((500:50000) Internal error. See https://help.ably.io/error/50000.) (Swift.Result<(), AblyChat.ErrorInfo>) to attach(managerAttachResult:) started.
+􀟈  Test initWithJSONValue_withNoHeadersKey() started.
+􀟈  Test toJSONValue_withNilHeaders() started.
+􀟈  Test initWithJSONValue() started.
+􀟈  Test case passing 1 argument managerDetachResult → success() (Swift.Result<(), AblyChat.ErrorInfo>) to detach(managerDetachResult:) started.
+􀟈  Test multipleClientTyping() started.
+􀟈  Test toJSONValue() started.
+􀟈  Test gracePeriodTiming() started.
+􀟈  Test heartbeatTimerLifecycle() started.
+􀟈  Test case passing 2 arguments enableEvents → false (Swift.Bool), expectedOccupancyChannelParam → nil (Swift.Optional<Swift.String>) to occupancyEnableEvents(enableEvents:expectedOccupancyChannelParam:) started.
+􀟈  Test typingTimerExpiration() started.
+􀟈  Test case passing 2 arguments enableEvents → true (Swift.Bool), expectedOccupancyChannelParam → "metrics" (Swift.Optional<Swift.String>) to occupancyEnableEvents(enableEvents:expectedOccupancyChannelParam:) started.
+􀟈  Test heartbeatTimerExpiration() started.
+􀟈  Test case passing 2 arguments enableEvents → false (Swift.Bool), expectedChannelModes → ARTChannelMode(rawValue: 2555904) (__C.ARTChannelMode) to presenceEnableEvents(enableEvents:expectedChannelModes:) started.
+􀙟  Test timerReset() skipped.
+􀟈  Test case passing 2 arguments enableEvents → true (Swift.Bool), expectedChannelModes → ARTChannelMode(rawValue: 3080192) (__C.ARTChannelMode) to presenceEnableEvents(enableEvents:expectedChannelModes:) started.
+􀟈  Test initWithJSONValue_failsIfNotObject() started.
+􀟈  Test testStartTypingTimer() started.
+􀟈  Test initWithJSONValue_withNoTypeKey() started.
+􀟈  Test toJSONValue() started.
+􀟈  Test toJSONValue_withNilMetadata() started.
+􀟈  Test initWithJSONValue_withNoMetadataKey() started.
+􀟈  Test initWithJSONValue() started.
+􀟈  Test initWithJSONValue_failsIfNotObject() started.
+􀟈  Test case passing 4 arguments hasAttachedOnce → true (Swift.Bool), isExplicitlyDetached → false (Swift.Bool), channelEvent → ChannelStateChange(current: __C.ARTRealtimeChannelState, previous: __C.ARTRealtimeChannelState, event: __C.ARTChannelEvent, reason: Optional((500:50000) Internal error. See https://help.ably.io/error/50000.), resumed: false) (AblyChat.ChannelStateChange), expectDiscontinuity → true (Swift.Bool) to channelStateEvent_discontinuity(hasAttachedOnce:isExplicitlyDetached:channelEvent:expectDiscontinuity:) started.
+􀟈  Test case passing 1 argument status → .detached (AblyChat.RoomStatus) to release_whenDetachedOrInitialized(status:) started.
+􀟈  Test case passing 4 arguments hasAttachedOnce → true (Swift.Bool), isExplicitlyDetached → false (Swift.Bool), channelEvent → ChannelStateChange(current: __C.ARTRealtimeChannelState, previous: __C.ARTRealtimeChannelState, event: __C.ARTChannelEvent, reason: Optional((500:50000) Internal error. See https://help.ably.io/error/50000.), resumed: false) (AblyChat.ChannelStateChange), expectDiscontinuity → true (Swift.Bool) to channelStateEvent_discontinuity(hasAttachedOnce:isExplicitlyDetached:channelEvent:expectDiscontinuity:) started.
+􀟈  Test case passing 1 argument status → .initialized (AblyChat.RoomStatus) to release_whenDetachedOrInitialized(status:) started.
+􀟈  Test case passing 4 arguments hasAttachedOnce → true (Swift.Bool), isExplicitlyDetached → false (Swift.Bool), channelEvent → ChannelStateChange(current: __C.ARTRealtimeChannelState, previous: __C.ARTRealtimeChannelState, event: __C.ARTChannelEvent, reason: nil, resumed: false) (AblyChat.ChannelStateChange), expectDiscontinuity → false (Swift.Bool) to channelStateEvent_discontinuity(hasAttachedOnce:isExplicitlyDetached:channelEvent:expectDiscontinuity:) started.
+􀟈  Test case passing 4 arguments hasAttachedOnce → true (Swift.Bool), isExplicitlyDetached → false (Swift.Bool), channelEvent → ChannelStateChange(current: __C.ARTRealtimeChannelState, previous: __C.ARTRealtimeChannelState, event: __C.ARTChannelEvent, reason: nil, resumed: true) (AblyChat.ChannelStateChange), expectDiscontinuity → false (Swift.Bool) to channelStateEvent_discontinuity(hasAttachedOnce:isExplicitlyDetached:channelEvent:expectDiscontinuity:) started.
+􀟈  Test case passing 4 arguments hasAttachedOnce → false (Swift.Bool), isExplicitlyDetached → false (Swift.Bool), channelEvent → ChannelStateChange(current: __C.ARTRealtimeChannelState, previous: __C.ARTRealtimeChannelState, event: __C.ARTChannelEvent, reason: Optional((500:50000) Internal error. See https://help.ably.io/error/50000.), resumed: false) (AblyChat.ChannelStateChange), expectDiscontinuity → false (Swift.Bool) to channelStateEvent_discontinuity(hasAttachedOnce:isExplicitlyDetached:channelEvent:expectDiscontinuity:) started.
+􀟈  Test case passing 4 arguments hasAttachedOnce → true (Swift.Bool), isExplicitlyDetached → true (Swift.Bool), channelEvent → ChannelStateChange(current: __C.ARTRealtimeChannelState, previous: __C.ARTRealtimeChannelState, event: __C.ARTChannelEvent, reason: Optional((500:50000) Internal error. See https://help.ably.io/error/50000.), resumed: false) (AblyChat.ChannelStateChange), expectDiscontinuity → false (Swift.Bool) to channelStateEvent_discontinuity(hasAttachedOnce:isExplicitlyDetached:channelEvent:expectDiscontinuity:) started.
+􀟈  Test initWithAblyCocoaPresenceData(ablyCocoaData:expectedResult:) started.
+􀟈  Test toAblyCocoaData_endToEnd() started.
+􀟈  Test toAblyCocoaData(value:expectedResult:) started.
+􀟈  Test initWithAblyCocoaData_endToEnd() started.
+􀟈  Test getClientReactionsForMessageWithSpecificClientID() started.
+􀟈  Test getClientReactionsThrowsErrorOnAPIFailure() started.
+􀟈  Test getClientReactionsForMessage() started.
+􁁛  Test log() passed after 0.004 seconds.
+􁁛  Test defaults() passed after 0.004 seconds.
+􁁛  Test protocolExtension_logMessage_defaultArguments_populatesFileIDAndLine() passed after 0.004 seconds.
+􁁛  Test log_whenLogLevelArgumentIsNil_itDoesNotLog() passed after 0.004 seconds.
+􁁛  Test log_whenLogLevelArgumentIsLessSevereThanLogLevelProperty_itDoesNotLog() passed after 0.004 seconds.
+􁁛  Test defaultValue_presence_enableEvents() passed after 0.003 seconds.
+􁁛  Test defaultValue_occupancy_enableEvents() passed after 0.003 seconds.
+􀟈  Test case passing 2 arguments ablyCocoaData → ["someElement"] (Swift.Array<Swift.String>), expectedResult → .array([AblyChat.JSONValue.string("someElement")]) (Swift.Optional<AblyChat.JSONValue>) to initWithAblyCocoaPresenceData(ablyCocoaData:expectedResult:) started.
+􀟈  Test case passing 2 arguments ablyCocoaData → ["someKey": "someValue"] (Swift.Dictionary<Swift.String, Swift.String>), expectedResult → .object(["someKey": AblyChat.JSONValue.string("someValue")]) (Swift.Optional<AblyChat.JSONValue>) to initWithAblyCocoaPresenceData(ablyCocoaData:expectedResult:) started.
+􁁛  Test case passing 2 arguments ablyCocoaData → ["someElement"] (Swift.Array<Swift.String>), expectedResult → .array([AblyChat.JSONValue.string("someElement")]) (Swift.Optional<AblyChat.JSONValue>) to initWithAblyCocoaPresenceData(ablyCocoaData:expectedResult:) passed after 0.001 seconds.
+􁁛  Test case passing 2 arguments ablyCocoaData → ["someKey": "someValue"] (Swift.Dictionary<Swift.String, Swift.String>), expectedResult → .object(["someKey": AblyChat.JSONValue.string("someValue")]) (Swift.Optional<AblyChat.JSONValue>) to initWithAblyCocoaPresenceData(ablyCocoaData:expectedResult:) passed after 0.001 seconds.
+􀟈  Test case passing 2 arguments ablyCocoaData → "someString" (Swift.String), expectedResult → .string("someString") (Swift.Optional<AblyChat.JSONValue>) to initWithAblyCocoaPresenceData(ablyCocoaData:expectedResult:) started.
+􁁛  Test case passing 2 arguments ablyCocoaData → "someString" (Swift.String), expectedResult → .string("someString") (Swift.Optional<AblyChat.JSONValue>) to initWithAblyCocoaPresenceData(ablyCocoaData:expectedResult:) passed after 0.001 seconds.
+􀟈  Test case passing 2 arguments value → .object(["someKey": AblyChat.JSONValue.string("someValue")]) (AblyChat.JSONValue), expectedResult → ["someKey": "someValue"] (Swift.Dictionary<Swift.String, Swift.String>) to toAblyCocoaData(value:expectedResult:) started.
+􁁛  Test withChatMessageEventOlderReturnsOriginal() passed after 0.003 seconds.
+􁁛  Test encodeEmoji() passed after 0.003 seconds.
+􀟈  Test case passing 2 arguments value → .string("someString") (AblyChat.JSONValue), expectedResult → "someString" (Swift.String) to toAblyCocoaData(value:expectedResult:) started.
+􁁛  Test case passing 2 arguments value → .object(["someKey": AblyChat.JSONValue.string("someValue")]) (AblyChat.JSONValue), expectedResult → ["someKey": "someValue"] (Swift.Dictionary<Swift.String, Swift.String>) to toAblyCocoaData(value:expectedResult:) passed after 0.001 seconds.
+􁁛  Test case passing 2 arguments value → .string("someString") (AblyChat.JSONValue), expectedResult → "someString" (Swift.String) to toAblyCocoaData(value:expectedResult:) passed after 0.001 seconds.
+􀟈  Test case passing 2 arguments value → .number(0.0) (AblyChat.JSONValue), expectedResult → 0 (__NSCFNumber) to toAblyCocoaData(value:expectedResult:) started.
+􀟈  Test case passing 2 arguments ablyCocoaData → 0 (__NSCFNumber), expectedResult → .number(0.0) (Swift.Optional<AblyChat.JSONValue>) to initWithAblyCocoaPresenceData(ablyCocoaData:expectedResult:) started.
+􀟈  Test case passing 2 arguments value → .number(1.0) (AblyChat.JSONValue), expectedResult → 1 (__NSCFNumber) to toAblyCocoaData(value:expectedResult:) started.
+􁁛  Test case passing 2 arguments value → .number(0.0) (AblyChat.JSONValue), expectedResult → 0 (__NSCFNumber) to toAblyCocoaData(value:expectedResult:) passed after 0.001 seconds.
+􁁛  Test case passing 2 arguments ablyCocoaData → 0 (__NSCFNumber), expectedResult → .number(0.0) (Swift.Optional<AblyChat.JSONValue>) to initWithAblyCocoaPresenceData(ablyCocoaData:expectedResult:) passed after 0.001 seconds.
+􁁛  Test encodeValidSurrogatePairs() passed after 0.004 seconds.
+􁁛  Test case passing 2 arguments value → .number(1.0) (AblyChat.JSONValue), expectedResult → 1 (__NSCFNumber) to toAblyCocoaData(value:expectedResult:) passed after 0.001 seconds.
+􀟈  Test case passing 2 arguments ablyCocoaData → 1 (__NSCFNumber), expectedResult → .number(1.0) (Swift.Optional<AblyChat.JSONValue>) to initWithAblyCocoaPresenceData(ablyCocoaData:expectedResult:) started.
+􀟈  Test case passing 2 arguments value → .number(123.0) (AblyChat.JSONValue), expectedResult → 123 (__NSCFNumber) to toAblyCocoaData(value:expectedResult:) started.
+􀟈  Test case passing 2 arguments ablyCocoaData → 123 (__NSCFNumber), expectedResult → .number(123.0) (Swift.Optional<AblyChat.JSONValue>) to initWithAblyCocoaPresenceData(ablyCocoaData:expectedResult:) started.
+􁁛  Test case passing 2 arguments ablyCocoaData → 1 (__NSCFNumber), expectedResult → .number(1.0) (Swift.Optional<AblyChat.JSONValue>) to initWithAblyCocoaPresenceData(ablyCocoaData:expectedResult:) passed after 0.001 seconds.
+􁁛  Test case passing 2 arguments value → .number(123.0) (AblyChat.JSONValue), expectedResult → 123 (__NSCFNumber) to toAblyCocoaData(value:expectedResult:) passed after 0.001 seconds.
+􁁛  Test case passing 2 arguments ablyCocoaData → 123 (__NSCFNumber), expectedResult → .number(123.0) (Swift.Optional<AblyChat.JSONValue>) to initWithAblyCocoaPresenceData(ablyCocoaData:expectedResult:) passed after 0.001 seconds.
+􁁛  Test encodeOnlySpecialCharacters() passed after 0.004 seconds.
+􀟈  Test case passing 2 arguments ablyCocoaData → 123.456 (__NSCFNumber), expectedResult → .number(123.456) (Swift.Optional<AblyChat.JSONValue>) to initWithAblyCocoaPresenceData(ablyCocoaData:expectedResult:) started.
+􀟈  Test case passing 2 arguments value → .bool(true) (AblyChat.JSONValue), expectedResult → 1 (__NSCFBoolean) to toAblyCocoaData(value:expectedResult:) started.
+􁁛  Test encodeUsesUppercaseHex() passed after 0.004 seconds.
+􁁛  Test case passing 2 arguments value → .bool(true) (AblyChat.JSONValue), expectedResult → 1 (__NSCFBoolean) to toAblyCocoaData(value:expectedResult:) passed after 0.001 seconds.
+􁁛  Test case passing 2 arguments ablyCocoaData → 123.456 (__NSCFNumber), expectedResult → .number(123.456) (Swift.Optional<AblyChat.JSONValue>) to initWithAblyCocoaPresenceData(ablyCocoaData:expectedResult:) passed after 0.001 seconds.
+􀟈  Test case passing 2 arguments value → .bool(false) (AblyChat.JSONValue), expectedResult → 0 (__NSCFBoolean) to toAblyCocoaData(value:expectedResult:) started.
+􀟈  Test case passing 2 arguments value → .array([AblyChat.JSONValue.string("someElement")]) (AblyChat.JSONValue), expectedResult → ["someElement"] (Swift.Array<Swift.String>) to toAblyCocoaData(value:expectedResult:) started.
+􁁛  Test encodeUTF8ThreeByteCharacters() passed after 0.004 seconds.
+􁁛  Test case passing 2 arguments value → .bool(false) (AblyChat.JSONValue), expectedResult → 0 (__NSCFBoolean) to toAblyCocoaData(value:expectedResult:) passed after 0.001 seconds.
+􁁛  Test withMessageReactionSummaryEvent() passed after 0.004 seconds.
+􁁛  Test withMockAsyncSequence() passed after 0.004 seconds.
+􀟈  Test case passing 2 arguments ablyCocoaData → 1 (__NSCFBoolean), expectedResult → .bool(true) (Swift.Optional<AblyChat.JSONValue>) to initWithAblyCocoaPresenceData(ablyCocoaData:expectedResult:) started.
+􀟈  Test case passing 2 arguments ablyCocoaData → 0 (__NSCFBoolean), expectedResult → .bool(false) (Swift.Optional<AblyChat.JSONValue>) to initWithAblyCocoaPresenceData(ablyCocoaData:expectedResult:) started.
+􀟈  Test case passing 2 arguments value → .null (AblyChat.JSONValue), expectedResult → <null> (NSNull) to toAblyCocoaData(value:expectedResult:) started.
+􀟈  Test case passing 2 arguments ablyCocoaData → <null> (NSNull), expectedResult → .null (Swift.Optional<AblyChat.JSONValue>) to initWithAblyCocoaPresenceData(ablyCocoaData:expectedResult:) started.
+􁁛  Test case passing 2 arguments ablyCocoaData → 1 (__NSCFBoolean), expectedResult → .bool(true) (Swift.Optional<AblyChat.JSONValue>) to initWithAblyCocoaPresenceData(ablyCocoaData:expectedResult:) passed after 0.001 seconds.
+􁁛  Test case passing 2 arguments ablyCocoaData → 0 (__NSCFBoolean), expectedResult → .bool(false) (Swift.Optional<AblyChat.JSONValue>) to initWithAblyCocoaPresenceData(ablyCocoaData:expectedResult:) passed after 0.001 seconds.
+􁁛  Test withMessageReactionSummaryEventThrowsForDifferentMessage() passed after 0.004 seconds.
+􁁛  Test case passing 2 arguments value → .null (AblyChat.JSONValue), expectedResult → <null> (NSNull) to toAblyCocoaData(value:expectedResult:) passed after 0.001 seconds.
+􁁛  Test encodeQueryString() passed after 0.004 seconds.
+􁁛  Test withChatMessageEventThrowsForDifferentMessage() passed after 0.004 seconds.
+􁁛  Test withChatMessageEventDeleted() passed after 0.004 seconds.
+􀟈  Test case passing 2 arguments value → .number(123.456) (AblyChat.JSONValue), expectedResult → 123.456 (__NSCFNumber) to toAblyCocoaData(value:expectedResult:) started.
+􁁛  Test encodeSpecialCharacters() passed after 0.004 seconds.
+􁁛  Test encodeMultipleSurrogatePairs() passed after 0.004 seconds.
+􁁛  Test withChatMessageEventCreatedThrowsError() passed after 0.004 seconds.
+􁁛  Test withChatMessageEventSameAgeReturnsOriginal() passed after 0.004 seconds.
+􁁛  Test encodeUTF8TwoByteCharacters() passed after 0.004 seconds.
+􁁛  Test whenUnderlyingErrorIsNotAblyCocoaError() passed after 0.004 seconds.
+􁁛  Test encodeURLComponents() passed after 0.004 seconds.
+􁁛  Test encodeRoomName() passed after 0.004 seconds.
+􁁛  Test encodeSlash() passed after 0.004 seconds.
+􁁛  Test case passing 2 arguments ablyCocoaData → <null> (NSNull), expectedResult → .null (Swift.Optional<AblyChat.JSONValue>) to initWithAblyCocoaPresenceData(ablyCocoaData:expectedResult:) passed after 0.001 seconds.
+􁁛  Test encodeSpaces() passed after 0.004 seconds.
+􁁛  Test encodeMixedContent() passed after 0.004 seconds.
+􁁛  Test encodeEmptyString() passed after 0.004 seconds.
+􁁛  Test case passing 2 arguments value → .number(123.456) (AblyChat.JSONValue), expectedResult → 123.456 (__NSCFNumber) to toAblyCocoaData(value:expectedResult:) passed after 0.001 seconds.
+􁁛  Test encodeBasicASCIICharacters() passed after 0.004 seconds.
+􁁛  Test withChatMessageEventUpdatedNewer() passed after 0.004 seconds.
+􁁛  Test initWithJSONValue_withNoHeadersKey() passed after 0.003 seconds.
+􁁛  Test withMockAsyncSequence() passed after 0.004 seconds.
+􁁛  Test toJSONValue_withNilHeaders() passed after 0.003 seconds.
+􁁛  Test toJSONValue() passed after 0.003 seconds.
+􁁛  Test whenUnderlyingErrorIsAblyCocoaError() passed after 0.004 seconds.
+􁁛  Test initWithJSONValue_withNoMetadataKey() passed after 0.003 seconds.
+􁁛  Test initWithJSONValue() passed after 0.003 seconds.
+􁁛  Test disablesImplicitAttach() passed after 0.006 seconds.
+􁁛  Test passesChannelToLifecycleManager() passed after 0.006 seconds.
+􁁛  Test initWithJSONValue_failsIfNotObject() passed after 0.002 seconds.
+􁁛  Test initWithJSONValue_withNoTypeKey() passed after 0.003 seconds.
+􁁛  Test initWithJSONValue_failsIfNotObject() passed after 0.003 seconds.
+􁁛  Test initWithAblyCocoaData_endToEnd() passed after 0.002 seconds.
+􁁛  Test toJSONValue_withNilMetadata() passed after 0.003 seconds.
+􁁛  Test initWithAblyCocoaPresenceData(ablyCocoaData:expectedResult:) with 10 test cases passed after 0.002 seconds.
+􁁛  Test initWithJSONValue() passed after 0.004 seconds.
+􁁛  Test case passing 2 arguments value → .array([AblyChat.JSONValue.string("someElement")]) (AblyChat.JSONValue), expectedResult → ["someElement"] (Swift.Array<Swift.String>) to toAblyCocoaData(value:expectedResult:) passed after 0.001 seconds.
+􁁛  Test case passing 2 arguments enableEvents → false (Swift.Bool), expectedOccupancyChannelParam → nil (Swift.Optional<Swift.String>) to occupancyEnableEvents(enableEvents:expectedOccupancyChannelParam:) passed after 0.003 seconds.
+􁁛  Test case passing 2 arguments enableEvents → true (Swift.Bool), expectedOccupancyChannelParam → "metrics" (Swift.Optional<Swift.String>) to occupancyEnableEvents(enableEvents:expectedOccupancyChannelParam:) passed after 0.003 seconds.
+􁁛  Test case passing 2 arguments enableEvents → false (Swift.Bool), expectedChannelModes → ARTChannelMode(rawValue: 2555904) (__C.ARTChannelMode) to presenceEnableEvents(enableEvents:expectedChannelModes:) passed after 0.004 seconds.
+􁁛  Test channel() passed after 0.006 seconds.
+􁁛  Suite InternalLoggerTests passed after 0.007 seconds.
+􁁛  Suite DefaultInternalLoggerTests passed after 0.007 seconds.
+􁁛  Test sendMessage_returnsMessage() passed after 0.006 seconds.
+􁁛  Suite RoomOptionsTests passed after 0.007 seconds.
+􁁛  Test emit() passed after 0.005 seconds.
+􁁛  Test release() passed after 0.006 seconds.
+􁁛  Suite MessageTests passed after 0.007 seconds.
+􁁛  Test updateMessage() passed after 0.006 seconds.
+􁁛  Test getMessages_whenGetMessagesReturnsNoItems_returnsEmptyPaginatedResult() passed after 0.006 seconds.
+􁁛  Test sendMessage() passed after 0.006 seconds.
+􁁛  Suite ErrorInfoTests passed after 0.007 seconds.
+􁁛  Test toAblyCocoaData(value:expectedResult:) with 10 test cases passed after 0.002 seconds.
+􁁛  Test occupancyEnableEvents(enableEvents:expectedOccupancyChannelParam:) with 2 test cases passed after 0.006 seconds.
+􁁛  Test statusAndError() passed after 0.006 seconds.
+􁁛  Suite ExtrasTests passed after 0.007 seconds.
+􁁛  Test fetchesChannelOnce() passed after 0.006 seconds.
+􁁛  Test emit() passed after 0.004 seconds.
+􁁛  Test channelName() passed after 0.006 seconds.
+􁁛  Test sendMessage_includesHeadersInBody() passed after 0.006 seconds.
+􁁛  Test toJSONValue() passed after 0.003 seconds.
+􁁛  Test getMessagesAcceptsStandardHistoryQueryOptions() passed after 0.006 seconds.
+􁁛  Suite DataTests passed after 0.007 seconds.
+􁁛  Suite StringEncodeTests passed after 0.007 seconds.
+􁁛  Test case passing 2 arguments enableEvents → true (Swift.Bool), expectedChannelModes → ARTChannelMode(rawValue: 3080192) (__C.ARTChannelMode) to presenceEnableEvents(enableEvents:expectedChannelModes:) passed after 0.004 seconds.
+􁁛  Suite RoomReactionDTOTests passed after 0.007 seconds.
+􁁛  Test presenceEnableEvents(enableEvents:expectedChannelModes:) with 2 test cases passed after 0.006 seconds.
+􁁛  Test sendMessage_includesMetadataInBody() passed after 0.006 seconds.
+􁁛  Test removesSubscriptionOnUnsubscribe() passed after 0.006 seconds.
+􁁛  Test getMessages_whenGetMessagesReturnsItems_returnsItemsInPaginatedResult() passed after 0.006 seconds.
+􁁛  Test deleteMessage() passed after 0.006 seconds.
+􁁛  Test getMessage() passed after 0.007 seconds.
+􁁛  Test emit() passed after 0.007 seconds.
+􁁛  Suite SubscriptionStorageTests passed after 0.008 seconds.
+􁁛  Test keystroke_PublishesWithEphemeralFlag() passed after 0.007 seconds.
+􁁛  Test subscriptionCanBeRegisteredToReceiveIncomingMessages() passed after 0.007 seconds.
+􁁛  Test get_ReturnsCurrentlyTypingClients() passed after 0.008 seconds.
+􁁛  Test stop_PublishesStoppedEvent() passed after 0.008 seconds.
+􁁛  Test stop_PublishesCorrectFormatMessage() passed after 0.008 seconds.
+􁁛  Test malformedEventsWithIncompleteDataStillEmittedWithDefaultValues() passed after 0.008 seconds.
+􁁛  Test release_whenDetachFails_ifChannelIsFailed_doesNotRetry() passed after 0.008 seconds.
+􁁛  Test keystroke_PublishesStartedEvent() passed after 0.008 seconds.
+􁁛  Test stop_UnsetsHeartbeatTimer() passed after 0.008 seconds.
+􁁛  Test toAblyCocoaData_endToEnd() passed after 0.005 seconds.
+􁁛  Suite JSONValueTests passed after 0.009 seconds.
+􁁛  Test attach_attachesChannel_andWhenItAttachesSuccessfully_transitionsToAttached() passed after 0.009 seconds.
+􁁛  Test subscribe_ReturnsSubscriptionForTypingEvents() passed after 0.008 seconds.
+􁁛  Test enqueue_whenIdle_executesOperation() passed after 0.008 seconds.
+􁁛  Test keystroke_SetsHeartbeatTimer() passed after 0.008 seconds.
+􁁛  Test stop_IsNoOpWhenNotTyping() passed after 0.009 seconds.
+􁁛  Test release_whenChannelIsFailed() passed after 0.009 seconds.
+􁁛  Test detach_whenChannelFailsToDetach() passed after 0.009 seconds.
+􁁛  Test release_whenAlreadyReleased() passed after 0.009 seconds.
+􁁛  Test attach_whenAlreadyAttached() passed after 0.009 seconds.
+􁁛  Test case passing 1 argument status → .detached (AblyChat.RoomStatus) to release_whenDetachedOrInitialized(status:) passed after 0.007 seconds.
+􁁛  Test detach_detachesChannel_andWhenItDetachesSuccessfully_transitionsToDetached() passed after 0.009 seconds.
+􁁛  Test attach_whenChannelFailsToAttach() passed after 0.009 seconds.
+􁁛  Test waitToBeAbleToPerformPresenceOperations_whenAttached() passed after 0.009 seconds.
+􁁛  Test current_startsAsInitialized() passed after 0.009 seconds.
+􁁛  Test detach_whenAlreadyDetached() passed after 0.009 seconds.
+􁁛  Test get_withoutOptions_usesDefaultOptions() passed after 0.010 seconds.
+􁁛  Test get_returnsRoomWithGivenNameAndOptions() passed after 0.010 seconds.
+􁁛  Test reactionTypeForRoomIsDistinctByDefault() passed after 0.010 seconds.
+􁁛  Test subscribeToMessageReactionSummaries() passed after 0.011 seconds.
+􁁛  Test release_withNoRoomMapEntry_andNoReleaseInProgress() passed after 0.011 seconds.
+􁁛  Test sendAndDeleteReactionForMessage() passed after 0.011 seconds.
+􁁛  Test configureDefaultMessageReactionTypeForRoom() passed after 0.011 seconds.
+􁁛  Test ifReactionTypeIsUnknownTheEventShallBeIgnored() passed after 0.012 seconds.
+􁁛  Test invalidReactionEventsMustStillProduceEventWithDefaultValues() passed after 0.012 seconds.
+􁁛  Test invalidReactionSummaryEventsMustStillProduceEventWithDefaultValues() passed after 0.012 seconds.
+􁁛  Test subscribeToRawMessageReactions() passed after 0.012 seconds.
+􁁛  Test occupancyGet() passed after 0.012 seconds.
+􁁛  Test reactionsAreSentInTheCorrectFormat() passed after 0.013 seconds.
+􁁛  Test malformedEventsWithIncompleteDataStillEmittedWithDefaultValues() passed after 0.013 seconds.
+􁁛  Test subscriptionCanBeRegisteredToReceiveReactionEvents() passed after 0.013 seconds.
+􁁛  Test heartbeatTimerLifecycle() passed after 0.012 seconds.
+􁁛  Suite DefaultRoomReactionsTests passed after 0.016 seconds.
+􁁛  Test case passing 1 argument managerAttachResult → success() (Swift.Result<(), AblyChat.ErrorInfo>) to attach(managerAttachResult:) passed after 0.013 seconds.
+􁁛  Test getClientReactionsForMessageWithSpecificClientID() passed after 0.011 seconds.
+􁁛  Test getClientReactionsForMessage() passed after 0.011 seconds.
+􁁛  Test getMessages_whenGetMessagesReturnsServerError_throwsARTError() passed after 0.015 seconds.
+􁁛  Test onStatusChange() passed after 0.015 seconds.
+􁁛  Test sendMessage_whenSendMessageReturnsNoItems_throwsNoItemInResponse() passed after 0.015 seconds.
+􁁛  Test case passing 1 argument managerDetachResult → failure((500:50000) Internal error. See https://help.ably.io/error/50000.) (Swift.Result<(), AblyChat.ErrorInfo>) to detach(managerDetachResult:) passed after 0.013 seconds.
+􁁛  Test onDiscontinuity() passed after 0.015 seconds.
+􁁛  Test case passing 1 argument managerDetachResult → success() (Swift.Result<(), AblyChat.ErrorInfo>) to detach(managerDetachResult:) passed after 0.013 seconds.
+􁁛  Test detach(managerDetachResult:) with 2 test cases passed after 0.015 seconds.
+􁁛  Test errorShouldBeThrownIfErrorIsReturnedFromSendRESTChatAPI() passed after 0.015 seconds.
+􁁛  Test case passing 1 argument managerAttachResult → failure((500:50000) Internal error. See https://help.ably.io/error/50000.) (Swift.Result<(), AblyChat.ErrorInfo>) to attach(managerAttachResult:) passed after 0.013 seconds.
+􁁛  Suite ChatAPITests passed after 0.016 seconds.
+􁁛  Test errorShouldBeThrownIfErrorIsReturnedFromDeleteRESTChatAPI() passed after 0.015 seconds.
+􁁛  Test attach(managerAttachResult:) with 2 test cases passed after 0.016 seconds.
+􁁛  Test errorShouldBeThrownIfErrorIsReturnedFromGetRESTChatAPI() passed after 0.015 seconds.
+􁁛  Test getMessagesThrowsErrorInfoInCaseOfServerError() passed after 0.015 seconds.
+􁁛  Test detach_whenReleasing() passed after 0.015 seconds.
+􁁛  Suite DefaultRoomTests passed after 0.016 seconds.
+􁁛  Test errorShouldBeThrownIfErrorIsReturnedFromUpdateRESTChatAPI() passed after 0.015 seconds.
+􁁛  Test subscribe_ReceivesStoppedTypingEvent() passed after 0.015 seconds.
+􁁛  Test subscribe_ReceivesStartedTypingEvent() passed after 0.015 seconds.
+􁁛  Test mockGetPreviousMessages() passed after 0.015 seconds.
+􁁛  Test attach_whenReleased() passed after 0.015 seconds.
+􁁛  Test attach_whenReleasing() passed after 0.015 seconds.
+􁁛  Suite MessageSubscriptionResponseAsyncSequenceTests passed after 0.017 seconds.
+􁁛  Test waitToBeAbleToPerformPresenceOperations_whenAnyOtherStatus() passed after 0.015 seconds.
+􁁛  Test detach_whenReleased() passed after 0.015 seconds.
+􁁛  Test channelStateChange_withNoOperationInProgress() passed after 0.015 seconds.
+􁁛  Test case passing 4 arguments hasAttachedOnce → true (Swift.Bool), isExplicitlyDetached → false (Swift.Bool), channelEvent → ChannelStateChange(current: __C.ARTRealtimeChannelState, previous: __C.ARTRealtimeChannelState, event: __C.ARTChannelEvent, reason: Optional((500:50000) Internal error. See https://help.ably.io/error/50000.), resumed: false) (AblyChat.ChannelStateChange), expectDiscontinuity → true (Swift.Bool) to channelStateEvent_discontinuity(hasAttachedOnce:isExplicitlyDetached:channelEvent:expectDiscontinuity:) passed after 0.013 seconds.
+􁁛  Test case passing 4 arguments hasAttachedOnce → true (Swift.Bool), isExplicitlyDetached → false (Swift.Bool), channelEvent → ChannelStateChange(current: __C.ARTRealtimeChannelState, previous: __C.ARTRealtimeChannelState, event: __C.ARTChannelEvent, reason: nil, resumed: false) (AblyChat.ChannelStateChange), expectDiscontinuity → false (Swift.Bool) to channelStateEvent_discontinuity(hasAttachedOnce:isExplicitlyDetached:channelEvent:expectDiscontinuity:) passed after 0.013 seconds.
+􁁛  Test case passing 1 argument status → .initialized (AblyChat.RoomStatus) to release_whenDetachedOrInitialized(status:) passed after 0.013 seconds.
+􁁛  Test case passing 4 arguments hasAttachedOnce → true (Swift.Bool), isExplicitlyDetached → false (Swift.Bool), channelEvent → ChannelStateChange(current: __C.ARTRealtimeChannelState, previous: __C.ARTRealtimeChannelState, event: __C.ARTChannelEvent, reason: Optional((500:50000) Internal error. See https://help.ably.io/error/50000.), resumed: false) (AblyChat.ChannelStateChange), expectDiscontinuity → true (Swift.Bool) to channelStateEvent_discontinuity(hasAttachedOnce:isExplicitlyDetached:channelEvent:expectDiscontinuity:) passed after 0.013 seconds.
+􁁛  Test case passing 4 arguments hasAttachedOnce → true (Swift.Bool), isExplicitlyDetached → false (Swift.Bool), channelEvent → ChannelStateChange(current: __C.ARTRealtimeChannelState, previous: __C.ARTRealtimeChannelState, event: __C.ARTChannelEvent, reason: nil, resumed: true) (AblyChat.ChannelStateChange), expectDiscontinuity → false (Swift.Bool) to channelStateEvent_discontinuity(hasAttachedOnce:isExplicitlyDetached:channelEvent:expectDiscontinuity:) passed after 0.013 seconds.
+􁁛  Test release_whenDetachedOrInitialized(status:) with 2 test cases passed after 0.015 seconds.
+􁁛  Test case passing 4 arguments hasAttachedOnce → false (Swift.Bool), isExplicitlyDetached → false (Swift.Bool), channelEvent → ChannelStateChange(current: __C.ARTRealtimeChannelState, previous: __C.ARTRealtimeChannelState, event: __C.ARTChannelEvent, reason: Optional((500:50000) Internal error. See https://help.ably.io/error/50000.), resumed: false) (AblyChat.ChannelStateChange), expectDiscontinuity → false (Swift.Bool) to channelStateEvent_discontinuity(hasAttachedOnce:isExplicitlyDetached:channelEvent:expectDiscontinuity:) passed after 0.013 seconds.
+􁁛  Test channel_nonStateChangeEvent_doesNotCauseRoomStatusChange() passed after 0.015 seconds.
+􁁛  Test case passing 4 arguments hasAttachedOnce → true (Swift.Bool), isExplicitlyDetached → true (Swift.Bool), channelEvent → ChannelStateChange(current: __C.ARTRealtimeChannelState, previous: __C.ARTRealtimeChannelState, event: __C.ARTChannelEvent, reason: Optional((500:50000) Internal error. See https://help.ably.io/error/50000.), resumed: false) (AblyChat.ChannelStateChange), expectDiscontinuity → false (Swift.Bool) to channelStateEvent_discontinuity(hasAttachedOnce:isExplicitlyDetached:channelEvent:expectDiscontinuity:) passed after 0.013 seconds.
+􁁛  Test detach_whenFailed() passed after 0.015 seconds.
+􁁛  Test channelStateEvent_discontinuity(hasAttachedOnce:isExplicitlyDetached:channelEvent:expectDiscontinuity:) with 6 test cases passed after 0.015 seconds.
+􁁛  Test release_whenChannelIsNotFailed() passed after 0.016 seconds.
+􁁛  Test keystroke_multipleKeystroke_onlySends1WithinThrottleAllowance() passed after 0.017 seconds.
+􁁛  Test get_whenRoomExistsInRoomMap_throwsErrorWhenOptionsDoNotMatch() passed after 0.016 seconds.
+􁁛  Test get_whenRoomExistsInRoomMap_returnsExistingRoomWithGivenName() passed after 0.017 seconds.
+􁁛  Test enqueue_rethrowsOperationError_whenOperationExecutedFromIdle() passed after 0.016 seconds.
+􁁛  Test ifInvalidOccupancyEventReceivedItMustBeEmittedWithZeroValues() passed after 0.016 seconds.
+􁁛  Test errorShouldBeThrownIfMessageSerialIsEmptyWhenSend() passed after 0.016 seconds.
+􁁛  Test errorShouldBeThrownIfMessageSerialIsEmptyWhenDelete() passed after 0.016 seconds.
+􁁛  Test usersCanSubscribeToRealtimeOccupancyUpdates() passed after 0.016 seconds.
+􁁛  Test addTerminationHandler_terminationHandlerCalledWhenSubscriptionDiscarded() passed after 0.016 seconds.
+􁁛  Test getClientReactionsThrowsErrorOnAPIFailure() passed after 0.014 seconds.
+􁁛  Suite DefaultRoomOccupancyTests passed after 0.019 seconds.
+􁁛  Test subscriptionPointIsAttachSerialWhenUnderlyingRealtimeChannelIsNotAttached() passed after 0.018 seconds.
+􁁛  Suite ClientReactions passed after 0.018 seconds.
+􁁛  Suite DefaultMessageReactionsTests passed after 0.019 seconds.
+􁁛  Test subscriptionhistoryBeforeSubscribeAcceptsStandardHistoryQueryOptionsExceptForDirection() passed after 0.018 seconds.
+􁁛  Test subscriptionPointIsChannelSerialWhenUnderlyingRealtimeChannelIsAttached() passed after 0.018 seconds.
+􁁛  Test test_realtime() passed after 0.018 seconds.
+􁁛  Test preservesStaticTypeInformation() passed after 0.018 seconds.
+􁁛  Test init_withoutClientOptions() passed after 0.018 seconds.
+􁁛  Test retrieveAllTheMembersOfThePresenceSetWhileAttaching() passed after 0.018 seconds.
+􁁛  Test rooms() passed after 0.018 seconds.
+􁁛  Test usersMayEnterPresenceWithoutData() passed after 0.018 seconds.
+􁁛  Test retrieveAllTheMembersOfThePresenceSet() passed after 0.018 seconds.
+􁁛  Test createsWrapperSDKProxyRealtimeClientWithAgents() passed after 0.018 seconds.
+􁁛  Test testStartTypingTimer() passed after 0.016 seconds.
+􁁛  Test addTerminationHandler_terminationHandlerCalledWhenIterationTaskCancelled() passed after 0.017 seconds.
+􁁛  Test enqueue_whenAnOperationThrows_itDoesNotAffectPendingOperations() passed after 0.019 seconds.
+􁁛  Test enqueue_rethrowsOperationError_whenOperationExecutedFromPending() passed after 0.018 seconds.
+􁁛  Suite ChatClientTests passed after 0.020 seconds.
+􁁛  Test multipleClientTyping() passed after 0.017 seconds.
+􁁛  Suite SubscriptionAsyncSequenceTests passed after 0.020 seconds.
+􁁛  Test usersMayUpdatePresence() passed after 0.018 seconds.
+􁁛  Test failToUpdatePresenceWhenRoomInInvalidState() passed after 0.018 seconds.
+􁁛  Test usersMayEnterPresenceWhileAttaching() passed after 0.018 seconds.
+􁁛  Test usersMayEnterPresence() passed after 0.018 seconds.
+􁁛  Test failToEnterPresenceWhenRoomInInvalidState() passed after 0.018 seconds.
+􁁛  Test ifUserIsPresent() passed after 0.018 seconds.
+􁁛  Test failToRetrieveAllTheMembersOfThePresenceSetWhenRoomInInvalidState() passed after 0.018 seconds.
+􁁛  Test usersMayLeavePresence() passed after 0.018 seconds.
+􁁛  Test whenChannelReentersATTACHEDWithResumedFalseThenSubscriptionPointResetsToAttachSerial() passed after 0.019 seconds.
+􁁛  Test release_transitionsToReleasing() passed after 0.019 seconds.
+􁁛  Test detach_transitionsToDetaching() passed after 0.019 seconds.
+􁁛  Test whenChannelUPDATEReceivedWithResumedFalseThenSubscriptionPointResetsToAttachSerial() passed after 0.019 seconds.
+􁁛  Test channelStateChange_withOperationInProgress() passed after 0.019 seconds.
+􁁛  Test retrieveAllTheMembersOfThePresenceSetWhileAttachingWithFailure() passed after 0.018 seconds.
+􁁛  Test enqueue_whenExecutingAnOperation_enqueues() passed after 0.019 seconds.
+􁁛  Test subscriptionhistoryBeforeSubscribeThrowsErrorInfoInCaseOfServerError() passed after 0.019 seconds.
+􁁛  Test usersMayUpdatePresenceWhileAttaching() passed after 0.018 seconds.
+􁁛  Suite DefaultMessagesTests passed after 0.021 seconds.
+􁁛  Test release() passed after 0.019 seconds.
+􁁛  Test attach_transitionsToAttaching() passed after 0.019 seconds.
+􀢄  Test typingTimerExpiration() recorded an issue at TypingTimerManagerTests.swift:101:9: Expectation failed: handlerCalled
+􀄵  handlerCalled
+􁁛  Test heartbeatTimerExpiration() passed after 0.017 seconds.
+􁁛  Test usersMayEnterPresenceWhileAttachingWithFailure() passed after 0.019 seconds.
+􁁛  Test usersMayUpdatePresenceWhileAttachingWithFailure() passed after 0.019 seconds.
+􁁛  Suite DefaultPresenceTests passed after 0.021 seconds.
+􀢄  Test typingTimerExpiration() recorded an issue at TypingTimerManagerTests.swift:102:9: Expectation failed: !((timerManager → AblyChat.TypingTimerManager<AblyChatTests.MockTestClock>).isCurrentlyTyping(clientID: "client1") → true)
+􀄵  (timerManager: AblyChat.TypingTimerManager<AblyChatTests.MockTestClock> → AblyChat.TypingTimerManager<AblyChatTests.MockTestClock>).isCurrentlyTyping(clientID: "client1": Swift.String → "client1")
+􀢄  Test typingTimerExpiration() recorded an issue at TypingTimerManagerTests.swift:103:9: Expectation failed: (timerManager.currentlyTypingClientIDs() → ["client1"]).isEmpty → false
+􀄵  timerManager.currentlyTypingClientIDs(): Swift.Set<Swift.String> → ["client1"]
+􀄵  isEmpty: Swift.Bool
+􀢄  Test typingTimerExpiration() failed after 0.020 seconds with 3 issues.
+􀄵  // @spec CHA-T13b3 - Tests timeout expiration removing client from typing set and calling the onCancelled handler.
+􁁛  Test release_whenDetachFails_ifChannelIsNotFailed_retriesAfterPause() passed after 0.022 seconds.
+􁁛  Test enqueue_whenExecutingAnOperation_replacesAnyPendingRequest() passed after 0.022 seconds.
+􁁛  Test waitToBeAbleToPerformPresenceOperations_whenAttaching_whenTransitionsToAttached() passed after 0.022 seconds.
+􁁛  Test waitToBeAbleToPerformPresenceOperations_whenAttaching_whenTransitionsToNonAttachedStatus() passed after 0.022 seconds.
+􁁛  Test attach_ifOtherOperationInProgress_waitsForItToComplete() passed after 0.022 seconds.
+􁁛  Test release_ifOtherOperationInProgress_waitsForItToComplete() passed after 0.022 seconds.
+􁁛  Test detach_ifOtherOperationInProgress_waitsForItToComplete() passed after 0.022 seconds.
+􁁛  Suite DefaultRoomLifecycleManagerTests passed after 0.024 seconds.
+􁁛  Test release_withNoRoomMapEntry_andReleaseInProgress() passed after 0.022 seconds.
+􁁛  Test enqueue_whenExecutingAPreviouslyPendingOperation() passed after 0.023 seconds.
+􁁛  Suite TypingOperationQueueTests passed after 0.024 seconds.
+􁁛  Test get_whenReleaseInProgress() passed after 0.022 seconds.
+􁁛  Test get_whenFutureExistsInRoomMap_throwsErrorWhenOptionsDoNotMatch() passed after 0.022 seconds.
+􁁛  Test get_whenFutureExistsInRoomMap_returnsExistingRoomWithGivenName() passed after 0.022 seconds.
+􁁛  Test release_withReleaseInProgress_failsPendingGetOperations() passed after 0.022 seconds.
+􁁛  Suite DefaultRoomsTests passed after 0.024 seconds.
+􀢄  Test gracePeriodTiming() recorded an issue at TypingTimerManagerTests.swift:165:9: Expectation failed: handlerCalled
+􀄵  handlerCalled
+􀢄  Test gracePeriodTiming() recorded an issue at TypingTimerManagerTests.swift:166:9: Expectation failed: !((timerManager → AblyChat.TypingTimerManager<AblyChatTests.MockTestClock>).isCurrentlyTyping(clientID: "client1") → true)
+􀄵  (timerManager: AblyChat.TypingTimerManager<AblyChatTests.MockTestClock> → AblyChat.TypingTimerManager<AblyChatTests.MockTestClock>).isCurrentlyTyping(clientID: "client1": Swift.String → "client1")
+􀢄  Test gracePeriodTiming() failed after 0.033 seconds with 2 issues.
+􀄵  // @spec CHA-T10 - Users can configure the heartbeat interval (set to 1 in createTypingTimerManager)
+􀄵  // @spec CHA-T10a1 - Tests that grace period is correctly applied to prevent flickering
+􀢄  Suite TypingTimerManagerTests failed after 0.037 seconds with 5 issues.
+􁁛  Test roomNameWithSlashInTheName() passed after 5.481 seconds.
+􁁛  Test basicIntegrationTest() passed after 30.088 seconds.
+􁁛  Suite IntegrationTests passed after 30.091 seconds.
