@@ -6,9 +6,11 @@ struct MenuButtonView: View {
 
     var body: some View {
         Menu {
-            Button(action: onEdit) {
-                Label("Edit", systemImage: "pencil")
-            }
+            #if !os(tvOS)
+                Button(action: onEdit) {
+                    Label("Edit", systemImage: "pencil")
+                }
+            #endif
 
             Button(role: .destructive, action: onDelete) {
                 Label("Delete", systemImage: "trash")

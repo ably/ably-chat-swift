@@ -10,7 +10,7 @@ private enum Environment: Equatable {
     /// - Parameters:
     ///   - key: Your Ably API key.
     ///   - clientId: A string that identifies this client.
-    case live(key: String, clientId: String)
+    case live(key: String, clientID: String)
 
     @MainActor
     func createChatClient() -> any ChatClientProtocol {
@@ -19,10 +19,10 @@ private enum Environment: Equatable {
             return MockChatClient(
                 clientOptions: ChatClientOptions(),
             )
-        case let .live(key: key, clientId: clientId):
+        case let .live(key: key, clientID: clientID):
             let realtimeOptions = ARTClientOptions()
             realtimeOptions.key = key
-            realtimeOptions.clientId = clientId
+            realtimeOptions.clientId = clientID
             let realtime = ARTRealtime(options: realtimeOptions)
 
             return ChatClient(realtime: realtime, clientOptions: .init())
@@ -45,6 +45,7 @@ struct ContentView: View {
     @State private var chatClient = Environment.current.createChatClient()
     @State private var currentClientID: String?
 
+    @State private var isLoadingHistory = true
     @State private var reactions: [Reaction] = []
     @State private var newMessage = ""
     @State private var typingInfo = ""
@@ -114,81 +115,102 @@ struct ContentView: View {
                 .font(.footnote)
                 .frame(height: 12)
                 .padding(.horizontal, 8)
-                List(listItems, id: \.id) { item in
-                    switch item {
-                    case let .message(messageItem):
-                        if messageItem.message.action == .messageDelete {
-                            DeletedMessageView(item: messageItem)
-                                .flip()
-                        } else {
-                            MessageView(
-                                currentClientID: currentClientID,
-                                item: messageItem,
-                                isEditing: Binding(get: {
-                                    editingItemID == messageItem.message.serial
-                                }, set: { editing in
-                                    editingItemID = editing ? messageItem.message.serial : nil
-                                    newMessage = editing ? messageItem.message.text : ""
-                                }),
-                                onDeleteMessage: {
-                                    deleteMessage(messageItem.message)
-                                },
-                                onAddReaction: { reaction in
-                                    addMessageReaction(reaction, messageSerial: messageItem.message.serial)
-                                },
-                                onDeleteReaction: { reaction in
-                                    deleteMessageReaction(reaction, messageSerial: messageItem.message.serial)
-                                },
-                            ).id(item.id)
-                                .flip()
-                        }
-                    case let .presence(item):
-                        PresenceMessageView(item: item)
-                            .flip()
+                if isLoadingHistory {
+                    VStack(spacing: 16) {
+                        ProgressView()
+                        Text("Loading messages...")
+                            .foregroundStyle(.secondary)
                     }
-                }
-                .flip()
-                .listStyle(PlainListStyle())
-                HStack {
-                    TextField("Type a message...", text: $newMessage)
-                        .onChange(of: newMessage) {
-                            // this ensures that typing events are sent only when the message is actually changed whilst editing
-                            if let index = listItems.firstIndex(where: { $0.id == editingItemID }) {
-                                if case let .message(messageItem) = listItems[index] {
-                                    if newMessage != messageItem.message.text {
-                                        startTyping()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    // Don't show the scroll view until we've loaded history, since the defaultScrollAnchor doesn't behave well when you insert a load of messages (i.e. it doesn't remain anchored at bottom).
+                    ScrollView {
+                        // The ideal here would be to use LazyVStack, but that seems to not interact very well with the defaultScrollAnchor; sometimes (e.g. presence message display) new content arrives in the scroll view and it doesn't scroll to the bottom.
+                        //
+                        // No doubt there are performance implications of not using LazyVStack, but we can deal with that some other time.
+                        VStack(alignment: .leading, spacing: 8) {
+                            ForEach(listItems, id: \.id) { item in
+                                Group {
+                                    switch item {
+                                    case let .message(messageItem):
+                                        if messageItem.message.action == .messageDelete {
+                                            DeletedMessageView(item: messageItem)
+                                        } else {
+                                            MessageView(
+                                                currentClientID: currentClientID,
+                                                item: messageItem,
+                                                isEditing: Binding(get: {
+                                                    editingItemID == messageItem.message.serial
+                                                }, set: { editing in
+                                                    editingItemID = editing ? messageItem.message.serial : nil
+                                                    newMessage = editing ? messageItem.message.text : ""
+                                                }),
+                                                onDeleteMessage: {
+                                                    deleteMessage(messageItem.message)
+                                                },
+                                                onAddReaction: { reaction in
+                                                    addMessageReaction(reaction, messageSerial: messageItem.message.serial)
+                                                },
+                                                onDeleteReaction: { reaction in
+                                                    deleteMessageReaction(reaction, messageSerial: messageItem.message.serial)
+                                                },
+                                            ).id(item.id)
+                                        }
+                                    case let .presence(item):
+                                        PresenceMessageView(item: item)
                                     }
                                 }
-                            } else {
-                                startTyping()
+                                .padding(.horizontal, 12)
                             }
                         }
-                    #if !os(tvOS)
-                        .textFieldStyle(.roundedBorder)
-                    #endif
-                    Button(action: sendButtonAction) {
-                        #if os(iOS)
-                            Text(sendTitle)
-                                .foregroundColor(.white)
-                                .padding(.vertical, 6)
-                                .padding(.horizontal, 12)
-                                .background(Color.blue)
-                                .cornerRadius(15)
-                        #else
-                            Text(sendTitle)
-                        #endif
                     }
-                    if editingItemID != nil {
-                        Button("", systemImage: "xmark.circle.fill") {
-                            editingItemID = nil
-                            newMessage = ""
-                        }
-                        .foregroundStyle(.red.opacity(0.8))
-                        .transition(.scale.combined(with: .opacity))
-                    }
+                    // Keep the scroll view scrolled to the bottom (unless the user manually scrolls away).
+                    .defaultScrollAnchor(.bottom)
                 }
-                .animation(.easeInOut, value: editingItemID)
-                .padding(.horizontal, 12)
+                #if !os(tvOS)
+                    HStack {
+                        TextField("Type a message...", text: $newMessage)
+                            .onChange(of: newMessage) {
+                                // this ensures that typing events are sent only when the message is actually changed whilst editing
+                                if let index = listItems.firstIndex(where: { $0.id == editingItemID }) {
+                                    if case let .message(messageItem) = listItems[index] {
+                                        if newMessage != messageItem.message.text {
+                                            startTyping()
+                                        }
+                                    }
+                                } else {
+                                    startTyping()
+                                }
+                            }
+                            // Send message when user presses Enter
+                            .onSubmit {
+                                sendButtonAction()
+                            }
+                            .textFieldStyle(.roundedBorder)
+                        Button(action: sendButtonAction) {
+                            #if os(iOS)
+                                Text(sendTitle)
+                                    .foregroundColor(.white)
+                                    .padding(.vertical, 6)
+                                    .padding(.horizontal, 12)
+                                    .background(Color.blue)
+                                    .cornerRadius(15)
+                            #else
+                                Text(sendTitle)
+                            #endif
+                        }
+                        if editingItemID != nil {
+                            Button("", systemImage: "xmark.circle.fill") {
+                                editingItemID = nil
+                                newMessage = ""
+                            }
+                            .foregroundStyle(.red.opacity(0.8))
+                            .transition(.scale.combined(with: .opacity))
+                        }
+                    }
+                    .animation(.easeInOut, value: editingItemID)
+                    .padding(.horizontal, 12)
+                #endif
                 HStack {
                     Text(typingInfo)
                         .font(.footnote)
@@ -260,14 +282,13 @@ struct ContentView: View {
             switch event.type {
             case .created:
                 withAnimation {
-                    listItems.insert(
+                    listItems.append(
                         .message(
                             .init(
                                 message: message,
                                 isSender: message.clientID == currentClientID,
                             ),
                         ),
-                        at: 0,
                     )
                 }
             case .updated, .deleted:
@@ -288,14 +309,15 @@ struct ContentView: View {
                 }
             }
         }
-        let previousMessages = try await subscription.historyBeforeSubscribe(withParams: .init())
 
+        let previousMessages = try await subscription.historyBeforeSubscribe(withParams: .init())
+        defer { isLoadingHistory = false }
+
+        // previousMessages are in newest-to-oldest order
         for message in previousMessages.items {
             switch message.action {
             case .messageCreate, .messageUpdate, .messageDelete:
-                withAnimation {
-                    listItems.append(.message(.init(message: message, isSender: message.clientID == currentClientID)))
-                }
+                listItems.insert(.message(.init(message: message, isSender: message.clientID == currentClientID)), at: 0)
             }
         }
     }
@@ -332,13 +354,12 @@ struct ContentView: View {
     func subscribeToPresence(room: any Room) {
         room.presence.subscribe { event in
             withAnimation {
-                listItems.insert(
+                listItems.append(
                     .presence(
                         .init(
                             presence: event,
                         ),
                     ),
-                    at: 0,
                 )
             }
         }
@@ -537,12 +558,5 @@ extension PresenceEventType {
         case .update:
             "has updated presence"
         }
-    }
-}
-
-extension View {
-    func flip() -> some View {
-        rotationEffect(.radians(.pi))
-            .scaleEffect(x: -1, y: 1, anchor: .center)
     }
 }
