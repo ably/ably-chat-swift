@@ -10,7 +10,7 @@ private enum Environment: Equatable {
     /// - Parameters:
     ///   - key: Your Ably API key.
     ///   - clientId: A string that identifies this client.
-    case live(key: String, clientId: String)
+    case live(key: String, clientID: String)
 
     @MainActor
     func createChatClient() -> any ChatClientProtocol {
@@ -19,10 +19,10 @@ private enum Environment: Equatable {
             return MockChatClient(
                 clientOptions: ChatClientOptions(),
             )
-        case let .live(key: key, clientId: clientId):
+        case let .live(key: key, clientID: clientID):
             let realtimeOptions = ARTClientOptions()
             realtimeOptions.key = key
-            realtimeOptions.clientId = clientId
+            realtimeOptions.clientId = clientID
             let realtime = ARTRealtime(options: realtimeOptions)
 
             return ChatClient(realtime: realtime, clientOptions: .init())
