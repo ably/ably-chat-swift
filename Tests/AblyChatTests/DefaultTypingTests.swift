@@ -12,7 +12,7 @@ struct DefaultTypingTests {
         heartbeatThrottle: TimeInterval = 30, // Use a shorter throttle for faster tests
         mockClock: MockTestClock = MockTestClock(),
     ) -> DefaultTyping {
-        let mockLogger = MockInternalLogger()
+        let mockLogger = TestLogger()
 
         return DefaultTyping(
             channel: channel,

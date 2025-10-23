@@ -6,15 +6,12 @@ import Testing
 
 @MainActor
 final class TypingTimerManagerTests {
-    var mockLogger: MockInternalLogger!
-
     @available(iOS 16.0, tvOS 16, *)
     func createTypingTimerManager(with testClock: MockTestClock) -> TypingTimerManager<MockTestClock> {
-        mockLogger = MockInternalLogger()
         return TypingTimerManager(
             heartbeatThrottle: 1.0,
             gracePeriod: 0.5,
-            logger: mockLogger,
+            logger: TestLogger(),
             clock: testClock,
         )
     }
