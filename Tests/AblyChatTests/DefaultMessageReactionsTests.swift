@@ -98,6 +98,26 @@ struct DefaultMessageReactionsTests {
         #expect(thrownError == InternalError.deleteMessageReactionEmptyMessageSerial.toErrorInfo())
     }
 
+    // @spec CHA-MR11b1a
+    @Test
+    func errorShouldBeThrownIfNameNotSuppliedWhenDeletingNonUniqueReaction() async throws {
+        // Given
+        let realtime = MockRealtime {
+            MockHTTPPaginatedResponse.successSendMessage
+        }
+        let chatAPI = ChatAPI(realtime: realtime)
+        let channel = MockRealtimeChannel(initialState: .attached)
+        let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", logger: TestLogger())
+
+        let thrownError = await #expect(throws: ErrorInfo.self) {
+            // When
+            try await defaultMessages.reactions.delete(fromMessageWithSerial: "arbitrary", params: .init(name: nil, type: .multiple))
+        }
+
+        // Then
+        #expect(thrownError == InternalError.unableDeleteReactionWithoutName(reactionType: "reaction:multiple.v1").toErrorInfo())
+    }
+
     // @spec CHA-MR3
     // @spec CHA-MR3b
     // @spec CHA-MR3b2
