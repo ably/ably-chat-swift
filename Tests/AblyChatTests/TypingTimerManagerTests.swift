@@ -8,7 +8,7 @@ import Testing
 final class TypingTimerManagerTests {
     @available(iOS 16.0, tvOS 16, *)
     func createTypingTimerManager(with testClock: MockTestClock) -> TypingTimerManager<MockTestClock> {
-        return TypingTimerManager(
+        TypingTimerManager(
             heartbeatThrottle: 1.0,
             gracePeriod: 0.5,
             logger: TestLogger(),
@@ -104,11 +104,9 @@ final class TypingTimerManagerTests {
         #expect(timerManager.currentlyTypingClientIDs().isEmpty)
     }
 
-    // @spec CHA-T13b2 - Tests that each additional typing heartbeat resets the timeout
-    // @spec CHA-T4b - Tests extending the timeout when typing is already in progress
     @Test
     @available(iOS 16.0, tvOS 16, *)
-    func timerReset() async {
+    func startTypingTimer_resetsTimerWhenClientAlreadyInTypingSet() async {
         let mockClock = MockTestClock()
         let timerManager = createTypingTimerManager(with: mockClock)
 

@@ -42,25 +42,28 @@ internal final class DefaultTyping: Typing {
 
             logger.log(message: "Received started typing message: \(message)", level: .debug)
 
-            if !typingTimerManager.isCurrentlyTyping(clientID: messageClientID) {
-                // (CHA-T13b1) If the event represents a new client typing, then the chat client shall add the typer to the typing set and a emit the updated set to any subscribers. It shall also begin a timeout that is the sum of the CHA-T10 heartbeat interval and the CHA-T10a graсe period.
-                typingTimerManager.startTypingTimer(
-                    for: messageClientID,
-                ) { [weak self] in
-                    guard let self else {
-                        return
-                    }
-                    // (CHA-T13b3) (2/2) If the (CHA-T13b1) timeout expires, the client shall remove the clientId from the typing set and emit a synthetic typing stop event for the given client.
-                    callback(
-                        TypingSetEvent(
-                            type: .setChanged,
-                            currentlyTyping: typingTimerManager.currentlyTypingClientIDs(),
-                            change: .init(clientID: messageClientID, type: .stopped),
-                        ),
-                    )
-                }
+            let isNewClient = !typingTimerManager.isCurrentlyTyping(clientID: messageClientID)
 
-                // (CHA-T13) When a typing event (typing.start or typing.stop) is received from the realtime client, the Chat client shall emit appropriate events to the user.
+            // Start or reset typing timer for this clientID per CHA-T13b1 and CHA-T13b2.
+            typingTimerManager.startTypingTimer(
+                for: messageClientID,
+            ) { [weak self] in
+                guard let self else {
+                    return
+                }
+                // (CHA-T13b3) (2/2) If the (CHA-T13b1) timeout expires, the client shall remove the clientId from the typing set and emit a synthetic typing stop event for the given client.
+                callback(
+                    TypingSetEvent(
+                        type: .setChanged,
+                        currentlyTyping: typingTimerManager.currentlyTypingClientIDs(),
+                        change: .init(clientID: messageClientID, type: .stopped),
+                    ),
+                )
+            }
+
+            // (CHA-T13) When a typing event (typing.start or typing.stop) is received from the realtime client, the Chat client shall emit appropriate events to the user.
+            // (CHA-T13b1) If the event represents a new client typing, then the chat client shall add the typer to the typing set and a emit the updated set to any subscribers. It shall also begin a timeout that is the sum of the CHA-T10 heartbeat interval and the CHA-T10a graсe period.
+            if isNewClient {
                 callback(
                     TypingSetEvent(
                         type: .setChanged,

@@ -289,4 +289,56 @@ struct DefaultTypingTests {
         await #expect(stoppedEvent != nil)
         #expect(typing.current.isEmpty)
     }
+
+    // @spec CHA-T13b2 - Tests that each additional typing.started event resets the timeout
+    @Test
+    @available(iOS 16.0, tvOS 16.0, *)
+    func typing_AdditionalStartedEventResetsTimer() async throws {
+        // Given
+        let channel = MockRealtimeChannel()
+        let mockClock = MockTestClock()
+        let heartbeatThrottle: TimeInterval = 5
+        // gracePeriod is 2 (hardcoded in DefaultTyping), so timer duration is 7 seconds
+        let typing = createTyping(channel: channel, heartbeatThrottle: heartbeatThrottle, mockClock: mockClock)
+        var receivedEvents: [TypingSetEvent] = []
+
+        _ = typing.subscribe { @MainActor event in
+            receivedEvents.append(event)
+        }
+
+        // Simulate someone started typing
+        let message = ARTMessage(name: TypingEventType.started.rawValue, data: [], clientId: "test-client")
+        channel.simulateIncomingMessage(message, for: TypingEventType.started.rawValue)
+
+        // Verify we got the started event
+        #expect(receivedEvents.count == 1)
+        #expect(receivedEvents[0].change.type == .started)
+        #expect(receivedEvents[0].change.clientID == "test-client")
+
+        // When - advance time but not enough to expire the timer (now at t=4)
+        await mockClock.advance(by: 4)
+
+        // Then - send another typing.started event to reset the timer
+        // Original timer would have expired at t=7, reset timer now expires at t=11
+        channel.simulateIncomingMessage(message, for: TypingEventType.started.rawValue)
+
+        // Should not emit another started event for the same client
+        #expect(receivedEvents.count == 1)
+
+        // Advance time enough to expire the original timer (but not the reset one)
+        await mockClock.advance(by: 4) // now at t=8
+
+        // Client should still be typing because the timer was reset
+        #expect(typing.current.contains("test-client"))
+        #expect(receivedEvents.count == 1)
+
+        // Now advance enough to expire the reset timer
+        await mockClock.advance(by: 3) // now at t=11
+
+        // Should receive stopped event due to timeout
+        #expect(receivedEvents.count == 2)
+        #expect(receivedEvents[1].change.type == .stopped)
+        #expect(receivedEvents[1].change.clientID == "test-client")
+        #expect(typing.current.isEmpty)
+    }
 }
