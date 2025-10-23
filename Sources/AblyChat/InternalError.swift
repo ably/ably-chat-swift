@@ -73,14 +73,14 @@ internal enum InternalError {
     /// Error code is `roomDiscontinuity`.
     case roomDiscontinuity(cause: ErrorInfo?)
 
+    /// The user attempted to delete a reaction of type different than `unique`, without specifying the reaction identifier. This is not allowed per CHA-MR11b1a.
+    ///
+    /// Error code is `invalidArgument` (this is not specified by the spec, which does not make it explicit that the SDK should throw an error in this scenario).
+    case unableDeleteReactionWithoutName(reactionType: String)
+
     // MARK: - Errors not from the spec
 
     // TODO: Revisit the non-specified errors as part of https://github.com/ably/ably-chat-swift/issues/438
-
-    /// The user attempted to delete a reaction of type different than `unique`, without specifying the reaction identifier. This is not allowed per CHA-MR11b1.
-    ///
-    /// Error code is `badRequest` (this is not specified by the spec, which does not make it explicit that the SDK should throw an error in this scenario).
-    case unableDeleteReactionWithoutName(reactionType: String)
 
     /// Unable to fetch `historyBeforeSubscribe` because the `DefaultMessages` instance that stores the subscription points has been deallocated.
     ///
@@ -176,7 +176,7 @@ internal enum InternalError {
         case .roomDiscontinuity:
             .roomDiscontinuity
         case .unableDeleteReactionWithoutName:
-            .badRequest
+            .invalidArgument
         case .cannotApplyMessageEventForDifferentMessage:
             .invalidArgument
         case .cannotApplyReactionSummaryEventForDifferentMessage:
