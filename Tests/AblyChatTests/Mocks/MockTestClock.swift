@@ -14,8 +14,8 @@ final class MockTestClock: ClockProtocol {
         SwiftTestInstant(instant: testClock.now)
     }
 
-    func sleep(for duration: SwiftTestDuration) async throws {
-        try await testClock.sleep(for: duration.duration)
+    func sleep(until deadline: SwiftTestInstant) async throws {
+        try await testClock.sleep(until: deadline.instant)
     }
 
     func advance(by: TimeInterval) async {

@@ -6,7 +6,7 @@ internal protocol ClockProtocol: Sendable {
     associatedtype Duration: ClockDuration where Duration: Sendable
 
     var now: Instant { get }
-    func sleep(for duration: Duration) async throws
+    func sleep(until deadline: Instant) async throws
 }
 
 internal struct SystemClock: ClockProtocol, Sendable {
@@ -17,19 +17,16 @@ internal struct SystemClock: ClockProtocol, Sendable {
         SystemInstant(date: Date())
     }
 
-    internal func sleep(for duration: SystemDuration) async throws {
-        if duration.timeInterval > 0 {
-            try await Task.sleep(nanoseconds: UInt64(duration.timeInterval * 1_000_000_000))
+    internal func sleep(until deadline: SystemInstant) async throws {
+        let duration = deadline.timeInterval(since: now)
+        if duration > 0 {
+            try await Task.sleep(nanoseconds: UInt64(duration * 1_000_000_000))
         }
     }
 }
 
 // Protocol representing a point in time
-internal protocol ClockInstant: Sendable {
-    static func < (lhs: Self, rhs: Self) -> Bool
-    static func > (lhs: Self, rhs: Self) -> Bool
-    static func == (lhs: Self, rhs: Self) -> Bool
-
+internal protocol ClockInstant: Sendable, Comparable {
     func advanced(byTimeInterval timeInterval: TimeInterval) -> Self
 }
 
@@ -50,6 +47,10 @@ internal struct SystemInstant: ClockInstant, Sendable {
     // Implement the new method
     internal func advanced(byTimeInterval timeInterval: TimeInterval) -> SystemInstant {
         SystemInstant(date: date.addingTimeInterval(timeInterval))
+    }
+
+    internal func timeInterval(since other: SystemInstant) -> TimeInterval {
+        date.timeIntervalSince(other.date)
     }
 
     internal static func < (lhs: SystemInstant, rhs: SystemInstant) -> Bool {
