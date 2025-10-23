@@ -136,7 +136,16 @@ jobs:
         run: swift run BuildTool build-library-for-testing --platform ${{ matrix.platform }}
 
       - name: Run tests
-        run: swift run BuildTool test-library --platform ${{ matrix.platform }}
+        run: |
+          if [ "${{ matrix.platform }}" == "iOS" ]; then
+            for i in {1..100}; do
+              echo "BEGIN: Test run $i of 100"
+              swift run BuildTool test-library --platform ${{ matrix.platform }}
+              echo "END: Test run $i of 100"
+            done
+          else
+            swift run BuildTool test-library --platform ${{ matrix.platform }}
+          fi
 
   # TODO: Disabled after this started failing when we switched to Xcode 26; investigate https://github.com/ably/ably-chat-swift/issues/361
   #  code-coverage:
