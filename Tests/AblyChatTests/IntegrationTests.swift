@@ -58,17 +58,15 @@ struct IntegrationTests {
         realtimeOptions.environment = "sandbox"
         realtimeOptions.clientId = UUID().uuidString
 
-        if TestLogger.loggingEnabled {
-            realtimeOptions.logLevel = .verbose
-            realtimeOptions.logHandler = AblyCocoaLogger(label: loggingLabel)
-        }
+        realtimeOptions.logLevel = .verbose
+        realtimeOptions.logHandler = AblyCocoaLogger(label: loggingLabel)
 
         return ARTRealtime(options: realtimeOptions)
     }
 
     private static func createSandboxChatClient(apiKey: String, loggingLabel: String) -> ChatClient {
         let realtime = createSandboxRealtime(apiKey: apiKey, loggingLabel: loggingLabel)
-        let clientOptions = TestLogger.loggingEnabled ? ChatClientOptions(logHandler: .simple(ChatLogger(label: loggingLabel)), logLevel: .trace) : nil
+        let clientOptions = ChatClientOptions(logHandler: .simple(ChatLogger(label: loggingLabel)), logLevel: .trace)
 
         return ChatClient(realtime: realtime, clientOptions: clientOptions)
     }
@@ -82,9 +80,9 @@ struct IntegrationTests {
         Self.logAwait("AFTER Sandbox.createAPIKey()")
 
         // (1) Create a couple of chat clients — one for sending and one for receiving
-        let txClient = Self.createSandboxChatClient(apiKey: apiKey, loggingLabel: "tx")
+        let txClient = Self.createSandboxChatClient(apiKey: apiKey, loggingLabel: "basic-tx")
         let txClientID = try #require(txClient.clientID)
-        let rxClient = Self.createSandboxChatClient(apiKey: apiKey, loggingLabel: "rx")
+        let rxClient = Self.createSandboxChatClient(apiKey: apiKey, loggingLabel: "basic-rx")
 
         // (2) Fetch a room
         let roomName = "basketball"
@@ -668,8 +666,8 @@ struct IntegrationTests {
         Self.logAwait("AFTER Sandbox.createAPIKey()")
 
         // (1) Create a couple of chat clients — one for sending and one for receiving
-        let txClient = Self.createSandboxChatClient(apiKey: apiKey, loggingLabel: "tx-slash")
-        let rxClient = Self.createSandboxChatClient(apiKey: apiKey, loggingLabel: "rx-slash")
+        let txClient = Self.createSandboxChatClient(apiKey: apiKey, loggingLabel: "slash-tx")
+        let rxClient = Self.createSandboxChatClient(apiKey: apiKey, loggingLabel: "slash-rx")
 
         // (2) Fetch a room with a slash in the name
         let roomName = "room/with/slash"
