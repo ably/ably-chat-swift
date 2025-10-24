@@ -19,9 +19,10 @@ import Ably
 internal protocol InternalRealtimeClientProtocol: AnyObject, Sendable {
     associatedtype Channels: InternalRealtimeChannelsProtocol
     associatedtype Connection: InternalConnectionProtocol
+    associatedtype HTTPPaginatedResponse: InternalHTTPPaginatedResponseProtocol
 
     var clientId: String? { get }
-    func request(_ method: String, path: String, params: [String: String]?, body: Any?, headers: [String: String]?) async throws(ErrorInfo) -> ARTHTTPPaginatedResponse
+    func request(_ method: String, path: String, params: [String: String]?, body: Any?, headers: [String: String]?) async throws(ErrorInfo) -> HTTPPaginatedResponse
 
     var channels: Channels { get }
     var connection: Connection { get }
@@ -102,6 +103,18 @@ internal protocol InternalConnectionProtocol: AnyObject, Sendable {
     func off(_ listener: ARTEventListener)
 }
 
+/// Expresses the requirements of the paginated response returned by ``InternalRealtimeClientProtocol/request(_:path:params:body:headers:)``.
+@MainActor
+internal protocol InternalHTTPPaginatedResponseProtocol: AnyObject, Sendable {
+    var items: [JSONValue] { get }
+    var hasNext: Bool { get }
+    var isLast: Bool { get }
+    var statusCode: Int { get }
+
+    func next() async throws(ErrorInfo) -> Self?
+    func first() async throws(ErrorInfo) -> Self
+}
+
 /// Converts a `@MainActor` callback into one that can be passed as a callback to ably-cocoa.
 ///
 /// The returned callback asserts that it is called on the main thread and then synchronously calls the passed callback. It also allows non-`Sendable` values to be passed from ably-cocoa to the passed callback.
@@ -145,9 +158,9 @@ internal final class InternalRealtimeClientAdapter<Underlying: ProxyRealtimeClie
         underlying.clientId
     }
 
-    internal func request(_ method: String, path: String, params: [String: String]?, body: Any?, headers: [String: String]?) async throws(ErrorInfo) -> ARTHTTPPaginatedResponse {
+    internal func request(_ method: String, path: String, params: [String: String]?, body: Any?, headers: [String: String]?) async throws(ErrorInfo) -> InternalHTTPPaginatedResponseAdapter {
         do {
-            return try await withCheckedContinuation { (continuation: CheckedContinuation<Result<ARTHTTPPaginatedResponse, ARTErrorInfo>, _>) in
+            let artResponse = try await withCheckedContinuation { (continuation: CheckedContinuation<Result<ARTHTTPPaginatedResponse, ARTErrorInfo>, _>) in
                 do {
                     try underlying.request(method, path: path, params: params, body: body, headers: headers) { response, error in
                         if let error {
@@ -161,6 +174,67 @@ internal final class InternalRealtimeClientAdapter<Underlying: ProxyRealtimeClie
                 } catch {
                     // This is a weird bit of API design in ably-cocoa (see https://github.com/ably/ably-cocoa/issues/2043 for fixing it); it throws an error to indicate a programmer error (it should be using exceptions). Since the type of the thrown error is NSError and not ARTErrorInfo, which would mess up our typed throw, let's not try and propagate it.
                     fatalError("ably-cocoa request threw an error - this indicates a programmer error")
+                }
+            }.get()
+            return InternalHTTPPaginatedResponseAdapter(underlying: artResponse)
+        } catch {
+            throw .init(ablyCocoaError: error)
+        }
+    }
+}
+
+internal final class InternalHTTPPaginatedResponseAdapter: InternalHTTPPaginatedResponseProtocol {
+    private let underlying: ARTHTTPPaginatedResponse
+
+    internal init(underlying: ARTHTTPPaginatedResponse) {
+        self.underlying = underlying
+    }
+
+    internal var items: [JSONValue] {
+        underlying.items.map { JSONValue(ablyCocoaData: $0) }
+    }
+
+    internal var hasNext: Bool {
+        underlying.hasNext
+    }
+
+    internal var isLast: Bool {
+        underlying.isLast
+    }
+
+    internal var statusCode: Int {
+        underlying.statusCode
+    }
+
+    internal func next() async throws(ErrorInfo) -> InternalHTTPPaginatedResponseAdapter? {
+        do {
+            return try await withCheckedContinuation { (continuation: CheckedContinuation<Result<InternalHTTPPaginatedResponseAdapter?, ARTErrorInfo>, _>) in
+                underlying.next { response, error in
+                    if let error {
+                        continuation.resume(returning: .failure(error))
+                    } else if let response {
+                        continuation.resume(returning: .success(InternalHTTPPaginatedResponseAdapter(underlying: response)))
+                    } else {
+                        continuation.resume(returning: .success(nil))
+                    }
+                }
+            }.get()
+        } catch {
+            throw .init(ablyCocoaError: error)
+        }
+    }
+
+    internal func first() async throws(ErrorInfo) -> InternalHTTPPaginatedResponseAdapter {
+        do {
+            return try await withCheckedContinuation { (continuation: CheckedContinuation<Result<InternalHTTPPaginatedResponseAdapter, ARTErrorInfo>, _>) in
+                underlying.first { response, error in
+                    if let error {
+                        continuation.resume(returning: .failure(error))
+                    } else if let response {
+                        continuation.resume(returning: .success(InternalHTTPPaginatedResponseAdapter(underlying: response)))
+                    } else {
+                        preconditionFailure("There is no error, so expected a response")
+                    }
                 }
             }.get()
         } catch {

@@ -1,12 +1,12 @@
 import Ably
 
-internal final class DefaultMessages: Messages {
-    internal let reactions: DefaultMessageReactions
+internal final class DefaultMessages<Realtime: InternalRealtimeClientProtocol>: Messages {
+    internal let reactions: DefaultMessageReactions<Realtime>
 
     private let channel: any InternalRealtimeChannelProtocol
 
     private let roomName: String
-    private let chatAPI: ChatAPI
+    private let chatAPI: ChatAPI<Realtime>
     private let logger: any InternalLogger
 
     private var currentSubscriptionPoint: String?
@@ -25,7 +25,7 @@ internal final class DefaultMessages: Messages {
         }
     }
 
-    internal init(channel: any InternalRealtimeChannelProtocol, chatAPI: ChatAPI, roomName: String, options: MessagesOptions = .init(), logger: any InternalLogger) {
+    internal init(channel: any InternalRealtimeChannelProtocol, chatAPI: ChatAPI<Realtime>, roomName: String, options: MessagesOptions = .init(), logger: any InternalLogger) {
         self.channel = channel
         self.chatAPI = chatAPI
         self.roomName = roomName

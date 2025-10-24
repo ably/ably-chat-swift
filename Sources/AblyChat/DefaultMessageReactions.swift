@@ -1,14 +1,14 @@
 import Ably
 
 @MainActor
-internal final class DefaultMessageReactions: MessageReactions {
+internal final class DefaultMessageReactions<Realtime: InternalRealtimeClientProtocol>: MessageReactions {
     private let channel: any InternalRealtimeChannelProtocol
     private let roomName: String
     private let logger: any InternalLogger
-    private let chatAPI: ChatAPI
+    private let chatAPI: ChatAPI<Realtime>
     private let options: MessagesOptions
 
-    internal init(channel: any InternalRealtimeChannelProtocol, chatAPI: ChatAPI, roomName: String, options: MessagesOptions, logger: any InternalLogger) {
+    internal init(channel: any InternalRealtimeChannelProtocol, chatAPI: ChatAPI<Realtime>, roomName: String, options: MessagesOptions, logger: any InternalLogger) {
         self.channel = channel
         self.chatAPI = chatAPI
         self.roomName = roomName
@@ -23,7 +23,7 @@ internal final class DefaultMessageReactions: MessageReactions {
             count = 1
         }
 
-        let apiParams: ChatAPI.SendMessageReactionParams = .init(
+        let apiParams: ChatAPISendMessageReactionParams = .init(
             type: params.type ?? options.defaultMessageReactionType,
             name: params.name,
             count: count,
@@ -40,7 +40,7 @@ internal final class DefaultMessageReactions: MessageReactions {
             // CHA-MR11b1
             throw InternalError.unableDeleteReactionWithoutName(reactionType: reactionType.rawValue).toErrorInfo()
         }
-        let apiParams: ChatAPI.DeleteMessageReactionParams = .init(
+        let apiParams: ChatAPIDeleteMessageReactionParams = .init(
             type: reactionType,
             name: reactionType != .unique ? params.name : nil,
         )
