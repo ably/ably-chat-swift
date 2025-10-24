@@ -13,6 +13,90 @@
   },
   "testTargets" : [
     {
+      "skippedTests" : {
+        "suites" : [
+          {
+            "name" : "ChatAPITests"
+          },
+          {
+            "name" : "ChatClientTests"
+          },
+          {
+            "name" : "DefaultInternalLoggerTests"
+          },
+          {
+            "name" : "DefaultMessageReactionsTests"
+          },
+          {
+            "name" : "DefaultMessagesTests"
+          },
+          {
+            "name" : "DefaultPresenceTests"
+          },
+          {
+            "name" : "DefaultRoomLifecycleManagerTests"
+          },
+          {
+            "name" : "DefaultRoomOccupancyTests"
+          },
+          {
+            "name" : "DefaultRoomReactionsTests"
+          },
+          {
+            "name" : "DefaultRoomsTests"
+          },
+          {
+            "name" : "DefaultRoomTests"
+          },
+          {
+            "name" : "DefaultTypingTests"
+          },
+          {
+            "name" : "ErrorInfoTests"
+          },
+          {
+            "name" : "InternalLoggerTests"
+          },
+          {
+            "name" : "JSONValueTests"
+          },
+          {
+            "name" : "MessageSubscriptionResponseAsyncSequenceTests"
+          },
+          {
+            "name" : "MessageTests"
+          },
+          {
+            "name" : "RoomOptionsTests"
+          },
+          {
+            "name" : "RoomReactionDTOTests"
+          },
+          {
+            "name" : "StringEncodeTests"
+          },
+          {
+            "name" : "SubscriptionAsyncSequenceTests"
+          },
+          {
+            "name" : "SubscriptionStorageTests"
+          },
+          {
+            "name" : "TypingOperationQueueTests"
+          },
+          {
+            "name" : "TypingTimerManagerTests"
+          }
+        ],
+        "xctestClasses" : [
+          {
+            "name" : "DefaultRoomLifecycleManager"
+          },
+          {
+            "name" : "DefaultRooms"
+          }
+        ]
+      },
       "target" : {
         "containerPath" : "container:",
         "identifier" : "AblyChatTests",
@@ -20,5 +104,5 @@
       }
     }
   ],
-  "version" : 1
+  "version" : 2
 }
