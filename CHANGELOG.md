@@ -1,5 +1,13 @@
 # Change Log
 
+## [1.0.1](https://github.com/ably/ably-chat-swift/tree/1.0.1)
+
+### What's Changed
+
+This fixes a bug with typing indicators, in which a user who continued typing for a long time would eventually appear to have stopped typing, even though they hadn't ([#457](https://github.com/ably/ably-chat-swift/pull/457)).
+
+**Full Changelog**: https://github.com/ably/ably-chat-swift/compare/1.0.0...1.0.1
+
 ## [1.0.0](https://github.com/ably/ably-chat-swift/tree/1.0.0)
 
 We are excited to announce that the Ably Chat SDK API is now stable.
