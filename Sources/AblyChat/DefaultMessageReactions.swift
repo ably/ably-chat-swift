@@ -37,7 +37,7 @@ internal final class DefaultMessageReactions<Realtime: InternalRealtimeClientPro
     internal func delete(fromMessageWithSerial messageSerial: String, params: DeleteMessageReactionParams) async throws(ErrorInfo) {
         let reactionType = params.type ?? options.defaultMessageReactionType
         if reactionType != .unique, params.name == nil {
-            // CHA-MR11b1
+            // CHA-MR11b1a
             throw InternalError.unableDeleteReactionWithoutName(reactionType: reactionType.rawValue).toErrorInfo()
         }
         let apiParams: ChatAPIDeleteMessageReactionParams = .init(
