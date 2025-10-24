@@ -1,5 +1,15 @@
 import Foundation
 
+/// Manages a single timer that executes a handler after a specified interval.
+///
+/// This class provides a simple interface for creating timers that can be cancelled
+/// and reset. It is designed to work with any clock implementation conforming to
+/// `ClockProtocol`, making it testable with mock clocks.
+///
+/// Key behaviors:
+/// - Only one timer can be active at a time
+/// - Setting a new timer automatically cancels any existing timer
+/// - Timers can be explicitly cancelled before they fire
 @MainActor
 internal final class TimerManager<Clock: ClockProtocol> {
     private var currentTask: Task<Void, Never>?
@@ -9,6 +19,15 @@ internal final class TimerManager<Clock: ClockProtocol> {
         self.clock = clock
     }
 
+    /// Sets a timer that will execute the handler after the specified interval.
+    ///
+    /// If a timer is already running, it will be cancelled and replaced with the new timer.
+    /// This allows for timer reset behavior - calling `setTimer` again before the current
+    /// timer expires will cancel the existing timer and start a new one from scratch.
+    ///
+    /// - Parameters:
+    ///   - interval: The time interval (in seconds) to wait before executing the handler
+    ///   - handler: The closure to execute when the timer fires
     internal func setTimer(interval: TimeInterval, handler: @escaping @MainActor () -> Void) {
         cancelTimer()
 
@@ -32,11 +51,18 @@ internal final class TimerManager<Clock: ClockProtocol> {
         }
     }
 
+    /// Cancels the currently running timer, if any.
+    ///
+    /// If no timer is running, this method does nothing. After cancellation,
+    /// the timer's handler will not be executed.
     internal func cancelTimer() {
         currentTask?.cancel()
         currentTask = nil
     }
 
+    /// Returns whether a timer is currently active.
+    ///
+    /// - Returns: `true` if a timer is running, `false` otherwise
     internal func hasRunningTask() -> Bool {
         currentTask != nil
     }

@@ -41,6 +41,7 @@ internal final class TypingTimerManager<AnyClock: ClockProtocol>: TypingTimerMan
     // MARK: Managing CHA-T13b1 "is this person typing" timers
 
     /// Starts a CHA-T13b1 "is this person typing" timer, thus adding this clientID to the typing set.
+    /// If the clientID is already in the typing set, this will reset the timer (CHA-T13b2).
     internal func startTypingTimer(for clientID: String, handler: (@MainActor () -> Void)? = nil) {
         let timerManager = whoIsTypingTimers[clientID] ?? TimerManager(clock: clock)
         whoIsTypingTimers[clientID] = timerManager
@@ -97,6 +98,7 @@ internal protocol TypingTimerManagerProtocol {
     /// Clears any active CHA-T4a4 heartbeat timer.
     func cancelHeartbeatTimer()
     /// Starts a CHA-T13b1 "is this person typing" timer, thus adding this clientID to the typing set.
+    /// If the clientID is already in the typing set, this will reset the timer (CHA-T13b2).
     func startTypingTimer(for clientID: String, handler: (@MainActor () -> Void)?)
     /// Per CHA-T13b4, cancels the CHA-T13b1 "is this person typing" timer, thus removing this clientID from the typing set.
     func cancelTypingTimer(for clientID: String)
