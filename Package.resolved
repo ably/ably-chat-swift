@@ -1,5 +1,5 @@
 {
-  "originHash" : "919d6a1a482960004ea3b2489200c61ec1f418c526088ea659aa0f996a4c3816",
+  "originHash" : "d7fc03d0cbdadc55c6b72221762b8e955899287882b2f514c0a513ef1ed80902",
   "pins" : [
     {
       "identity" : "ably-cocoa",
@@ -7,7 +7,7 @@
       "location" : "https://github.com/ably/ably-cocoa",
       "state" : {
         "branch" : "295-chat-tests-ci-hang-investigation",
-        "revision" : "38f950565fa627e80cec1f5193577f007cac9497"
+        "revision" : "3c702eab23a02ac849ad9e58caffa311cfe0c052"
       }
     },
     {
