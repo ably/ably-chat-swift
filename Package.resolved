@@ -7,7 +7,7 @@
       "location" : "https://github.com/ably/ably-cocoa",
       "state" : {
         "branch" : "295-chat-tests-ci-hang-investigation",
-        "revision" : "c9586dfefd93ff540fc0b1aa15322eec94fb854b"
+        "revision" : "b0079432e9280e5d7bc5204c1ce2f5cc71fcea9f"
       }
     },
     {
