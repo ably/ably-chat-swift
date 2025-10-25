@@ -315,27 +315,27 @@ final class MockAblyCocoaRealtime: NSObject, RealtimeClientProtocol, @unchecked 
     }
 
     final class Annotations: RealtimeAnnotationsProtocol {
-        func publish(for message: ARTMessage, annotation: ARTOutboundAnnotation, callback: ARTCallback? = nil) {
+        func publish(for _: ARTMessage, annotation _: ARTOutboundAnnotation, callback _: ARTCallback? = nil) {
             fatalError("Not implemented")
         }
 
-        func publish(forMessageSerial messageSerial: String, annotation: ARTOutboundAnnotation, callback: ARTCallback? = nil) {
+        func publish(forMessageSerial _: String, annotation _: ARTOutboundAnnotation, callback _: ARTCallback? = nil) {
             fatalError("Not implemented")
         }
 
-        func delete(for message: ARTMessage, annotation: ARTOutboundAnnotation, callback: ARTCallback? = nil) {
+        func delete(for _: ARTMessage, annotation _: ARTOutboundAnnotation, callback _: ARTCallback? = nil) {
             fatalError("Not implemented")
         }
 
-        func delete(forMessageSerial messageSerial: String, annotation: ARTOutboundAnnotation, callback: ARTCallback? = nil) {
+        func delete(forMessageSerial _: String, annotation _: ARTOutboundAnnotation, callback _: ARTCallback? = nil) {
             fatalError("Not implemented")
         }
 
-        func getFor(_ message: ARTMessage, query: ARTAnnotationsQuery, callback: @escaping ARTPaginatedAnnotationsCallback) {
+        func getFor(_: ARTMessage, query _: ARTAnnotationsQuery, callback _: @escaping ARTPaginatedAnnotationsCallback) {
             fatalError("Not implemented")
         }
 
-        func getForMessageSerial(_ messageSerial: String, query: ARTAnnotationsQuery, callback: @escaping ARTPaginatedAnnotationsCallback) {
+        func getForMessageSerial(_: String, query _: ARTAnnotationsQuery, callback _: @escaping ARTPaginatedAnnotationsCallback) {
             fatalError("Not implemented")
         }
 
