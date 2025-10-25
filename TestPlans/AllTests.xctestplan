@@ -55,6 +55,12 @@
             "name" : "ErrorInfoTests"
           },
           {
+            "name" : "IntegrationTests",
+            "testFunctions" : [
+              "roomNameWithSlashInTheName()"
+            ]
+          },
+          {
             "name" : "InternalLoggerTests"
           },
           {
