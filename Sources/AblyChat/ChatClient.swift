@@ -78,7 +78,7 @@ public class ChatClient: ChatClientProtocol {
      * - Returns: The Ably Realtime client.
      */
     public let realtime: ARTRealtime
-    
+
     /**
      * Returns the resolved client options for the client, including any defaults that have been set.
      *
@@ -86,7 +86,7 @@ public class ChatClient: ChatClientProtocol {
      */
     public let clientOptions: ChatClientOptions
     private let _rooms: DefaultRooms<DefaultRoomFactory<InternalRealtimeClientAdapter<ARTWrapperSDKProxyRealtime>>>
-    
+
     /**
      * Returns the rooms object, which provides access to chat rooms.
      *
@@ -101,7 +101,7 @@ public class ChatClient: ChatClientProtocol {
     // (CHA-CS1) Every chat client has a status, which describes the current status of the connection.
     // (CHA-CS4) The chat client must allow its connection status to be observed by clients.
     private let _connection: DefaultConnection
-    
+
     /**
      * Returns the underlying connection to Ably, which can be used to monitor the client's
      * connection to Ably servers.
