@@ -406,5 +406,65 @@ struct DefaultPresenceTests {
 
     // MARK: CHA-PR7
 
-    // TODO: Test (https://github.com/ably/ably-chat-swift/issues/396)
+    // @spec CHA-PR7a
+    // @spec CHA-PR7c
+    // @specUntested CHA-PR7d - We chose to implement this failure with an idiomatic fatalError instead of throwing, but we can't test this.
+    @Test
+    func usersMaySubscribeToAllPresenceEvents() async throws {
+        // Given: A channel that will emit presence messages
+        let channel = MockRealtimeChannel(name: "basketball::$chat")
+        let logger = TestLogger()
+        let defaultPresence = DefaultPresence(
+            channel: channel,
+            roomLifecycleManager: MockRoomLifecycleManager(),
+            roomName: "basketball",
+            logger: logger,
+            options: .init(enableEvents: true),
+        )
+
+        // Track received events
+        var receivedEvents: [PresenceEvent] = []
+
+        // When: Subscribe to presence events
+        let subscription = defaultPresence.subscribe { event in
+            receivedEvents.append(event)
+        }
+
+        // Simulate receiving presence messages from the channel
+        let enterMessage = ARTPresenceMessage()
+        enterMessage.action = .enter
+        enterMessage.clientId = "client1"
+        enterMessage.data = ["status": "online"]
+        enterMessage.timestamp = Date()
+
+        let updateMessage = ARTPresenceMessage()
+        updateMessage.action = .update
+        updateMessage.clientId = "client1"
+        updateMessage.data = ["status": "busy"]
+        updateMessage.timestamp = Date()
+
+        let leaveMessage = ARTPresenceMessage()
+        leaveMessage.action = .leave
+        leaveMessage.clientId = "client1"
+        leaveMessage.timestamp = Date()
+
+        channel.emitPresenceMessage(enterMessage)
+        channel.emitPresenceMessage(updateMessage)
+        channel.emitPresenceMessage(leaveMessage)
+
+        // Then: All events are received
+        #expect(receivedEvents.count == 3)
+        #expect(receivedEvents[0].type == .enter)
+        #expect(receivedEvents[1].type == .update)
+        #expect(receivedEvents[2].type == .leave)
+
+        // Clean up
+        receivedEvents.removeAll()
+        subscription.unsubscribe()
+
+        channel.emitPresenceMessage(enterMessage)
+
+        // Then: No events are received after unsubscribing
+        #expect(receivedEvents.isEmpty)
+    }
 }
