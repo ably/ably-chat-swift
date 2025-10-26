@@ -373,12 +373,12 @@ internal class DefaultRoom<Realtime: InternalRealtimeClientProtocol, LifecycleMa
         return realtime.channels.get("\(roomName)::$chat", options: channelOptions)
     }
 
-    // swiftlint:disable:next missing_docs
+    /// See ``Room/attach()``
     public func attach() async throws(ErrorInfo) {
         try await lifecycleManager.performAttachOperation()
     }
 
-    // swiftlint:disable:next missing_docs
+    /// See ``Room/detach()``
     public func detach() async throws(ErrorInfo) {
         try await lifecycleManager.performDetachOperation()
     }
