@@ -95,6 +95,10 @@ public class ChatClient: ChatClientProtocol {
     /**
      * Constructor for Chat
      *
+     * - Important: The Ably Realtime client must have a clientId set. This can be done by configuring
+     * token-based authentication that returns a token with a clientId, or by setting
+     * the clientId directly in the Realtime client options.
+     *
      * - Parameters:
      *   - realtime: The Ably Realtime client. Its `dispatchQueue` option must be the main queue (this is its default behaviour).
      *   - clientOptions: The client options.

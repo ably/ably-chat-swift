@@ -30,23 +30,35 @@ public protocol Typing: AnyObject, Sendable {
     var current: Set<String> { get }
 
     /**
-     * Keystroke indicates that the current user is typing. This will emit a ``TypingEvent`` event to inform listening clients and begin a timer,
-     * once the timer expires, another ``TypingEvent`` event will be emitted. In both cases ``TypingEvent/currentlyTyping``
-     * contains a list of userIds who are currently typing.
+     * This will send a `typing.started` event to the server.
+     * Events are throttled according to the `heartbeatThrottle` room option.
+     * If an event has been sent within the interval, this operation is no-op.
      *
-     * The heartbeat throttle interval is configurable through the ``TypingOptions/heartbeatThrottle`` parameter.
-     * It will show the current user as typing for the duration of the throttle, plus an internally defined timeout.
-     * Any keystrokes within the throttle period will be ignored, with no new events being sent.
+     * Calls to `keystroke()` and `stop()` are serialized and will always resolve in the correct order.
+     * - For example, if multiple `keystroke()` calls are made in quick succession before the first `keystroke()` call has
+     * sent a `typing.started` event to the server, followed by one `stop()` call, the `stop()` call will execute
+     * as soon as the first `keystroke()` call completes.
+     * All intermediate `keystroke()` calls will be treated as no-ops.
+     * - The most recent operation (`keystroke()` or `stop()`) will always determine the final state, ensuring operations
+     * resolve to a consistent and correct state.
      *
-     * - Throws: An `ErrorInfo`.
+     * - Throws: An `ErrorInfo` if the operation fails.
      */
     func keystroke() async throws(ErrorInfo)
 
     /**
-     * Stop indicates that the current user has stopped typing. This will emit a ``TypingEvent`` event to inform listening clients,
-     * and immediately clear the typing timeout timer.
+     * This will send a `typing.stopped` event to the server.
+     * If the user was not currently typing, this operation is no-op.
      *
-     * - Throws: An `ErrorInfo`.
+     * Calls to `keystroke()` and `stop()` are serialized and will always resolve in the correct order.
+     * - For example, if multiple `keystroke()` calls are made in quick succession before the first `keystroke()` call has
+     * sent a `typing.started` event to the server, followed by one `stop()` call, the `stop()` call will execute
+     * as soon as the first `keystroke()` call completes.
+     * All intermediate `keystroke()` calls will be treated as no-ops.
+     * - The most recent operation (`keystroke()` or `stop()`) will always determine the final state, ensuring operations
+     * resolve to a consistent and correct state.
+     *
+     * - Throws: An `ErrorInfo` if the operation fails.
      */
     func stop() async throws(ErrorInfo)
 }
