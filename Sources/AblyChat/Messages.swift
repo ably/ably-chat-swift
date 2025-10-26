@@ -240,11 +240,13 @@ public struct OperationDetails: Sendable {
  * Options for querying messages in a chat room.
  */
 public struct HistoryParams: Sendable {
-    // swiftlint:disable:next missing_docs
+    /**
+     * The order in which results should be returned when performing a paginated query.
+     */
     public enum OrderBy: Sendable {
-        // swiftlint:disable:next missing_docs
+        /// Return results in ascending order (oldest first).
         case oldestFirst
-        // swiftlint:disable:next missing_docs
+        /// Return results in descending order (newest first).
         case newestFirst
     }
 
@@ -370,19 +372,19 @@ internal extension HistoryParams {
 
 /// Event type for chat message subscription.
 public enum ChatMessageEventType: Sendable {
-    // swiftlint:disable:next missing_docs
+    /// Fires when a new chat message is received.
     case created
-    // swiftlint:disable:next missing_docs
+    /// Fires when a chat message is updated.
     case updated
-    // swiftlint:disable:next missing_docs
+    /// Fires when a chat message is deleted.
     case deleted
 }
 
-/// Event emitted by message subscriptions, containing the type and the message.
+/// Payload for a message event.
 public struct ChatMessageEvent: Sendable {
-    // swiftlint:disable:next missing_docs
+    /// The type of the message event.
     public var type: ChatMessageEventType
-    // swiftlint:disable:next missing_docs
+    /// The message that was received.
     public var message: Message
 
     /// Memberwise initializer to create a `ChatMessageEvent`.

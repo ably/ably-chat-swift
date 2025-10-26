@@ -72,12 +72,26 @@ internal final class DefaultInternalRealtimeClientFactory<Underlying: ProxyRealt
  * This is the core client for Ably chat. It provides access to chat rooms.
  */
 public class ChatClient: ChatClientProtocol {
-    // swiftlint:disable:next missing_docs
+    /**
+     * Returns the underlying Ably Realtime client.
+     *
+     * - Returns: The Ably Realtime client.
+     */
     public let realtime: ARTRealtime
-    // swiftlint:disable:next missing_docs
+    
+    /**
+     * Returns the resolved client options for the client, including any defaults that have been set.
+     *
+     * - Returns: The client options.
+     */
     public let clientOptions: ChatClientOptions
     private let _rooms: DefaultRooms<DefaultRoomFactory<InternalRealtimeClientAdapter<ARTWrapperSDKProxyRealtime>>>
-    // swiftlint:disable:next missing_docs
+    
+    /**
+     * Returns the rooms object, which provides access to chat rooms.
+     *
+     * - Returns: The rooms object.
+     */
     public var rooms: some Rooms<ARTRealtimeChannel> {
         _rooms
     }
@@ -87,7 +101,13 @@ public class ChatClient: ChatClientProtocol {
     // (CHA-CS1) Every chat client has a status, which describes the current status of the connection.
     // (CHA-CS4) The chat client must allow its connection status to be observed by clients.
     private let _connection: DefaultConnection
-    // swiftlint:disable:next missing_docs
+    
+    /**
+     * Returns the underlying connection to Ably, which can be used to monitor the client's
+     * connection to Ably servers.
+     *
+     * - Returns: The connection object.
+     */
     public var connection: some Connection {
         _connection
     }
@@ -131,7 +151,15 @@ public class ChatClient: ChatClientProtocol {
         _connection = DefaultConnection(realtime: internalRealtime)
     }
 
-    // swiftlint:disable:next missing_docs
+    /**
+     * Returns the clientID of the current client, if known.
+     *
+     * - Important: When using an Ably key for authentication, this value is determined immediately. If using a token,
+     * the clientID is not known until the client has successfully connected to and authenticated with
+     * the server. Use the `chatClient.connection.status` to check the connection status.
+     *
+     * - Returns: The clientID, or `nil` if unknown.
+     */
     public var clientID: String? {
         realtime.clientId
     }
