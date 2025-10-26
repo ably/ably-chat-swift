@@ -2,6 +2,7 @@ import Ably
 @testable import AblyChat
 import Testing
 
+@MainActor
 struct DefaultPresenceTests {
     // MARK: CHA-PR3
 
@@ -10,9 +11,9 @@ struct DefaultPresenceTests {
     @Test
     func usersMayEnterPresence() async throws {
         // Given
-        let channel = await MockRealtimeChannel(name: "basketball::$chat")
+        let channel = MockRealtimeChannel(name: "basketball::$chat")
         let logger = TestLogger()
-        let defaultPresence = await DefaultPresence(
+        let defaultPresence = DefaultPresence(
             channel: channel,
             roomLifecycleManager: MockRoomLifecycleManager(),
             roomName: "basketball",
@@ -34,9 +35,9 @@ struct DefaultPresenceTests {
     @Test
     func usersMayEnterPresenceWithoutData() async throws {
         // Given
-        let channel = await MockRealtimeChannel(name: "basketball::$chat")
+        let channel = MockRealtimeChannel(name: "basketball::$chat")
         let logger = TestLogger()
-        let defaultPresence = await DefaultPresence(
+        let defaultPresence = DefaultPresence(
             channel: channel,
             roomLifecycleManager: MockRoomLifecycleManager(),
             roomName: "basketball",
@@ -58,10 +59,10 @@ struct DefaultPresenceTests {
     @Test
     func usersMayEnterPresenceWhileAttaching() async throws {
         // Given
-        let channel = await MockRealtimeChannel(name: "basketball::$chat")
+        let channel = MockRealtimeChannel(name: "basketball::$chat")
         let logger = TestLogger()
-        let roomLifecycleManager = await MockRoomLifecycleManager()
-        let defaultPresence = await DefaultPresence(
+        let roomLifecycleManager = MockRoomLifecycleManager()
+        let defaultPresence = DefaultPresence(
             channel: channel,
             roomLifecycleManager: roomLifecycleManager,
             roomName: "basketball",
@@ -86,10 +87,10 @@ struct DefaultPresenceTests {
         let attachError = ErrorInfo.createArbitraryError()
         let error = InternalError.roomTransitionedToInvalidStateForPresenceOperation(newState: .failed /* arbitrary */, cause: attachError).toErrorInfo()
 
-        let channel = await MockRealtimeChannel(name: "basketball::$chat")
+        let channel = MockRealtimeChannel(name: "basketball::$chat")
         let logger = TestLogger()
-        let roomLifecycleManager = await MockRoomLifecycleManager(resultOfWaitToBeAbleToPerformPresenceOperations: .failure(error))
-        let defaultPresence = await DefaultPresence(
+        let roomLifecycleManager = MockRoomLifecycleManager(resultOfWaitToBeAbleToPerformPresenceOperations: .failure(error))
+        let defaultPresence = DefaultPresence(
             channel: channel,
             roomLifecycleManager: roomLifecycleManager,
             roomName: "basketball",
@@ -116,10 +117,10 @@ struct DefaultPresenceTests {
     func failToEnterPresenceWhenRoomInInvalidState() async throws {
         // Given
         let error = InternalError.presenceOperationRequiresRoomAttach.toErrorInfo()
-        let channel = await MockRealtimeChannel(name: "basketball::$chat")
+        let channel = MockRealtimeChannel(name: "basketball::$chat")
         let logger = TestLogger()
-        let roomLifecycleManager = await MockRoomLifecycleManager(resultOfWaitToBeAbleToPerformPresenceOperations: .failure(error))
-        let defaultPresence = await DefaultPresence(
+        let roomLifecycleManager = MockRoomLifecycleManager(resultOfWaitToBeAbleToPerformPresenceOperations: .failure(error))
+        let defaultPresence = DefaultPresence(
             channel: channel,
             roomLifecycleManager: roomLifecycleManager,
             roomName: "basketball",
@@ -141,10 +142,10 @@ struct DefaultPresenceTests {
     @Test
     func usersMayUpdatePresence() async throws {
         // Given
-        let channel = await MockRealtimeChannel(name: "basketball::$chat")
+        let channel = MockRealtimeChannel(name: "basketball::$chat")
         let logger = TestLogger()
-        let roomLifecycleManager = await MockRoomLifecycleManager()
-        let defaultPresence = await DefaultPresence(
+        let roomLifecycleManager = MockRoomLifecycleManager()
+        let defaultPresence = DefaultPresence(
             channel: channel,
             roomLifecycleManager: roomLifecycleManager,
             roomName: "basketball",
@@ -165,10 +166,10 @@ struct DefaultPresenceTests {
     @Test
     func usersMayUpdatePresenceWhileAttaching() async throws {
         // Given
-        let channel = await MockRealtimeChannel(name: "basketball::$chat")
+        let channel = MockRealtimeChannel(name: "basketball::$chat")
         let logger = TestLogger()
-        let roomLifecycleManager = await MockRoomLifecycleManager()
-        let defaultPresence = await DefaultPresence(
+        let roomLifecycleManager = MockRoomLifecycleManager()
+        let defaultPresence = DefaultPresence(
             channel: channel,
             roomLifecycleManager: roomLifecycleManager,
             roomName: "basketball",
@@ -193,10 +194,10 @@ struct DefaultPresenceTests {
         let attachError = ErrorInfo.createArbitraryError()
         let error = InternalError.roomTransitionedToInvalidStateForPresenceOperation(newState: .failed /* arbitrary */, cause: attachError).toErrorInfo()
 
-        let channel = await MockRealtimeChannel(name: "basketball::$chat")
+        let channel = MockRealtimeChannel(name: "basketball::$chat")
         let logger = TestLogger()
-        let roomLifecycleManager = await MockRoomLifecycleManager(resultOfWaitToBeAbleToPerformPresenceOperations: .failure(error))
-        let defaultPresence = await DefaultPresence(
+        let roomLifecycleManager = MockRoomLifecycleManager(resultOfWaitToBeAbleToPerformPresenceOperations: .failure(error))
+        let defaultPresence = DefaultPresence(
             channel: channel,
             roomLifecycleManager: roomLifecycleManager,
             roomName: "basketball",
@@ -223,10 +224,10 @@ struct DefaultPresenceTests {
     func failToUpdatePresenceWhenRoomInInvalidState() async throws {
         // Given
         let error = InternalError.presenceOperationRequiresRoomAttach.toErrorInfo()
-        let channel = await MockRealtimeChannel(name: "basketball::$chat")
+        let channel = MockRealtimeChannel(name: "basketball::$chat")
         let logger = TestLogger()
-        let roomLifecycleManager = await MockRoomLifecycleManager(resultOfWaitToBeAbleToPerformPresenceOperations: .failure(error))
-        let defaultPresence = await DefaultPresence(
+        let roomLifecycleManager = MockRoomLifecycleManager(resultOfWaitToBeAbleToPerformPresenceOperations: .failure(error))
+        let defaultPresence = DefaultPresence(
             channel: channel,
             roomLifecycleManager: roomLifecycleManager,
             roomName: "basketball",
@@ -247,10 +248,10 @@ struct DefaultPresenceTests {
     @Test
     func usersMayLeavePresence() async throws {
         // Given
-        let channel = await MockRealtimeChannel(name: "basketball::$chat")
+        let channel = MockRealtimeChannel(name: "basketball::$chat")
         let logger = TestLogger()
-        let roomLifecycleManager = await MockRoomLifecycleManager()
-        let defaultPresence = await DefaultPresence(
+        let roomLifecycleManager = MockRoomLifecycleManager()
+        let defaultPresence = DefaultPresence(
             channel: channel,
             roomLifecycleManager: roomLifecycleManager,
             roomName: "basketball",
@@ -274,10 +275,10 @@ struct DefaultPresenceTests {
     @Test
     func ifUserIsPresent() async throws {
         // Given
-        let channel = await MockRealtimeChannel(name: "basketball::$chat")
+        let channel = MockRealtimeChannel(name: "basketball::$chat")
         let logger = TestLogger()
-        let roomLifecycleManager = await MockRoomLifecycleManager()
-        let defaultPresence = await DefaultPresence(
+        let roomLifecycleManager = MockRoomLifecycleManager()
+        let defaultPresence = DefaultPresence(
             channel: channel,
             roomLifecycleManager: roomLifecycleManager,
             roomName: "basketball",
@@ -302,10 +303,10 @@ struct DefaultPresenceTests {
     @Test
     func retrieveAllTheMembersOfThePresenceSet() async throws {
         // Given
-        let channel = await MockRealtimeChannel(name: "basketball::$chat")
+        let channel = MockRealtimeChannel(name: "basketball::$chat")
         let logger = TestLogger()
-        let roomLifecycleManager = await MockRoomLifecycleManager()
-        let defaultPresence = await DefaultPresence(
+        let roomLifecycleManager = MockRoomLifecycleManager()
+        let defaultPresence = DefaultPresence(
             channel: channel,
             roomLifecycleManager: roomLifecycleManager,
             roomName: "basketball",
@@ -328,10 +329,10 @@ struct DefaultPresenceTests {
     func failToRetrieveAllTheMembersOfThePresenceSetWhenRoomInInvalidState() async throws {
         // Given
         let error = InternalError.presenceOperationRequiresRoomAttach.toErrorInfo()
-        let channel = await MockRealtimeChannel(name: "basketball::$chat")
+        let channel = MockRealtimeChannel(name: "basketball::$chat")
         let logger = TestLogger()
-        let roomLifecycleManager = await MockRoomLifecycleManager(resultOfWaitToBeAbleToPerformPresenceOperations: .failure(error))
-        let defaultPresence = await DefaultPresence(
+        let roomLifecycleManager = MockRoomLifecycleManager(resultOfWaitToBeAbleToPerformPresenceOperations: .failure(error))
+        let defaultPresence = DefaultPresence(
             channel: channel,
             roomLifecycleManager: roomLifecycleManager,
             roomName: "basketball",
@@ -350,10 +351,10 @@ struct DefaultPresenceTests {
     @Test
     func retrieveAllTheMembersOfThePresenceSetWhileAttaching() async throws {
         // Given
-        let channel = await MockRealtimeChannel(name: "basketball::$chat")
+        let channel = MockRealtimeChannel(name: "basketball::$chat")
         let logger = TestLogger()
-        let roomLifecycleManager = await MockRoomLifecycleManager()
-        let defaultPresence = await DefaultPresence(
+        let roomLifecycleManager = MockRoomLifecycleManager()
+        let defaultPresence = DefaultPresence(
             channel: channel,
             roomLifecycleManager: roomLifecycleManager,
             roomName: "basketball",
@@ -378,10 +379,10 @@ struct DefaultPresenceTests {
         let attachError = ErrorInfo.createArbitraryError()
         let error = InternalError.roomTransitionedToInvalidStateForPresenceOperation(newState: .failed /* arbitrary */, cause: attachError).toErrorInfo()
 
-        let channel = await MockRealtimeChannel(name: "basketball::$chat")
+        let channel = MockRealtimeChannel(name: "basketball::$chat")
         let logger = TestLogger()
-        let roomLifecycleManager = await MockRoomLifecycleManager(resultOfWaitToBeAbleToPerformPresenceOperations: .failure(error))
-        let defaultPresence = await DefaultPresence(
+        let roomLifecycleManager = MockRoomLifecycleManager(resultOfWaitToBeAbleToPerformPresenceOperations: .failure(error))
+        let defaultPresence = DefaultPresence(
             channel: channel,
             roomLifecycleManager: roomLifecycleManager,
             roomName: "basketball",
