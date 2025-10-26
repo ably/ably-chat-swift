@@ -8,11 +8,11 @@ import Ably
  */
 @MainActor
 public protocol Messages: AnyObject, Sendable {
-    // swiftlint:disable:next missing_docs
+    /// The type of the message reactions handler.
     associatedtype Reactions: MessageReactions
-    // swiftlint:disable:next missing_docs
+    /// The type of the subscription response.
     associatedtype SubscribeResponse: MessageSubscriptionResponse
-    // swiftlint:disable:next missing_docs
+    /// The type of the paginated history result.
     associatedtype HistoryResult: PaginatedResult<Message>
 
     /**
@@ -115,7 +115,7 @@ public protocol Messages: AnyObject, Sendable {
     var reactions: Reactions { get }
 }
 
-// swiftlint:disable:next missing_docs
+/// Extension providing `AsyncSequence`-based convenience methods for subscribing to messages.
 public extension Messages {
     /**
      * Subscribe to new messages in this chat room.
@@ -440,7 +440,7 @@ public struct ChatMessageEvent: Sendable {
 ///
 /// You should only iterate over a given `MessageSubscriptionResponseAsyncSequence` once; the results of iterating more than once are undefined.
 public final class MessageSubscriptionResponseAsyncSequence<HistoryResult: PaginatedResult<Message>>: Sendable, AsyncSequence {
-    // swiftlint:disable:next missing_docs
+    /// The type of element returned by this async sequence.
     public typealias Element = ChatMessageEvent
 
     private let subscription: SubscriptionAsyncSequence<Element>
@@ -457,8 +457,9 @@ public final class MessageSubscriptionResponseAsyncSequence<HistoryResult: Pagin
         self.historyBeforeSubscribe = historyBeforeSubscribe
     }
 
-    // used for testing
-    // swiftlint:disable:next missing_docs
+    /// Creates a mock instance for testing purposes.
+    ///
+    /// This initializer is provided for creating mock implementations in tests.
     public init<Underlying: AsyncSequence & Sendable>(mockAsyncSequence: Underlying, mockHistoryBeforeSubscribe: @escaping @Sendable (HistoryBeforeSubscribeParams) async throws(ErrorInfo) -> HistoryResult) where Underlying.Element == Element {
         subscription = .init(mockAsyncSequence: mockAsyncSequence)
         historyBeforeSubscribe = mockHistoryBeforeSubscribe
@@ -473,12 +474,12 @@ public final class MessageSubscriptionResponseAsyncSequence<HistoryResult: Pagin
         subscription.addTerminationHandler(onTermination)
     }
 
-    // swiftlint:disable:next missing_docs
+    /// Gets previous messages that were sent to the room before the subscription was created.
     public func historyBeforeSubscribe(withParams params: HistoryBeforeSubscribeParams) async throws(ErrorInfo) -> HistoryResult {
         try await historyBeforeSubscribe(params)
     }
 
-    // swiftlint:disable:next missing_docs
+    /// The iterator for this async sequence.
     public struct AsyncIterator: AsyncIteratorProtocol {
         private var subscriptionIterator: SubscriptionAsyncSequence<Element>.AsyncIterator
 
@@ -486,13 +487,13 @@ public final class MessageSubscriptionResponseAsyncSequence<HistoryResult: Pagin
             self.subscriptionIterator = subscriptionIterator
         }
 
-        // swiftlint:disable:next missing_docs
+        /// Asynchronously advances to the next element and returns it, or `nil` if no next element exists.
         public mutating func next() async -> Element? {
             await subscriptionIterator.next()
         }
     }
 
-    // swiftlint:disable:next missing_docs
+    /// Creates an async iterator for this sequence.
     public func makeAsyncIterator() -> AsyncIterator {
         .init(subscriptionIterator: subscription.makeAsyncIterator())
     }

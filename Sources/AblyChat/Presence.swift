@@ -1,6 +1,6 @@
 import Ably
 
-// swiftlint:disable:next missing_docs
+/// Type alias for presence data, which is a JSON object.
 public typealias PresenceData = JSONObject
 
 /**
@@ -11,7 +11,7 @@ public typealias PresenceData = JSONObject
  */
 @MainActor
 public protocol Presence: AnyObject, Sendable {
-    // swiftlint:disable:next missing_docs
+    /// The type of the subscription.
     associatedtype Subscription: AblyChat.Subscription
 
     /**
@@ -111,7 +111,7 @@ public protocol Presence: AnyObject, Sendable {
     func leave() async throws(ErrorInfo)
 }
 
-// swiftlint:disable:next missing_docs
+/// Extension providing `AsyncSequence`-based convenience methods for subscribing to presence events.
 public extension Presence {
     /**
      * Subscribes to all presence events in the chat room.

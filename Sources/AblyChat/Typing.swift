@@ -8,7 +8,7 @@ import Ably
  */
 @MainActor
 public protocol Typing: AnyObject, Sendable {
-    // swiftlint:disable:next missing_docs
+    /// The type of the subscription.
     associatedtype Subscription: AblyChat.Subscription
 
     /**

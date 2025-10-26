@@ -34,7 +34,7 @@ public protocol StatusSubscription: Sendable {
  */
 @MainActor
 public protocol MessageSubscriptionResponse: Subscription, Sendable {
-    // swiftlint:disable:next missing_docs
+    /// The type of the paginated history result.
     associatedtype HistoryResult: PaginatedResult<Message>
 
     /**

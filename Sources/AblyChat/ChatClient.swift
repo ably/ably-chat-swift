@@ -1,17 +1,17 @@
 import Ably
 
-// This disable of attributes can be removed once missing_docs fixed here
-// swiftlint:disable attributes
+/**
+ * The protocol defining the interface for a chat client.
+ *
+ * This protocol exists to allow for easier testing and mocking of chat client functionality.
+ */
 @MainActor
-// swiftlint:disable:next missing_docs
 public protocol ChatClientProtocol: AnyObject, Sendable {
-    // swiftlint:enable attributes
-
-    // swiftlint:disable:next missing_docs
+    /// The type of the underlying Ably Realtime client.
     associatedtype Realtime
-    // swiftlint:disable:next missing_docs
+    /// The type of the connection object.
     associatedtype Connection: AblyChat.Connection
-    // swiftlint:disable:next missing_docs
+    /// The type of the rooms manager.
     associatedtype Rooms: AblyChat.Rooms
 
     /**
