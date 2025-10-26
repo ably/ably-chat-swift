@@ -98,18 +98,17 @@ public struct OccupancyData: Sendable {
     }
 }
 
-// swiftlint:disable:next missing_docs
+/// Enum representing occupancy events.
 public enum OccupancyEventType: Sendable {
-    // swiftlint:disable:next missing_docs
+    /// Event triggered when occupancy is updated.
     case updated
 }
 
-// (CHA-O2) The occupancy event format is shown here (https://sdk.ably.com/builds/ably/specification/main/chat-features/#chat-structs-occupancy-event)
-// swiftlint:disable:next missing_docs
+/// Represents an occupancy event.
 public struct OccupancyEvent: Sendable {
-    // swiftlint:disable:next missing_docs
+    /// The type of the occupancy event.
     public var type: OccupancyEventType
-    // swiftlint:disable:next missing_docs
+    /// The occupancy data.
     public var occupancy: OccupancyData
 
     /// Memberwise initializer to create a `OccupancyEvent`.

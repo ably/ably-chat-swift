@@ -29,17 +29,17 @@ public typealias JSONObject = [String: JSONValue]
 ///
 /// > Note: To write a `JSONValue` that corresponds to the `null` JSON value, you must explicitly write `.null`. `JSONValue` deliberately does not implement the `ExpressibleByNilLiteral` protocol in order to avoid confusion between a value of type `JSONValue?` and a `JSONValue` with case `.null`.
 public indirect enum JSONValue: Sendable, Equatable {
-    // swiftlint:disable:next missing_docs
+    /// A JSON object value.
     case object(JSONObject)
-    // swiftlint:disable:next missing_docs
+    /// A JSON array value.
     case array([JSONValue])
-    // swiftlint:disable:next missing_docs
+    /// A JSON string value.
     case string(String)
-    // swiftlint:disable:next missing_docs
+    /// A JSON numeric value.
     case number(Double)
-    // swiftlint:disable:next missing_docs
+    /// A JSON boolean value.
     case bool(Bool)
-    // swiftlint:disable:next missing_docs
+    /// A JSON null value.
     case null
 
     // MARK: - Convenience getters for associated values
@@ -100,42 +100,42 @@ public indirect enum JSONValue: Sendable, Equatable {
 }
 
 extension JSONValue: ExpressibleByDictionaryLiteral {
-    // swiftlint:disable:next missing_docs
+    /// Creates a `JSONValue` from a dictionary literal.
     public init(dictionaryLiteral elements: (String, JSONValue)...) {
         self = .object(.init(uniqueKeysWithValues: elements))
     }
 }
 
 extension JSONValue: ExpressibleByArrayLiteral {
-    // swiftlint:disable:next missing_docs
+    /// Creates a `JSONValue` from an array literal.
     public init(arrayLiteral elements: JSONValue...) {
         self = .array(elements)
     }
 }
 
 extension JSONValue: ExpressibleByStringLiteral {
-    // swiftlint:disable:next missing_docs
+    /// Creates a `JSONValue` from a string literal.
     public init(stringLiteral value: String) {
         self = .string(value)
     }
 }
 
 extension JSONValue: ExpressibleByIntegerLiteral {
-    // swiftlint:disable:next missing_docs
+    /// Creates a `JSONValue` from an integer literal.
     public init(integerLiteral value: Int) {
         self = .number(Double(value))
     }
 }
 
 extension JSONValue: ExpressibleByFloatLiteral {
-    // swiftlint:disable:next missing_docs
+    /// Creates a `JSONValue` from a float literal.
     public init(floatLiteral value: Double) {
         self = .number(value)
     }
 }
 
 extension JSONValue: ExpressibleByBooleanLiteral {
-    // swiftlint:disable:next missing_docs
+    /// Creates a `JSONValue` from a boolean literal.
     public init(booleanLiteral value: Bool) {
         self = .bool(value)
     }

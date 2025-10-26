@@ -183,7 +183,13 @@ public struct ChatClientOptions: Sendable {
      */
     public var logLevel: LogLevel? = .error
 
-    // swiftlint:disable:next missing_docs
+    /**
+     * Creates a new instance of ``ChatClientOptions``.
+     *
+     * - Parameters:
+     *   - logHandler: A custom log handler for logging messages from the client.
+     *   - logLevel: The minimum log level at which messages will be logged.
+     */
     public init(logHandler: LogHandler? = nil, logLevel: LogLevel? = .error) {
         self.logHandler = logHandler
         self.logLevel = logLevel

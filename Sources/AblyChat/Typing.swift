@@ -96,19 +96,21 @@ public extension Typing {
 }
 
 /**
- * Represents a typing event.
+ * Represents a change in the state of current typers.
  */
 public struct TypingSetEvent: Sendable {
-    // swiftlint:disable:next missing_docs
+    /**
+     * The type of the event.
+     */
     public var type: TypingSetEventType
 
     /**
-     * Get a set of clientIds that are currently typing.
+     * The set of clientIds that are currently typing.
      */
     public var currentlyTyping: Set<String>
 
     /**
-     * Get the details of the operation that modified the typing event.
+     * Represents the change that resulted in the new set of typers.
       */
     public var change: Change
 
@@ -121,11 +123,11 @@ public struct TypingSetEvent: Sendable {
         self.change = change
     }
 
-    // swiftlint:disable:next missing_docs
+    /// Represents the change that resulted in the new set of typers.
     public struct Change: Sendable {
-        // swiftlint:disable:next missing_docs
+        /// The client ID of the user who stopped/started typing.
         public var clientID: String
-        // swiftlint:disable:next missing_docs
+        /// Type of the change.
         public var type: TypingEventType
 
         /// Memberwise initializer to create a `Change`.

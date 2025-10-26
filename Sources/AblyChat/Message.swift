@@ -209,7 +209,7 @@ internal extension MessageVersion {
     }
 }
 
-// swiftlint:disable:next missing_docs
+/// Extension providing message reaction summary utilities.
 public extension Message {
     /**
      * Creates a new message instance with the event applied.

@@ -194,7 +194,14 @@ public struct SendMessageParams: Sendable {
      */
     public var headers: MessageHeaders?
 
-    // swiftlint:disable:next missing_docs
+    /**
+     * Creates a new instance of ``SendMessageParams``.
+     *
+     * - Parameters:
+     *   - text: The text of the message.
+     *   - metadata: Optional metadata of the message.
+     *   - headers: Optional headers of the message.
+     */
     public init(text: String, metadata: MessageMetadata? = nil, headers: MessageHeaders? = nil) {
         self.text = text
         self.metadata = metadata
@@ -229,7 +236,13 @@ public struct OperationDetails: Sendable {
     /// Optional metadata that will be added to the action. Defaults to empty.
     public var metadata: MessageOperationMetadata?
 
-    // swiftlint:disable:next missing_docs
+    /**
+     * Creates a new instance of ``OperationDetails``.
+     *
+     * - Parameters:
+     *   - description: Optional description for the message action.
+     *   - metadata: Optional metadata that will be added to the action.
+     */
     public init(description: String? = nil, metadata: MessageOperationMetadata? = nil) {
         self.description = description
         self.metadata = metadata
@@ -284,7 +297,15 @@ public struct HistoryParams: Sendable {
     // (CHA-M5g) The subscribers subscription point must be additionally specified (internally, by us) in the fromSerial query parameter.
     internal var fromSerial: String?
 
-    // swiftlint:disable:next missing_docs
+    /**
+     * Creates a new instance of ``HistoryParams``.
+     *
+     * - Parameters:
+     *   - start: The start of the time window to query from.
+     *   - end: The end of the time window to query from.
+     *   - limit: The maximum number of messages to return.
+     *   - orderBy: The direction to query messages in.
+     */
     public init(start: Date? = nil, end: Date? = nil, limit: Int? = nil, orderBy: HistoryParams.OrderBy? = nil) {
         self.start = start
         self.end = end
@@ -322,7 +343,14 @@ public struct HistoryBeforeSubscribeParams: Sendable {
      */
     public var limit: Int?
 
-    // swiftlint:disable:next missing_docs
+    /**
+     * Creates a new instance of ``HistoryBeforeSubscribeParams``.
+     *
+     * - Parameters:
+     *   - start: The start of the time window to query from.
+     *   - end: The end of the time window to query from.
+     *   - limit: The maximum number of messages to return.
+     */
     public init(start: Date? = nil, end: Date? = nil, limit: Int? = nil) {
         self.start = start
         self.end = end
