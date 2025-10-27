@@ -1,13 +1,13 @@
 {
-  "originHash" : "50f4a841e3327c4a6e83e3bac4b04bb92820644dea628e33ad712d98f7ea931f",
+  "originHash" : "10047870bb38d2b3fc8436d2cfc4e3af2ad484ac90ff9e54041f1e7db1e8488e",
   "pins" : [
     {
       "identity" : "ably-cocoa",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/ably/ably-cocoa",
       "state" : {
-        "branch" : "295-chat-tests-ci-hang-investigation",
-        "revision" : "99b447c19dffd26c7ad56125924c4c60bfb1a31d"
+        "branch" : "fix-UIDevice-incorrect-thread-access",
+        "revision" : "425c2e3911572fcf7425ca8968c6374ba9c539e4"
       }
     },
     {

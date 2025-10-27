@@ -26,7 +26,7 @@ let package = Package(
         // This is the SDK's only dependency.
         .package(
             url: "https://github.com/ably/ably-cocoa",
-            branch: "295-chat-tests-ci-hang-investigation", // from: "1.2.48",
+            branch: "fix-UIDevice-incorrect-thread-access", // from: "1.2.48",
         ),
 
         // All of the following dependencies are only used for internal purposes (testing or build tooling).
