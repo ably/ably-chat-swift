@@ -140,7 +140,59 @@ jobs:
           if [ "${{ matrix.platform }}" == "iOS" ]; then
             for i in {1..100}; do
               echo "BEGIN: Test run $i of 100"
-              swift run BuildTool test-library --platform ${{ matrix.platform }}
+
+              # Start the test process in the background
+              swift run BuildTool test-library --platform ${{ matrix.platform }} &
+              TEST_PID=$!
+
+              # Wait for up to 15 minutes (900 seconds)
+              TIMEOUT=900
+              ELAPSED=0
+              SLEEP_INTERVAL=5
+
+              while kill -0 $TEST_PID 2>/dev/null; do
+                sleep $SLEEP_INTERVAL
+                ELAPSED=$((ELAPSED + SLEEP_INTERVAL))
+
+                if [ $ELAPSED -ge $TIMEOUT ]; then
+                  echo "Test has been running for 15 minutes. Attaching debugger..."
+
+                  # Find the actual test process (xctest)
+                  XCTEST_PID=$(pgrep -P $TEST_PID xctest || pgrep xctest | head -1)
+
+                  if [ -n "$XCTEST_PID" ]; then
+                    echo "Found xctest process: $XCTEST_PID"
+                    echo "Attaching lldb and printing backtraces..."
+
+                    # Attach lldb and print all thread backtraces
+                    lldb -p $XCTEST_PID -o "thread backtrace all" -o "quit"
+                  else
+                    echo "Could not find xctest process. Printing all Swift/test-related processes:"
+                    ps aux | grep -E "(swift|xctest|BuildTool)" | grep -v grep
+
+                    echo "Attempting to attach to main process: $TEST_PID"
+                    lldb -p $TEST_PID -o "thread backtrace all" -o "quit"
+                  fi
+
+                  # Kill the test process
+                  echo "Killing test process..."
+                  kill -9 $TEST_PID 2>/dev/null || true
+                  kill -9 $XCTEST_PID 2>/dev/null || true
+
+                  echo "Test run $i timed out after 15 minutes"
+                  exit 1
+                fi
+              done
+
+              # Wait for the process to finish and capture exit code
+              wait $TEST_PID
+              EXIT_CODE=$?
+
+              if [ $EXIT_CODE -ne 0 ]; then
+                echo "Test run $i failed with exit code $EXIT_CODE"
+                exit $EXIT_CODE
+              fi
+
               echo "END: Test run $i of 100"
             done
           else
