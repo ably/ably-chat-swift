@@ -26,7 +26,7 @@ let package = Package(
         // This is the SDK's only dependency.
         .package(
             url: "https://github.com/ably/ably-cocoa",
-            from: "1.2.48",
+            from: "1.2.51",
         ),
 
         // All of the following dependencies are only used for internal purposes (testing or build tooling).

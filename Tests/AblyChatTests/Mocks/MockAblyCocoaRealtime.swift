@@ -167,6 +167,10 @@ final class MockAblyCocoaRealtime: NSObject, RealtimeClientProtocol, @unchecked 
             fatalError("Not implemented")
         }
 
+        var modes: ARTChannelMode {
+            fatalError("Not implemented")
+        }
+
         func publish(_: String?, data _: Any?) {
             fatalError("Not implemented")
         }
@@ -328,6 +332,30 @@ final class MockAblyCocoaRealtime: NSObject, RealtimeClientProtocol, @unchecked 
         }
 
         func unsubscribe(_: String, listener _: ARTEventListener) {
+            fatalError("Not implemented")
+        }
+
+        func publish(for _: ARTMessage, annotation _: ARTOutboundAnnotation, callback _: ARTCallback? = nil) {
+            fatalError("Not implemented")
+        }
+
+        func publish(forMessageSerial _: String, annotation _: ARTOutboundAnnotation, callback _: ARTCallback? = nil) {
+            fatalError("Not implemented")
+        }
+
+        func delete(for _: ARTMessage, annotation _: ARTOutboundAnnotation, callback _: ARTCallback? = nil) {
+            fatalError("Not implemented")
+        }
+
+        func delete(forMessageSerial _: String, annotation _: ARTOutboundAnnotation, callback _: ARTCallback? = nil) {
+            fatalError("Not implemented")
+        }
+
+        func getFor(_: ARTMessage, query _: ARTAnnotationsQuery, callback _: @escaping ARTPaginatedAnnotationsCallback) {
+            fatalError("Not implemented")
+        }
+
+        func getForMessageSerial(_: String, query _: ARTAnnotationsQuery, callback _: @escaping ARTPaginatedAnnotationsCallback) {
             fatalError("Not implemented")
         }
     }
