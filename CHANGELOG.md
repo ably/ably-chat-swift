@@ -1,5 +1,11 @@
 # Change Log
 
+## [1.1.0](https://github.com/ably/ably-chat-swift/tree/1.1.0)
+
+### Bug Fixes
+
+- **Connection Status**: Added missing `closing` and `closed` states to the `ConnectionStatus` enum. Previously these states were incorrectly mapped to `failed`. [#466](https://github.com/ably/ably-chat-swift/pull/466)
+
 ## [1.0.1](https://github.com/ably/ably-chat-swift/tree/1.0.1)
 
 ### What's Changed
