@@ -59,8 +59,12 @@ public final class SubscriptionAsyncSequence<Element: Sendable>: Sendable, Async
         mode = .default(stream: stream, continuation: continuation)
     }
 
-    // This is a workaround for the fact that, as mentioned above, `Subscription` is a struct when I would have liked it to be a protocol. It allows people mocking our SDK to create a `Subscription` so that they can return it from their mocks. The intention of this initializer is that if you use it, then the created `Subscription` will just replay the sequence that you pass it. It is a programmer error to pass a throwing AsyncSequence.
-    // swiftlint:disable:next missing_docs
+    /// Creates a mock instance for testing purposes.
+    ///
+    /// This initializer allows creating a `SubscriptionAsyncSequence` for testing by providing
+    /// a mock async sequence. The created subscription will replay the sequence that you pass it.
+    ///
+    /// - Note: It is a programmer error to pass a throwing AsyncSequence.
     public init<Underlying: AsyncSequence & Sendable>(mockAsyncSequence: Underlying) where Underlying.Element == Element {
         mode = .mockAsyncSequence(.init(asyncSequence: mockAsyncSequence))
     }
@@ -112,7 +116,7 @@ public final class SubscriptionAsyncSequence<Element: Sendable>: Sendable, Async
         }
     }
 
-    // swiftlint:disable:next missing_docs
+    /// The iterator for this async sequence.
     public struct AsyncIterator: AsyncIteratorProtocol {
         fileprivate enum Mode {
             case `default`(iterator: AsyncStream<Element>.AsyncIterator)
@@ -138,13 +142,13 @@ public final class SubscriptionAsyncSequence<Element: Sendable>: Sendable, Async
             self.mode = mode
         }
 
-        // swiftlint:disable:next missing_docs
+        /// Asynchronously advances to the next element and returns it, or `nil` if no next element exists.
         public mutating func next() async -> Element? {
             await mode.next()
         }
     }
 
-    // swiftlint:disable:next missing_docs
+    /// Creates an async iterator for this sequence.
     public func makeAsyncIterator() -> AsyncIterator {
         let iteratorMode: AsyncIterator.Mode = switch mode {
         case let .default(stream: stream, continuation: _):

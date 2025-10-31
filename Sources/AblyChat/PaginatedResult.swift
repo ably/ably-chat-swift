@@ -1,26 +1,31 @@
 import Ably
 
-// This disable of attributes can be removed once missing_docs fixed here
-// swiftlint:disable attributes
+/**
+ * A protocol representing a paginated result of items.
+ *
+ * This protocol allows for iterating through paginated data by fetching additional pages.
+ */
 @MainActor
-// swiftlint:disable:next missing_docs
 public protocol PaginatedResult<Item>: AnyObject, Sendable {
-    // swiftlint:enable attributes
-
-    // swiftlint:disable:next missing_docs
+    /// The type of items in this paginated result.
     associatedtype Item
 
-    // swiftlint:disable:next missing_docs
+    /// The items in the current page.
     var items: [Item] { get }
-    // swiftlint:disable:next missing_docs
+
+    /// Whether there is a next page available.
     var hasNext: Bool { get }
-    // swiftlint:disable:next missing_docs
+
+    /// Whether this is the last page.
     var isLast: Bool { get }
-    // swiftlint:disable:next missing_docs
+
+    /// Fetches the next page of results, if available.
     func next() async throws(ErrorInfo) -> Self?
-    // swiftlint:disable:next missing_docs
+
+    /// Fetches the first page of results.
     func first() async throws(ErrorInfo) -> Self
-    // swiftlint:disable:next missing_docs
+
+    /// Returns the current page.
     func current() async throws(ErrorInfo) -> Self
 }
 
@@ -53,7 +58,6 @@ internal final class DefaultPaginatedResult<Underlying: InternalHTTPPaginatedRes
         self.init(underlying: response, items: items)
     }
 
-    /// Asynchronously fetch the next page if available
     internal func next() async throws(ErrorInfo) -> DefaultPaginatedResult<Underlying, Item>? {
         guard let nextUnderlying = try await underlying.next() else {
             return nil
@@ -61,12 +65,10 @@ internal final class DefaultPaginatedResult<Underlying: InternalHTTPPaginatedRes
         return try DefaultPaginatedResult(response: nextUnderlying)
     }
 
-    /// Asynchronously fetch the first page
     internal func first() async throws(ErrorInfo) -> DefaultPaginatedResult<Underlying, Item> {
         try await DefaultPaginatedResult(response: underlying.first())
     }
 
-    /// Asynchronously fetch the current page
     internal func current() async throws(ErrorInfo) -> DefaultPaginatedResult<Underlying, Item> {
         self
     }

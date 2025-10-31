@@ -7,7 +7,7 @@ import Ably
  */
 @MainActor
 public protocol RoomReactions: AnyObject, Sendable {
-    // swiftlint:disable:next missing_docs
+    /// The type of the subscription.
     associatedtype Subscription: AblyChat.Subscription
 
     /**
@@ -109,17 +109,17 @@ public struct SendReactionParams: Sendable {
     }
 }
 
-/// Event type for room reaction subscription.
+/// The type of room reaction events.
 public enum RoomReactionEventType: Sendable {
-    // swiftlint:disable:next missing_docs
+    /// Event triggered when a room reaction was received.
     case reaction
 }
 
-/// Event emitted by room reaction subscriptions, containing the type and the reaction.
+/// Event that is emitted when a room reaction is received.
 public struct RoomReactionEvent: Sendable {
-    // swiftlint:disable:next missing_docs
+    /// The type of the event.
     public var type: RoomReactionEventType
-    // swiftlint:disable:next missing_docs
+    /// The reaction that was received.
     public var reaction: RoomReaction
 
     /// Memberwise initializer to create a `RoomReactionEvent`.

@@ -8,11 +8,11 @@ import Ably
  */
 @MainActor
 public protocol Messages: AnyObject, Sendable {
-    // swiftlint:disable:next missing_docs
+    /// The type of the message reactions handler.
     associatedtype Reactions: MessageReactions
-    // swiftlint:disable:next missing_docs
+    /// The type of the subscription response.
     associatedtype SubscribeResponse: MessageSubscriptionResponse
-    // swiftlint:disable:next missing_docs
+    /// The type of the paginated history result.
     associatedtype HistoryResult: PaginatedResult<Message>
 
     /**
@@ -115,7 +115,7 @@ public protocol Messages: AnyObject, Sendable {
     var reactions: Reactions { get }
 }
 
-// swiftlint:disable:next missing_docs
+/// Extension providing `AsyncSequence`-based convenience methods for subscribing to messages.
 public extension Messages {
     /**
      * Subscribe to new messages in this chat room.
@@ -194,7 +194,14 @@ public struct SendMessageParams: Sendable {
      */
     public var headers: MessageHeaders?
 
-    // swiftlint:disable:next missing_docs
+    /**
+     * Creates a new instance of ``SendMessageParams``.
+     *
+     * - Parameters:
+     *   - text: The text of the message.
+     *   - metadata: Optional metadata of the message.
+     *   - headers: Optional headers of the message.
+     */
     public init(text: String, metadata: MessageMetadata? = nil, headers: MessageHeaders? = nil) {
         self.text = text
         self.metadata = metadata
@@ -229,7 +236,13 @@ public struct OperationDetails: Sendable {
     /// Optional metadata that will be added to the action. Defaults to empty.
     public var metadata: MessageOperationMetadata?
 
-    // swiftlint:disable:next missing_docs
+    /**
+     * Creates a new instance of ``OperationDetails``.
+     *
+     * - Parameters:
+     *   - description: Optional description for the message action.
+     *   - metadata: Optional metadata that will be added to the action.
+     */
     public init(description: String? = nil, metadata: MessageOperationMetadata? = nil) {
         self.description = description
         self.metadata = metadata
@@ -240,11 +253,13 @@ public struct OperationDetails: Sendable {
  * Options for querying messages in a chat room.
  */
 public struct HistoryParams: Sendable {
-    // swiftlint:disable:next missing_docs
+    /**
+     * The order in which results should be returned when performing a paginated query.
+     */
     public enum OrderBy: Sendable {
-        // swiftlint:disable:next missing_docs
+        /// Return results in ascending order (oldest first).
         case oldestFirst
-        // swiftlint:disable:next missing_docs
+        /// Return results in descending order (newest first).
         case newestFirst
     }
 
@@ -282,7 +297,15 @@ public struct HistoryParams: Sendable {
     // (CHA-M5g) The subscribers subscription point must be additionally specified (internally, by us) in the fromSerial query parameter.
     internal var fromSerial: String?
 
-    // swiftlint:disable:next missing_docs
+    /**
+     * Creates a new instance of ``HistoryParams``.
+     *
+     * - Parameters:
+     *   - start: The start of the time window to query from.
+     *   - end: The end of the time window to query from.
+     *   - limit: The maximum number of messages to return.
+     *   - orderBy: The direction to query messages in.
+     */
     public init(start: Date? = nil, end: Date? = nil, limit: Int? = nil, orderBy: HistoryParams.OrderBy? = nil) {
         self.start = start
         self.end = end
@@ -320,7 +343,14 @@ public struct HistoryBeforeSubscribeParams: Sendable {
      */
     public var limit: Int?
 
-    // swiftlint:disable:next missing_docs
+    /**
+     * Creates a new instance of ``HistoryBeforeSubscribeParams``.
+     *
+     * - Parameters:
+     *   - start: The start of the time window to query from.
+     *   - end: The end of the time window to query from.
+     *   - limit: The maximum number of messages to return.
+     */
     public init(start: Date? = nil, end: Date? = nil, limit: Int? = nil) {
         self.start = start
         self.end = end
@@ -370,19 +400,19 @@ internal extension HistoryParams {
 
 /// Event type for chat message subscription.
 public enum ChatMessageEventType: Sendable {
-    // swiftlint:disable:next missing_docs
+    /// Fires when a new chat message is received.
     case created
-    // swiftlint:disable:next missing_docs
+    /// Fires when a chat message is updated.
     case updated
-    // swiftlint:disable:next missing_docs
+    /// Fires when a chat message is deleted.
     case deleted
 }
 
-/// Event emitted by message subscriptions, containing the type and the message.
+/// Payload for a message event.
 public struct ChatMessageEvent: Sendable {
-    // swiftlint:disable:next missing_docs
+    /// The type of the message event.
     public var type: ChatMessageEventType
-    // swiftlint:disable:next missing_docs
+    /// The message that was received.
     public var message: Message
 
     /// Memberwise initializer to create a `ChatMessageEvent`.
@@ -410,7 +440,7 @@ public struct ChatMessageEvent: Sendable {
 ///
 /// You should only iterate over a given `MessageSubscriptionResponseAsyncSequence` once; the results of iterating more than once are undefined.
 public final class MessageSubscriptionResponseAsyncSequence<HistoryResult: PaginatedResult<Message>>: Sendable, AsyncSequence {
-    // swiftlint:disable:next missing_docs
+    /// The type of element returned by this async sequence.
     public typealias Element = ChatMessageEvent
 
     private let subscription: SubscriptionAsyncSequence<Element>
@@ -427,8 +457,9 @@ public final class MessageSubscriptionResponseAsyncSequence<HistoryResult: Pagin
         self.historyBeforeSubscribe = historyBeforeSubscribe
     }
 
-    // used for testing
-    // swiftlint:disable:next missing_docs
+    /// Creates a mock instance for testing purposes.
+    ///
+    /// This initializer is provided for creating mock implementations in tests.
     public init<Underlying: AsyncSequence & Sendable>(mockAsyncSequence: Underlying, mockHistoryBeforeSubscribe: @escaping @Sendable (HistoryBeforeSubscribeParams) async throws(ErrorInfo) -> HistoryResult) where Underlying.Element == Element {
         subscription = .init(mockAsyncSequence: mockAsyncSequence)
         historyBeforeSubscribe = mockHistoryBeforeSubscribe
@@ -443,12 +474,12 @@ public final class MessageSubscriptionResponseAsyncSequence<HistoryResult: Pagin
         subscription.addTerminationHandler(onTermination)
     }
 
-    // swiftlint:disable:next missing_docs
+    /// Gets previous messages that were sent to the room before the subscription was created.
     public func historyBeforeSubscribe(withParams params: HistoryBeforeSubscribeParams) async throws(ErrorInfo) -> HistoryResult {
         try await historyBeforeSubscribe(params)
     }
 
-    // swiftlint:disable:next missing_docs
+    /// The iterator for this async sequence.
     public struct AsyncIterator: AsyncIteratorProtocol {
         private var subscriptionIterator: SubscriptionAsyncSequence<Element>.AsyncIterator
 
@@ -456,13 +487,13 @@ public final class MessageSubscriptionResponseAsyncSequence<HistoryResult: Pagin
             self.subscriptionIterator = subscriptionIterator
         }
 
-        // swiftlint:disable:next missing_docs
+        /// Asynchronously advances to the next element and returns it, or `nil` if no next element exists.
         public mutating func next() async -> Element? {
             await subscriptionIterator.next()
         }
     }
 
-    // swiftlint:disable:next missing_docs
+    /// Creates an async iterator for this sequence.
     public func makeAsyncIterator() -> AsyncIterator {
         .init(subscriptionIterator: subscription.makeAsyncIterator())
     }

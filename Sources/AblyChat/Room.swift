@@ -5,21 +5,21 @@ import Ably
  */
 @MainActor
 public protocol Room<Channel>: AnyObject, Sendable {
-    // swiftlint:disable:next missing_docs
+    /// The type of the underlying Ably realtime channel.
     associatedtype Channel
 
-    // swiftlint:disable:next missing_docs
+    /// The type of the messages handler.
     associatedtype Messages: AblyChat.Messages
-    // swiftlint:disable:next missing_docs
+    /// The type of the presence handler.
     associatedtype Presence: AblyChat.Presence
-    // swiftlint:disable:next missing_docs
+    /// The type of the room reactions handler.
     associatedtype Reactions: AblyChat.RoomReactions
-    // swiftlint:disable:next missing_docs
+    /// The type of the typing indicator handler.
     associatedtype Typing: AblyChat.Typing
-    // swiftlint:disable:next missing_docs
+    /// The type of the occupancy handler.
     associatedtype Occupancy: AblyChat.Occupancy
 
-    // swiftlint:disable:next missing_docs
+    /// The type of the status subscription.
     associatedtype StatusSubscription: AblyChat.StatusSubscription
 
     /**
@@ -373,12 +373,12 @@ internal class DefaultRoom<Realtime: InternalRealtimeClientProtocol, LifecycleMa
         return realtime.channels.get("\(roomName)::$chat", options: channelOptions)
     }
 
-    // swiftlint:disable:next missing_docs
+    /// See ``Room/attach()``
     public func attach() async throws(ErrorInfo) {
         try await lifecycleManager.performAttachOperation()
     }
 
-    // swiftlint:disable:next missing_docs
+    /// See ``Room/detach()``
     public func detach() async throws(ErrorInfo) {
         try await lifecycleManager.performDetachOperation()
     }

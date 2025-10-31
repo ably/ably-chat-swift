@@ -1,6 +1,8 @@
 import os
 
-// swiftlint:disable:next missing_docs
+/**
+ * A handler for processing log messages from the Chat SDK.
+ */
 public struct LogHandler: Sendable {
     fileprivate let simple: any Simple
 
@@ -34,15 +36,15 @@ public struct LogHandler: Sendable {
  * Represents the different levels of logging that can be used.
  */
 public enum LogLevel: Sendable, Comparable {
-    // swiftlint:disable:next missing_docs
+    /// Verbose trace logging.
     case trace
-    // swiftlint:disable:next missing_docs
+    /// Debug logging.
     case debug
-    // swiftlint:disable:next missing_docs
+    /// Informational logging.
     case info
-    // swiftlint:disable:next missing_docs
+    /// Warning logging.
     case warn
-    // swiftlint:disable:next missing_docs
+    /// Error logging.
     case error
 }
 

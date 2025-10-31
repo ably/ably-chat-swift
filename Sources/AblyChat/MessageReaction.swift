@@ -137,7 +137,9 @@ public struct MessageReactionSummary: Sendable, Equatable {
          */
         public var clipped: Bool // TM7c1c
 
-        // swiftlint:disable:next missing_docs
+        /// Memberwise initializer to create a `ClientIDList`.
+        ///
+        /// - Note: You should not need to use this initializer when using the Chat SDK. It is exposed only to allow users to create mock versions of the SDK's protocols.
         public init(total: Int, clientIDs: [String], clipped: Bool) {
             self.total = total
             self.clientIDs = clientIDs
@@ -176,7 +178,9 @@ public struct MessageReactionSummary: Sendable, Equatable {
          */
         public var totalClientIDs: Int // TM7d1e
 
-        // swiftlint:disable:next missing_docs
+        /// Memberwise initializer to create a `ClientIDCounts`.
+        ///
+        /// - Note: You should not need to use this initializer when using the Chat SDK. It is exposed only to allow users to create mock versions of the SDK's protocols.
         public init(total: Int, clientIDs: [String: Int], totalUnidentified: Int, clipped: Bool, totalClientIDs: Int) {
             self.total = total
             self.clientIDs = clientIDs

@@ -1,6 +1,6 @@
 import Ably
 
-// swiftlint:disable:next missing_docs
+/// Type alias for presence data, which is a JSON object.
 public typealias PresenceData = JSONObject
 
 /**
@@ -11,7 +11,7 @@ public typealias PresenceData = JSONObject
  */
 @MainActor
 public protocol Presence: AnyObject, Sendable {
-    // swiftlint:disable:next missing_docs
+    /// The type of the subscription.
     associatedtype Subscription: AblyChat.Subscription
 
     /**
@@ -111,7 +111,7 @@ public protocol Presence: AnyObject, Sendable {
     func leave() async throws(ErrorInfo)
 }
 
-// swiftlint:disable:next missing_docs
+/// Extension providing `AsyncSequence`-based convenience methods for subscribing to presence events.
 public extension Presence {
     /**
      * Subscribes to all presence events in the chat room.
@@ -146,7 +146,10 @@ public extension Presence {
 }
 
 /**
- * Type for PresenceMember
+ * Type for PresenceMember.
+ *
+ * Presence members are unique based on their `connectionId` and `clientId`. It is possible for
+ * multiple users to have the same `clientId` if they are connected to the room from different devices.
  */
 public struct PresenceMember: Sendable {
     /// Memberwise initializer to create a `PresenceMember`.
@@ -178,7 +181,10 @@ public struct PresenceMember: Sendable {
      * The extras associated with the presence member.
      */
     public var extras: [String: JSONValue]?
-    // swiftlint:disable:next missing_docs
+
+    /**
+     * The timestamp of when the last change in state occurred for this presence member.
+     */
     public var updatedAt: Date
 }
 
@@ -272,7 +278,14 @@ public struct PresenceParams: Sendable {
     /// Sets whether to wait for a full presence set synchronization between Ably and the clients on the room to complete before returning the results. Synchronization begins as soon as the room is ``RoomStatus/attached``. When set to `true` the results will be returned as soon as the sync is complete. When set to `false` the current list of members will be returned without the sync completing. The default is `true`.
     public var waitForSync = true
 
-    // swiftlint:disable:next missing_docs
+    /**
+     * Creates a new instance of ``PresenceParams``.
+     *
+     * - Parameters:
+     *   - clientID: Filter by a specific client ID.
+     *   - connectionID: Filter by a specific connection ID.
+     *   - waitForSync: Whether to wait for full presence synchronization.
+     */
     public init(clientID: String? = nil, connectionID: String? = nil, waitForSync: Bool = true) {
         self.clientID = clientID
         self.connectionID = connectionID
