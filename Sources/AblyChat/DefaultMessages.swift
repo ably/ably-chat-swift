@@ -159,7 +159,7 @@ internal final class DefaultMessages<Realtime: InternalRealtimeClientProtocol>: 
                         continuation.resume(returning: .success(subscriptionPoint))
                     } else {
                         logger.log(message: "Channel is attached, but attachSerial is not defined", level: .error)
-                        continuation.resume(returning: .failure(InternalError.failedToResolveSubscriptionPointBecauseAttachSerialNotDefined.toErrorInfo()))
+                        continuation.resume(returning: .failure(InternalError.failedToResolveSubscriptionPointBecauseChannelSerialNotDefined.toErrorInfo()))
                     }
                 case .failed, .suspended:
                     let error = InternalError.failedToResolveSubscriptionPointBecauseChannelFailedToAttach(cause: stateChange.reason)
@@ -170,9 +170,5 @@ internal final class DefaultMessages<Realtime: InternalRealtimeClientProtocol>: 
                 }
             }
         }.get()
-    }
-
-    internal enum MessagesError: Error {
-        case noReferenceToSelf
     }
 }
