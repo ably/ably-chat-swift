@@ -181,6 +181,11 @@ struct IntegrationTests {
         try await txRoom.messages.reactions.send(forMessageWithSerial: messageToReact.serial, params: .init(name: "🎉"))
         Self.logAwait("AFTER txRoom.messages.reactions.send (🎉)")
 
+        // Wait a little before requesting clientReactions
+        Self.logAwait("BEFORE Task.sleep (2s for clientReactions)")
+        try await Task.sleep(nanoseconds: 2 * NSEC_PER_SEC)
+        Self.logAwait("AFTER Task.sleep (2s for clientReactions)")
+
         // Before deleting, fetch the reactions summary for txClientID and check its contents
         Self.logAwait("BEFORE rxRoom.messages.reactions.clientReactions")
         let reactionsForClient = try await rxRoom.messages.reactions.clientReactions(
@@ -273,9 +278,9 @@ struct IntegrationTests {
         #expect(reactionRawEvents[2].reaction.messageSerial == messageToReact.serial)
 
         // Wait a little before requesting history
-        Self.logAwait("BEFORE Task.sleep (2s)")
+        Self.logAwait("BEFORE Task.sleep (2s for history)")
         try await Task.sleep(nanoseconds: 2 * NSEC_PER_SEC)
-        Self.logAwait("AFTER Task.sleep (2s)")
+        Self.logAwait("AFTER Task.sleep (2s for history)")
 
         // (7) Fetch historical messages from before subscribing, and check we get txMessageBeforeRxSubscribe
 
