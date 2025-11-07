@@ -90,9 +90,6 @@ internal enum InternalError {
     /// Unable to fetch `historyBeforeSubscribe` because a channel in the `ATTACHED` state has violated our expectations by its `channelSerial` or `attachSerial` not being populated, so we cannot resolve its "subscription point" per CHA-M5b.
     case failedToResolveSubscriptionPointBecauseChannelSerialNotDefined
 
-    /// Unable to fetch `historyBeforeSubscribe` because whilst waiting for a channel to become attached per CHA-M5b in order to resolve its "subscription point".
-    case failedToResolveSubscriptionPointBecauseChannelFailedToAttach(cause: ErrorInfo?)
-
     /// Attempted to load a resource from the given `path`, expecting to get a single item back, but the returned `PaginatedResult` is empty.
     case noItemInResponse(path: String)
 
@@ -184,8 +181,6 @@ internal enum InternalError {
             .invalidArgument
         case .failedToResolveSubscriptionPointBecauseChannelSerialNotDefined:
             .channelSerialNotDefined
-        case .failedToResolveSubscriptionPointBecauseChannelFailedToAttach:
-            .roomInInvalidState
         case .noItemInResponse:
             .notFound
         case .failedToGetPaginatedResult:
@@ -288,9 +283,6 @@ internal enum InternalError {
         case .failedToResolveSubscriptionPointBecauseChannelSerialNotDefined:
             op = "fetch message history from before subscription"
             reason = "channel is attached but channelSerial is not defined"
-        case let .failedToResolveSubscriptionPointBecauseChannelFailedToAttach(cause):
-            op = "fetch message history from before subscription"
-            reason = "channel failed to attach: \(cause, default: "(nil cause)")"
         case .sendMessageReactionEmptyMessageSerial:
             op = "send message reaction"
             reason = "message serial must not be empty"
@@ -332,8 +324,6 @@ internal enum InternalError {
         case let .roomTransitionedToInvalidStateForPresenceOperation(newState: _, cause: cause):
             cause
         case let .roomDiscontinuity(cause):
-            cause
-        case let .failedToResolveSubscriptionPointBecauseChannelFailedToAttach(cause):
             cause
         case let .failedToGetPaginatedResult(cause):
             cause

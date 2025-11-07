@@ -146,27 +146,18 @@ internal final class DefaultMessages<Realtime: InternalRealtimeClientProtocol>: 
 
         // (CHA-M5b) If a subscription is added when the underlying realtime channel is in any other state, then its subscription point becomes the attachSerial at the the point of channel attachment.
         return try await withCheckedContinuation { (continuation: CheckedContinuation<Result<String, ErrorInfo>, Never>) in
-            _ = channel.once { [weak self] stateChange in
+            _ = channel.once(.attached) { [weak self] stateChange in
                 guard let self else {
                     return
                 }
-                switch stateChange.current {
-                case .attached:
-                    // CHA-M5c If a channel leaves the ATTACHED state and then re-enters ATTACHED with resumed=false, then it must be assumed that messages have been missed. The subscription point of any subscribers must be reset to the attachSerial
-                    // CHA-M5d If a channel UPDATE event is received and resumed=false, then it must be assumed that messages have been missed. The subscription point of any subscribers must be reset to the attachSerial
-                    if let subscriptionPoint = stateChange.resumed ? channel.properties.channelSerial : channel.properties.attachSerial {
-                        logger.log(message: "Channel is attached, returning serial: \(subscriptionPoint)", level: .debug)
-                        continuation.resume(returning: .success(subscriptionPoint))
-                    } else {
-                        logger.log(message: "Channel is attached, but attachSerial is not defined", level: .error)
-                        continuation.resume(returning: .failure(InternalError.failedToResolveSubscriptionPointBecauseChannelSerialNotDefined.toErrorInfo()))
-                    }
-                case .failed, .suspended:
-                    let error = InternalError.failedToResolveSubscriptionPointBecauseChannelFailedToAttach(cause: stateChange.reason)
-                    logger.log(message: "\(error)", level: .error)
-                    continuation.resume(returning: .failure(error.toErrorInfo()))
-                default:
-                    break
+                // CHA-M5c If a channel leaves the ATTACHED state and then re-enters ATTACHED with resumed=false, then it must be assumed that messages have been missed. The subscription point of any subscribers must be reset to the attachSerial
+                // CHA-M5d If a channel UPDATE event is received and resumed=false, then it must be assumed that messages have been missed. The subscription point of any subscribers must be reset to the attachSerial
+                if let subscriptionPoint = stateChange.resumed ? channel.properties.channelSerial : channel.properties.attachSerial {
+                    logger.log(message: "Channel is attached, returning serial: \(subscriptionPoint)", level: .debug)
+                    continuation.resume(returning: .success(subscriptionPoint))
+                } else {
+                    logger.log(message: "Channel is attached, but attachSerial is not defined", level: .error)
+                    continuation.resume(returning: .failure(InternalError.failedToResolveSubscriptionPointBecauseChannelSerialNotDefined.toErrorInfo()))
                 }
             }
         }.get()
