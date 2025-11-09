@@ -8,9 +8,15 @@ public enum ChatMessageAction: Sendable {
      * Action applied to a new message.
      */
     case messageCreate
-    // swiftlint:disable:next missing_docs
+
+    /**
+     * Action applied to an updated message.
+     */
     case messageUpdate
-    // swiftlint:disable:next missing_docs
+
+    /**
+     * Action applied to a deleted message.
+     */
     case messageDelete
 
     internal static func fromRealtimeAction(_ action: ARTMessageAction) -> Self? {
@@ -79,11 +85,18 @@ internal enum OccupancyEvents: String {
     case meta = "[meta]occupancy"
 }
 
-/// Enum representing the typing event types.
+/**
+ * Enum representing the typing event types.
+ */
 public enum TypingEventType: Sendable {
-    // swiftlint:disable:next missing_docs
+    /**
+     * Event triggered when a user is typing.
+     */
     case started
-    // swiftlint:disable:next missing_docs
+
+    /**
+     * Event triggered when a user stops typing.
+     */
     case stopped
 
     internal var rawValue: String {
@@ -96,9 +109,13 @@ public enum TypingEventType: Sendable {
     }
 }
 
-/// Enum representing the typing set event types.
+/**
+ * Enum representing the typing set event types.
+ */
 public enum TypingSetEventType: Sendable {
-    // swiftlint:disable:next missing_docs
+    /**
+     * Event triggered when a change occurs in the set of typers.
+     */
     case setChanged
 
     internal var rawValue: String {

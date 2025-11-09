@@ -8,8 +8,10 @@ import Ably
 @MainActor
 public protocol Subscription: Sendable {
     /**
-     * This method should be called when the subscription is no longer needed,
-     * it will make sure no further events will be sent to the subscriber and
+     * Unsubscribes from the subscription.
+     *
+     * This method should be called when the subscription is no longer needed.
+     * It ensures that no further events will be sent to the subscriber and
      * that references to the subscriber are cleaned up.
      */
     func unsubscribe()
@@ -38,21 +40,107 @@ public protocol MessageSubscriptionResponse: Subscription, Sendable {
     associatedtype HistoryResult: PaginatedResult<Message>
 
     /**
-     * Get the previous messages that were sent to the room before the listener was subscribed.
+     * Get the previous messages that were sent to the room before the listener was subscribed. This can be used to populate
+     * a room on initial subscription or to refresh local state after a discontinuity event.
      *
-     * If the client experiences a discontinuity event (i.e. the connection was lost and could not be resumed), the starting point of
-     * historyBeforeSubscribe will be reset.
-     *
-     * Calls to historyBeforeSubscribe will wait for continuity to be restored before resolving.
-     *
-     * Once continuity is restored, the subscription point will be set to the beginning of this new period of continuity. To
-     * ensure that no messages are missed, you should call historyBeforeSubscribe after any period of discontinuity to
-     * fill any gaps in the message history.
+     * - Note:
+     *   - If the client experiences a discontinuity event (i.e. the connection was lost and could not be resumed), the starting point of
+     *     `historyBeforeSubscribe` will be reset.
+     *   - Calls to `historyBeforeSubscribe` will then wait for continuity to be restored before resolving.
+     *   - Once continuity is restored, the subscription point will be set to the beginning of this new period of continuity. To
+     *     ensure that no messages are missed (or updates/deletes), you should call `historyBeforeSubscribe` after any period of discontinuity to
+     *     re-populate your local state.
      *
      * - Parameters:
      *    - params: Parameters for the history query.
      *
      * - Returns: A paginated result of messages, in newest-to-oldest order.
+     *
+     * - Throws: ``ErrorInfo``
+     *
+     * ## Example - Populating messages on initial subscription
+     *
+     * ```swift
+     * import Ably
+     * import AblyChat
+     *
+     * let chatClient: ChatClient // existing ChatClient instance
+     * let room = try await chatClient.rooms.get("general-chat")
+     *
+     * // Local message state
+     * var localMessages: [Message] = []
+     *
+     * func updateLocalMessageState(messages: inout [Message], message: Message) {
+     *     // Find existing message in local state
+     *     if let existingIndex = messages.firstIndex(where: { $0.serial == message.serial }) {
+     *         // Existing message, update local state
+     *         messages[existingIndex] = messages[existingIndex].with(message)
+     *     } else {
+     *         // New message, add to local state
+     *         messages.append(message)
+     *     }
+     *     // Messages should be ordered by serial
+     *     messages.sort { $0.serial < $1.serial }
+     * }
+     *
+     * // Subscribe a listener to message events
+     * let subscription = room.messages.subscribe { event in
+     *     print("Message \(event.type): \(event.message.text)")
+     *     updateLocalMessageState(messages: &localMessages, message: event.message)
+     * }
+     *
+     * // Attach to the room to start receiving message events
+     * try await room.attach()
+     *
+     * // Get historical messages before subscription
+     * do {
+     *     let history = try await subscription.historyBeforeSubscribe(withParams: .init(limit: 50))
+     *     print("Retrieved \(history.items.count) historical messages")
+     *
+     *     // Process historical messages
+     *     for message in history.items {
+     *         print("Historical: \(message.text) from \(message.clientID)")
+     *         updateLocalMessageState(messages: &localMessages, message: message)
+     *     }
+     * } catch {
+     *     print("Failed to retrieve message history: \(error)")
+     * }
+     * ```
+     *
+     * ## Example - Handling discontinuities to refresh local state
+     *
+     * ```swift
+     * // Subscribe a listener to message events as before
+     * let subscription = room.messages.subscribe { event in
+     *     print("Message \(event.type): \(event.message.text)")
+     *     updateLocalMessageState(messages: &localMessages, message: event.message)
+     * }
+     *
+     * // Subscribe to discontinuity events on the room
+     * room.onDiscontinuity { reason in
+     *     print("Discontinuity detected: \(reason)")
+     *     // Clear local state and re-fetch messages
+     *     localMessages = []
+     *     Task {
+     *         do {
+     *             // Fetch messages before the new subscription point
+     *             let history = try await subscription.historyBeforeSubscribe(withParams: .init(limit: 100))
+     *
+     *             // Merge each message into local state
+     *             for message in history.items {
+     *                 updateLocalMessageState(messages: &localMessages, message: message)
+     *             }
+     *
+     *             print("Refreshed local state with \(localMessages.count) messages")
+     *         } catch {
+     *             print("Failed to refresh messages after discontinuity: \(error)")
+     *         }
+     *     }
+     * }
+     *
+     * // Attach to the room to start receiving events
+     * try await room.attach()
+     * ```
      */
     func historyBeforeSubscribe(withParams params: HistoryBeforeSubscribeParams) async throws(ErrorInfo) -> HistoryResult
 }

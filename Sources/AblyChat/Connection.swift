@@ -10,21 +10,103 @@ public protocol Connection: AnyObject, Sendable {
 
     /**
      * The current status of the connection.
+     *
+     * - Returns: The current ``ConnectionStatus`` value
+     *
+     * ## Example
+     *
+     * ```swift
+     * import AblyChat
+     *
+     * let chatClient: ChatClient // existing ChatClient instance
+     *
+     * // Check connection status
+     * if chatClient.connection.status == .connected {
+     *     print("Connected to Ably")
+     * } else if chatClient.connection.status == .failed {
+     *     print("Connection failed")
+     * }
+     *
+     * // Use status for conditional logic
+     * func canAttachToRoom() -> Bool {
+     *     return chatClient.connection.status == .connected
+     * }
+     * ```
      */
     var status: ConnectionStatus { get }
 
     /**
-     * The current error, if any, that caused the connection to enter the current status.
+     * The error that caused the connection to enter its current status, if any.
+     *
+     * - Returns: ``ErrorInfo`` if an error caused the current status, nil otherwise
+     *
+     * ## Example
+     *
+     * ```swift
+     * import AblyChat
+     *
+     * let chatClient: ChatClient // existing ChatClient instance
+     *
+     * // Check for connection errors
+     * if let error = chatClient.connection.error {
+     *     print("Connection error: \(error.message)")
+     *     print("Error code: \(error.code)")
+     * }
+     * // Monitor for errors during status changes
+     * chatClient.connection.onStatusChange { change in
+     *     if let error = change.error {
+     *         reportErrorToMonitoring(error)
+     *     }
+     * }
+     * ```
      */
     var error: ErrorInfo? { get }
 
     /**
-     * Subscribes a given listener to a connection status changes.
+     * Registers a listener to be notified of connection status changes.
+     *
+     * Status changes indicate the connection lifecycle, including connecting,
+     * connected, disconnected, suspended, and failed states. Use this to monitor
+     * connection health and handle network issues.
      *
      * - Parameters:
-     *   - callback: The listener closure for capturing ``ConnectionStatusChange`` events.
+     *   - callback: Callback invoked when the connection status changes
      *
-     * - Returns: A subscription that can be used to unsubscribe from ``ConnectionStatusChange`` events.
+     * - Returns: Subscription object with an `off()` method to unregister
+     *
+     * ## Example
+     *
+     * ```swift
+     * import Ably
+     * import AblyChat
+     *
+     * let chatClient: ChatClient // existing ChatClient instance
+     *
+     * // Monitor connection status changes
+     * let subscription = chatClient.connection.onStatusChange { change in
+     *     print("Connection: \(change.previous) -> \(change.current)")
+     *
+     *     // Handle different connection states
+     *     switch change.current {
+     *     case .connected:
+     *         print("Connected to Ably")
+     *         enableChatFeatures()
+     *         hideConnectionWarning()
+     *
+     *     case .failed:
+     *         print("Connection failed permanently")
+     *         if let error = change.error {
+     *             print("Failure reason: \(error.message)")
+     *             showErrorMessage("Connection failed: \(error.message)")
+     *         }
+     *         requireManualReconnection()
+     *
+     *     // Other states: Connecting, Disconnected, Suspended
+     * }
+     *
+     * // Clean up when done
+     * subscription.off()
+     * ```
      */
     @discardableResult
     func onStatusChange(_ callback: @escaping @MainActor (ConnectionStatusChange) -> Void) -> StatusSubscription

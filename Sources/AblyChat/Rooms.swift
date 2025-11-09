@@ -11,25 +11,53 @@ public protocol Rooms<Channel>: AnyObject, Sendable {
     associatedtype Room: AblyChat.Room where Room.Channel == Channel
 
     /**
-     * Gets a room reference by name. The Rooms class ensures that only one reference
-     * exists for each room. A new reference object is created if it doesn't already
-     * exist, or if the one used previously was released using ``release(named:)``.
+     * Gets a room reference by its unique identifier.
      *
-     * Always call `release(named:)` after the ``Room`` object is no longer needed.
+     * Creates a new room instance or returns an existing one. The Rooms class ensures
+     * only one instance exists per room name. Always call `release()` when the room
+     * is no longer needed to free resources.
      *
-     * If a call to this method is made for a room that is currently being released, then this it returns only when
-     * the release operation is complete.
-     *
-     * If a call to this method is made, followed by a subsequent call to `release(named:)` before the `get(named:options:)` returns, then the
-     * promise will throw an error.
+     * - Note:
+     *   - If options differ from an existing room, an error is thrown.
+     *   - If `get` is called during a release, it waits for release to complete.
+     *   - If `release` is called before `get` resolves, the error will be thrown.
      *
      * - Parameters:
-     *   - name: The name of the room.
-     *   - options: The options for the room.
+     *   - name: The unique identifier of the room
+     *   - options: Configuration for the room features
      *
-     * - Returns: A new or existing `Room` object.
+     * - Returns: The Room instance
      *
-     * - Throws: `ErrorInfo` if a room with the same name but different options already exists.
+     * - Throws: ``ErrorInfo`` with code ``ErrorCode/roomExistsWithDifferentOptions`` if room exists with different options, ``ErrorCode/resourceDisposed`` if the rooms instance has been disposed, or ``ErrorCode/roomReleasedBeforeOperationCompleted`` if room is released before get completes
+     *
+     * ## Example
+     *
+     * ```swift
+     * import Ably
+     * import AblyChat
+     *
+     * let chatClient: ChatClient // existing ChatClient instance
+     *
+     * // Get a room with default options
+     * let room = try await chatClient.rooms.get(named: "general-chat")
+     *
+     * // Always release when done
+     * await chatClient.rooms.release(named: "general-chat")
+     *
+     * // Handle errors when options conflict
+     * do {
+     *     // This will throw if 'game-room' already exists with different options
+     *     let room1 = try await chatClient.rooms.get(named: "game-room", options: RoomOptions(
+     *         typing: TypingOptions(heartbeatThrottle: 1)
+     *     ))
+     *
+     *     let room2 = try await chatClient.rooms.get(named: "game-room", options: RoomOptions(
+     *         typing: TypingOptions(heartbeatThrottle: 2) // Different options!
+     *     ))
+     * } catch let error where error.code == 40000 {
+     *     print("Room already exists with different options")
+     * }
+     * ```
      */
     func get(named name: String, options: RoomOptions) async throws(ErrorInfo) -> Room
 
@@ -39,17 +67,49 @@ public protocol Rooms<Channel>: AnyObject, Sendable {
     func get(named name: String) async throws(ErrorInfo) -> Room
 
     /**
-     * Release the ``Room`` object if it exists. This method only releases the reference
-     * to the Room object from the Rooms instance and detaches the room from Ably. It does not unsubscribe to any
-     * events.
+     * Releases a room, freeing its resources and detaching it from Ably.
      *
-     * After calling this function, the room object is no-longer usable. If you wish to get the room object again,
-     * you must call ``Rooms/get(named:options:)``.
+     * After release, the room object is no longer usable. To use the room again,
+     * call `get()` to create a new instance. This method only releases the reference
+     * and detaches from Ably; it doesn't unsubscribe existing event listeners.
      *
-     * Calling this function will abort any in-progress `get(named:options:)` calls for the same room.
+     * - Note:
+     *   - Calling release aborts any in-progress `get` calls for the same room.
+     *   - The room object becomes unusable after release.
      *
      * - Parameters:
-     *   - name: The name of the room.
+     *   - name: The unique identifier of the room to release
+     *
+     * ## Example
+     *
+     * ```swift
+     * import Ably
+     * import AblyChat
+     *
+     * let chatClient: ChatClient // existing ChatClient instance
+     *
+     * // Get a room with default options and attach to it
+     * let room = try await chatClient.rooms.get(named: "temporary-chat")
+     * try await room.attach()
+     *
+     * // Do chat operations...
+     *
+     * // When done, release the room
+     * await chatClient.rooms.release(named: "temporary-chat")
+     *
+     * // The room object is now unusable
+     * try {
+     *     await room.messages.send(withParams: .init(text: "This will fail"))
+     * } catch {
+     *     print("Room has been released")
+     * }
+     *
+     * // To use the room again, get a new instance
+     * let newRoom = try await chatClient.rooms.get(named: "temporary-chat")
+     *
+     * // Handle release of non-existent rooms (no-op)
+     * await chatClient.rooms.release("non-existent-room") // Safe, does nothing
+     * ```
      */
     func release(named name: String) async
 }

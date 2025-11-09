@@ -1,26 +1,51 @@
 import Ably
 
-// This disable of attributes can be removed once missing_docs fixed here
-// swiftlint:disable attributes
+/**
+ * Represents the result of a paginated query.
+ */
 @MainActor
-// swiftlint:disable:next missing_docs
 public protocol PaginatedResult<Item>: AnyObject, Sendable {
-    // swiftlint:enable attributes
-
     // swiftlint:disable:next missing_docs
     associatedtype Item
 
-    // swiftlint:disable:next missing_docs
+    /**
+     * The items returned by the query.
+     */
     var items: [Item] { get }
-    // swiftlint:disable:next missing_docs
+
+    /**
+     * Whether there are more items to query.
+     *
+     * - Returns: `true` if there are more items to query, `false` otherwise.
+     */
     var hasNext: Bool { get }
-    // swiftlint:disable:next missing_docs
+
+    /**
+     * Whether this is the last page of items.
+     *
+     * - Returns: `true` if this is the last page of items, `false` otherwise.
+     */
     var isLast: Bool { get }
-    // swiftlint:disable:next missing_docs
+
+    /**
+     * Fetches the next page of items.
+     *
+     * - Returns: The next page of items or `nil` if there are no more items.
+     */
     func next() async throws(ErrorInfo) -> Self?
-    // swiftlint:disable:next missing_docs
+
+    /**
+     * Fetches the first page of items.
+     *
+     * - Returns: The first page of items.
+     */
     func first() async throws(ErrorInfo) -> Self
-    // swiftlint:disable:next missing_docs
+
+    /**
+     * Fetches the current page of items.
+     *
+     * - Returns: The current page of items.
+     */
     func current() async throws(ErrorInfo) -> Self
 }
 

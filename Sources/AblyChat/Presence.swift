@@ -1,6 +1,8 @@
 import Ably
 
-// swiftlint:disable:next missing_docs
+/**
+ * Type for data that can be entered into presence as an object literal.
+ */
 public typealias PresenceData = JSONObject
 
 /**
@@ -15,73 +17,276 @@ public protocol Presence: AnyObject, Sendable {
     associatedtype Subscription: AblyChat.Subscription
 
     /**
-     * Same as ``get(params:)``, but with defaults params.
+     * Same as ``Presence/get(withParams:)``, but with defaults params.
      */
     func get() async throws(ErrorInfo) -> [PresenceMember]
 
     /**
-     * Method to get list of the current online users and returns the latest presence messages associated to it.
+     * Retrieves the current members present in the chat room.
+     *
+     * - Note: The room must be attached before calling this method.
      *
      * - Parameters:
-     *   - params: ``PresenceParams`` that control how the presence set is retrieved.
+     *   - params: Optional parameters to filter the presence set
      *
-     * - Returns: An array of ``PresenceMember``s.
+     * - Returns: An array of presence members currently in the room
      *
-     * - Throws: An `ErrorInfo`.
+     * - Throws: ``ErrorInfo`` with code ``InternalError/ErrorCode/roomInInvalidState`` if the room is not attached
+     *
+     * ## Example
+     *
+     * ```swift
+     * import Ably
+     * import AblyChat
+     *
+     * let chatClient: ChatClient // existing ChatClient instance
+     *
+     * // Get a room with default options and attach to it
+     * let room = try await chatClient.rooms.get("meeting-room")
+     * try await room.attach()
+     *
+     * do {
+     *     // Get all currently present members
+     *     let members = try await room.presence.get()
+     *     print("\(members.count) users present in the room")
+     *
+     *     for member in members {
+     *         print("User \(member.clientID) is present with data: \(String(describing: member.data))")
+     *     }
+     *
+     *     // Get members with a specific client ID
+     *     let specificUser = try await room.presence.get(withParams: .init(clientID: "user-456"))
+     *     if !specificUser.isEmpty {
+     *         print("User-456 is in the room")
+     *     }
+     * } catch {
+     *     print("Failed to get presence members: \(error)")
+     * }
+     * ```
      */
     func get(withParams params: PresenceParams) async throws(ErrorInfo) -> [PresenceMember]
 
     /**
-     * Method to check if user with supplied clientId is online.
+     * Checks whether a specific user is currently present in the chat room.
+     * Useful if you just need a boolean check rather than the full presence member data.
+     *
+     * - Note: The room must be attached before calling this method.
      *
      * - Parameters:
-     *   - clientID: The client ID to check if it is present in the room.
+     *   - clientID: The client ID of the user to check
      *
-     * - Returns: A boolean value indicating whether the user is present in the room.
+     * - Returns: true if the user is present, false otherwise
      *
-     * - Throws: An `ErrorInfo`.
+     * - Throws: ``ErrorInfo`` with code ``InternalError/ErrorCode/roomInInvalidState`` if the room is not attached, or with ``ErrorInfo`` if the operation fails for any other reason
+     *
+     * ## Example
+     *
+     * ```swift
+     * import Ably
+     * import AblyChat
+     *
+     * let chatClient: ChatClient // existing ChatClient instance
+     *
+     * // Get a room with default options and attach to it
+     * let room = try await chatClient.rooms.get("meeting-room")
+     * try await room.attach()
+     *
+     * do {
+     *     // Check if a specific user is present
+     *     let isPresent = try await room.presence.isUserPresent(withClientID: "user-456")
+     *
+     *     if isPresent {
+     *         print("User-456 is currently in the room")
+     *     } else {
+     *         print("User-456 is not in the room")
+     *     }
+     * } catch {
+     *     print("Failed to check user presence: \(error)")
+     * }
+     * ```
      */
     func isUserPresent(withClientID clientID: String) async throws(ErrorInfo) -> Bool
 
     /**
-     * Method to join room presence, will emit an enter event to all subscribers. Repeat calls will trigger more enter events.
+     * Enters the current user into the chat room presence set.
+     * Emits an 'enter' event to all presence subscribers. Multiple calls will emit additional `update` events if the
+     * user is already present.
+     *
+     * - Note: The room must be attached before calling this method.
      *
      * - Parameters:
-     *   - data: The users data, a JSON serializable object that will be sent to all subscribers.
+     *   - data: Optional JSON-serializable data to associate with the user's presence
      *
-     * - Throws: An `ErrorInfo`.
+     * - Throws: ``ErrorInfo`` with code ``InternalError/ErrorCode/roomInInvalidState`` if the room is not attached
+     *
+     * ## Example
+     *
+     * ```swift
+     * import Ably
+     * import AblyChat
+     *
+     * let chatClient: ChatClient // existing ChatClient instance
+     *
+     * // Get a room with default options and attach to it
+     * let room = try await chatClient.rooms.get("meeting-room")
+     * try await room.attach()
+     *
+     * do {
+     *     // Enter with user metadata
+     *     try await room.presence.enter(withData: [
+     *         "avatar": "https://example.com/avatar.jpg",
+     *         "status": "online",
+     *         "role": "moderator"
+     *     ])
+     *
+     *     print("Successfully entered the room")
+     * } catch {
+     *     print("Failed to enter room: \(error)")
+     * }
+     * ```
      */
     func enter(withData data: PresenceData) async throws(ErrorInfo)
 
     /**
-     * Method to update room presence, will emit an update event to all subscribers. If the user is not present, it will be treated as a join event.
+     * Updates the presence data for the current user in the chat room.
+     * Emits an 'update' event to all subscribers. If the user is not already present, they will be entered automatically.
+     *
+     * - Note:
+     *   - The room must be attached before calling this method.
+     *   - This method uses PUT-like semantics - the entire presence data is replaced with the new value.
      *
      * - Parameters:
-     *   - data: The users data, a JSON serializable object that will be sent to all subscribers.
+     *   - data: JSON-serializable data to replace the user's current presence data
      *
-     * - Throws: An `ErrorInfo`.
+     * - Throws: ``ErrorInfo`` with code ``InternalError/ErrorCode/roomInInvalidState`` if the room is not attached
+     *
+     * ## Example
+     *
+     * ```swift
+     * import Ably
+     * import AblyChat
+     *
+     * let chatClient: ChatClient // existing ChatClient instance
+     *
+     * // Get a room with default options
+     * let room = try await chatClient.rooms.get("meeting-room")
+     * try await room.attach()
+     *
+     * do {
+     *     // Initial enter with status
+     *     try await room.presence.enter(withData: [
+     *         "username": "John Doe",
+     *         "status": "online"
+     *     ])
+     *
+     *     // Update status to busy (replaces entire data object)
+     *     try await room.presence.update(withData: [
+     *         "username": "John Doe",
+     *         "status": "busy",
+     *         "statusMessage": "In a meeting"
+     *     ])
+     *
+     *     print("Presence status updated")
+     * } catch {
+     *     print("Failed to update presence: \(error)")
+     * }
+     * ```
      */
     func update(withData data: PresenceData) async throws(ErrorInfo)
 
     /**
-     * Method to leave room presence, will emit a leave event to all subscribers. If the user is not present, it will be treated as a no-op.
+     * Removes the current user from the chat room presence set.
+     * Emits a 'leave' event to all subscribers. If the user is not present, this is a no-op.
+     *
+     * - Note: The room must be attached before calling this method.
      *
      * - Parameters:
-     *   - data: The users data, a JSON serializable object that will be sent to all subscribers.
+     *   - data: Optional final presence data to include with the leave event
      *
-     * - Throws: An `ErrorInfo`.
+     * - Throws: ``ErrorInfo`` with code ``InternalError/ErrorCode/roomInInvalidState`` if the room is not attached
+     *
+     * ## Example
+     *
+     * ```swift
+     * import Ably
+     * import AblyChat
+     *
+     * let chatClient: ChatClient // existing ChatClient instance
+     *
+     * // Get a room with default options
+     * let room = try await chatClient.rooms.get("meeting-room")
+     * try await room.attach()
+     *
+     * do {
+     *     // Enter the room
+     *     try await room.presence.enter(withData: [
+     *         "avatar": "https://example.com/avatar.jpg",
+     *         "status": "online"
+     *     ])
+     *
+     *     // Do some work in the room...
+     *
+     *     // Leave with a final status message
+     *     try await room.presence.leave(withData: [
+     *         "status": "offline",
+     *         "lastSeen": "\(Date())"
+     *     ])
+     *
+     *     print("Successfully left the room")
+     * } catch {
+     *     print("Failed to leave room: \(error)")
+     * }
+     * ```
      */
     func leave(withData data: PresenceData) async throws(ErrorInfo)
 
     /**
-     * Subscribes a given listener to all presence events in the chat room.
+     * Subscribes to all presence events in the chat room.
      *
-     * Note that it is a programmer error to call this method if presence events are not enabled in the room options. Make sure to set `enableEvents: true` in your room's presence options to use this feature (this is the default value).
+     * - Note:
+     *   - Requires `enableEvents` to be true in the room's presence options.
+     *   - The room must be attached to receive events in real-time.
      *
      * - Parameters:
-     *   - callback: The listener closure for capturing room ``PresenceEvent`` events.
+     *   - callback: Callback function invoked when any presence event occurs
      *
-     * - Returns: A subscription that can be used to unsubscribe from ``PresenceEvent`` events.
+     * - Returns: Subscription object with an unsubscribe method
+     *
+     * - Throws: An ``ErrorInfo`` with ``InternalError/ErrorCode/featureNotEnabledInRoom`` if presence events are not enabled
+     *
+     * ## Example
+     *
+     * ```swift
+     * import Ably
+     * import AblyChat
+     *
+     * let chatClient: ChatClient // existing ChatClient instance
+     *
+     * // Get a room with default options
+     * let room = try await chatClient.rooms.get("meeting-room")
+     *
+     * // Subscribe to all presence events
+     * let subscription = room.presence.subscribe { event in
+     *     let type = event.type
+     *     let member = event.member
+     *     switch type {
+     *     case .enter:
+     *         print("\(member.clientID) entered at \(member.updatedAt)")
+     *     case .leave:
+     *         print("\(member.clientID) left at \(member.updatedAt)")
+     *     case .update:
+     *         print("\(member.clientID) updated their data: \(String(describing: member.data))")
+     *     case .present:
+     *         print("\(member.clientID) is already present")
+     *     }
+     * }
+     *
+     * // Attach to the room to start receiving events
+     * try await room.attach()
+     *
+     * // Later, unsubscribe when done
+     * subscription.unsubscribe()
+     * ```
      */
     @discardableResult
     func subscribe(_ callback: @escaping @MainActor (PresenceEvent) -> Void) -> Subscription
@@ -146,7 +351,10 @@ public extension Presence {
 }
 
 /**
- * Type for PresenceMember
+ * Type for PresenceMember.
+ *
+ * Presence members are unique based on their `connectionId` and `clientId`. It is possible for
+ * multiple users to have the same `clientId` if they are connected to the room from different devices.
  */
 public struct PresenceMember: Sendable {
     /// Memberwise initializer to create a `PresenceMember`.
@@ -165,7 +373,9 @@ public struct PresenceMember: Sendable {
      */
     public var clientID: String
 
-    /// The connection ID of this presence member.
+    /**
+     * The connection ID of this presence member.
+     */
     public var connectionID: String
 
     /**
@@ -178,7 +388,10 @@ public struct PresenceMember: Sendable {
      * The extras associated with the presence member.
      */
     public var extras: [String: JSONValue]?
-    // swiftlint:disable:next missing_docs
+
+    /**
+     * The timestamp of when the last change in state occurred for this presence member.
+     */
     public var updatedAt: Date
 }
 

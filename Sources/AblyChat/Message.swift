@@ -12,7 +12,7 @@ public typealias MessageHeaders = Headers
 public typealias MessageMetadata = Metadata
 
 /**
- * ``Metadata`` type used for the metadata within an operation e.g. updating or deleting a message
+ * ``OperationMetadata`` type for a chat message. Contains information about an update or deletion operation.
  */
 public typealias MessageOperationMetadata = OperationMetadata
 
@@ -100,7 +100,7 @@ public struct Message: Sendable, Equatable {
     }
 
     /**
-      * Helper function to copy a message with its properties replaced per the parameters.
+      * Creates a copy of the message with fields replaced per the parameters.
       *
       * If an argument is omitted or `nil`, then the current value of that property will be preserved.
      */
@@ -127,7 +127,9 @@ public struct Message: Sendable, Equatable {
     }
 }
 
-/// Represents the version information for a message.
+/**
+ * Represents the detail of a message deletion or update.
+ */
 public struct MessageVersion: Sendable, Equatable {
     /**
      * A unique identifier for the latest version of this message.
@@ -140,17 +142,17 @@ public struct MessageVersion: Sendable, Equatable {
     public var timestamp: Date
 
     /**
-     * The optional clientId of the user who performed the update or deletion.
+     * The optional clientId of the user who performed an update or deletion.
      */
     public var clientID: String?
 
     /**
-     * The optional description for the update or deletion.
+     * The optional description for an update or deletion.
      */
     public var description: String?
 
     /**
-     * The optional metadata associated with the update or deletion.
+     * The optional metadata associated with an update or deletion.
      */
     public var metadata: MessageOperationMetadata?
 
@@ -214,12 +216,14 @@ public extension Message {
     /**
      * Creates a new message instance with the event applied.
      *
+     * - Note: This method will not replace the message reactions if the event is of type `Message`.
+     *
      * - Parameters:
      *   - summaryEvent: The event to be applied to the returned message.
      *
-     * - Throws: ``ErrorInfo`` if the event is for a different message.
+     * - Throws: ``ErrorInfo`` if the event is for a different message or if the event is a  ``ChatMessageEventType/created``.
      *
-     * - Returns: A new message instance with the event applied.
+     * - Returns: A new message instance with the event applied. If the event is a no-op, such as an event for an old version, the same message is returned (not a copy).
      */
     func with(_ summaryEvent: MessageReactionSummaryEvent) throws(ErrorInfo) -> Self {
         // (CHA-M11j) For MessageReactionSummaryEvent, the method must verify that the summary.messageSerial in the event matches the message's own serial. If they don't match, an error with code InvalidArgument must be thrown.
@@ -238,9 +242,9 @@ public extension Message {
      * - Parameters:
      *   - messageEvent: The message event to be applied to the returned message.
      *
-     * - Throws: ``ErrorInfo`` if the event is for a different message, if it's a created event, or if there are other validation errors.
+     * - Throws: ``ErrorInfo`` if the event is for a different message or if the event is a  ``ChatMessageEventType/created``.
      *
-     * - Returns: A new message instance with the event applied, or the original message if the event is older.
+     * - Returns: A new message instance with the event applied. If the event is a no-op, such as an event for an old version, the same message is returned (not a copy).
      */
     func with(_ messageEvent: ChatMessageEvent) throws(ErrorInfo) -> Self {
         // (CHA-M11h) When the method receives a MessageEvent of type created, it must throw an ErrorInfo with code InvalidArgument.
