@@ -288,7 +288,7 @@ public protocol MessageReactions: AnyObject, Sendable {
      *     if myReactions.distinct["❤️"] != nil {
      *         print("I have reacted with ❤️")
      *     }
-     *     if let voteCount = myReactions.multiple["vote-option-a"]?.clientIDs[myCientID] {
+     *     if let voteCount = myReactions.multiple["vote-option-a"]?.clientIDs[myClientID] {
      *         print("I voted for option A: \(voteCount) times")
      *     }
      *

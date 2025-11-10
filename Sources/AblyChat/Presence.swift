@@ -252,8 +252,6 @@ public protocol Presence: AnyObject, Sendable {
      *
      * - Returns: Subscription object with an unsubscribe method
      *
-     * - Throws: An ``ErrorInfo`` with ``InternalError/ErrorCode/featureNotEnabledInRoom`` if presence events are not enabled
-     *
      * ## Example
      *
      * ```swift
