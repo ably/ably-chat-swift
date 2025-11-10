@@ -13,7 +13,7 @@ public typealias PresenceData = JSONObject
  */
 @MainActor
 public protocol Presence: AnyObject, Sendable {
-    // swiftlint:disable:next missing_docs
+    /// The subscription type for presence event listeners.
     associatedtype Subscription: AblyChat.Subscription
 
     /**
@@ -316,7 +316,7 @@ public protocol Presence: AnyObject, Sendable {
     func leave() async throws(ErrorInfo)
 }
 
-// swiftlint:disable:next missing_docs
+/// Extension providing AsyncSequence-based subscription methods for presence.
 public extension Presence {
     /**
      * Subscribes to all presence events in the chat room.
@@ -485,7 +485,14 @@ public struct PresenceParams: Sendable {
     /// Sets whether to wait for a full presence set synchronization between Ably and the clients on the room to complete before returning the results. Synchronization begins as soon as the room is ``RoomStatus/attached``. When set to `true` the results will be returned as soon as the sync is complete. When set to `false` the current list of members will be returned without the sync completing. The default is `true`.
     public var waitForSync = true
 
-    // swiftlint:disable:next missing_docs
+    /**
+     * Creates a new PresenceParams instance.
+     *
+     * - Parameters:
+     *   - clientID: Filters presence members by a specific client ID
+     *   - connectionID: Filters presence members by a specific connection ID
+     *   - waitForSync: Whether to wait for presence sync to complete (defaults to `true`)
+     */
     public init(clientID: String? = nil, connectionID: String? = nil, waitForSync: Bool = true) {
         self.clientID = clientID
         self.connectionID = connectionID

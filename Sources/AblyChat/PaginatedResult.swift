@@ -5,7 +5,7 @@ import Ably
  */
 @MainActor
 public protocol PaginatedResult<Item>: AnyObject, Sendable {
-    // swiftlint:disable:next missing_docs
+    /// The type of items contained in this paginated result.
     associatedtype Item
 
     /**

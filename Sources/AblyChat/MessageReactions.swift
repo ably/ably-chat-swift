@@ -7,7 +7,7 @@ import Ably
  */
 @MainActor
 public protocol MessageReactions: AnyObject, Sendable {
-    // swiftlint:disable:next missing_docs
+    /// The subscription type for message reaction event listeners.
     associatedtype Subscription: AblyChat.Subscription
 
     /**

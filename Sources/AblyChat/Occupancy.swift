@@ -8,7 +8,7 @@ import Ably
  */
 @MainActor
 public protocol Occupancy: AnyObject, Sendable {
-    // swiftlint:disable:next missing_docs
+    /// The subscription type for occupancy event listeners.
     associatedtype Subscription: AblyChat.Subscription
 
     /**

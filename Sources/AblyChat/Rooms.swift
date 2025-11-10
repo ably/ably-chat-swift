@@ -5,9 +5,9 @@ import Ably
  */
 @MainActor
 public protocol Rooms<Channel>: AnyObject, Sendable {
-    // swiftlint:disable:next missing_docs
+    /// The underlying Ably Realtime channel type used by rooms.
     associatedtype Channel
-    // swiftlint:disable:next missing_docs
+    /// The room type managed by this rooms instance.
     associatedtype Room: AblyChat.Room where Room.Channel == Channel
 
     /**
@@ -114,9 +114,9 @@ public protocol Rooms<Channel>: AnyObject, Sendable {
     func release(named name: String) async
 }
 
-// swiftlint:disable:next missing_docs
+/// Extension providing convenience methods for getting rooms.
 public extension Rooms {
-    // swiftlint:disable:next missing_docs
+    /// Convenience method to get a room with default options.
     func get(named name: String) async throws(ErrorInfo) -> Room {
         // CHA-RC4a
         try await get(named: name, options: .init())

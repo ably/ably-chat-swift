@@ -1,6 +1,6 @@
 import os
 
-// swiftlint:disable:next missing_docs
+/// Handler for processing log messages from the Chat SDK.
 public struct LogHandler: Sendable {
     fileprivate let simple: any Simple
 
@@ -34,15 +34,15 @@ public struct LogHandler: Sendable {
  * Represents the different levels of logging that can be used.
  */
 public enum LogLevel: Sendable, Comparable {
-    // swiftlint:disable:next missing_docs
+    /// The most verbose log level, typically used for detailed diagnostic information.
     case trace
-    // swiftlint:disable:next missing_docs
+    /// Log level for debug information useful during development.
     case debug
-    // swiftlint:disable:next missing_docs
+    /// Log level for general informational messages.
     case info
-    // swiftlint:disable:next missing_docs
+    /// Log level for warning messages indicating potential issues.
     case warn
-    // swiftlint:disable:next missing_docs
+    /// Log level for error messages indicating failures.
     case error
 }
 

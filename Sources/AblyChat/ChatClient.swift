@@ -1,17 +1,13 @@
 import Ably
 
-// This disable of attributes can be removed once missing_docs fixed here
-// swiftlint:disable attributes
+/// Protocol defining the interface for an Ably Chat client instance.
 @MainActor
-// swiftlint:disable:next missing_docs
 public protocol ChatClientProtocol: AnyObject, Sendable {
-    // swiftlint:enable attributes
-
-    // swiftlint:disable:next missing_docs
+    /// The underlying Ably Realtime client type.
     associatedtype Realtime
-    // swiftlint:disable:next missing_docs
+    /// The connection type for monitoring client connectivity.
     associatedtype Connection: AblyChat.Connection
-    // swiftlint:disable:next missing_docs
+    /// The rooms manager type for creating and managing chat rooms.
     associatedtype Rooms: AblyChat.Rooms
 
     /**
@@ -237,7 +233,13 @@ public struct ChatClientOptions: Sendable {
      */
     public var logLevel: LogLevel? = .error
 
-    // swiftlint:disable:next missing_docs
+    /**
+     * Creates a new ChatClientOptions instance.
+     *
+     * - Parameters:
+     *   - logHandler: Optional custom log handler for capturing log messages
+     *   - logLevel: The minimum log level for messages (defaults to `.error`)
+     */
     public init(logHandler: LogHandler? = nil, logLevel: LogLevel? = .error) {
         self.logHandler = logHandler
         self.logLevel = logLevel

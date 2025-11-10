@@ -5,21 +5,21 @@ import Ably
  */
 @MainActor
 public protocol Room<Channel>: AnyObject, Sendable {
-    // swiftlint:disable:next missing_docs
+    /// The underlying Ably Realtime channel type used by this room.
     associatedtype Channel
 
-    // swiftlint:disable:next missing_docs
+    /// The messages feature type for sending and receiving chat messages.
     associatedtype Messages: AblyChat.Messages
-    // swiftlint:disable:next missing_docs
+    /// The presence feature type for managing user presence in the room.
     associatedtype Presence: AblyChat.Presence
-    // swiftlint:disable:next missing_docs
+    /// The room reactions feature type for sending and receiving room-level reactions.
     associatedtype Reactions: AblyChat.RoomReactions
-    // swiftlint:disable:next missing_docs
+    /// The typing indicators feature type for managing typing events.
     associatedtype Typing: AblyChat.Typing
-    // swiftlint:disable:next missing_docs
+    /// The occupancy feature type for monitoring room occupancy metrics.
     associatedtype Occupancy: AblyChat.Occupancy
 
-    // swiftlint:disable:next missing_docs
+    /// The subscription type for room status change listeners.
     associatedtype StatusSubscription: AblyChat.StatusSubscription
 
     /**

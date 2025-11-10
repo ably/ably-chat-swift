@@ -211,7 +211,7 @@ internal extension MessageVersion {
     }
 }
 
-// swiftlint:disable:next missing_docs
+/// Extension providing convenience methods for applying events to messages.
 public extension Message {
     /**
      * Creates a new message instance with the event applied.

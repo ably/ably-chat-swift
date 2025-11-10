@@ -5,7 +5,7 @@ import Ably
  */
 @MainActor
 public protocol Connection: AnyObject, Sendable {
-    // swiftlint:disable:next missing_docs
+    /// The subscription type for connection status change listeners.
     associatedtype StatusSubscription: AblyChat.StatusSubscription
 
     /**

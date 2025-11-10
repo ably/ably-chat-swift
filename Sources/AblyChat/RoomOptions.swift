@@ -24,7 +24,15 @@ public struct RoomOptions: Sendable {
      */
     public var messages = MessagesOptions()
 
-    // swiftlint:disable:next missing_docs
+    /**
+     * Creates a new RoomOptions instance.
+     *
+     * - Parameters:
+     *   - messages: Configuration for the messages feature
+     *   - presence: Configuration for the presence feature
+     *   - typing: Configuration for the typing indicator feature
+     *   - occupancy: Configuration for the occupancy feature
+     */
     public init(messages: MessagesOptions = MessagesOptions(), presence: PresenceOptions = PresenceOptions(), typing: TypingOptions = TypingOptions(), occupancy: OccupancyOptions = OccupancyOptions()) {
         self.messages = messages
         self.presence = presence
@@ -46,7 +54,12 @@ public struct PresenceOptions: Sendable {
      */
     public var enableEvents = true
 
-    // swiftlint:disable:next missing_docs
+    /**
+     * Creates a new PresenceOptions instance.
+     *
+     * - Parameters:
+     *   - enableEvents: Whether to receive presence events (defaults to `true`)
+     */
     public init(enableEvents: Bool = true) {
         self.enableEvents = enableEvents
     }
@@ -77,7 +90,13 @@ public struct MessagesOptions: Sendable {
      */
     public var defaultMessageReactionType = MessageReactionType.distinct
 
-    // swiftlint:disable:next missing_docs
+    /**
+     * Creates a new MessagesOptions instance.
+     *
+     * - Parameters:
+     *   - rawMessageReactions: Whether to enable receiving raw message reactions (defaults to `false`)
+     *   - defaultMessageReactionType: The default reaction type to use (defaults to `.distinct`)
+     */
     public init(rawMessageReactions: Bool = false, defaultMessageReactionType: MessageReactionType = .distinct) {
         self.rawMessageReactions = rawMessageReactions
         self.defaultMessageReactionType = defaultMessageReactionType
@@ -101,7 +120,12 @@ public struct TypingOptions: Sendable {
      */
     public var heartbeatThrottle: TimeInterval = 10
 
-    // swiftlint:disable:next missing_docs
+    /**
+     * Creates a new TypingOptions instance.
+     *
+     * - Parameters:
+     *   - heartbeatThrottle: The minimum time interval (in seconds) between typing events (defaults to 10)
+     */
     public init(heartbeatThrottle: TimeInterval = 10) {
         self.heartbeatThrottle = heartbeatThrottle
     }
@@ -121,7 +145,12 @@ public struct OccupancyOptions: Sendable {
      */
     public var enableEvents = false
 
-    // swiftlint:disable:next missing_docs
+    /**
+     * Creates a new OccupancyOptions instance.
+     *
+     * - Parameters:
+     *   - enableEvents: Whether to receive occupancy events (defaults to `false`)
+     */
     public init(enableEvents: Bool = false) {
         self.enableEvents = enableEvents
     }
