@@ -105,12 +105,15 @@ internal final class DefaultInternalRealtimeClientFactory<Underlying: ProxyRealt
  * This is the core client for Ably chat. It provides access to chat rooms.
  */
 public class ChatClient: ChatClientProtocol {
-    // swiftlint:disable:next missing_docs
+    /// See ``ChatClientProtocol/realtime``
     public let realtime: ARTRealtime
-    // swiftlint:disable:next missing_docs
+
+    /// See ``ChatClientProtocol/clientOptions``
     public let clientOptions: ChatClientOptions
+
     private let _rooms: DefaultRooms<DefaultRoomFactory<InternalRealtimeClientAdapter<ARTWrapperSDKProxyRealtime>>>
-    // swiftlint:disable:next missing_docs
+
+    /// See ``ChatClientProtocol/rooms``
     public var rooms: some Rooms<ARTRealtimeChannel> {
         _rooms
     }
@@ -120,7 +123,8 @@ public class ChatClient: ChatClientProtocol {
     // (CHA-CS1) Every chat client has a status, which describes the current status of the connection.
     // (CHA-CS4) The chat client must allow its connection status to be observed by clients.
     private let _connection: DefaultConnection
-    // swiftlint:disable:next missing_docs
+
+    /// See ``ChatClientProtocol/connection``
     public var connection: some Connection {
         _connection
     }
@@ -209,7 +213,7 @@ public class ChatClient: ChatClientProtocol {
         _connection = DefaultConnection(realtime: internalRealtime)
     }
 
-    // swiftlint:disable:next missing_docs
+    /// See ``ChatClientProtocol/clientID``
     public var clientID: String? {
         realtime.clientId
     }

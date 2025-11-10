@@ -732,7 +732,7 @@ public final class MessageSubscriptionResponseAsyncSequence<HistoryResult: Pagin
         subscription.addTerminationHandler(onTermination)
     }
 
-    // swiftlint:disable:next missing_docs
+    /// See ``MessageSubscriptionResponse/historyBeforeSubscribe(withParams:)``
     public func historyBeforeSubscribe(withParams params: HistoryBeforeSubscribeParams) async throws(ErrorInfo) -> HistoryResult {
         try await historyBeforeSubscribe(params)
     }
