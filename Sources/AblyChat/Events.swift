@@ -77,11 +77,15 @@ internal enum RealtimeMessageName: String, Sendable {
     case chatMessage = "chat.message"
 }
 
+/// Internal enum representing room reaction event names used in Ably channel messages.
 internal enum RoomReactionEvents: String {
+    /// The event name for room-level reactions.
     case reaction = "roomReaction"
 }
 
+/// Internal enum representing occupancy event names used in Ably channel metadata.
 internal enum OccupancyEvents: String {
+    /// The metadata event name for occupancy updates.
     case meta = "[meta]occupancy"
 }
 
