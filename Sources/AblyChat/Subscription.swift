@@ -34,9 +34,6 @@ public protocol StatusSubscription: Sendable {
  */
 @MainActor
 public protocol MessageSubscriptionResponse: Subscription, Sendable {
-    // swiftlint:disable:next missing_docs
-    associatedtype HistoryResult: PaginatedResult<Message>
-
     /**
      * Get the previous messages that were sent to the room before the listener was subscribed.
      *
@@ -54,7 +51,7 @@ public protocol MessageSubscriptionResponse: Subscription, Sendable {
      *
      * - Returns: A paginated result of messages, in newest-to-oldest order.
      */
-    func historyBeforeSubscribe(withParams params: HistoryBeforeSubscribeParams) async throws(ErrorInfo) -> HistoryResult
+    func historyBeforeSubscribe(withParams params: HistoryBeforeSubscribeParams) async throws(ErrorInfo) -> PaginatedResult<Message>
 }
 
 internal struct DefaultSubscription: Subscription, Sendable {
@@ -91,7 +88,7 @@ internal struct DefaultMessageSubscriptionResponse<Realtime: InternalRealtimeCli
         _unsubscribe()
     }
 
-    internal func historyBeforeSubscribe(withParams params: HistoryBeforeSubscribeParams) async throws(ErrorInfo) -> some PaginatedResult<Message> {
+    internal func historyBeforeSubscribe(withParams params: HistoryBeforeSubscribeParams) async throws(ErrorInfo) -> PaginatedResult<Message> {
         let fromSerial = try await subscriptionStartSerial()
 
         // (CHA-M5f) This method must accept any of the standard history query options, except for direction

@@ -47,7 +47,7 @@ internal final class ChatAPI<Realtime: InternalRealtimeClientProtocol> {
     }
 
     // (CHA-M6) Messages should be queryable from a paginated REST API.
-    internal func getMessages(roomName: String, params: HistoryParams) async throws(ErrorInfo) -> DefaultPaginatedResult<Realtime.HTTPPaginatedResponse, Message> {
+    internal func getMessages(roomName: String, params: HistoryParams) async throws(ErrorInfo) -> PaginatedResult<Message> {
         let endpoint = roomUrl(roomName: roomName, suffix: "/messages")
         return try await makePaginatedRequest(endpoint, params: params.asQueryItems())
     }
@@ -218,8 +218,8 @@ internal final class ChatAPI<Realtime: InternalRealtimeClientProtocol> {
     private func makePaginatedRequest<Item: JSONDecodable & Sendable>(
         _ url: String,
         params: [String: String]? = nil,
-    ) async throws(ErrorInfo) -> DefaultPaginatedResult<Realtime.HTTPPaginatedResponse, Item> {
+    ) async throws(ErrorInfo) -> PaginatedResult<Item> {
         let paginatedResponse = try await realtime.request("GET", path: url, params: params, body: nil, headers: [:])
-        return try DefaultPaginatedResult(response: paginatedResponse)
+        return try PaginatedResult(response: paginatedResponse)
     }
 }

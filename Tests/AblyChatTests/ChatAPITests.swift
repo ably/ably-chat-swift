@@ -116,16 +116,14 @@ struct ChatAPITests {
         }
         let chatAPI = ChatAPI(realtime: realtime)
         let roomName = "basketball"
-        let expectedPaginatedResult = DefaultPaginatedResult<MockHTTPPaginatedResponse, Message>(
-            underlying: paginatedResponse,
-            items: [],
-        )
 
         // When
         let getMessages = try await chatAPI.getMessages(roomName: roomName, params: .init())
 
         // Then
-        #expect(getMessages == expectedPaginatedResult)
+        #expect(getMessages.items.isEmpty)
+        #expect(getMessages.hasNext == paginatedResponse.hasNext)
+        #expect(getMessages.isLast == paginatedResponse.isLast)
     }
 
     // @specOneOf(2/2) CHA-M6
@@ -138,39 +136,38 @@ struct ChatAPITests {
         }
         let chatAPI = ChatAPI(realtime: realtime)
         let roomName = "basketball"
-        let expectedPaginatedResult = DefaultPaginatedResult<MockHTTPPaginatedResponse, Message>(
-            underlying: paginatedResponse,
-            items: [
-                Message(
-                    serial: "123456789-000@123456789:000",
-                    action: .messageCreate,
-                    clientID: "random",
-                    text: "hello",
-                    metadata: [:],
-                    headers: [:],
-                    version: .init(serial: "123456789-000@123456789:000", timestamp: Date(timeIntervalSince1970: 1_730_943_049.269)), // from successGetMessagesWithItems
-                    timestamp: Date(timeIntervalSince1970: 1_730_943_049.269),
-                    reactions: .empty,
-                ),
-                Message(
-                    serial: "123456789-000@123456789:001",
-                    action: .messageCreate,
-                    clientID: "random",
-                    text: "hello response",
-                    metadata: [:],
-                    headers: [:],
-                    version: .init(serial: "123456789-000@123456789:001", timestamp: Date(timeIntervalSince1970: 1_730_943_051.269)),
-                    timestamp: Date(timeIntervalSince1970: 1_730_943_051.269),
-                    reactions: .empty,
-                ),
-            ],
-        )
+        let expectedMessages = [
+            Message(
+                serial: "123456789-000@123456789:000",
+                action: .messageCreate,
+                clientID: "random",
+                text: "hello",
+                metadata: [:],
+                headers: [:],
+                version: .init(serial: "123456789-000@123456789:000", timestamp: Date(timeIntervalSince1970: 1_730_943_049.269)), // from successGetMessagesWithItems
+                timestamp: Date(timeIntervalSince1970: 1_730_943_049.269),
+                reactions: .empty,
+            ),
+            Message(
+                serial: "123456789-000@123456789:001",
+                action: .messageCreate,
+                clientID: "random",
+                text: "hello response",
+                metadata: [:],
+                headers: [:],
+                version: .init(serial: "123456789-000@123456789:001", timestamp: Date(timeIntervalSince1970: 1_730_943_051.269)),
+                timestamp: Date(timeIntervalSince1970: 1_730_943_051.269),
+                reactions: .empty,
+            ),
+        ]
 
         // When
         let getMessagesResult = try await chatAPI.getMessages(roomName: roomName, params: .init())
 
         // Then
-        #expect(getMessagesResult == expectedPaginatedResult)
+        #expect(getMessagesResult.items == expectedMessages)
+        #expect(getMessagesResult.hasNext == paginatedResponse.hasNext)
+        #expect(getMessagesResult.isLast == paginatedResponse.isLast)
     }
 
     // @spec CHA-M5i
