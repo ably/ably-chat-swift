@@ -70,11 +70,26 @@ struct MessageSubscriptionStorageTests {
         #expect(manager.subscription == nil)
     }
 
-    // MARK: - Can iterate using concrete type
+    // MARK: - Iterating over concrete type (no try required)
 
+    /// This test proves that users can iterate over a stored concrete subscription WITHOUT using `try`.
     @Test
-    func canIterateOverStoredConcreteSubscription() async {
-        var subscription: MessageSubscriptionResponseAsyncSequence?
+    func canIterateOverConcreteTypeWithoutTry() async {
+        final class ChatManager {
+            var subscription: MessageSubscriptionResponseAsyncSequence?
+
+            // ✅ This method is `async` not `async throws`
+            // It would fail to compile if `try` was needed to iterate
+            func processMessages() async -> [String] {
+                guard let subscription else { return [] }
+
+                var receivedTexts: [String] = []
+                for await event in subscription {
+                    receivedTexts.append(event.message.text)
+                }
+                return receivedTexts
+            }
+        }
 
         let messages = [
             Message(serial: "1", action: .messageCreate, clientID: "user1", text: "Hello", metadata: [:], headers: [:], version: .init(serial: "1", timestamp: Date()), timestamp: Date(), reactions: .empty),
@@ -82,18 +97,54 @@ struct MessageSubscriptionStorageTests {
         ]
         let events = messages.map { ChatMessageEvent(message: $0) }
 
-        subscription = MessageSubscriptionResponseAsyncSequence(
+        let manager = ChatManager()
+        manager.subscription = MessageSubscriptionResponseAsyncSequence(
             mockAsyncSequence: events.async
         ) { _ in
             fatalError("Not implemented")
         }
 
-        // Can iterate over the stored subscription
-        var receivedTexts: [String] = []
-        for await event in subscription! {
-            receivedTexts.append(event.message.text)
+        let receivedTexts = await manager.processMessages()
+        #expect(receivedTexts == ["Hello", "World"])
+    }
+
+    // MARK: - Iterating over protocol existential (requires try)
+
+    /// This test shows that iterating over the protocol existential requires `try`.
+    /// This is because Swift can't guarantee non-throwing without `Failure == Never` (requires macOS 15+/iOS 18+).
+    @Test
+    func iteratingOverProtocolExistentialRequiresTry() async throws {
+        final class ChatManager {
+            var subscription: (any MessageSubscriptionResponseAsyncSequenceProtocol)?
+
+            // ⚠️ This method must be `async throws` because iterating over the protocol existential requires `try`
+            // Also note: the event type becomes `Any` so we need to cast it
+            func processMessages() async throws -> [String] {
+                guard let subscription else { return [] }
+
+                var receivedTexts: [String] = []
+                for try await event in subscription {
+                    let chatEvent = event as! ChatMessageEvent
+                    receivedTexts.append(chatEvent.message.text)
+                }
+                return receivedTexts
+            }
         }
 
+        let messages = [
+            Message(serial: "1", action: .messageCreate, clientID: "user1", text: "Hello", metadata: [:], headers: [:], version: .init(serial: "1", timestamp: Date()), timestamp: Date(), reactions: .empty),
+            Message(serial: "2", action: .messageCreate, clientID: "user2", text: "World", metadata: [:], headers: [:], version: .init(serial: "2", timestamp: Date()), timestamp: Date(), reactions: .empty),
+        ]
+        let events = messages.map { ChatMessageEvent(message: $0) }
+
+        let manager = ChatManager()
+        manager.subscription = MessageSubscriptionResponseAsyncSequence(
+            mockAsyncSequence: events.async
+        ) { _ in
+            fatalError("Not implemented")
+        }
+
+        let receivedTexts = try await manager.processMessages()
         #expect(receivedTexts == ["Hello", "World"])
     }
 }
