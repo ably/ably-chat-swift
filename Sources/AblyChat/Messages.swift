@@ -125,7 +125,7 @@ public extension Messages {
      *
      * - Returns: A subscription ``MessageSubscription`` that can be used to iterate through new messages.
      */
-    func subscribe(bufferingPolicy: BufferingPolicy) -> MessageSubscriptionResponseAsyncSequence<SubscribeResponse.HistoryResult> {
+    func subscribe(bufferingPolicy: BufferingPolicy) -> MessageSubscriptionResponseAsyncSequence {
         var emitEvent: ((ChatMessageEvent) -> Void)?
         let subscription = subscribe { event in
             emitEvent?(event)
@@ -133,8 +133,9 @@ public extension Messages {
 
         let subscriptionAsyncSequence = MessageSubscriptionResponseAsyncSequence(
             bufferingPolicy: bufferingPolicy,
-            historyBeforeSubscribe: subscription.historyBeforeSubscribe,
-        )
+        ) { params throws(ErrorInfo) in
+            try await subscription.historyBeforeSubscribe(withParams: params)
+        }
         emitEvent = { [weak subscriptionAsyncSequence] event in
             subscriptionAsyncSequence?.emit(event)
         }
@@ -149,7 +150,7 @@ public extension Messages {
     }
 
     /// Same as calling ``subscribe(bufferingPolicy:)`` with ``BufferingPolicy/unbounded``.
-    func subscribe() -> MessageSubscriptionResponseAsyncSequence<SubscribeResponse.HistoryResult> {
+    func subscribe() -> MessageSubscriptionResponseAsyncSequence {
         subscribe(bufferingPolicy: .unbounded)
     }
 }
@@ -406,32 +407,44 @@ public struct ChatMessageEvent: Sendable {
     }
 }
 
+/// A protocol for message subscription async sequences that provide both iteration over chat message events
+/// and access to message history before the subscription was created.
+///
+/// This protocol allows users to store subscriptions as properties using existential types:
+/// ```swift
+/// var subscription: (any MessageSubscriptionResponseAsyncSequenceProtocol)?
+/// ```
+public protocol MessageSubscriptionResponseAsyncSequenceProtocol<Element>: AsyncSequence, Sendable where Element == ChatMessageEvent {
+    /// Get messages that were sent to the room before the subscription was attached.
+    func historyBeforeSubscribe(withParams params: HistoryBeforeSubscribeParams) async throws(ErrorInfo) -> any PaginatedResult<Message>
+}
+
 /// A non-throwing `AsyncSequence` whose element is ``ChatMessageEvent``. The Chat SDK uses this type as the return value of the `AsyncSequence` convenience variants of the ``Messages`` methods that allow you to find out about received chat messages.
 ///
 /// You should only iterate over a given `MessageSubscriptionResponseAsyncSequence` once; the results of iterating more than once are undefined.
-public final class MessageSubscriptionResponseAsyncSequence<HistoryResult: PaginatedResult<Message>>: Sendable, AsyncSequence {
+public final class MessageSubscriptionResponseAsyncSequence: Sendable, AsyncSequence, MessageSubscriptionResponseAsyncSequenceProtocol {
     // swiftlint:disable:next missing_docs
     public typealias Element = ChatMessageEvent
 
     private let subscription: SubscriptionAsyncSequence<Element>
 
     // can be set by either initialiser
-    private let historyBeforeSubscribe: @Sendable (HistoryBeforeSubscribeParams) async throws(ErrorInfo) -> HistoryResult
+    private let _historyBeforeSubscribe: @Sendable (HistoryBeforeSubscribeParams) async throws(ErrorInfo) -> any PaginatedResult<Message>
 
     // used internally
     internal init(
         bufferingPolicy: BufferingPolicy,
-        historyBeforeSubscribe: @escaping @Sendable (HistoryBeforeSubscribeParams) async throws(ErrorInfo) -> HistoryResult,
+        historyBeforeSubscribe: @escaping @Sendable (HistoryBeforeSubscribeParams) async throws(ErrorInfo) -> any PaginatedResult<Message>,
     ) {
         subscription = .init(bufferingPolicy: bufferingPolicy)
-        self.historyBeforeSubscribe = historyBeforeSubscribe
+        _historyBeforeSubscribe = historyBeforeSubscribe
     }
 
     // used for testing
     // swiftlint:disable:next missing_docs
-    public init<Underlying: AsyncSequence & Sendable>(mockAsyncSequence: Underlying, mockHistoryBeforeSubscribe: @escaping @Sendable (HistoryBeforeSubscribeParams) async throws(ErrorInfo) -> HistoryResult) where Underlying.Element == Element {
+    public init<Underlying: AsyncSequence & Sendable>(mockAsyncSequence: Underlying, mockHistoryBeforeSubscribe: @escaping @Sendable (HistoryBeforeSubscribeParams) async throws(ErrorInfo) -> any PaginatedResult<Message>) where Underlying.Element == Element {
         subscription = .init(mockAsyncSequence: mockAsyncSequence)
-        historyBeforeSubscribe = mockHistoryBeforeSubscribe
+        _historyBeforeSubscribe = mockHistoryBeforeSubscribe
     }
 
     internal func emit(_ element: Element) {
@@ -444,8 +457,8 @@ public final class MessageSubscriptionResponseAsyncSequence<HistoryResult: Pagin
     }
 
     // swiftlint:disable:next missing_docs
-    public func historyBeforeSubscribe(withParams params: HistoryBeforeSubscribeParams) async throws(ErrorInfo) -> HistoryResult {
-        try await historyBeforeSubscribe(params)
+    public func historyBeforeSubscribe(withParams params: HistoryBeforeSubscribeParams) async throws(ErrorInfo) -> any PaginatedResult<Message> {
+        try await _historyBeforeSubscribe(params)
     }
 
     // swiftlint:disable:next missing_docs
