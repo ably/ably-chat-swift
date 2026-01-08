@@ -79,3 +79,55 @@ extension DefaultPaginatedResult: Equatable where Item: Equatable {
             lhs.isLast == rhs.isLast
     }
 }
+
+/// Type-erased wrapper for `PaginatedResult`.
+@MainActor
+public final class AnyPaginatedResult<Item>: PaginatedResult {
+    // swiftlint:disable:next missing_docs
+    public let items: [Item]
+    // swiftlint:disable:next missing_docs
+    public let hasNext: Bool
+    // swiftlint:disable:next missing_docs
+    public let isLast: Bool
+
+    private let nextClosure: () async throws(ErrorInfo) -> AnyPaginatedResult<Item>?
+    private let firstClosure: () async throws(ErrorInfo) -> AnyPaginatedResult<Item>
+    private let currentClosure: () async throws(ErrorInfo) -> AnyPaginatedResult<Item>
+
+    // swiftlint:disable:next missing_docs
+    public init<Underlying: PaginatedResult>(_ underlying: Underlying) where Underlying.Item == Item {
+        items = underlying.items
+        hasNext = underlying.hasNext
+        isLast = underlying.isLast
+
+        nextClosure = { () async throws(ErrorInfo) -> AnyPaginatedResult<Item>? in
+            guard let next = try await underlying.next() else {
+                return nil
+            }
+            return AnyPaginatedResult(next)
+        }
+
+        firstClosure = { () async throws(ErrorInfo) -> AnyPaginatedResult<Item> in
+            try await AnyPaginatedResult(underlying.first())
+        }
+
+        currentClosure = { () async throws(ErrorInfo) -> AnyPaginatedResult<Item> in
+            try await AnyPaginatedResult(underlying.current())
+        }
+    }
+
+    // swiftlint:disable:next missing_docs
+    public func next() async throws(ErrorInfo) -> AnyPaginatedResult<Item>? {
+        try await nextClosure()
+    }
+
+    // swiftlint:disable:next missing_docs
+    public func first() async throws(ErrorInfo) -> AnyPaginatedResult<Item> {
+        try await firstClosure()
+    }
+
+    // swiftlint:disable:next missing_docs
+    public func current() async throws(ErrorInfo) -> AnyPaginatedResult<Item> {
+        try await currentClosure()
+    }
+}

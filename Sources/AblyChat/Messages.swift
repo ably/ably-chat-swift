@@ -125,16 +125,15 @@ public extension Messages {
      *
      * - Returns: A subscription ``MessageSubscription`` that can be used to iterate through new messages.
      */
-    func subscribe(bufferingPolicy: BufferingPolicy) -> MessageSubscriptionResponseAsyncSequence<SubscribeResponse.HistoryResult> {
+    func subscribe(bufferingPolicy: BufferingPolicy) -> MessageSubscriptionResponseAsyncSequence<AnyPaginatedResult<Message>> {
         var emitEvent: ((ChatMessageEvent) -> Void)?
         let subscription = subscribe { event in
             emitEvent?(event)
         }
 
-        let subscriptionAsyncSequence = MessageSubscriptionResponseAsyncSequence(
-            bufferingPolicy: bufferingPolicy,
-            historyBeforeSubscribe: subscription.historyBeforeSubscribe,
-        )
+        let subscriptionAsyncSequence = MessageSubscriptionResponseAsyncSequence(bufferingPolicy: bufferingPolicy) { @MainActor (params: HistoryBeforeSubscribeParams) async throws(ErrorInfo) -> AnyPaginatedResult<Message> in
+            try await AnyPaginatedResult(subscription.historyBeforeSubscribe(withParams: params))
+        }
         emitEvent = { [weak subscriptionAsyncSequence] event in
             subscriptionAsyncSequence?.emit(event)
         }
@@ -149,7 +148,7 @@ public extension Messages {
     }
 
     /// Same as calling ``subscribe(bufferingPolicy:)`` with ``BufferingPolicy/unbounded``.
-    func subscribe() -> MessageSubscriptionResponseAsyncSequence<SubscribeResponse.HistoryResult> {
+    func subscribe() -> MessageSubscriptionResponseAsyncSequence<AnyPaginatedResult<Message>> {
         subscribe(bufferingPolicy: .unbounded)
     }
 }
