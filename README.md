@@ -40,6 +40,29 @@ This SDK supports the following platforms:
 
 ---
 
+## Installation
+
+The SDK is distributed as a Swift Package and can be installed using Xcode or by adding it as a dependency in your package's `Package.swift`.
+
+#### Using Xcode
+
+To install the `ably-chat-swift` package in your Xcode Project:
+
+1. Open your Xcode project and navigate to **File → Add Package Dependencies...**
+2. Paste `https://github.com/ably/ably-chat-swift` in the search box
+3. Select the version you want to use
+4. Select the Ably Chat SDK for your target
+
+#### Using Swift Package Manager
+
+To install the `ably-chat-swift` package in another Swift Package, add the following to your `Package.swift`:
+
+```swift
+.package(url: "https://github.com/ably/ably-chat-swift", from: "1.1.0"),
+```
+
+---
+
 ## Usage
 
 The following code connects to Ably's chat service, subscribes to a chat room, and sends a message to that room:
