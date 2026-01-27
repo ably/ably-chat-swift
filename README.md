@@ -17,6 +17,8 @@ Everything you need to get started with Ably:
 - [Getting started with Ably Chat using Swift.](https://ably.com/docs/chat/getting-started/swift)
 - [Ably Chat SDK and usage docs in Swift.](https://ably.com/docs/chat/setup?lang=swift)
 - Learn [about Ably Chat.](https://ably.com/docs/chat)
+- [API documentation.](https://sdk.ably.com/builds/ably/ably-chat-swift/main/AblyChat/documentation/ablychat/)
+- [Chat Example App.](https://github.com/ably/ably-chat-swift/tree/main/Example)
 - Play with the [livestream chat demo.](https://ably-livestream-chat-demo.vercel.app/)
 
 ---
@@ -35,6 +37,77 @@ This SDK supports the following platforms:
 
 > [!NOTE]
 > Xcode 26.0 or later is required.
+
+---
+
+## Installation
+
+The SDK is distributed as a Swift Package and can be installed using Xcode or by adding it as a dependency in your package's `Package.swift`.
+
+#### Using Xcode
+
+To install the `ably-chat-swift` package in your Xcode Project:
+
+1. Open your Xcode project and navigate to **File → Add Package Dependencies...**
+2. Paste `https://github.com/ably/ably-chat-swift` in the search box
+3. Select the version you want to use
+4. Select the Ably Chat SDK for your target
+
+#### Using Swift Package Manager
+
+To install the `ably-chat-swift` package in another Swift Package, add the following to your `Package.swift`:
+
+```swift
+.package(url: "https://github.com/ably/ably-chat-swift", from: "1.1.0"),
+```
+
+---
+
+## Usage
+
+The following code connects to Ably's chat service, subscribes to a chat room, and sends a message to that room:
+
+```swift
+import Ably
+import AblyChat
+
+// Initialize Ably Realtime client
+let realtimeOptions = ARTClientOptions()
+realtimeOptions.key = "<your-ably-api-key>"
+realtimeOptions.clientId = "your-client-id"
+let realtime = ARTRealtime(options: realtimeOptions)
+
+// Create a chat client
+let chatClient = ChatClient(realtime: realtime, clientOptions: ChatClientOptions())
+
+// Get a chat room
+let room = try await chatClient.rooms.get(named: "my-room", options: RoomOptions())
+
+// Monitor room status
+room.onStatusChange { statusChange in
+    switch statusChange.current {
+    case .attached:
+        print("Room is attached")
+    case .detached:
+        print("Room is detached")
+    case .failed(let error):
+        print("Room failed: \(error)")
+    default:
+        print("Room status: \(statusChange.current)")
+    }
+}
+
+// Attach to the room
+try await room.attach()
+
+// Subscribe to messages
+let subscription = room.messages.subscribe { event in
+    print("Received message: \(event.message.text)")
+}
+
+// Send a message
+try await room.messages.send(withParams: SendMessageParams(text: "Hello, World!"))
+```
 
 ---
 
