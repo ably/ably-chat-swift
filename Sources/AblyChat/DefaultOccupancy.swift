@@ -74,4 +74,9 @@ internal final class DefaultOccupancy<Realtime: InternalRealtimeClientProtocol>:
         // CHA-07b
         return lastOccupancyData
     }
+
+    /// Disposes of the occupancy feature, clearing cached state.
+    internal func dispose() {
+        lastOccupancyData = nil
+    }
 }

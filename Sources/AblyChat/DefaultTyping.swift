@@ -176,4 +176,9 @@ internal final class DefaultTyping: Typing {
             throw error
         }
     }
+
+    /// Disposes of the typing feature, cancelling all timers and clearing state.
+    internal func dispose() {
+        typingTimerManager.dispose()
+    }
 }
