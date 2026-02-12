@@ -168,6 +168,9 @@ struct IntegrationTests {
         Self.logAwait("AFTER rxMessageSubscription.first")
         #expect(areMessagesEqualModuloNonSerialVersionInfo(rxEventFromSubscription.message, txMessageAfterRxSubscribe))
 
+        // @spec CHA-M2h - userClaim is nil when using API key auth (no JWT claims)
+        #expect(rxEventFromSubscription.message.userClaim == nil)
+
         // MARK: - Message Reactions (Summary)
 
         let messageToReact = txMessageBeforeRxSubscribe
@@ -271,6 +274,9 @@ struct IntegrationTests {
         #expect(reactionRawEvents[2].type == .delete)
         #expect(reactionRawEvents[2].reaction.name == "😆")
         #expect(reactionRawEvents[2].reaction.messageSerial == messageToReact.serial)
+
+        // @spec CHA-MR7d - userClaim is nil when using API key auth (no JWT claims)
+        #expect(reactionRawEvents[0].reaction.userClaim == nil)
 
         // Wait a little before requesting history
         Self.logAwait("BEFORE Task.sleep (2s)")
@@ -423,6 +429,9 @@ struct IntegrationTests {
         #expect(rxReactionFromSubscription.reaction.metadata == ["someMetadataKey": .number(123), "someOtherMetadataKey": .string("foo")])
         #expect(rxReactionFromSubscription.reaction.headers == ["someHeadersKey": .number(456), "someOtherHeadersKey": .string("bar")])
 
+        // @spec CHA-ER2a - userClaim is nil when using API key auth (no JWT claims)
+        #expect(rxReactionFromSubscription.reaction.userClaim == nil)
+
         // MARK: - Occupancy
 
         // It can take a moment for the occupancy to update from the clients connecting above, so we'll wait a 2 seconds here.
@@ -495,6 +504,9 @@ struct IntegrationTests {
         Self.logAwait("AFTER rxPresenceSubscription.first (enter tx)")
         #expect(rxPresenceEnterTxEvent.type == .enter)
         #expect(rxPresenceEnterTxEvent.member.data == ["randomData": "randomValue"])
+
+        // @spec CHA-PR6g - userClaim is nil when using API key auth (no JWT claims)
+        #expect(rxPresenceEnterTxEvent.member.userClaim == nil)
 
         // (3) Fetch rxClient's presence members and check that txClient is there
         Self.logAwait("BEFORE rxRoom.presence.get()")
@@ -573,6 +585,9 @@ struct IntegrationTests {
         // (4) Check that we received the typing event showing that txRoom is typing
         #expect(typingEvents.count == 1)
         #expect(typingEvents[0].currentlyTyping.count == 1)
+
+        // @spec CHA-T13a1 - userClaim is nil when using API key auth (no JWT claims)
+        #expect(typingEvents[0].change.userClaim == nil)
 
         // (5) Wait for the typing event to be received (auto sent from timeout)
         for await typingEvent in rxTypingSubscription {

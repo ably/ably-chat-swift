@@ -116,12 +116,25 @@ public struct TypingSetEvent: Sendable {
         // swiftlint:disable:next missing_docs
         public var type: TypingEventType
 
+        /**
+         * The user claim attached to this typing event by the server.
+         *
+         * Set automatically by the Ably server when a JWT contains a matching
+         * `ably.room.<roomName>` claim. This is a read-only, server-provided value.
+         *
+         * The `userClaim` must persist across heartbeat events and inactivity timeouts
+         * for a given `clientId`.
+         */
+        // @spec CHA-T13a1
+        public var userClaim: String?
+
         /// Memberwise initializer to create a `Change`.
         ///
         /// - Note: You should not need to use this initializer when using the Chat SDK. It is exposed only to allow users to create mock versions of the SDK's protocols.
-        public init(clientID: String, type: TypingEventType) {
+        public init(clientID: String, type: TypingEventType, userClaim: String? = nil) {
             self.clientID = clientID
             self.type = type
+            self.userClaim = userClaim
         }
     }
 }

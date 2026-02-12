@@ -42,21 +42,31 @@ internal final class DefaultTyping: Typing {
 
             logger.log(message: "Received started typing message: \(message)", level: .debug)
 
+            // CHA-T13a1: Extract userClaim from message extras
+            let extras = if let ablyCocoaExtras = message.extras {
+                JSONValue.objectFromAblyCocoaExtras(ablyCocoaExtras)
+            } else {
+                [String: JSONValue]()
+            }
+            let userClaim = extras.userClaim
+
             let isNewClient = !typingTimerManager.isCurrentlyTyping(clientID: messageClientID)
 
             // Start or reset typing timer for this clientID per CHA-T13b1 and CHA-T13b2.
             typingTimerManager.startTypingTimer(
                 for: messageClientID,
-            ) { [weak self] in
+                userClaim: userClaim, // CHA-T13a1
+            ) { [weak self] expiredUserClaim in
                 guard let self else {
                     return
                 }
                 // (CHA-T13b3) (2/2) If the (CHA-T13b1) timeout expires, the client shall remove the clientId from the typing set and emit a synthetic typing stop event for the given client.
+                // (CHA-T13a1) The expiredUserClaim is provided by the timer manager before it clears the state.
                 callback(
                     TypingSetEvent(
                         type: .setChanged,
                         currentlyTyping: typingTimerManager.currentlyTypingClientIDs(),
-                        change: .init(clientID: messageClientID, type: .stopped),
+                        change: .init(clientID: messageClientID, type: .stopped, userClaim: expiredUserClaim),
                     ),
                 )
             }
@@ -68,7 +78,7 @@ internal final class DefaultTyping: Typing {
                     TypingSetEvent(
                         type: .setChanged,
                         currentlyTyping: typingTimerManager.currentlyTypingClientIDs(),
-                        change: .init(clientID: messageClientID, type: .started),
+                        change: .init(clientID: messageClientID, type: .started, userClaim: typingTimerManager.userClaimForClient(messageClientID)),
                     ),
                 )
             }
@@ -81,6 +91,14 @@ internal final class DefaultTyping: Typing {
 
             logger.log(message: "Received stopped typing message: \(message)", level: .debug)
 
+            // CHA-T13a1: Extract userClaim from message extras, fall back to cached value
+            let extras = if let ablyCocoaExtras = message.extras {
+                JSONValue.objectFromAblyCocoaExtras(ablyCocoaExtras)
+            } else {
+                [String: JSONValue]()
+            }
+            let userClaim = extras.userClaim ?? typingTimerManager.userClaimForClient(messageClientID)
+
             // (CHA-T13b5) If the event represents that a client has stopped typing, but the clientId for that client is not present in the typing set, then the event is ignored.
             if typingTimerManager.isCurrentlyTyping(clientID: messageClientID) {
                 // (CHA-T13b4) If the event represents a client that has stopped typing, then the chat client shall remove the clientId from the typing set and emit the updated set to any subscribers. It shall also cancel the (CHA-T13b1) timeout for the typing client.
@@ -91,7 +109,7 @@ internal final class DefaultTyping: Typing {
                     TypingSetEvent(
                         type: .setChanged,
                         currentlyTyping: typingTimerManager.currentlyTypingClientIDs(),
-                        change: .init(clientID: messageClientID, type: .stopped),
+                        change: .init(clientID: messageClientID, type: .stopped, userClaim: userClaim),
                     ),
                 )
             }
