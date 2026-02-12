@@ -8,9 +8,15 @@ public enum ChatMessageAction: Sendable {
      * Action applied to a new message.
      */
     case messageCreate
-    // swiftlint:disable:next missing_docs
+
+    /**
+     * Action applied to an updated message.
+     */
     case messageUpdate
-    // swiftlint:disable:next missing_docs
+
+    /**
+     * Action applied to a deleted message.
+     */
     case messageDelete
 
     internal static func fromRealtimeAction(_ action: ARTMessageAction) -> Self? {
@@ -71,19 +77,30 @@ internal enum RealtimeMessageName: String, Sendable {
     case chatMessage = "chat.message"
 }
 
+/// Internal enum representing room reaction event names used in Ably channel messages.
 internal enum RoomReactionEvents: String {
+    /// The event name for room-level reactions.
     case reaction = "roomReaction"
 }
 
+/// Internal enum representing occupancy event names used in Ably channel metadata.
 internal enum OccupancyEvents: String {
+    /// The metadata event name for occupancy updates.
     case meta = "[meta]occupancy"
 }
 
-/// Enum representing the typing event types.
+/**
+ * Enum representing the typing event types.
+ */
 public enum TypingEventType: Sendable {
-    // swiftlint:disable:next missing_docs
+    /**
+     * Event triggered when a user is typing.
+     */
     case started
-    // swiftlint:disable:next missing_docs
+
+    /**
+     * Event triggered when a user stops typing.
+     */
     case stopped
 
     internal var rawValue: String {
@@ -96,9 +113,13 @@ public enum TypingEventType: Sendable {
     }
 }
 
-/// Enum representing the typing set event types.
+/**
+ * Enum representing the typing set event types.
+ */
 public enum TypingSetEventType: Sendable {
-    // swiftlint:disable:next missing_docs
+    /**
+     * Event triggered when a change occurs in the set of typers.
+     */
     case setChanged
 
     internal var rawValue: String {

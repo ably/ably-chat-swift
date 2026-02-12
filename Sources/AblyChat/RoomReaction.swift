@@ -1,12 +1,12 @@
 import Foundation
 
 /**
- * ``Headers`` type for chat reactions.
+ * ``Headers`` type for room reactions.
  */
 public typealias RoomReactionHeaders = Headers
 
 /**
- * ``Metadata`` type for chat reactions.
+ * ``Metadata`` type for room reactions.
  */
 public typealias RoomReactionMetadata = Metadata
 
@@ -17,7 +17,7 @@ public typealias RoomReactionMetadata = Metadata
  */
 public struct RoomReaction: Sendable {
     /**
-     * The type of the reaction, for example "like" or "love".
+     * The name of the reaction, for example "like" or "love".
      */
     public var name: String
 

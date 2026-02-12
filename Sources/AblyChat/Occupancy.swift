@@ -8,35 +8,141 @@ import Ably
  */
 @MainActor
 public protocol Occupancy: AnyObject, Sendable {
-    // swiftlint:disable:next missing_docs
+    /// The subscription type for occupancy event listeners.
     associatedtype Subscription: AblyChat.Subscription
 
     /**
-     * Subscribes a given listener to occupancy updates of the chat room.
+     * Subscribes to occupancy updates for the chat room.
      *
-     * Note that it is a programmer error to call this method if occupancy events are not enabled in the room options. Make sure to set `enableEvents: true` in your room's occupancy options to use this feature.
+     * Receives updates whenever the number of connections or present members in the room changes.
+     * This is useful for displaying active user counts, monitoring room capacity, or tracking
+     * engagement metrics.
+     *
+     * - Note:
+     *   - Requires ``OccupancyOptions/enableEvents`` to be true in the room's occupancy options. It's a programmer error otherwise.
+     *   - The room should be attached to receive occupancy events.
      *
      * - Parameters:
-     *   - callback: The listener closure for capturing room ``OccupancyEvent`` events.
+     *   - callback: Callback invoked when room occupancy changes
      *
-     * - Returns: A subscription that can be used to unsubscribe from ``OccupancyEvent`` events.
+     * - Returns: Subscription object with an unsubscribe method
+     *
+     * ## Example
+     *
+     * ```swift
+     * import Ably
+     * import AblyChat
+     *
+     * let chatClient: ChatClient // existing ChatClient instance
+     *
+     * // Create room with occupancy events enabled
+     * let room = try await chatClient.rooms.get(named: "conference-room", options: RoomOptions(
+     *     occupancy: .init(enableEvents: true)
+     * ))
+     *
+     * // Subscribe to occupancy updates
+     * let subscription = room.occupancy.subscribe { event in
+     *     let connections = event.occupancy.connections
+     *     let presenceMembers = event.occupancy.presenceMembers
+     *
+     *     print("Room occupancy updated:")
+     *     print("Total connections: \(connections)")
+     *     print("Presence members: \(presenceMembers)")
+     * }
+     *
+     * // Attach to the room to start receiving events
+     * try await room.attach()
+     *
+     * // Later, unsubscribe when done
+     * subscription.unsubscribe()
+     * ```
      */
     @discardableResult
     func subscribe(_ callback: @escaping @MainActor (OccupancyEvent) -> Void) -> Subscription
 
     /**
-     * Get the current occupancy of the chat room.
+     * Fetches the current occupancy of the chat room from the server.
      *
-     * - Returns: A current occupancy of the chat room.
+     * Retrieves the latest occupancy metrics, including the number
+     * of active connections and presence members. Use this for on-demand occupancy
+     * checks or when occupancy events are not enabled.
+     *
+     * - Note: This method uses the Ably Chat REST API and so does not require the room
+     * to be attached to be called.
+     *
+     * - Returns: Current occupancy data
+     *
+     * - Throws: ``ErrorInfo``
+     *
+     * ## Example
+     *
+     * ```swift
+     * import Ably
+     * import AblyChat
+     *
+     * let chatClient: ChatClient // existing ChatClient instance
+     *
+     * let room = try await chatClient.rooms.get(named: "webinar-room")
+     *
+     * // Get current occupancy on demand
+     * do {
+     *     let occupancy = try await room.occupancy.get()
+     *
+     *     print("Current room statistics:")
+     *     print("Active connections: \(occupancy.connections)")
+     *     print("Presence members: \(occupancy.presenceMembers)")
+     * } catch {
+     *     print("Failed to fetch occupancy: \(error)")
+     * }
+     * ```
      */
     func get() async throws(ErrorInfo) -> OccupancyData
 
     /**
-     * Get the latest occupancy data received from realtime events.
+     * Gets the latest occupancy data cached from realtime events.
      *
-     * Note that it is a programmer error to read this property if occupancy events are not enabled in the room options. Make sure to set `enableEvents: true` in your room's occupancy options to use this feature.
+     * Returns the most recent occupancy metrics received via subscription. Returns nil
+     * if no occupancy events have been received yet since the room was attached.
      *
-     * - Returns: The latest occupancy data, or nil if no realtime events have been received yet.
+     * - Note:
+     *   - Requires `enableEvents` to be true in the room's occupancy options.
+     *   - Returns nil until the first occupancy event is received.
+     *   - It is a programmer error to read this property if occupancy events are not enabled in the room options.
+     *
+     * - Returns: Latest cached occupancy data or nil if no events received
+     *
+     * ## Example
+     *
+     * ```swift
+     * import Ably
+     * import AblyChat
+     *
+     * let chatClient: ChatClient // existing ChatClient instance
+     *
+     * // Room with occupancy events enabled
+     * let room = try await chatClient.rooms.get(named: "gaming-lobby", options: RoomOptions(
+     *     occupancy: .init(enableEvents: true)
+     * ))
+     *
+     * // Subscribe to occupancy events
+     * room.occupancy.subscribe { event in
+     *     print("Occupancy updated: \(event.occupancy)")
+     * }
+     *
+     * // Get cached occupancy instantly (after first event)
+     * func displayCurrentOccupancy() {
+     *     if let occupancy = room.occupancy.current {
+     *         print("Current cached occupancy:")
+     *         print("Connections: \(occupancy.connections)")
+     *         print("Presence: \(occupancy.presenceMembers)")
+     *     } else {
+     *         print("No occupancy data received yet, try fetching from server")
+     *     }
+     * }
+     *
+     * // Attach to the room to start receiving events
+     * try await room.attach()
+     * ```
      */
     var current: OccupancyData? { get }
 }
@@ -98,18 +204,28 @@ public struct OccupancyData: Sendable {
     }
 }
 
-// swiftlint:disable:next missing_docs
+/**
+ * Enum representing occupancy events.
+ */
 public enum OccupancyEventType: Sendable {
-    // swiftlint:disable:next missing_docs
+    /**
+     * Event triggered when occupancy is updated.
+     */
     case updated
 }
 
-// (CHA-O2) The occupancy event format is shown here (https://sdk.ably.com/builds/ably/specification/main/chat-features/#chat-structs-occupancy-event)
-// swiftlint:disable:next missing_docs
+/**
+ * Represents an occupancy event.
+ */
 public struct OccupancyEvent: Sendable {
-    // swiftlint:disable:next missing_docs
+    /**
+     * The type of the occupancy event.
+     */
     public var type: OccupancyEventType
-    // swiftlint:disable:next missing_docs
+
+    /**
+     * The occupancy data.
+     */
     public var occupancy: OccupancyData
 
     /// Memberwise initializer to create a `OccupancyEvent`.

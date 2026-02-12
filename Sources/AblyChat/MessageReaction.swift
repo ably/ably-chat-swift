@@ -137,7 +137,14 @@ public struct MessageReactionSummary: Sendable, Equatable {
          */
         public var clipped: Bool // TM7c1c
 
-        // swiftlint:disable:next missing_docs
+        /**
+         * Creates a new ClientIDList instance.
+         *
+         * - Parameters:
+         *   - total: Total number of reactions of this type
+         *   - clientIDs: List of client IDs who sent this reaction
+         *   - clipped: Whether the clientIDs list was clipped
+         */
         public init(total: Int, clientIDs: [String], clipped: Bool) {
             self.total = total
             self.clientIDs = clientIDs
@@ -176,7 +183,16 @@ public struct MessageReactionSummary: Sendable, Equatable {
          */
         public var totalClientIDs: Int // TM7d1e
 
-        // swiftlint:disable:next missing_docs
+        /**
+         * Creates a new ClientIDCounts instance.
+         *
+         * - Parameters:
+         *   - total: Total number of reactions of this type
+         *   - clientIDs: Map of client IDs to their reaction counts
+         *   - totalUnidentified: Sum of counts from unidentified clients
+         *   - clipped: Whether the clientIDs list was clipped
+         *   - totalClientIDs: Total number of distinct client IDs
+         */
         public init(total: Int, clientIDs: [String: Int], totalUnidentified: Int, clipped: Bool, totalClientIDs: Int) {
             self.total = total
             self.clientIDs = clientIDs
@@ -220,11 +236,11 @@ public struct MessageReactionSummary: Sendable, Equatable {
 
 /**
  * Event interface representing a summary of message reactions.
- * This event aggregates different types of reactions (single, distinct, multiple) for a specific message.
+ * This event aggregates different types of reactions (unique, distinct, multiple) for a specific message.
  */
 public struct MessageReactionSummaryEvent: Sendable, Equatable {
     /**
-     * The type of the event (should be equal to summary).
+     * The type of the event.
      */
     public var type: MessageReactionSummaryEventType
 
@@ -257,26 +273,27 @@ public struct MessageReactionRawEvent: Sendable {
      */
     public struct Reaction: Sendable {
         /**
-         * The reaction type (Unique, Distinct, or Multiple).
+         * Type of reaction.
          */
         public var type: MessageReactionType
+
         /**
-         * The reaction itself, typically an emoji.
+         * The reaction name (typically an emoji).
          */
         public var name: String
 
         /**
-         * The serial of the message, for which this reaction was created.
+         * Serial of the message this reaction is for.
          */
         public var messageSerial: String
 
         /**
-         * An optional count field for reactions of type "multiple".
+         * Count of the reaction (only for type Multiple, if set).
          */
         public var count: Int?
 
         /**
-         * The clientId of the user who sent the reaction.
+         * The client ID of the user who added/removed the reaction.
          */
         public var clientID: String
 

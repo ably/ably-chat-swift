@@ -24,7 +24,15 @@ public struct RoomOptions: Sendable {
      */
     public var messages = MessagesOptions()
 
-    // swiftlint:disable:next missing_docs
+    /**
+     * Creates a new RoomOptions instance.
+     *
+     * - Parameters:
+     *   - messages: Configuration for the messages feature
+     *   - presence: Configuration for the presence feature
+     *   - typing: Configuration for the typing indicator feature
+     *   - occupancy: Configuration for the occupancy feature
+     */
     public init(messages: MessagesOptions = MessagesOptions(), presence: PresenceOptions = PresenceOptions(), typing: TypingOptions = TypingOptions(), occupancy: OccupancyOptions = OccupancyOptions()) {
         self.messages = messages
         self.presence = presence
@@ -46,14 +54,19 @@ public struct PresenceOptions: Sendable {
      */
     public var enableEvents = true
 
-    // swiftlint:disable:next missing_docs
+    /**
+     * Creates a new PresenceOptions instance.
+     *
+     * - Parameters:
+     *   - enableEvents: Whether to receive presence events (defaults to `true`)
+     */
     public init(enableEvents: Bool = true) {
         self.enableEvents = enableEvents
     }
 }
 
 /**
- * Represents the messages options for a chat room.
+ * Represents the message options for a chat room.
  */
 public struct MessagesOptions: Sendable {
     /**
@@ -70,13 +83,20 @@ public struct MessagesOptions: Sendable {
     /**
      * The default message reaction type to use for sending message reactions.
      *
-     * Any message reaction type can be sent regardless of this setting by specifying the `type` parameter in the ``MessageReactions/add(for:params:)`` method.
+     * Any message reaction type can be sent regardless of this setting by specifying the `type` parameter
+     * in the ``MessageReactions/send(forMessageWithSerial:params:)`` method.
      *
-     * Defaults to ``MessageReactionType/distinct``
+     * Defaults to ``MessageReactionType/distinct``.
      */
     public var defaultMessageReactionType = MessageReactionType.distinct
 
-    // swiftlint:disable:next missing_docs
+    /**
+     * Creates a new MessagesOptions instance.
+     *
+     * - Parameters:
+     *   - rawMessageReactions: Whether to enable receiving raw message reactions (defaults to `false`)
+     *   - defaultMessageReactionType: The default reaction type to use (defaults to `.distinct`)
+     */
     public init(rawMessageReactions: Bool = false, defaultMessageReactionType: MessageReactionType = .distinct) {
         self.rawMessageReactions = rawMessageReactions
         self.defaultMessageReactionType = defaultMessageReactionType
@@ -89,17 +109,23 @@ public struct MessagesOptions: Sendable {
 public struct TypingOptions: Sendable {
     // (CHA-T10) Users may configure a heartbeat interval (the no-op period for typing.keystroke when the heartbeat timer is set active at CHA-T4a4). This configuration is provided at the RoomOptions.typing.heartbeatThrottleMs property, or idiomatic equivalent. The default is 10000ms.
     /**
-     * The heartbeat interval for typing events in seconds. Once ``Typing/keystroke()`` is called, subsequent keystroke events will be
-     * ignored until this interval, and an internally defined timeout has passed. This is useful for preventing a user from sending too many typing events, and thus messages on the channel.
-     *
-     * A stop typing event is automatically emitted after this interval has passed.
-     * These events can be observed via ``Typing/subscribe()``.
+     * A throttle, in seconds, that enforces the minimum time interval between consecutive `typing.started`
+     * events sent by the client to the server.
+     * If ``Typing/keystroke()`` is called, the first call will emit an event immediately.
+     * Later calls will no-op until the time has elapsed.
+     * Calling ``Typing/stop()`` will immediately send a `typing.stopped` event to the server and reset the interval,
+     * allowing the client to send another `typing.started` event immediately.
      *
      * Defaults to 10 seconds.
      */
     public var heartbeatThrottle: TimeInterval = 10
 
-    // swiftlint:disable:next missing_docs
+    /**
+     * Creates a new TypingOptions instance.
+     *
+     * - Parameters:
+     *   - heartbeatThrottle: The minimum time interval (in seconds) between typing events (defaults to 10)
+     */
     public init(heartbeatThrottle: TimeInterval = 10) {
         self.heartbeatThrottle = heartbeatThrottle
     }
@@ -110,15 +136,21 @@ public struct TypingOptions: Sendable {
  */
 public struct OccupancyOptions: Sendable {
     /**
-     * Whether to enable inbound occupancy events.
+     * Whether to enable occupancy events.
      *
-     * Note that enabling this feature will increase the number of messages received by the client.
+     * Note that enabling this feature will increase the number of messages received by the client as additional
+     * messages will be sent by the server to indicate occupancy changes.
      *
      * Defaults to false.
      */
     public var enableEvents = false
 
-    // swiftlint:disable:next missing_docs
+    /**
+     * Creates a new OccupancyOptions instance.
+     *
+     * - Parameters:
+     *   - enableEvents: Whether to receive occupancy events (defaults to `false`)
+     */
     public init(enableEvents: Bool = false) {
         self.enableEvents = enableEvents
     }

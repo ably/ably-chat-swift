@@ -8,45 +8,162 @@ import Ably
  */
 @MainActor
 public protocol Typing: AnyObject, Sendable {
-    // swiftlint:disable:next missing_docs
+    /// The subscription type for typing event listeners.
     associatedtype Subscription: AblyChat.Subscription
 
     /**
-     * Subscribes a given listener to all typing events from users in the chat room.
+     * Subscribes to typing events from users in the chat room.
+     *
+     * Receives updates whenever a user starts or stops typing, providing real-time
+     * feedback about who is currently composing messages. The subscription emits
+     * events containing the current set of typing users and details about what changed.
+     *
+     * - Note: The room must be attached to receive typing events.
      *
      * - Parameters:
-     *   - callback: The listener closure for capturing room ``TypingEvent`` events.
+     *   - callback: Callback invoked when the typing state changes
      *
-     * - Returns: A subscription that can be used to unsubscribe from ``TypingEvent`` events.
+     * - Returns: Subscription object with an unsubscribe method
+     *
+     * ## Example
+     *
+     * ```swift
+     * import Ably
+     * import AblyChat
+     *
+     * let chatClient: ChatClient // existing ChatClient instance
+     *
+     * // Get a room with default options
+     * let room = try await chatClient.rooms.get(named: "team-chat")
+     *
+     * // Subscribe to typing events
+     * let subscription = room.typing.subscribe { event in
+     *     let currentlyTyping = event.currentlyTyping
+     *
+     *     // Display who is currently typing
+     *     if currentlyTyping.isEmpty {
+     *         hideTypingIndicator()
+     *     } else if currentlyTyping.count == 1 {
+     *         showTypingIndicator("\(currentlyTyping[0]) is typing...")
+     *     } else if currentlyTyping.count == 2 {
+     *         showTypingIndicator("\(currentlyTyping[0]) and \(currentlyTyping[1]) are typing...")
+     *     } else {
+     *         showTypingIndicator("\(currentlyTyping.count) people are typing...")
+     *     }
+     * }
+     *
+     * // Attach to the room to start receiving events
+     * try await room.attach()
+     *
+     * // Later, unsubscribe when done
+     * subscription.unsubscribe()
+     * ```
      */
     @discardableResult
     func subscribe(_ callback: @escaping @MainActor (TypingSetEvent) -> Void) -> Subscription
 
     /**
-     * Get the current typers, a set of clientIds.
+     * Gets the current set of users who are typing.
      *
-     * - Returns: A set of clientIds that are currently typing.
+     * Returns a Set containing the client IDs of all users currently typing in the room.
+     * This provides a snapshot of the typing state at the time of the call.
+     *
+     * - Returns: Set of client IDs currently typing
+     *
+     * ## Example
+     *
+     * ```swift
+     * import Ably
+     * import AblyChat
+     *
+     * let chatClient: ChatClient // existing ChatClient instance
+     *
+     * // Get a room with default options
+     * let room = try await chatClient.rooms.get(named: "support-chat")
+     *
+     * // Attach to the room to start receiving events
+     * try await room.attach()
+     *
+     * // Fetch the current cached set of typing users
+     * let typingUsers = room.typing.current
+     *
+     * print("\(typingUsers.count) users are typing")
+     *
+     * if typingUsers.contains("agent-001") {
+     *     print("Support agent is typing a response...")
+     * }
+     * ```
      */
     var current: Set<String> { get }
 
     /**
-     * Keystroke indicates that the current user is typing. This will emit a ``TypingEvent`` event to inform listening clients and begin a timer,
-     * once the timer expires, another ``TypingEvent`` event will be emitted. In both cases ``TypingEvent/currentlyTyping``
-     * contains a list of userIds who are currently typing.
+     * Sends a typing started event to notify other users that the current user is typing.
      *
-     * The heartbeat throttle interval is configurable through the ``TypingOptions/heartbeatThrottle`` parameter.
-     * It will show the current user as typing for the duration of the throttle, plus an internally defined timeout.
-     * Any keystrokes within the throttle period will be ignored, with no new events being sent.
+     * Events are throttled according to the `heartbeatThrottleMs` room option to prevent
+     * excessive network traffic. If called within the throttle interval, the operation
+     * becomes a no-op. Multiple rapid calls are serialized to maintain consistency.
      *
-     * - Throws: An `ErrorInfo`.
+     * - Note:
+     *   - The connection must be in the `connected` state.
+     *   - Calls to `keystroke()` and `stop()` are serialized and resolve in order.
+     *   - The most recent operation always determines the final typing state.
+     *   - The room must be attached to send typing events.
+     *
+     * - Throws: ``ErrorInfo`` if the operation fails to send the event
+     *
+     * ## Example
+     *
+     * ```swift
+     * import Ably
+     * import AblyChat
+     *
+     * let chatClient: ChatClient // existing ChatClient instance
+     *
+     * // Get a room with default options and attach to it
+     * let room = try await chatClient.rooms.get(named: "project-discussion", options: RoomOptions())
+     * try await room.attach()
+     *
+     * do {
+     *     try await room.typing.keystroke()
+     * } catch {
+     *     print("Typing indicator error: \(error)")
+     * }
+     * ```
      */
     func keystroke() async throws(ErrorInfo)
 
     /**
-     * Stop indicates that the current user has stopped typing. This will emit a ``TypingEvent`` event to inform listening clients,
-     * and immediately clear the typing timeout timer.
+     * Sends a typing stopped event to notify other users that the current user has stopped typing.
      *
-     * - Throws: An `ErrorInfo`.
+     * If the user is not currently typing, this operation is a no-op. Multiple rapid calls
+     * are serialized to maintain consistency, with the most recent operation determining
+     * the final state.
+     *
+     * - Note:
+     *   - The connection must be in the `connected` state.
+     *   - Calls to `keystroke()` and `stop()` are serialized and resolve in order.
+     *   - The room must be attached to send typing events.
+     *
+     * - Throws: ``ErrorInfo`` if the operation fails to send the event
+     *
+     * ## Example
+     *
+     * ```swift
+     * import Ably
+     * import AblyChat
+     *
+     * let chatClient: ChatClient // existing ChatClient instance
+     *
+     * // Get a room with default options and attach to it
+     * let room = try await chatClient.rooms.get(named: "customer-support")
+     * try await room.attach()
+     *
+     * // Start typing in the room
+     * try await room.typing.keystroke()
+     *
+     * // User sends a message, or deletes their draft, etc.
+     * try await room.typing.stop()
+     * ```
      */
     func stop() async throws(ErrorInfo)
 }
@@ -84,20 +201,22 @@ public extension Typing {
 }
 
 /**
- * Represents a typing event.
+ * Represents a change in the state of current typers.
  */
 public struct TypingSetEvent: Sendable {
-    // swiftlint:disable:next missing_docs
+    /**
+     * The type of the event.
+     */
     public var type: TypingSetEventType
 
     /**
-     * Get a set of clientIds that are currently typing.
+     * The set of clientIds that are currently typing.
      */
     public var currentlyTyping: Set<String>
 
     /**
-     * Get the details of the operation that modified the typing event.
-      */
+     * Represents the change that resulted in the new set of typers.
+     */
     public var change: Change
 
     /// Memberwise initializer to create a `TypingSetEvent`.
@@ -109,11 +228,18 @@ public struct TypingSetEvent: Sendable {
         self.change = change
     }
 
-    // swiftlint:disable:next missing_docs
+    /**
+     * Represents the change that resulted in the new set of typers.
+     */
     public struct Change: Sendable {
-        // swiftlint:disable:next missing_docs
+        /**
+         * The client ID of the user who stopped/started typing.
+         */
         public var clientID: String
-        // swiftlint:disable:next missing_docs
+
+        /**
+         * Type of the change.
+         */
         public var type: TypingEventType
 
         /// Memberwise initializer to create a `Change`.

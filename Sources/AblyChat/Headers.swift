@@ -2,13 +2,13 @@ import Ably
 
 /// A value that can be used in ``Headers``. It is the same as ``JSONValue`` except it does not have the `object` or `array` cases.
 public enum HeadersValue: Sendable, Equatable {
-    // swiftlint:disable:next missing_docs
+    /// Represents a string header value.
     case string(String)
-    // swiftlint:disable:next missing_docs
+    /// Represents a numeric header value.
     case number(Double)
-    // swiftlint:disable:next missing_docs
+    /// Represents a boolean header value.
     case bool(Bool)
-    // swiftlint:disable:next missing_docs
+    /// Represents a null header value.
     case null
 
     // MARK: - Convenience getters for associated values
@@ -51,28 +51,28 @@ public enum HeadersValue: Sendable, Equatable {
 }
 
 extension HeadersValue: ExpressibleByStringLiteral {
-    // swiftlint:disable:next missing_docs
+    /// Creates a HeadersValue from a string literal.
     public init(stringLiteral value: String) {
         self = .string(value)
     }
 }
 
 extension HeadersValue: ExpressibleByIntegerLiteral {
-    // swiftlint:disable:next missing_docs
+    /// Creates a HeadersValue from an integer literal.
     public init(integerLiteral value: Int) {
         self = .number(Double(value))
     }
 }
 
 extension HeadersValue: ExpressibleByFloatLiteral {
-    // swiftlint:disable:next missing_docs
+    /// Creates a HeadersValue from a floating-point literal.
     public init(floatLiteral value: Double) {
         self = .number(value)
     }
 }
 
 extension HeadersValue: ExpressibleByBooleanLiteral {
-    // swiftlint:disable:next missing_docs
+    /// Creates a HeadersValue from a boolean literal.
     public init(booleanLiteral value: Bool) {
         self = .bool(value)
     }

@@ -8,114 +8,347 @@ import Ably
  */
 @MainActor
 public protocol Messages: AnyObject, Sendable {
-    // swiftlint:disable:next missing_docs
+    /// The message reactions type for managing reactions to individual messages.
     associatedtype Reactions: MessageReactions
-    // swiftlint:disable:next missing_docs
+    /// The subscription response type returned when subscribing to message events.
     associatedtype SubscribeResponse: MessageSubscriptionResponse
-    // swiftlint:disable:next missing_docs
+    /// The paginated result type for message history queries.
     associatedtype HistoryResult: PaginatedResult<Message>
 
     /**
-     * Subscribe to new messages in this chat room.
+     * Subscribe to chat message events in this room.
+     *
+     * This method allows you to listen for chat message events and provides access to
+     * historical messages that occurred before the subscription was established.
+     *
+     * - Note: The room must be attached for the listener to receive new message events.
      *
      * - Parameters:
-     *   - callback: The listener closure for capturing room `ChatMessageEvent` events.
+     *   - callback: A callback function that will be invoked when chat message events occur.
      *
-     * - Returns: A subscription that can be used to unsubscribe from `ChatMessageEvent` events.
+     * - Returns: A ``MessageSubscriptionResponse`` object that provides:
+     *   - `unsubscribe()`: Method to stop listening for message events
+     *   - `historyBeforeSubscribe()`: Method to retrieve messages sent before subscription
+     *
+     * ## Example
+     *
+     * ```swift
+     * import Ably
+     * import AblyChat
+     *
+     * let chatClient: ChatClient // existing ChatClient instance
+     *
+     * // Get a room and subscribe to messages
+     * let room = try await chatClient.rooms.get("general-chat")
+     *
+     * let subscription = room.messages.subscribe { event in
+     *     print("Message \(event.type): \(event.message.text)")
+     *     print("From: \(event.message.clientID)")
+     *     print("At: \(event.message.timestamp)")
+     *     // Handle different event types
+     * }
+     *
+     * // Attach to the room to start receiving events
+     * try await room.attach()
+     *
+     * // Later, unsubscribe when done
+     * subscription.unsubscribe()
+     * ```
      */
     func subscribe(_ callback: @escaping @MainActor (ChatMessageEvent) -> Void) -> SubscribeResponse
 
     /**
-     * Get messages that have been previously sent to the chat room, based on the provided options.
+     * Get messages that have been previously sent to the chat room.
+     *
+     * This method retrieves historical messages based on the provided query options,
+     * allowing you to paginate through message history, filter by time ranges,
+     * and control the order of results.
+     *
+     * - Note: This method uses the Ably Chat REST API and so does not require the room
+     * to be attached to be called.
      *
      * - Parameters:
-     *   - params: Parameters for the query.
+     *   - params: Query parameters to filter and control the message retrieval
      *
-     * - Returns: A paginated result object that can be used to fetch more messages if available.
+     * - Returns: A ``PaginatedResult`` containing an array of ``Message`` objects
+     *   and methods for pagination control
+     *
+     * - Throws: ``ErrorInfo`` with code 40003 (invalid argument) when the query fails due to invalid parameters
+     *
+     * ## Example
+     *
+     * ```swift
+     * import Ably
+     * import AblyChat
+     *
+     * let chatClient: ChatClient // existing ChatClient instance
+     *
+     * let room = try await chatClient.rooms.get("project-updates")
+     *
+     * // Retrieve message history with pagination
+     * do {
+     *     var result = try await room.messages.history(withParams: HistoryParams(
+     *         limit: 50,
+     *         orderBy: .newestFirst
+     *     ))
+     *
+     *     print("Retrieved \(result.items.count) messages")
+     *     for message in result.items {
+     *         print("\(message.clientID): \(message.text)")
+     *     }
+     *
+     *     // Paginate through additional pages if available
+     *     while result.hasNext {
+     *         if let nextPage = try await result.next() {
+     *             print("Next page has \(nextPage.items.count) messages")
+     *             for message in nextPage.items {
+     *                 print("\(message.clientID): \(message.text)")
+     *             }
+     *             result = nextPage
+     *         } else {
+     *             break // No more pages
+     *         }
+     *     }
+     *     print("All message history retrieved")
+     * } catch {
+     *     print("Failed to retrieve message history: \(error)")
+     * }
+     * ```
      */
     func history(withParams params: HistoryParams) async throws(ErrorInfo) -> HistoryResult
 
     /**
-     * Send a message in the chat room.
+     * Send a message to the chat room.
      *
-     * This method uses the Ably Chat API endpoint for sending messages.
+     * This method publishes a new message to the chat room using the Ably Chat API.
+     * The message will be delivered to all subscribers in real-time.
+     *
+     * - Important: The function can return before OR after the message is received
+     * from the realtime channel. This means subscribers may see the message before
+     * the send operation completes.
+     *
+     * - Note: This method uses the Ably Chat REST API and so does not require the room
+     * to be attached to be called.
      *
      * - Parameters:
-     *   - params: An object containing `text`, `headers` and `metadata` for the message.
+     *   - params: Message parameters containing the text and optional metadata/headers
      *
-     * - Returns: The published message, with the action of the message set as `.messageCreate`.
+     * - Returns: The sent ``Message`` object
      *
-     * - Note: It is possible to receive your own message via the messages subscription before this method returns.
+     * - Throws: ``ErrorInfo`` when the message fails to send due to network issues, authentication problems, or rate limiting
+     *
+     * ## Example
+     *
+     * ```swift
+     * import Ably
+     * import AblyChat
+     *
+     * let chatClient: ChatClient // existing ChatClient instance
+     *
+     * let room = try await chatClient.rooms.get("general-chat")
+     *
+     * // Send a message with metadata and headers
+     * do {
+     *     let message = try await room.messages.send(withParams: .init(
+     *         text: "Hello, everyone! 👋",
+     *         metadata: ["priority": "high", "category": "greeting"],
+     *         headers: ["content-type": "text", "language": "en"]
+     *     ))
+     *
+     *     print("Message sent successfully: \(message.serial)")
+     * } catch {
+     *     print("Failed to send message: \(error)")
+     * }
+     * ```
      */
     func send(withParams params: SendMessageParams) async throws(ErrorInfo) -> Message
 
     /**
      * Update a message in the chat room.
      *
-     * Note that this method may return before OR after the updated message is
-     * received from the realtime channel. This means you may see the update that
-     * was just sent in a callback to `subscribe` before this method returns.
+     * This method modifies an existing message's content, metadata, or headers.
+     * The update creates a new version of the message while preserving the original
+     * serial identifier. Subscribers will receive an update event in real-time.
      *
-     * NOTE: The Message instance returned by this method is the state of the message as a result of the update operation.
-     * If you have a subscription to message events via `subscribe`, you should discard the message instance returned by
-     * this method and use the event payloads from the subscription instead.
+     * - Important: The function can return before OR after the update event is received
+     * from the realtime channel. Subscribers may see the update event before this method
+     * completes.
      *
-     * This method uses PUT-like semantics: if headers and metadata are omitted from the updateParams, then
-     * the existing headers and metadata are replaced with the empty objects.
+     * - Note:
+     *   - This method uses PUT-like semantics. If metadata or headers are omitted
+     *     from updateParams, they will be replaced with empty objects, not merged with existing values.
+     *   - The returned Message instance represents the state after the update. If you
+     *     have active subscriptions, use the event payloads from those subscriptions instead
+     *     of the returned instance for consistency.
+     *   - This method uses the Ably Chat REST API and so does not require the room
+     *     to be attached to be called.
      *
      * - Parameters:
-     *   - serial: The serial of the message to update.
-     *   - updateParams: The parameters for updating the message.
+     *   - serial: The unique identifier of the message to update.
+     *   - params: The new message content and properties.
      *   - details: Optional details to record about the update action.
      *
-     * - Returns: The updated message.
+     * - Returns: The updated ``Message`` object with `isUpdated` set to true and update metadata populated
+     *
+     * - Throws: ``ErrorInfo`` when the message is not found, user lacks permissions, or network/server errors occur
+     *
+     * ## Example
+     *
+     * ```swift
+     * import Ably
+     * import AblyChat
+     *
+     * let chatClient: ChatClient // existing ChatClient instance
+     *
+     * let room = try await chatClient.rooms.get("team-updates")
+     *
+     * // Update a message with corrected text and tracking
+     * let messageSerial = "01726585978590-001@abcdefghij:001"
+     *
+     * do {
+     *     let updatedMessage = try await room.messages.update(
+     *         withSerial: messageSerial,
+     *         params: .init(
+     *             text: "Meeting is scheduled for 3 PM (corrected time)"
+     *         ),
+     *         details: .init(
+     *             description: "Corrected meeting time",
+     *             metadata: ["editTimestamp": "\(Date())"]
+     *         )
+     *     )
+     *
+     *     print("Updated text: \(updatedMessage.text)")
+     * } catch let error where error.code == 40400 {
+     *     print("Message not found: \(messageSerial)")
+     * } catch let error where error.code == 40300 {
+     *     print("Permission denied: Cannot update this message")
+     * } catch {
+     *     print("Failed to update message: \(error)")
+     * }
+     * ```
      */
     func update(withSerial serial: String, params: UpdateMessageParams, details: OperationDetails?) async throws(ErrorInfo) -> Message
 
     /**
      * Delete a message in the chat room.
      *
-     * This method uses the Ably Chat API REST endpoint for deleting messages.
-     * It performs a `soft` delete, meaning the message is marked as deleted.
+     * This method performs a "soft delete" on a message, marking it as deleted rather
+     * than permanently removing it. The deleted message will still be visible in message
+     * history but will be flagged as deleted. Subscribers will receive a deletion event
+     * in real-time.
      *
-     * Note that this method may return before OR after the message is deleted
-     * from the realtime channel. This means you may see the message that was just
-     * deleted in a callback to `subscribe` before this method returns.
+     * - Important: The function can return before OR after the deletion event is received
+     * from the realtime channel. Subscribers may see the deletion event before this method
+     * completes.
      *
-     * NOTE: The Message instance returned by this method is the state of the message as a result of the delete operation.
-     * If you have a subscription to message events via `subscribe`, you should discard the message instance returned by
-     * this method and use the event payloads from the subscription instead.
-     *
-     * Should you wish to restore a deleted message, and providing you have the appropriate permissions,
-     * you can simply send an update to the original message.
-     * Note: This is subject to change in future versions, whereby a new permissions model will be introduced
-     * and a deleted message may not be restorable in this way.
+     * - Note:
+     *   - The returned Message instance represents the state after deletion. If you
+     *     have active subscriptions, use the event payloads from those subscriptions instead
+     *     of the returned instance for consistency.
+     *   - This method uses the Ably Chat REST API and so does not require the room
+     *     to be attached to be called.
      *
      * - Parameters:
-     *   - serial: The serial of the message to delete.
+     *   - serial: The unique identifier of the message to delete.
      *   - details: Optional details to record about the delete action.
      *
-     * - Returns: The deleted message.
+     * - Returns: The deleted ``Message`` object with `isDeleted` set to true and deletion metadata populated
+     *
+     * - Throws: ``ErrorInfo`` when the message is not found, user lacks permissions, or network/server errors occur
+     *
+     * ## Example
+     *
+     * ```swift
+     * import Ably
+     * import AblyChat
+     *
+     * let chatClient: ChatClient // existing ChatClient instance
+     *
+     * let room = try await chatClient.rooms.get("public-chat")
+     *
+     * // Serial of the message to delete
+     * let messageSerial = "01726585978590-001@abcdefghij:001"
+     *
+     * do {
+     *     let deletedMessage = try await room.messages.delete(
+     *         withSerial: messageSerial,
+     *         details: .init(
+     *             description: "Inappropriate content removed by moderator",
+     *             metadata: [
+     *                 "reason": "policy-violation",
+     *                 "timestamp": "\(Date())"
+     *             ]
+     *         )
+     *     )
+     *
+     *     print("Deleted message: \(deletedMessage.text)")
+     * } catch let error where error.code == 40400 {
+     *     print("Message not found: \(messageSerial)")
+     * } catch let error where error.code == 40300 {
+     *     print("Permission denied: Cannot delete this message")
+     * } catch {
+     *     print("Failed to delete message: \(error)")
+     * }
+     * ```
      */
     func delete(withSerial serial: String, details: OperationDetails?) async throws(ErrorInfo) -> Message
 
     /**
-     * Get a message by its serial.
+     * Get a specific message by its unique serial identifier.
+     *
+     * This method retrieves a single message using its serial, which is a unique
+     * identifier assigned to each message when it's created.
+     *
+     * - Note: This method uses the Ably Chat REST API and so does not require the room
+     * to be attached to be called.
      *
      * - Parameters:
-     *   - serial: The serial of the message to get.
+     *   - serial: The unique serial identifier of the message to retrieve.
      *
-     * - Returns: The message with the specified serial.
+     * - Returns: The ``Message`` object
+     *
+     * - Throws: ``ErrorInfo`` when the message is not found or network/server errors occur
+     *
+     * ## Example
+     *
+     * ```swift
+     * import Ably
+     * import AblyChat
+     *
+     * let chatClient: ChatClient // existing ChatClient instance
+     *
+     * let room = try await chatClient.rooms.get("customer-support")
+     *
+     * // Get a specific message by its serial
+     * let messageSerial = "01726585978590-001@abcdefghij:001"
+     *
+     * do {
+     *     let message = try await room.messages.get(withSerial: messageSerial)
+     *
+     *     print("Serial: \(message.serial)")
+     *     print("From: \(message.clientID)")
+     *     print("Text: \(message.text)")
+     *
+     * } catch let error where error.statusCode == 404 {
+     *     print("Message not found: \(messageSerial)")
+     * } catch {
+     *     print("Failed to retrieve message: \(error)")
+     * }
+     * ```
      */
     func get(withSerial serial: String) async throws(ErrorInfo) -> Message
 
     /**
-     * Add, delete, and subscribe to message reactions.
+     * Send, delete, and subscribe to message reactions.
+     *
+     * This property provides access to the message reactions functionality, allowing you to
+     * add reactions to specific messages, remove reactions, and subscribe to reaction events
+     * in real-time.
      */
     var reactions: Reactions { get }
 }
 
-// swiftlint:disable:next missing_docs
+/// Extension providing AsyncSequence-based subscription methods for messages.
 public extension Messages {
     /**
      * Subscribe to new messages in this chat room.
@@ -194,7 +427,14 @@ public struct SendMessageParams: Sendable {
      */
     public var headers: MessageHeaders?
 
-    // swiftlint:disable:next missing_docs
+    /**
+     * Creates a new SendMessageParams instance.
+     *
+     * - Parameters:
+     *   - text: The text of the message
+     *   - metadata: Optional metadata to attach to the message
+     *   - headers: Optional headers for the message
+     */
     public init(text: String, metadata: MessageMetadata? = nil, headers: MessageHeaders? = nil) {
         self.text = text
         self.metadata = metadata
@@ -229,7 +469,13 @@ public struct OperationDetails: Sendable {
     /// Optional metadata that will be added to the action. Defaults to empty.
     public var metadata: MessageOperationMetadata?
 
-    // swiftlint:disable:next missing_docs
+    /**
+     * Creates a new OperationDetails instance.
+     *
+     * - Parameters:
+     *   - description: Optional description for the operation
+     *   - metadata: Optional metadata to attach to the operation
+     */
     public init(description: String? = nil, metadata: MessageOperationMetadata? = nil) {
         self.description = description
         self.metadata = metadata
@@ -237,14 +483,20 @@ public struct OperationDetails: Sendable {
 }
 
 /**
- * Options for querying messages in a chat room.
+ * Parameters for querying messages in a chat room.
  */
 public struct HistoryParams: Sendable {
-    // swiftlint:disable:next missing_docs
+    /**
+     * The order in which results should be returned when performing a paginated query (e.g. message history).
+     */
     public enum OrderBy: Sendable {
-        // swiftlint:disable:next missing_docs
+        /**
+         * Return results in ascending order (oldest first).
+         */
         case oldestFirst
-        // swiftlint:disable:next missing_docs
+        /**
+         * Return results in descending order (newest first).
+         */
         case newestFirst
     }
 
@@ -282,7 +534,15 @@ public struct HistoryParams: Sendable {
     // (CHA-M5g) The subscribers subscription point must be additionally specified (internally, by us) in the fromSerial query parameter.
     internal var fromSerial: String?
 
-    // swiftlint:disable:next missing_docs
+    /**
+     * Creates a new HistoryParams instance.
+     *
+     * - Parameters:
+     *   - start: The start of the time window to query from
+     *   - end: The end of the time window to query from
+     *   - limit: The maximum number of messages to return
+     *   - orderBy: The direction to query messages in
+     */
     public init(start: Date? = nil, end: Date? = nil, limit: Int? = nil, orderBy: HistoryParams.OrderBy? = nil) {
         self.start = start
         self.end = end
@@ -320,7 +580,14 @@ public struct HistoryBeforeSubscribeParams: Sendable {
      */
     public var limit: Int?
 
-    // swiftlint:disable:next missing_docs
+    /**
+     * Creates a new HistoryBeforeSubscribeParams instance.
+     *
+     * - Parameters:
+     *   - start: The start of the time window to query from
+     *   - end: The end of the time window to query from
+     *   - limit: The maximum number of messages to return
+     */
     public init(start: Date? = nil, end: Date? = nil, limit: Int? = nil) {
         self.start = start
         self.end = end
@@ -368,21 +635,38 @@ internal extension HistoryParams {
     }
 }
 
-/// Event type for chat message subscription.
+/**
+ * All chat message events.
+ */
 public enum ChatMessageEventType: Sendable {
-    // swiftlint:disable:next missing_docs
+    /**
+     * Fires when a new chat message is received.
+     */
     case created
-    // swiftlint:disable:next missing_docs
+
+    /**
+     * Fires when a chat message is updated.
+     */
     case updated
-    // swiftlint:disable:next missing_docs
+
+    /**
+     * Fires when a chat message is deleted.
+     */
     case deleted
 }
 
-/// Event emitted by message subscriptions, containing the type and the message.
+/**
+ * Payload for a message event.
+ */
 public struct ChatMessageEvent: Sendable {
-    // swiftlint:disable:next missing_docs
+    /**
+     * The type of the message event.
+     */
     public var type: ChatMessageEventType
-    // swiftlint:disable:next missing_docs
+
+    /**
+     * The message that was received.
+     */
     public var message: Message
 
     /// Memberwise initializer to create a `ChatMessageEvent`.
@@ -410,7 +694,7 @@ public struct ChatMessageEvent: Sendable {
 ///
 /// You should only iterate over a given `MessageSubscriptionResponseAsyncSequence` once; the results of iterating more than once are undefined.
 public final class MessageSubscriptionResponseAsyncSequence<HistoryResult: PaginatedResult<Message>>: Sendable, AsyncSequence {
-    // swiftlint:disable:next missing_docs
+    /// The element type produced by this async sequence.
     public typealias Element = ChatMessageEvent
 
     private let subscription: SubscriptionAsyncSequence<Element>
@@ -427,8 +711,13 @@ public final class MessageSubscriptionResponseAsyncSequence<HistoryResult: Pagin
         self.historyBeforeSubscribe = historyBeforeSubscribe
     }
 
-    // used for testing
-    // swiftlint:disable:next missing_docs
+    /**
+     * Creates a mock instance for testing purposes.
+     *
+     * - Parameters:
+     *   - mockAsyncSequence: An underlying async sequence to use for iteration
+     *   - mockHistoryBeforeSubscribe: A mock implementation of the history before subscribe functionality
+     */
     public init<Underlying: AsyncSequence & Sendable>(mockAsyncSequence: Underlying, mockHistoryBeforeSubscribe: @escaping @Sendable (HistoryBeforeSubscribeParams) async throws(ErrorInfo) -> HistoryResult) where Underlying.Element == Element {
         subscription = .init(mockAsyncSequence: mockAsyncSequence)
         historyBeforeSubscribe = mockHistoryBeforeSubscribe
@@ -443,12 +732,12 @@ public final class MessageSubscriptionResponseAsyncSequence<HistoryResult: Pagin
         subscription.addTerminationHandler(onTermination)
     }
 
-    // swiftlint:disable:next missing_docs
+    /// See ``MessageSubscriptionResponse/historyBeforeSubscribe(withParams:)``
     public func historyBeforeSubscribe(withParams params: HistoryBeforeSubscribeParams) async throws(ErrorInfo) -> HistoryResult {
         try await historyBeforeSubscribe(params)
     }
 
-    // swiftlint:disable:next missing_docs
+    /// The iterator type for this async sequence.
     public struct AsyncIterator: AsyncIteratorProtocol {
         private var subscriptionIterator: SubscriptionAsyncSequence<Element>.AsyncIterator
 
@@ -456,13 +745,13 @@ public final class MessageSubscriptionResponseAsyncSequence<HistoryResult: Pagin
             self.subscriptionIterator = subscriptionIterator
         }
 
-        // swiftlint:disable:next missing_docs
+        /// Advances to the next element and returns it, or nil if no next element exists.
         public mutating func next() async -> Element? {
             await subscriptionIterator.next()
         }
     }
 
-    // swiftlint:disable:next missing_docs
+    /// Creates an async iterator for iterating over message events.
     public func makeAsyncIterator() -> AsyncIterator {
         .init(subscriptionIterator: subscription.makeAsyncIterator())
     }

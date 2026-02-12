@@ -5,139 +5,398 @@ import Ably
  */
 @MainActor
 public protocol Room<Channel>: AnyObject, Sendable {
-    // swiftlint:disable:next missing_docs
+    /// The underlying Ably Realtime channel type used by this room.
     associatedtype Channel
 
-    // swiftlint:disable:next missing_docs
+    /// The messages feature type for sending and receiving chat messages.
     associatedtype Messages: AblyChat.Messages
-    // swiftlint:disable:next missing_docs
+    /// The presence feature type for managing user presence in the room.
     associatedtype Presence: AblyChat.Presence
-    // swiftlint:disable:next missing_docs
+    /// The room reactions feature type for sending and receiving room-level reactions.
     associatedtype Reactions: AblyChat.RoomReactions
-    // swiftlint:disable:next missing_docs
+    /// The typing indicators feature type for managing typing events.
     associatedtype Typing: AblyChat.Typing
-    // swiftlint:disable:next missing_docs
+    /// The occupancy feature type for monitoring room occupancy metrics.
     associatedtype Occupancy: AblyChat.Occupancy
 
-    // swiftlint:disable:next missing_docs
+    /// The subscription type for room status change listeners.
     associatedtype StatusSubscription: AblyChat.StatusSubscription
 
     /**
      * The unique identifier of the room.
      *
-     * - Returns: The room identifier.
+     * - Returns: The room name as provided when the room was created
+     *
+     * ## Example
+     *
+     * ```swift
+     * let room = try await chatClient.rooms.get("sports-discussion")
+     * print("Connected to room: \(room.name)")
+     *
+     * // Output: Connected to room: sports-discussion
+     * ```
      */
     var name: String { get }
 
     /**
-     * Allows you to send, subscribe-to and query messages in the room.
+     * Provides access to the messages feature for sending, receiving, and querying chat messages.
      *
-     * - Returns: The messages instance for the room.
+     * - Returns: The ``Messages`` instance for this room
+     *
+     * ## Example
+     *
+     * ```swift
+     * let room = try await chatClient.rooms.get("team-chat")
+     *
+     * // Access messages feature
+     * let messages = room.messages
+     * ```
      */
     var messages: Messages { get }
 
     /**
-     * Allows you to subscribe to presence events in the room.
+     * Provides access to the presence feature for tracking user presence state.
      *
-     * - Note: To access this property if presence is not enabled for the room is a programmer error, and will lead to `fatalError` being called.
+     * - Returns: The Presence instance for this room
      *
-     * - Returns: The presence instance for the room.
+     * ## Example
+     *
+     * ```swift
+     * let room = try await chatClient.rooms.get("meeting-room")
+     *
+     * // Access presence feature
+     * let presence = room.presence
+     * ```
      */
     var presence: Presence { get }
 
     /**
-     * Allows you to interact with room-level reactions.
+     * Provides access to room-level reactions for sending ephemeral reactions.
      *
-     * - Note: To access this property if presence is not enabled for the room is a programmer error, and will lead to `fatalError` being called.
+     * - Returns: The ``RoomReactions`` instance for this room
      *
-     * - Returns: The room reactions instance for the room.
+     * ## Example
+     *
+     * ```swift
+     * let room = try await chatClient.rooms.get("live-stream")
+     *
+     * // Access room reactions feature
+     * let reactions = room.reactions
+     * ```
      */
     var reactions: Reactions { get }
 
     /**
-     * Allows you to interact with typing events in the room.
+     * Provides access to the typing indicators feature for showing who is currently typing.
      *
-     * - Note: To access this property if presence is not enabled for the room is a programmer error, and will lead to `fatalError` being called.
+     * - Returns: The ``Typing`` instance for this room
      *
-     * - Returns: The typing instance for the room.
+     * ## Example
+     *
+     * ```swift
+     * let room = try await chatClient.rooms.get("support-chat")
+     *
+     * // Access typing feature
+     * let typing = room.typing
+     * ```
      */
     var typing: Typing { get }
 
     /**
-     * Allows you to interact with occupancy metrics for the room.
+     * Provides access to room occupancy metrics for tracking connection and presence counts.
      *
-     * - Note: To access this property if presence is not enabled for the room is a programmer error, and will lead to `fatalError` being called.
+     * - Returns: The ``Occupancy`` instance for this room
      *
-     * - Returns: The occupancy instance for the room.
+     * ## Example
+     *
+     * ```swift
+     * let room = try await chatClient.rooms.get("webinar-room")
+     *
+     * // Access occupancy feature
+     * let occupancy = room.occupancy
+     * ```
      */
     var occupancy: Occupancy { get }
 
     /**
-     * The current status of the room.
+     * The current lifecycle status of the room.
      *
-     * - Returns: The current room status.
+     * - Returns: The current ``RoomStatus`` value
+     *
+     * ## Example
+     *
+     * ```swift
+     * let room = try await chatClient.rooms.get("game-lobby")
+     *
+     * // Check room status
+     * if room.status == .attached {
+     *     print("Room is connected and ready")
+     * } else if room.status == .failed {
+     *     print("Room connection failed")
+     * }
+     * ```
      */
     var status: RoomStatus { get }
 
     /**
-     * The current error, if any, that caused the room to enter the current status.
+     * The error that caused the room to enter its current status, if any.
+     *
+     * - Returns: ErrorInfo if an error caused the current status, nil otherwise
+     *
+     * ## Example
+     *
+     * ```swift
+     * let room = try await chatClient.rooms.get("private-chat")
+     *
+     * if let error = room.error {
+     *     print("Room error: \(error.message)")
+     *     print("Error code: \(error.code)")
+     *
+     *     // Handle specific error codes
+     *     if error.code == 40300 {
+     *         showMessage("Access denied to this room")
+     *     } else {
+     *         showMessage("Connection failed: \(error.message)")
+     *     }
+     * }
+     * ```
      */
     var error: ErrorInfo? { get }
 
     /**
-     * Subscribes a given listener to the room status changes.
+     * Registers a listener to be notified of room status changes.
+     *
+     * Status changes indicate the room's connection lifecycle. Use this to
+     * monitor room health and handle connection issues over time.
      *
      * - Parameters:
-     *   - callback: The listener closure for capturing ``RoomStatusChange`` events.
+     *   - callback: Callback invoked when the room status changes
      *
-     * - Returns: A subscription that can be used to unsubscribe from ``RoomStatusChange`` events.
+     * - Returns: Subscription object with an unsubscribe method
+     *
+     * ## Example
+     *
+     * ```swift
+     * import Ably
+     * import AblyChat
+     *
+     * let chatClient: ChatClient // existing ChatClient instance
+     *
+     * let room = try await chatClient.rooms.get("support-chat")
+     *
+     * // Monitor room status changes
+     * let statusSubscription = room.onStatusChange { change in
+     *     print("Room status: \(change.previous) -> \(change.current)")
+     *
+     *     // Handle different status transitions
+     *     switch change.current {
+     *     case .attached:
+     *         print("Room is now connected")
+     *         enableChatUI()
+     *         showOnlineIndicator()
+     *
+     *     case .attaching:
+     *         print("Connecting to room...")
+     *         showConnectingSpinner()
+     *     default:
+     *         break
+     *     }
+     * }
+     *
+     * // Clean up when done
+     * statusSubscription.off()
+     * ```
      */
     @discardableResult
     func onStatusChange(_ callback: @escaping @MainActor (RoomStatusChange) -> Void) -> StatusSubscription
 
     /**
-     * Subscribes a given listener to a detected discontinuity.
+     * Registers a handler for discontinuity events in the room's connection.
+     *
+     * A discontinuity occurs when the connection is interrupted and cannot resume
+     * from its previous state, potentially resulting in missed messages or events.
+     * Use this to detect gaps in the event stream and take corrective action.
+     *
+     * - Note:
+     *   - Discontinuities require fetching missed messages via history.
+     *   - Message subscriptions automatically reset their position on discontinuity, see ``MessageSubscriptionResponse/historyBeforeSubscribe(withParams:)`` for more information.
+     *   - You should subscribe to discontinuities before attaching to the room.
      *
      * - Parameters:
-     *   - callback: The listener closure for capturing discontinuity events.
+     *   - handler: Callback invoked when a discontinuity is detected
      *
-     * - Returns: A subscription that can be used to unsubscribe from discontinuity events.
+     * - Returns: Subscription object with an unsubscribe method
+     *
+     * ## Example
+     *
+     * ```swift
+     * import Ably
+     * import AblyChat
+     *
+     * let chatClient: ChatClient // existing ChatClient instance
+     *
+     * let room = try await chatClient.rooms.get(named: "critical-updates")
+     *
+     * // Handle discontinuities to ensure no messages are missed
+     * let discontinuitySubscription = room.onDiscontinuity { reason in
+     *     print("Discontinuity detected: \(reason)")
+     *
+     *     // Show warning to user
+     *     showDiscontinuityWarning("Connection interrupted - fetching missed messages...")
+     *
+     *     // You may also want to fetch missed messages to fill gaps during the discontinuity.
+     * }
+     *
+     * // Attach to the room to start receiving events
+     * try await room.attach()
+     *
+     * // Clean up
+     * discontinuitySubscription.off()
+     * ```
      */
     @discardableResult
     func onDiscontinuity(_ callback: @escaping @MainActor (ErrorInfo) -> Void) -> StatusSubscription
 
     /**
-     * Attaches to the room to receive events in realtime.
+     * Attaches to the room to begin receiving events.
      *
-     * If a room fails to attach, it will enter either the ``RoomStatus/suspended(error:)`` or ``RoomStatus/failed(error:)`` state.
+     * Establishes an attachment to the room, enabling message delivery,
+     * presence updates, typing, and other events. The room must be
+     * attached before non-REST-based operations (like `presence.enter()`) can be performed.
      *
-     * If the room enters the failed state, then it will not automatically retry attaching and intervention is required.
+     * - Note:
+     *   - If attachment fails, the room enters ``RoomStatus/suspended`` or ``RoomStatus/failed`` state.
+     *   - Suspended rooms automatically retry; Failed rooms require manual intervention.
+     *   - Throws an ``ErrorInfo`` for suspended states, but the room will retry attaching after a delay.
      *
-     * If the room enters the suspended state, then the call to attach will throw `ErrorInfo` with the cause of the suspension. However,
-     * the room will automatically retry attaching after a delay.
+     * - Throws: ``ErrorInfo`` if the room enters suspended state (auto-retry will occur), or if the room enters failed state (manual intervention required)
      *
-     * - Throws: An `ErrorInfo`.
+     * ## Example
+     *
+     * ```swift
+     * import Ably
+     * import AblyChat
+     *
+     * let chatClient: ChatClient // existing ChatClient instance
+     *
+     * let room = try await chatClient.rooms.get("team-standup")
+     *
+     * // Attach to room with error handling
+     * do {
+     *     try await room.attach()
+     *     print("Successfully attached to room")
+     *
+     *     // Now safe to use room features
+     *     try await room.presence.enter()
+     *
+     *     // And subscriptions will start receiving events
+     *     room.messages.subscribe { event in
+     *         print("New message: \(event.message)")
+     *     }
+     * } catch {
+     *     print("Failed to attach to room: \(error)")
+     *
+     *     // Check current room status
+     *     if room.status == .suspended {
+     *         print("Room suspended, will retry automatically")
+     *     } else if room.status == .failed {
+     *         print("Room failed, manual intervention needed")
+     *     }
+     * }
+     * ```
      */
     func attach() async throws(ErrorInfo)
 
     /**
-     * Detaches from the room to stop receiving events in realtime.
+     * Detaches from the room to stop receiving chat events.
      *
-     * - Throws: An `ErrorInfo`.
+     * Subscriptions remain registered but won't receive events until the room is
+     * reattached. Use this to gracefully detach when leaving a chat view. This command leaves all
+     * subscriptions intact, so they will resume receiving events when the room is reattached.
+     *
+     * - Throws: ``ErrorInfo``
+     *
+     * ## Example
+     *
+     * ```swift
+     * import Ably
+     * import AblyChat
+     *
+     * let chatClient: ChatClient // existing ChatClient instance
+     *
+     * // Get a room with default options and attach to it
+     * let room = try await chatClient.rooms.get("customer-support")
+     * try await room.attach()
+     *
+     * // Do chat operations...
+     *
+     * do {
+     *     // Detach from room
+     *     try await room.detach()
+     *     print("Successfully detached from room")
+     * } catch {
+     *     print("Failed to detach from room: \(error)")
+     * }
+     * ```
      */
     func detach() async throws(ErrorInfo)
 
     /**
-     * Returns the room options.
+     * Returns a copy of the options used to configure the room.
      *
-     * - Returns: A copy of the options used to create the room.
+     * Provides access to all room configuration including presence, typing, reactions,
+     * and occupancy settings. The returned object is a copy to prevent external
+     * modifications to the room's configuration.
+     *
+     * - Returns: A copy of the room options
+     *
+     * ## Example
+     *
+     * ```swift
+     * import AblyChat
+     *
+     * let chatClient: ChatClient // existing ChatClient instance
+     *
+     * // Create room with specific options
+     * let room = try await chatClient.rooms.get(named: "conference-hall", options: RoomOptions(
+     *     presence: PresenceOptions(
+     *         enableEvents: true
+     *     ),
+     *     typing: TypingOptions(
+     *         heartbeatThrottle: 1.5
+     *     ),
+     *     occupancy: OccupancyOptions(
+     *         enableEvents: true
+     *     )
+     * ))
+     *
+     * // Get room options to check configuration
+     * let options = room.options
+     *
+     * print("Room configuration:")
+     * print("Presence events: \(String(describing: options.presence?.enableEvents))")
+     * print("Typing throttle: \(String(describing: options.typing?.heartbeatThrottle))")
+     * print("Occupancy events: \(String(describing: options.occupancy?.enableEvents))")
+     * ```
      */
     var options: RoomOptions { get }
 
     /**
-     * Get the underlying Ably realtime channel used for the room.
+     * Provides direct access to the underlying Ably Realtime channel.
      *
-     * - Returns: The realtime channel.
+     * Use this for advanced scenarios requiring direct access to the underlying channel. Directly interacting
+     * with the Ably channel can lead to unexpected behavior, and so is generally discouraged.
+     *
+     * - Returns: The underlying Ably RealtimeChannel instance
+     *
+     * ## Example
+     *
+     * ```swift
+     * let room = try await chatClient.rooms.get(named: "advanced-room")
+     *
+     * // Access underlying channel for advanced operations
+     * let channel = room.channel
+     * ```
      */
     var channel: Channel { get }
 }
@@ -373,12 +632,12 @@ internal class DefaultRoom<Realtime: InternalRealtimeClientProtocol, LifecycleMa
         return realtime.channels.get("\(roomName)::$chat", options: channelOptions)
     }
 
-    // swiftlint:disable:next missing_docs
+    /// See ``Room/attach()``
     public func attach() async throws(ErrorInfo) {
         try await lifecycleManager.performAttachOperation()
     }
 
-    // swiftlint:disable:next missing_docs
+    /// See ``Room/detach()``
     public func detach() async throws(ErrorInfo) {
         try await lifecycleManager.performDetachOperation()
     }

@@ -1,56 +1,89 @@
 import Ably
 
-// This disable of attributes can be removed once missing_docs fixed here
-// swiftlint:disable attributes
+/// Protocol defining the interface for an Ably Chat client instance.
 @MainActor
-// swiftlint:disable:next missing_docs
 public protocol ChatClientProtocol: AnyObject, Sendable {
-    // swiftlint:enable attributes
-
-    // swiftlint:disable:next missing_docs
+    /// The underlying Ably Realtime client type.
     associatedtype Realtime
-    // swiftlint:disable:next missing_docs
+    /// The connection type for monitoring client connectivity.
     associatedtype Connection: AblyChat.Connection
-    // swiftlint:disable:next missing_docs
+    /// The rooms manager type for creating and managing chat rooms.
     associatedtype Rooms: AblyChat.Rooms
 
     /**
-     * Returns the rooms object, which provides access to chat rooms.
+     * Provides access to the rooms instance for creating and managing chat rooms.
      *
-     * - Returns: The rooms object.
+     * - Returns: The Rooms instance for managing chat rooms
+     *
+     * ## Example
+     *
+     * ```swift
+     * let chatClient: ChatClient // existing ChatClient instance
+     *
+     * // Get a room with default options
+     * let room = try await chatClient.rooms.get("general-chat")
+     *
+     * // Get a room with custom options (merges with defaults)
+     * let configuredRoom = try await chatClient.rooms.get("team-chat", options: RoomOptions(
+     *     typing: TypingOptions(heartbeatThrottle: 1) // in seconds
+     * ))
+     *
+     * // Release a room when done
+     * try await chatClient.rooms.release("general-chat")
+     * ```
      */
     var rooms: Rooms { get }
 
     /**
-     * Returns the underlying connection to Ably, which can be used to monitor the clients
-     * connection to Ably servers.
+     * Provides access to the underlying connection to Ably for monitoring connectivity.
      *
-     * - Returns: The connection object.
+     * - Returns: The Connection instance
+     *
+     * ## Example
+     *
+     * ```swift
+     * let chatClient: ChatClient // existing ChatClient instance
+     *
+     * // Check current connection status
+     * print("Status: \(chatClient.connection.status)")
+     * print("Error: \(String(describing: chatClient.connection.error))")
+     *
+     * // Monitor connection changes
+     * let subscription = chatClient.connection.onStatusChange { change in
+     *     print("Connection: \(change.previous) -> \(change.current)")
+     * }
+     * ```
      */
     var connection: Connection { get }
 
     /**
-     * Returns the clientID of the current client, if known.
+     * Returns the clientId of the current client, if known.
      *
      * - Important: When using an Ably key for authentication, this value is determined immediately. If using a token,
-     * the clientID is not known until the client has successfully connected to and authenticated with
+     * the clientId is not known until the client has successfully connected to and authenticated with
      * the server. Use the `chatClient.connection.status` to check the connection status.
-
-     * - Returns: The clientID, or `nil` if unknown.
+     *
+     * - Returns: The clientId, or nil if unknown.
      */
     var clientID: String? { get }
 
     /**
-     * Returns the underlying Ably Realtime client.
+     * Provides direct access to the underlying Ably Realtime client.
      *
-     * - Returns: The Ably Realtime client.
+     * Use this for advanced scenarios requiring direct Ably access. Most chat
+     * operations should use the high-level chat SDK methods instead.
+     *
+     * - Note: Directly interacting with the Ably Realtime client can lead to
+     * unexpected behavior.
+     *
+     * - Returns: The underlying Ably Realtime client instance
      */
     var realtime: Realtime { get }
 
     /**
-     * Returns the resolved client options for the client, including any defaults that have been set.
+     * The configuration options used to initialize the chat client.
      *
-     * - Returns: The client options.
+     * - Returns: The resolved client options including defaults
      */
     var clientOptions: ChatClientOptions { get }
 }
@@ -72,12 +105,15 @@ internal final class DefaultInternalRealtimeClientFactory<Underlying: ProxyRealt
  * This is the core client for Ably chat. It provides access to chat rooms.
  */
 public class ChatClient: ChatClientProtocol {
-    // swiftlint:disable:next missing_docs
+    /// See ``ChatClientProtocol/realtime``
     public let realtime: ARTRealtime
-    // swiftlint:disable:next missing_docs
+
+    /// See ``ChatClientProtocol/clientOptions``
     public let clientOptions: ChatClientOptions
+
     private let _rooms: DefaultRooms<DefaultRoomFactory<InternalRealtimeClientAdapter<ARTWrapperSDKProxyRealtime>>>
-    // swiftlint:disable:next missing_docs
+
+    /// See ``ChatClientProtocol/rooms``
     public var rooms: some Rooms<ARTRealtimeChannel> {
         _rooms
     }
@@ -87,17 +123,67 @@ public class ChatClient: ChatClientProtocol {
     // (CHA-CS1) Every chat client has a status, which describes the current status of the connection.
     // (CHA-CS4) The chat client must allow its connection status to be observed by clients.
     private let _connection: DefaultConnection
-    // swiftlint:disable:next missing_docs
+
+    /// See ``ChatClientProtocol/connection``
     public var connection: some Connection {
         _connection
     }
 
     /**
-     * Constructor for Chat
+     * Creates a new ChatClient instance for interacting with Ably Chat.
+     *
+     * The ChatClient is the main entry point for the Ably Chat SDK. It requires a Realtime client
+     * and provides access to chat rooms through the rooms property.
+     *
+     * - Important: The Ably Realtime client must have a clientId set. This identifies
+     * the user in chat rooms and is required for all chat operations.
+     *
+     * - Note: You can provide optional overrides to the ``ChatClient``, these will be merged
+     * with the default options. See ``ChatClientOptions`` for the available options.
      *
      * - Parameters:
-     *   - realtime: The Ably Realtime client. Its `dispatchQueue` option must be the main queue (this is its default behaviour).
-     *   - clientOptions: The client options.
+     *   - realtime: An initialized Ably Realtime client with a configured clientId
+     *   - clientOptions: Optional configuration for the chat client
+     *
+     * ## Example - Preferred in production: Use auth URL that returns a JWT
+     *
+     * ```swift
+     * import Ably
+     * import AblyChat
+     *
+     * let realtimeOptions = ARTClientOptions()
+     * realtimeOptions.authUrl = URL(string: "/api/ably-auth") // Your server endpoint that returns a JWT with clientId
+     * realtimeOptions.authMethod = "POST"
+     * let realtimeClientWithJWT = ARTRealtime(options: realtimeOptions)
+     *
+     * let chatClient = ChatClient(realtime: realtimeClientWithJWT)
+     * ```
+     *
+     * ## Example - Alternative for development and server-side operations: Set clientId directly (requires API key)
+     *
+     * ```swift
+     * let realtimeClientWithKey = ARTRealtime(key: "your-ably-api-key")
+     * realtimeClientWithKey.clientId = "user-123"
+     *
+     * let chatClient = ChatClient(realtime: realtimeClientWithKey)
+     * ```
+     *
+     * ## Example - With custom logging configuration: Defaults to LogLevel.error and console logging
+     *
+     * ```swift
+     * let realtimeOptions = ARTClientOptions()
+     * realtimeOptions.authUrl = URL(string: "/api/ably-auth") // Your server endpoint that returns a JWT with clientId
+     * realtimeOptions.authMethod = "POST"
+     * let realtimeClient = ARTRealtime(options: realtimeOptions)
+     *
+     * let chatClientWithLogging = ChatClient(
+     *     realtime: realtimeClient,
+     *     clientOptions: ChatClientOptions(
+     *         logLevel: .debug,
+     *         logHandler: YourLogHandler() // Implements `LogHandler.Simple` protocol
+     *     )
+     * )
+     * ```
      */
     public convenience init(realtime: ARTRealtime, clientOptions: ChatClientOptions? = nil) {
         self.init(
@@ -127,7 +213,7 @@ public class ChatClient: ChatClientProtocol {
         _connection = DefaultConnection(realtime: internalRealtime)
     }
 
-    // swiftlint:disable:next missing_docs
+    /// See ``ChatClientProtocol/clientID``
     public var clientID: String? {
         realtime.clientId
     }
@@ -151,7 +237,13 @@ public struct ChatClientOptions: Sendable {
      */
     public var logLevel: LogLevel? = .error
 
-    // swiftlint:disable:next missing_docs
+    /**
+     * Creates a new ChatClientOptions instance.
+     *
+     * - Parameters:
+     *   - logHandler: Optional custom log handler for capturing log messages
+     *   - logLevel: The minimum log level for messages (defaults to `.error`)
+     */
     public init(logHandler: LogHandler? = nil, logLevel: LogLevel? = .error) {
         self.logHandler = logHandler
         self.logLevel = logLevel
