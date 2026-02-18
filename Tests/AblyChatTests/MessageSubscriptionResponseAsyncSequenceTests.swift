@@ -34,13 +34,13 @@ struct MessageSubscriptionResponseAsyncSequenceTests {
     @Test
     func withMockAsyncSequence() async {
         let events = messages.map { ChatMessageEvent(message: $0) }
-        let subscription = MessageSubscriptionResponseAsyncSequence<MockPaginatedResult>(mockAsyncSequence: events.async) { _ in fatalError("Not implemented") }
+        let subscription = MessageSubscriptionResponseAsyncSequence(mockAsyncSequence: events.async) { _ in fatalError("Not implemented") }
         #expect(await Array(subscription.prefix(2)).map(\.message.text) == ["First", "Second"])
     }
 
     @Test
     func emit() async {
-        let subscription = MessageSubscriptionResponseAsyncSequence<MockPaginatedResult>(bufferingPolicy: .unbounded) { _ in fatalError("Not implemented") }
+        let subscription = MessageSubscriptionResponseAsyncSequence(bufferingPolicy: .unbounded) { _ in fatalError("Not implemented") }
         async let emittedElements = Array(subscription.prefix(2))
         subscription.emit(ChatMessageEvent(message: messages[0]))
         subscription.emit(ChatMessageEvent(message: messages[1]))
@@ -54,6 +54,6 @@ struct MessageSubscriptionResponseAsyncSequenceTests {
         let subscription = MessageSubscriptionResponseAsyncSequence(mockAsyncSequence: [].async) { _ in mockPaginatedResult }
 
         let result = try await subscription.historyBeforeSubscribe(withParams: .init())
-        #expect(result === mockPaginatedResult)
+        #expect(result as AnyObject === mockPaginatedResult as AnyObject)
     }
 }
