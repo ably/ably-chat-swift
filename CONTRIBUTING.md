@@ -158,6 +158,52 @@ Example:
 // @specNotApplicable CHA-EX3a - Our API does not have a concept of "partial options" unlike the JS API which this spec item considers.
 ```
 
+## Validate website doc snippets
+
+To validate that the web documentation code snippets are accurate and up-to-date with the SDK source code, run the following prompt against a locally cloned copy of the [ably/docs](https://github.com/ably/docs) repository and this SDK repository.
+
+> [!IMPORTANT]
+> This prompt should be run with the most powerful LLM available to you (e.g. Claude Opus, GPT-5, etc.) for the best results.
+
+Replace `{DOCS_PATH}` with the path to your local clone of the [ably/docs](https://github.com/ably/docs) repository and `{SDK_PATH}` with the path to your local clone of this SDK repository.
+
+```text
+Verify all `swift` annotated code snippets in `.mdx` files located at `{DOCS_PATH}/src/pages/docs/chat` against the `ably-chat-swift` source code repository at `{SDK_PATH}`.
+
+### Verification Steps:
+
+1. **Find all code snippets**: Search for all code blocks with the `swift` annotation in `.mdx` files.
+
+2. **Understand SDK structure**: Analyze the SDK source code to understand:
+   - Public classes and their constructors
+   - Public methods and their signatures (parameters, return types)
+   - Public properties and their types
+   - Enums and their values
+   - Namespaces and import requirements
+
+3. **Cross-check each snippet** for the following issues:
+   - **Syntax errors**: Incorrect initializer syntax (e.g., missing argument labels, incorrect use of `try`/`await`), misuse of optional unwrapping (`!` vs `if let`/`guard let`), incorrect protocol conformance signatures, misplaced braces or parentheses
+   - **Naming conventions**: Verify casing matches Swift conventions (e.g., `UpperCamelCase` for types, protocols, and enums; `lowerCamelCase` for methods, properties, and enum cases)
+   - **API accuracy**: Verify method names, property names, and enum values exist in the SDK (e.g., correct `init()` signatures, protocol method names, `Optional` usage)
+   - **Type correctness**: Verify correct types are used (e.g., `ConnectionEvent` vs `ConnectionState`)
+   - **Namespace/import requirements**: Note any required imports that are missing from examples
+   - **Wrong language**: Detect if code from another language was accidentally used
+
+4. **Generate a verification report** with:
+   - Total snippets found
+   - List of issues found with:
+     - File path and line number
+     - Current (incorrect) code
+     - Expected (correct) code
+     - Source reference in SDK
+   - List of verified APIs that are correct
+   - Success rate percentage
+   - Recommendations for fixes
+
+### Output Format:
+Create/update a markdown report file `chat_swift_api_verification_report.md` with all findings.
+```
+
 ## Release process
 
 For each release, the following needs to be done:
@@ -171,7 +217,10 @@ For each release, the following needs to be done:
 - From the newly generated changes remove everything that don't make much sense to the library user
 - Copy the final list of changes to the top of the `CHANGELOG.md` file. Modify as necessary to fit the existing format of this file
 - Commit these changes and push to the origin `git add CHANGELOG.md && git commit -m "Update change log." && git push -u origin release/x.x.x`
+- If you've deprecated any public methods or properties, changed public interfaces, or are uncertain about the impact of your updates, run the [Validate website doc snippets](#validate-website-doc-snippets) task locally. This will verify that the `swift` code snippets in the web documentation (https://github.com/ably/docs) are accurate and aligned with the current SDK source. Review the generated report and address any issues it identifies.
+- Create a PR on the [website docs](https://github.com/ably/docs) that updates the SDK version in the setup/installation guide. Additionally, include fixes for any documentation issues identified in the previous step. Even if there are no public API changes, a PR must still be created to update the SDK version.
 - Make a pull request against `main` and await approval of reviewer(s)
 - Once approved and/or any additional commits have been added, merge the PR
 - After merging the PR, wait for all CI jobs for `main` to pass.
 - Publish your drafted release (refer to previous releases for release notes format)
+- Merge any [website docs](https://github.com/ably/docs) PRs related to the changes.
