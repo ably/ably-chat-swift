@@ -58,7 +58,7 @@ To install the `ably-chat-swift` package in your Xcode Project:
 To install the `ably-chat-swift` package in another Swift Package, add the following to your `Package.swift`:
 
 ```swift
-.package(url: "https://github.com/ably/ably-chat-swift", from: "1.1.0"),
+.package(url: "https://github.com/ably/ably-chat-swift", from: "1.2.0"),
 ```
 
 ---

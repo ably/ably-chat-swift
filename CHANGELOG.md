@@ -1,5 +1,15 @@
 # Change Log
 
+## [1.2.0](https://github.com/ably/ably-chat-swift/tree/1.2.0)
+
+## What's Changed
+
+- Remove generic parameter from MessageSubscriptionResponseAsyncSequence. [#476](https://github.com/ably/ably-chat-swift/pull/476)
+
+Users can now store subscriptions as simple properties e.g. `var subscription: MessageSubscriptionResponseAsyncSequence?`
+
+**Full Changelog**: https://github.com/ably/ably-chat-swift/compare/1.1.0...1.2.0
+
 ## [1.1.0](https://github.com/ably/ably-chat-swift/tree/1.1.0)
 
 ### Bug Fixes
