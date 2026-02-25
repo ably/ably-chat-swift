@@ -46,13 +46,13 @@ public struct RoomReaction: Sendable {
      */
     public var isSelf: Bool
 
+    // @spec CHA-ER2a
     /**
      * The user claim attached to this reaction by the server.
      *
      * Set automatically by the Ably server when a JWT contains a matching
      * `ably.room.<roomName>` claim. This is a read-only, server-provided value.
      */
-    // @spec CHA-ER2a
     public var userClaim: String?
 
     /// Memberwise initializer to create a `RoomReaction`.

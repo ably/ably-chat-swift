@@ -53,21 +53,45 @@ struct IntegrationTests {
         }
     }
 
-    private static func createSandboxRealtime(apiKey: String, loggingLabel: String) -> ARTRealtime {
-        let realtimeOptions = ARTClientOptions(key: apiKey)
+    /// Creates a sandbox `ChatClient`. When `userClaim` is provided, authenticates via a self-signed Ably JWT containing the claim (requires `roomName` and `clientID`).
+    private static func createSandboxChatClient(
+        apiKey: String,
+        loggingLabel: String,
+        clientID: String? = nil,
+        roomName: String? = nil,
+        userClaim: String? = nil,
+    ) -> ChatClient {
+        if userClaim != nil {
+            precondition(roomName != nil && clientID != nil, "roomName and clientID are required when userClaim is provided")
+        }
+
+        let realtimeOptions: ARTClientOptions
+
+        if let userClaim, let roomName, let clientID {
+            realtimeOptions = ARTClientOptions()
+            realtimeOptions.clientId = clientID
+            realtimeOptions.authCallback = { _, callback in
+                let jwt = Sandbox.createJWT(
+                    apiKey: apiKey,
+                    clientID: clientID,
+                    roomName: roomName,
+                    userClaim: userClaim,
+                )
+                callback(ARTTokenDetails(token: jwt), nil)
+            }
+        } else {
+            realtimeOptions = ARTClientOptions(key: apiKey)
+            realtimeOptions.clientId = UUID().uuidString
+        }
+
         realtimeOptions.environment = "sandbox"
-        realtimeOptions.clientId = UUID().uuidString
 
         if TestLogger.loggingEnabled {
             realtimeOptions.logLevel = .verbose
             realtimeOptions.logHandler = AblyCocoaLogger(label: loggingLabel)
         }
 
-        return ARTRealtime(options: realtimeOptions)
-    }
-
-    private static func createSandboxChatClient(apiKey: String, loggingLabel: String) -> ChatClient {
-        let realtime = createSandboxRealtime(apiKey: apiKey, loggingLabel: loggingLabel)
+        let realtime = ARTRealtime(options: realtimeOptions)
         let clientOptions = TestLogger.loggingEnabled ? ChatClientOptions(logHandler: .simple(ChatLogger(label: loggingLabel)), logLevel: .trace) : nil
 
         return ChatClient(realtime: realtime, clientOptions: clientOptions)
@@ -756,6 +780,153 @@ struct IntegrationTests {
 
         // (4) Check that the room was released
         #expect(rxRoom.status == .released)
+    }
+
+    /// Tests that `userClaim` is populated when using JWT auth with an `ably.room.<roomName>` claim.
+    @Test
+    func userClaimFromJWT() async throws {
+        // MARK: - Setup
+
+        Self.logAwait("BEFORE Sandbox.createAPIKey() (JWT test)")
+        let apiKey = try await Sandbox.createAPIKey()
+        Self.logAwait("AFTER Sandbox.createAPIKey() (JWT test)")
+
+        let roomName = "jwt-test-room"
+        let expectedUserClaim = "admin"
+        let txClientID = UUID().uuidString
+
+        // tx client uses JWT auth with userClaim
+        let txClient = Self.createSandboxChatClient(
+            apiKey: apiKey,
+            loggingLabel: "tx-jwt",
+            clientID: txClientID,
+            roomName: roomName,
+            userClaim: expectedUserClaim,
+        )
+
+        // rx client uses standard API key auth
+        let rxClient = Self.createSandboxChatClient(apiKey: apiKey, loggingLabel: "rx-jwt")
+
+        // MARK: - Get rooms
+
+        Self.logAwait("BEFORE txClient.rooms.get() (JWT)")
+        let txRoom = try await txClient.rooms.get(
+            named: roomName,
+            options: .init(
+                presence: .init(),
+            ),
+        )
+        Self.logAwait("AFTER txClient.rooms.get() (JWT)")
+
+        Self.logAwait("BEFORE rxClient.rooms.get() (JWT)")
+        let rxRoom = try await rxClient.rooms.get(
+            named: roomName,
+            options: .init(
+                messages: .init(rawMessageReactions: true),
+                presence: .init(),
+            ),
+        )
+        Self.logAwait("AFTER rxClient.rooms.get() (JWT)")
+
+        // MARK: - Attach rx room and subscribe
+
+        Self.logAwait("BEFORE rxRoom.attach() (JWT)")
+        try await rxRoom.attach()
+        Self.logAwait("AFTER rxRoom.attach() (JWT)")
+
+        let rxMessageSubscription = rxRoom.messages.subscribe()
+        let rxPresenceSubscription = rxRoom.presence.subscribe()
+        let rxReactionSubscription = rxRoom.reactions.subscribe()
+
+        // MARK: - Messages: verify userClaim
+
+        Self.logAwait("BEFORE txRoom.messages.send (JWT)")
+        _ = try await txRoom.messages.send(withParams: .init(text: "Hello with JWT"))
+        Self.logAwait("AFTER txRoom.messages.send (JWT)")
+
+        Self.logAwait("BEFORE rxMessageSubscription.first (JWT)")
+        let rxMessageEvent = try #require(await rxMessageSubscription.first { @Sendable _ in true })
+        Self.logAwait("AFTER rxMessageSubscription.first (JWT)")
+
+        // @spec CHA-M2h — userClaim is populated from JWT's ably.room.<roomName> claim
+        #expect(rxMessageEvent.message.userClaim == expectedUserClaim)
+
+        // MARK: - Raw Message Reactions: verify userClaim
+
+        let rxRawReactionSubscription = rxRoom.messages.reactions.subscribeRaw()
+
+        Self.logAwait("BEFORE txRoom.messages.reactions.send (JWT)")
+        try await txRoom.messages.reactions.send(forMessageWithSerial: rxMessageEvent.message.serial, params: .init(name: "👍"))
+        Self.logAwait("AFTER txRoom.messages.reactions.send (JWT)")
+
+        Self.logAwait("BEFORE rxRawReactionSubscription.first (JWT)")
+        let rxRawReactionEvent = try #require(await rxRawReactionSubscription.first { @Sendable _ in true })
+        Self.logAwait("AFTER rxRawReactionSubscription.first (JWT)")
+
+        // @spec CHA-MR7d — userClaim is populated from JWT's ably.room.<roomName> claim
+        #expect(rxRawReactionEvent.reaction.userClaim == expectedUserClaim)
+
+        // MARK: - Presence: verify userClaim
+
+        Self.logAwait("BEFORE txRoom.attach() (JWT)")
+        try await txRoom.attach()
+        Self.logAwait("AFTER txRoom.attach() (JWT)")
+
+        Self.logAwait("BEFORE txRoom.presence.enter (JWT)")
+        try await txRoom.presence.enter()
+        Self.logAwait("AFTER txRoom.presence.enter (JWT)")
+
+        Self.logAwait("BEFORE rxPresenceSubscription.first (JWT)")
+        let rxPresenceEvent = try #require(await rxPresenceSubscription.first { @Sendable _ in true })
+        Self.logAwait("AFTER rxPresenceSubscription.first (JWT)")
+
+        // @spec CHA-PR6g — userClaim is populated from JWT's ably.room.<roomName> claim
+        #expect(rxPresenceEvent.member.userClaim == expectedUserClaim)
+
+        Self.logAwait("BEFORE txRoom.presence.leave (JWT)")
+        try await txRoom.presence.leave()
+        Self.logAwait("AFTER txRoom.presence.leave (JWT)")
+
+        // MARK: - Room Reactions: verify userClaim
+
+        Self.logAwait("BEFORE txRoom.reactions.send (JWT)")
+        try await txRoom.reactions.send(withParams: .init(name: "heart"))
+        Self.logAwait("AFTER txRoom.reactions.send (JWT)")
+
+        Self.logAwait("BEFORE rxReactionSubscription.first (JWT)")
+        let rxReactionEvent = try #require(await rxReactionSubscription.first { @Sendable _ in true })
+        Self.logAwait("AFTER rxReactionSubscription.first (JWT)")
+
+        // @spec CHA-ER2a — userClaim is populated from JWT's ably.room.<roomName> claim
+        #expect(rxReactionEvent.reaction.userClaim == expectedUserClaim)
+
+        // MARK: - Typing: verify userClaim and currentTypers
+
+        let rxTypingSubscription = rxRoom.typing.subscribe()
+
+        Self.logAwait("BEFORE txRoom.typing.keystroke() (JWT)")
+        try await txRoom.typing.keystroke()
+        Self.logAwait("AFTER txRoom.typing.keystroke() (JWT)")
+
+        Self.logAwait("BEFORE rxTypingSubscription.first (JWT)")
+        let rxTypingEvent = try #require(await rxTypingSubscription.first { @Sendable _ in true })
+        Self.logAwait("AFTER rxTypingSubscription.first (JWT)")
+
+        // @spec CHA-T13a1 — userClaim is populated from JWT's ably.room.<roomName> claim
+        #expect(rxTypingEvent.change.userClaim == expectedUserClaim)
+        #expect(rxTypingEvent.currentTypers.count == 1)
+        #expect(rxTypingEvent.currentTypers[0].clientID == txClientID)
+        #expect(rxTypingEvent.currentTypers[0].userClaim == expectedUserClaim)
+
+        // MARK: - Cleanup
+
+        Self.logAwait("BEFORE rxRoom.detach() (JWT)")
+        try await rxRoom.detach()
+        Self.logAwait("AFTER rxRoom.detach() (JWT)")
+
+        Self.logAwait("BEFORE rxClient.rooms.release (JWT)")
+        await rxClient.rooms.release(named: roomName)
+        Self.logAwait("AFTER rxClient.rooms.release (JWT)")
     }
 }
 

@@ -99,6 +99,13 @@ internal final class TypingTimerManager<AnyClock: ClockProtocol>: TypingTimerMan
         Set(whoIsTypingState.keys)
     }
 
+    /// Returns the currently typing users with associated metadata.
+    internal func currentlyTypingMembers() -> [TypingMember] {
+        whoIsTypingState.map { clientID, state in
+            TypingMember(clientID: clientID, userClaim: state.userClaim)
+        }
+    }
+
     /// Returns the stored `userClaim` for a given client, if any (CHA-T13a1).
     internal func userClaimForClient(_ clientID: String) -> String? {
         whoIsTypingState[clientID]?.userClaim
@@ -126,6 +133,8 @@ internal protocol TypingTimerManagerProtocol {
     func isCurrentlyTyping(clientID: String) -> Bool
     /// Returns the set of client IDs that we consider to currently be typing (also referred to in the spec as the "typing set").
     func currentlyTypingClientIDs() -> Set<String>
+    /// Returns the currently typing users with associated metadata.
+    func currentlyTypingMembers() -> [TypingMember]
     /// Returns the stored `userClaim` for a given client, if any (CHA-T13a1).
     func userClaimForClient(_ clientID: String) -> String?
 }

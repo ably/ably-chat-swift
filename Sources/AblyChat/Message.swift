@@ -84,13 +84,13 @@ public struct Message: Sendable, Equatable {
      */
     public var reactions: MessageReactionSummary
 
+    // @spec CHA-M2h
     /**
      * The user claim attached to this message by the server.
      *
      * Set automatically by the Ably server when a JWT contains a matching
      * `ably.room.<roomName>` claim. This is a read-only, server-provided value.
      */
-    // @spec CHA-M2h
     public var userClaim: String?
 
     /// Memberwise initializer to create a `Message`.

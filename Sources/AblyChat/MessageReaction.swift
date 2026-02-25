@@ -280,13 +280,13 @@ public struct MessageReactionRawEvent: Sendable {
          */
         public var clientID: String
 
+        // @spec CHA-MR7d
         /**
          * The user claim attached to this reaction event by the server.
          *
          * Set automatically by the Ably server when a JWT contains a matching
          * `ably.room.<roomName>` claim. This is a read-only, server-provided value.
          */
-        // @spec CHA-MR7d
         public var userClaim: String?
 
         /// Memberwise initializer to create a `Reaction`.

@@ -182,13 +182,13 @@ public struct PresenceMember: Sendable {
     // swiftlint:disable:next missing_docs
     public var updatedAt: Date
 
+    // @spec CHA-PR6g
     /**
      * The user claim attached to this presence event by the server.
      *
      * Set automatically by the Ably server when a JWT contains a matching
      * `ably.room.<roomName>` claim. This is a read-only, server-provided value.
      */
-    // @spec CHA-PR6g
     public var userClaim: String?
 }
 

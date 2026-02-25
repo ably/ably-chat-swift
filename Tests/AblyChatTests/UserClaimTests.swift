@@ -36,7 +36,7 @@ struct UserClaimExtractionTests {
     @Test
     func userClaim_returnsEmptyStringForEmptyStringValue() {
         let extras: [String: JSONValue] = ["userClaim": .string("")]
-        #expect(extras.userClaim == "")
+        #expect(extras.userClaim?.isEmpty == true)
     }
 
     @Test
@@ -349,6 +349,9 @@ struct TypingUserClaimTests {
         #expect(receivedEvents[0].change.type == .started)
         #expect(receivedEvents[0].change.clientID == "test-client")
         #expect(receivedEvents[0].change.userClaim == "admin")
+        #expect(receivedEvents[0].currentTypers.count == 1)
+        #expect(receivedEvents[0].currentTypers[0].clientID == "test-client")
+        #expect(receivedEvents[0].currentTypers[0].userClaim == "admin")
     }
 
     // @spec CHA-T13a1 - typing stopped event includes userClaim from message extras
@@ -386,6 +389,7 @@ struct TypingUserClaimTests {
         #expect(receivedEvents[1].change.type == .stopped)
         #expect(receivedEvents[1].change.clientID == "test-client")
         #expect(receivedEvents[1].change.userClaim == "admin")
+        #expect(receivedEvents[1].currentTypers.isEmpty)
     }
 
     // @spec CHA-T13a1 - typing stopped event falls back to cached userClaim when message lacks it

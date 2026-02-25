@@ -66,6 +66,7 @@ internal final class DefaultTyping: Typing {
                     TypingSetEvent(
                         type: .setChanged,
                         currentlyTyping: typingTimerManager.currentlyTypingClientIDs(),
+                        currentTypers: typingTimerManager.currentlyTypingMembers(),
                         change: .init(clientID: messageClientID, type: .stopped, userClaim: expiredUserClaim),
                     ),
                 )
@@ -78,6 +79,7 @@ internal final class DefaultTyping: Typing {
                     TypingSetEvent(
                         type: .setChanged,
                         currentlyTyping: typingTimerManager.currentlyTypingClientIDs(),
+                        currentTypers: typingTimerManager.currentlyTypingMembers(),
                         change: .init(clientID: messageClientID, type: .started, userClaim: typingTimerManager.userClaimForClient(messageClientID)),
                     ),
                 )
@@ -109,6 +111,7 @@ internal final class DefaultTyping: Typing {
                     TypingSetEvent(
                         type: .setChanged,
                         currentlyTyping: typingTimerManager.currentlyTypingClientIDs(),
+                        currentTypers: typingTimerManager.currentlyTypingMembers(),
                         change: .init(clientID: messageClientID, type: .stopped, userClaim: userClaim),
                     ),
                 )
@@ -129,6 +132,11 @@ internal final class DefaultTyping: Typing {
     // (CHA-T9) Users may retrieve a list of the currently typing client IDs.
     internal var current: Set<String> {
         typingTimerManager.currentlyTypingClientIDs()
+    }
+
+    // (CHA-T18)
+    internal var currentTypers: [TypingMember] {
+        typingTimerManager.currentlyTypingMembers()
     }
 
     // (CHA-T4) Users may indicate that they have started typing using the keystroke method.
