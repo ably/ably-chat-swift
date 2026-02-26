@@ -848,7 +848,7 @@ struct IntegrationTests {
         let rxMessageEvent = try #require(await rxMessageSubscription.first { @Sendable _ in true })
         Self.logAwait("AFTER rxMessageSubscription.first (JWT)")
 
-        // @spec CHA-M2h — userClaim is populated from JWT's ably.room.<roomName> claim
+        // @spec CHA-M2h - userClaim is populated from JWT's ably.room.<roomName> claim
         #expect(rxMessageEvent.message.userClaim == expectedUserClaim)
 
         // MARK: - Raw Message Reactions: verify userClaim
@@ -863,7 +863,7 @@ struct IntegrationTests {
         let rxRawReactionEvent = try #require(await rxRawReactionSubscription.first { @Sendable _ in true })
         Self.logAwait("AFTER rxRawReactionSubscription.first (JWT)")
 
-        // @spec CHA-MR7d — userClaim is populated from JWT's ably.room.<roomName> claim
+        // @spec CHA-MR7d - userClaim is populated from JWT's ably.room.<roomName> claim
         #expect(rxRawReactionEvent.reaction.userClaim == expectedUserClaim)
 
         // MARK: - Presence: verify userClaim
@@ -880,7 +880,7 @@ struct IntegrationTests {
         let rxPresenceEvent = try #require(await rxPresenceSubscription.first { @Sendable _ in true })
         Self.logAwait("AFTER rxPresenceSubscription.first (JWT)")
 
-        // @spec CHA-PR6g — userClaim is populated from JWT's ably.room.<roomName> claim
+        // @spec CHA-PR6g - userClaim is populated from JWT's ably.room.<roomName> claim
         #expect(rxPresenceEvent.member.userClaim == expectedUserClaim)
 
         Self.logAwait("BEFORE txRoom.presence.leave (JWT)")
@@ -897,7 +897,7 @@ struct IntegrationTests {
         let rxReactionEvent = try #require(await rxReactionSubscription.first { @Sendable _ in true })
         Self.logAwait("AFTER rxReactionSubscription.first (JWT)")
 
-        // @spec CHA-ER2a — userClaim is populated from JWT's ably.room.<roomName> claim
+        // @spec CHA-ER2a - userClaim is populated from JWT's ably.room.<roomName> claim
         #expect(rxReactionEvent.reaction.userClaim == expectedUserClaim)
 
         // MARK: - Typing: verify userClaim and currentTypers
@@ -912,7 +912,7 @@ struct IntegrationTests {
         let rxTypingEvent = try #require(await rxTypingSubscription.first { @Sendable _ in true })
         Self.logAwait("AFTER rxTypingSubscription.first (JWT)")
 
-        // @spec CHA-T13a1 — userClaim is populated from JWT's ably.room.<roomName> claim
+        // @spec CHA-T13a1 - userClaim is populated from JWT's ably.room.<roomName> claim
         #expect(rxTypingEvent.change.userClaim == expectedUserClaim)
         #expect(rxTypingEvent.currentTypers.count == 1)
         #expect(rxTypingEvent.currentTypers[0].clientID == txClientID)

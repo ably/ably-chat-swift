@@ -6,15 +6,16 @@ The Chat specification (PR #423) adds an optional `userClaim` field across all c
 
 ### Spec Items
 
-| Spec Item | Entity | Summary |
-|-----------|--------|---------|
-| CHA-M2h | Message | Optional `userClaim` on Message |
-| CHA-MR7d | MessageReactionRawEvent.Reaction | Optional `userClaim` on raw reaction events |
-| CHA-ER2a | RoomReaction | Optional `userClaim` on ephemeral room reactions |
-| CHA-PR6g | PresenceMember | Optional `userClaim` on presence members |
-| CHA-T13a1 | TypingSetEvent.Change | Optional `userClaim` on typing event changes; must persist across heartbeats and inactivity timeouts |
+| Spec Item | Entity                           | Summary                                                                                              |
+| --------- | -------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| CHA-M2h   | Message                          | Optional `userClaim` on Message                                                                      |
+| CHA-MR7d  | MessageReactionRawEvent.Reaction | Optional `userClaim` on raw reaction events                                                          |
+| CHA-ER2a  | RoomReaction                     | Optional `userClaim` on ephemeral room reactions                                                     |
+| CHA-PR6g  | PresenceMember                   | Optional `userClaim` on presence members                                                             |
+| CHA-T13a1 | TypingSetEvent.Change            | Optional `userClaim` on typing event changes; must persist across heartbeats and inactivity timeouts |
 
 All fields share these characteristics:
+
 - Optional `String?`, read-only, server-provided
 - Extracted from `extras.userClaim` on the underlying Ably realtime message/annotation/presence message
 - Clients cannot send this field
@@ -146,27 +147,32 @@ Note: `ARTAnnotation` has an `extras` property (it's an `ARTBaseMessage` subclas
 For each type, test:
 
 1. **Message userClaim:**
+
    - Realtime message with `extras.userClaim` → Message has correct `userClaim`
    - Realtime message without `extras.userClaim` → Message has `nil` userClaim
    - REST/JSON decoded message with `userClaim` → Message has correct `userClaim`
    - REST/JSON decoded message without `userClaim` → Message has `nil` userClaim
 
 2. **RoomReaction userClaim:**
+
    - Realtime reaction with `extras.userClaim` → RoomReaction has correct `userClaim`
    - Realtime reaction without `extras.userClaim` → RoomReaction has `nil` userClaim
 
 3. **PresenceMember userClaim:**
+
    - Presence message with `extras.userClaim` → PresenceMember has correct `userClaim`
    - Presence message without extras → PresenceMember has `nil` userClaim
    - Both `get()` and `subscribe()` paths
 
 4. **TypingSetEvent.Change userClaim:**
+
    - Typing started with `userClaim` → change includes claim
    - Heartbeat (repeated started) preserves existing claim when new event lacks one
    - Typing stopped includes claim (from message or cached)
    - Inactivity timeout synthetic stop includes cached claim
 
 5. **MessageReactionRawEvent.Reaction userClaim:**
+
    - Annotation with `extras.userClaim` → Reaction has correct `userClaim`
    - Annotation without extras → Reaction has `nil` userClaim
 
@@ -192,22 +198,22 @@ At minimum, add integration tests that verify `userClaim` is `nil` when using st
 
 ## Key Files to Modify
 
-| File | Changes |
-|------|---------|
-| `Sources/AblyChat/Message.swift` | Add `userClaim` property, update init, update JSON decoding |
-| `Sources/AblyChat/DefaultMessages.swift` | Extract `userClaim` from extras, pass to Message |
-| `Sources/AblyChat/RoomReaction.swift` | Add `userClaim` property, update init |
-| `Sources/AblyChat/DefaultRoomReactions.swift` | Extract `userClaim` from extras, pass to RoomReaction |
-| `Sources/AblyChat/Presence.swift` | Add `userClaim` property to PresenceMember, update init |
-| `Sources/AblyChat/DefaultPresence.swift` | Extract `userClaim` from member extras |
-| `Sources/AblyChat/Typing.swift` | Add `userClaim` to TypingSetEvent.Change, update init |
-| `Sources/AblyChat/DefaultTyping.swift` | Extract `userClaim` from message extras, pass through |
-| `Sources/AblyChat/TypingTimerManager.swift` | Track `userClaim` per client alongside timers |
-| `Sources/AblyChat/MessageReaction.swift` | Add `userClaim` to Reaction, update init |
-| `Sources/AblyChat/DefaultMessageReactions.swift` | Extract `userClaim` from annotation extras |
-| `Sources/AblyChat/JSONValue.swift` | Add `userClaim` extraction helper on extras dictionary |
-| `Tests/AblyChatTests/` | Unit tests for all above |
-| `Tests/AblyChatTests/IntegrationTests.swift` | Integration tests |
+| File                                             | Changes                                                     |
+| ------------------------------------------------ | ----------------------------------------------------------- |
+| `Sources/AblyChat/Message.swift`                 | Add `userClaim` property, update init, update JSON decoding |
+| `Sources/AblyChat/DefaultMessages.swift`         | Extract `userClaim` from extras, pass to Message            |
+| `Sources/AblyChat/RoomReaction.swift`            | Add `userClaim` property, update init                       |
+| `Sources/AblyChat/DefaultRoomReactions.swift`    | Extract `userClaim` from extras, pass to RoomReaction       |
+| `Sources/AblyChat/Presence.swift`                | Add `userClaim` property to PresenceMember, update init     |
+| `Sources/AblyChat/DefaultPresence.swift`         | Extract `userClaim` from member extras                      |
+| `Sources/AblyChat/Typing.swift`                  | Add `userClaim` to TypingSetEvent.Change, update init       |
+| `Sources/AblyChat/DefaultTyping.swift`           | Extract `userClaim` from message extras, pass through       |
+| `Sources/AblyChat/TypingTimerManager.swift`      | Track `userClaim` per client alongside timers               |
+| `Sources/AblyChat/MessageReaction.swift`         | Add `userClaim` to Reaction, update init                    |
+| `Sources/AblyChat/DefaultMessageReactions.swift` | Extract `userClaim` from annotation extras                  |
+| `Sources/AblyChat/JSONValue.swift`               | Add `userClaim` extraction helper on extras dictionary      |
+| `Tests/AblyChatTests/`                           | Unit tests for all above                                    |
+| `Tests/AblyChatTests/IntegrationTests.swift`     | Integration tests                                           |
 
 ---
 
