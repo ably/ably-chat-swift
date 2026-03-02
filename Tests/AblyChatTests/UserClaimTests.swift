@@ -8,7 +8,7 @@ import Testing
 
 @MainActor
 struct UserClaimExtractionTests {
-    // @specPartial CHA-M2h - Tests extraction helper for userClaim from extras
+    // @spec CHA-M2h - Tests extraction helper for userClaim from extras
     @Test
     func userClaim_extractsStringValue() {
         let extras: [String: JSONValue] = ["userClaim": .string("admin")]
