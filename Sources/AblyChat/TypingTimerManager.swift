@@ -48,14 +48,13 @@ internal final class TypingTimerManager<AnyClock: ClockProtocol>: TypingTimerMan
 
     /// Starts a CHA-T13b1 "is this person typing" timer, thus adding this clientID to the typing set.
     /// If the clientID is already in the typing set, this will reset the timer (CHA-T13b2).
-    /// (CHA-T13a1) The `userClaim` is stored and persists across heartbeat events. If a new event lacks a `userClaim`, the previously stored value is preserved.
+    /// (CHA-T13a1) The `userClaim` is always set to the value from the incoming event. If the event lacks a `userClaim`, the stored value is cleared to `nil`.
     /// The `handler` receives the userClaim that was stored for the client at the time of timer expiry.
     internal func startTypingTimer(for clientID: String, userClaim: String? = nil, handler: (@MainActor (_ userClaim: String?) -> Void)? = nil) {
         let existingState = whoIsTypingState[clientID]
         let timerManager = existingState?.timer ?? TimerManager(clock: clock)
-        // (CHA-T13a1) Preserve existing userClaim across heartbeats if new event doesn't provide one
-        let resolvedUserClaim = userClaim ?? existingState?.userClaim
-        whoIsTypingState[clientID] = TypingClientState(timer: timerManager, userClaim: resolvedUserClaim)
+        // (CHA-T13a1) Always use the incoming event's userClaim, even if nil — the spec requires the entry to be updated to reflect the incoming event.
+        whoIsTypingState[clientID] = TypingClientState(timer: timerManager, userClaim: userClaim)
 
         // (CHA-T10a1) This grace period is used to determine how long to wait, beyond the heartbeat interval, before removing a client from the typing set. This is used to prevent flickering when a user is typing and stops typing for a short period of time. See CHA-T13b1 for a detailed description of how this is used.
         let timerDuration = heartbeatThrottle + gracePeriod
@@ -124,7 +123,7 @@ internal protocol TypingTimerManagerProtocol {
     func cancelHeartbeatTimer()
     /// Starts a CHA-T13b1 "is this person typing" timer, thus adding this clientID to the typing set.
     /// If the clientID is already in the typing set, this will reset the timer (CHA-T13b2).
-    /// (CHA-T13a1) The `userClaim` is stored and persists across heartbeat events.
+    /// (CHA-T13a1) The `userClaim` is always set to the incoming event's value.
     /// The `handler` receives the userClaim that was stored for the client at the time of timer expiry.
     func startTypingTimer(for clientID: String, userClaim: String?, handler: (@MainActor (_ userClaim: String?) -> Void)?)
     /// Per CHA-T13b4, cancels the CHA-T13b1 "is this person typing" timer, thus removing this clientID from the typing set.

@@ -265,10 +265,10 @@ struct TypingUserClaimTests {
         #expect(timerManager.userClaimForClient("client1") == "admin")
     }
 
-    // @spec CHA-T13a1 - userClaim persists across heartbeat events
+    // @spec CHA-T13a1 - userClaim is cleared when heartbeat arrives without one
     @Test
     @available(iOS 16.0, tvOS 16, *)
-    func typingTimerManager_preservesUserClaimOnHeartbeat() {
+    func typingTimerManager_clearsUserClaimOnHeartbeatWithoutClaim() {
         let mockClock = MockTestClock()
         let timerManager = createTypingTimerManager(with: mockClock)
 
@@ -276,9 +276,9 @@ struct TypingUserClaimTests {
         timerManager.startTypingTimer(for: "client1", userClaim: "admin")
         #expect(timerManager.userClaimForClient("client1") == "admin")
 
-        // Heartbeat event without userClaim - should preserve the existing one
+        // Heartbeat event without userClaim - should clear the existing one per CHA-T13a1
         timerManager.startTypingTimer(for: "client1", userClaim: nil)
-        #expect(timerManager.userClaimForClient("client1") == "admin")
+        #expect(timerManager.userClaimForClient("client1") == nil)
     }
 
     // @spec CHA-T13a1 - userClaim is updated when a new one is provided
