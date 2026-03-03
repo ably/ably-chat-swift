@@ -165,7 +165,7 @@ To validate that the web documentation code snippets are accurate and up-to-date
 > [!IMPORTANT]
 > This prompt should be run with the most powerful LLM available to you (e.g. Claude Opus, GPT-5, etc.) for the best results.
 
-Replace `{DOCS_PATH}` with the path to your local clone of the [ably/docs](https://github.com/ably/docs) repository and `{SDK_PATH}` with the path to your local clone of this SDK repository.
+Replace `{DOCS_PATH}` with the path to your local clone of the [ably/docs](https://github.com/ably/docs) repository and `{SDK_PATH}` with the path to your local clone of the [ably-chat-swift](https://github.com/ably/ably-chat-swift) SDK repository. Ensure both the local `ably/docs` and `ably-chat-swift` repositories are on the `main` branch and in sync with the remote.
 
 ```text
 Verify all `swift` annotated code snippets in `.mdx` files located at `{DOCS_PATH}/src/pages/docs/chat` against the `ably-chat-swift` source code repository at `{SDK_PATH}`.
