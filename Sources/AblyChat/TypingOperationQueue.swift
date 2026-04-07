@@ -34,6 +34,7 @@ internal class TypingOperationQueue<Failure: Error> {
         }
 
         /// Executes the requested operation, and causes this request's call to `enqueue` to complete with the result of the execution.
+        @MainActor
         func performOperation() async {
             let result = await operation()
             complete(with: result)

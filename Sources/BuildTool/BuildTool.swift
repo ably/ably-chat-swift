@@ -134,7 +134,7 @@ struct GenerateMatrices: ParsableCommand {
     )
 
     mutating func run() throws {
-        let tooling = ["26.2"].map { xcodeVersion in
+        let tooling = ["26.4"].map { xcodeVersion in
             [
                 "xcodeVersion": xcodeVersion,
             ]
