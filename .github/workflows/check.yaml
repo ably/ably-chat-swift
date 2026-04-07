@@ -8,7 +8,7 @@ on:
       - main
 jobs:
   lint:
-    runs-on: macos-15
+    runs-on: macos-26
 
     # From actions/cache documentation linked to below
     env:
@@ -41,7 +41,7 @@ jobs:
       - run: swift run BuildTool lint
 
   spec-coverage:
-    runs-on: macos-15
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
         with:
@@ -58,7 +58,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   generate-matrices:
-    runs-on: macos-15
+    runs-on: macos-26
     outputs:
       matrix: ${{ steps.generation-step.outputs.matrix }}
     steps:
@@ -76,7 +76,7 @@ jobs:
 
   build-and-test-spm:
     name: SPM (Xcode ${{ matrix.tooling.xcodeVersion }})
-    runs-on: macos-15
+    runs-on: macos-26
     needs: generate-matrices
     strategy:
       fail-fast: false
@@ -96,7 +96,7 @@ jobs:
 
   build-release-configuration-spm:
     name: SPM, `release` configuration (Xcode ${{ matrix.tooling.xcodeVersion }})
-    runs-on: macos-15
+    runs-on: macos-26
     needs: generate-matrices
     strategy:
       fail-fast: false
@@ -115,7 +115,7 @@ jobs:
 
   build-and-test-xcode:
     name: Xcode, ${{matrix.platform}} (Xcode ${{ matrix.tooling.xcodeVersion }})
-    runs-on: macos-15
+    runs-on: macos-26
     needs: generate-matrices
 
     strategy:
@@ -141,7 +141,7 @@ jobs:
   # TODO: Disabled after this started failing when we switched to Xcode 26; investigate https://github.com/ably/ably-chat-swift/issues/361
   #  code-coverage:
   #    name: Generate code coverage
-  #    runs-on: macos-15
+  #    runs-on: macos-26
   #
   #    steps:
   #      - uses: actions/checkout@v4
@@ -174,7 +174,7 @@ jobs:
 
   build-release-configuration-xcode:
     name: Xcode, `release` configuration, ${{matrix.platform}} (Xcode ${{ matrix.tooling.xcodeVersion }})
-    runs-on: macos-15
+    runs-on: macos-26
     needs: generate-matrices
 
     strategy:
@@ -194,7 +194,7 @@ jobs:
 
   check-example-app:
     name: Example app, ${{matrix.platform}} (Xcode ${{ matrix.tooling.xcodeVersion }})
-    runs-on: macos-15
+    runs-on: macos-26
     needs: generate-matrices
 
     strategy:
@@ -213,7 +213,7 @@ jobs:
         run: swift run BuildTool build-example-app --platform ${{ matrix.platform }}
 
   check-documentation:
-    runs-on: macos-15
+    runs-on: macos-26
 
     permissions:
       deployments: write
