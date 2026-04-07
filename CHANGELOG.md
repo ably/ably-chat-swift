@@ -1,5 +1,13 @@
 # Change Log
 
+## [1.2.1](https://github.com/ably/ably-chat-swift/tree/1.2.1)
+
+### Bug Fixes
+
+- Fixed Xcode 26.4 compilation error. [#482](https://github.com/ably/ably-chat-swift/pull/482)
+
+**Full Changelog**: https://github.com/ably/ably-chat-swift/compare/1.2.0...1.2.1
+
 ## [1.2.0](https://github.com/ably/ably-chat-swift/tree/1.2.0)
 
 ## What's Changed
