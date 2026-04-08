@@ -214,6 +214,34 @@ final class MockAblyCocoaRealtime: NSObject, RealtimeClientProtocol, @unchecked 
         func history(_: @escaping ARTPaginatedMessagesCallback) {
             fatalError("Not implemented")
         }
+
+        func publish(_: String?, data _: Any?, resultCallback _: ARTPublishResultCallback? = nil) {
+            fatalError("Not implemented")
+        }
+
+        func publish(_: [ARTMessage], resultCallback _: ARTPublishResultCallback? = nil) {
+            fatalError("Not implemented")
+        }
+
+        func update(_: ARTMessage, operation _: ARTMessageOperation?, params _: [String: ARTStringifiable]?, callback _: ARTEditResultCallback? = nil) {
+            fatalError("Not implemented")
+        }
+
+        func delete(_: ARTMessage, operation _: ARTMessageOperation?, params _: [String: ARTStringifiable]?, callback _: ARTEditResultCallback? = nil) {
+            fatalError("Not implemented")
+        }
+
+        func append(_: ARTMessage, operation _: ARTMessageOperation?, params _: [String: ARTStringifiable]?, callback _: ARTEditResultCallback? = nil) {
+            fatalError("Not implemented")
+        }
+
+        func getMessageWithSerial(_: String, callback _: @escaping ARTMessageErrorCallback) {
+            fatalError("Not implemented")
+        }
+
+        func getMessageVersions(withSerial _: String, callback _: @escaping ARTPaginatedMessagesCallback) {
+            fatalError("Not implemented")
+        }
     }
 
     final class Presence: RealtimePresenceProtocol {

@@ -55,6 +55,8 @@ internal final class DefaultRoomReactions: RoomReactions {
 
             let messageClientID = message.clientId ?? "" // CHA-ER4e3
 
+            let userClaim = extras.userClaim // CHA-ER2a
+
             let reaction = RoomReaction(
                 name: dto?.name ?? "", // CHA-ER4e1
                 metadata: dto?.metadata ?? [:],
@@ -62,6 +64,7 @@ internal final class DefaultRoomReactions: RoomReactions {
                 createdAt: message.timestamp ?? Date(), // CHA-ER4e4
                 clientID: messageClientID,
                 isSelf: messageClientID == realtime.clientId,
+                userClaim: userClaim, // CHA-ER2a
             )
 
             let event = RoomReactionEvent(type: .reaction, reaction: reaction)

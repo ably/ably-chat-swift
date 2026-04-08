@@ -22,7 +22,8 @@ public enum ChatMessageAction: Sendable {
         case .delete:
             .messageDelete
         // ignore any other actions for now (CHA-M4k11)
-        case .meta,
+        case .append,
+             .meta,
              .messageSummary:
             nil
         @unknown default:

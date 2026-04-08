@@ -81,6 +81,7 @@ struct DefaultTypingTests {
 
     // @specOneOf(1/2) CHA-T6a - Tests subscription receives started event
     // @specOneOf(1/2) CHA-T4a3 - Tests that publish has correct name and data
+    // @specOneOf(1/2) CHA-T6d - Tests that currentTypers is populated in started event
     @Test
     @available(iOS 16.0, tvOS 16.0, *)
     func subscribe_ReceivesStartedTypingEvent() async throws {
@@ -94,6 +95,7 @@ struct DefaultTypingTests {
             TypingSetEvent(
                 type: .setChanged,
                 currentlyTyping: [clientId],
+                currentTypers: [.init(clientID: clientId)],
                 change: .init(clientID: clientId, type: .started),
             ),
         )
@@ -103,9 +105,12 @@ struct DefaultTypingTests {
         #expect(typingEvent.change.type == .started)
         #expect(typingEvent.change.clientID == clientId)
         #expect(typingEvent.currentlyTyping == [clientId])
+        #expect(typingEvent.currentTypers.count == 1)
+        #expect(typingEvent.currentTypers[0].clientID == clientId)
     }
 
     // @specOneOf(2/2) CHA-T6a - Tests subscription receives stopped event
+    // @specOneOf(2/2) CHA-T6d - Tests that currentTypers is populated in stopped event
     @Test
     @available(iOS 16.0, tvOS 16.0, *)
     func subscribe_ReceivesStoppedTypingEvent() async throws {
@@ -119,6 +124,7 @@ struct DefaultTypingTests {
             TypingSetEvent(
                 type: .setChanged,
                 currentlyTyping: [],
+                currentTypers: [],
                 change: .init(clientID: clientId, type: .stopped),
             ),
         )
@@ -128,9 +134,12 @@ struct DefaultTypingTests {
         #expect(typingEvent.change.type == .stopped)
         #expect(typingEvent.change.clientID == clientId)
         #expect(typingEvent.currentlyTyping.isEmpty)
+        #expect(typingEvent.currentTypers.isEmpty)
     }
 
     // @spec CHA-T9 - Tests retrieving currently typing clients
+    // @spec CHA-T16 - Tests current property returns typing client IDs
+    // @spec CHA-T18 - Tests currentTypers property returns typing members
     @Test
     @available(iOS 16.0, tvOS 16.0, *)
     func get_ReturnsCurrentlyTypingClients() async throws {
@@ -147,9 +156,12 @@ struct DefaultTypingTests {
 
         // When
         let typingClients = typing.current
+        let typingMembers = typing.currentTypers
 
         // Then
         #expect(typingClients.contains("test-client"))
+        #expect(typingMembers.count == 1)
+        #expect(typingMembers[0].clientID == "test-client")
     }
 
     // @specOneOf(2/2) CHA-T4a3 - Tests that publish has ephemeral flag

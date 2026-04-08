@@ -84,10 +84,19 @@ public struct Message: Sendable, Equatable {
      */
     public var reactions: MessageReactionSummary
 
+    // @spec CHA-M2h
+    /**
+     * The user claim attached to this message by the server.
+     *
+     * Set automatically by the Ably server when a JWT contains a matching
+     * `ably.room.<roomName>` claim. This is a read-only, server-provided value.
+     */
+    public var userClaim: String?
+
     /// Memberwise initializer to create a `Message`.
     ///
     /// - Note: You should not need to use this initializer when using the Chat SDK. It is exposed only to allow users to create mock versions of the SDK's protocols.
-    public init(serial: String, action: ChatMessageAction, clientID: String, text: String, metadata: MessageMetadata, headers: MessageHeaders, version: MessageVersion, timestamp: Date, reactions: MessageReactionSummary) {
+    public init(serial: String, action: ChatMessageAction, clientID: String, text: String, metadata: MessageMetadata, headers: MessageHeaders, version: MessageVersion, timestamp: Date, reactions: MessageReactionSummary, userClaim: String? = nil) {
         self.serial = serial
         self.action = action
         self.clientID = clientID
@@ -97,6 +106,7 @@ public struct Message: Sendable, Equatable {
         self.version = version
         self.timestamp = timestamp
         self.reactions = reactions
+        self.userClaim = userClaim
     }
 
     /**
@@ -193,6 +203,7 @@ extension Message: JSONObjectDecodable {
             version: .init(jsonObject: jsonObject.objectValueForKey("version"), defaultTimestamp: timestamp),
             timestamp: timestamp,
             reactions: reactionSummary,
+            userClaim: jsonObject.optionalStringValueForKey("userClaim"), // CHA-M2h
         )
     }
 }

@@ -46,15 +46,25 @@ public struct RoomReaction: Sendable {
      */
     public var isSelf: Bool
 
+    // @spec CHA-ER2a
+    /**
+     * The user claim attached to this reaction by the server.
+     *
+     * Set automatically by the Ably server when a JWT contains a matching
+     * `ably.room.<roomName>` claim. This is a read-only, server-provided value.
+     */
+    public var userClaim: String?
+
     /// Memberwise initializer to create a `RoomReaction`.
     ///
     /// - Note: You should not need to use this initializer when using the Chat SDK. It is exposed only to allow users to create mock versions of the SDK's protocols.
-    public init(name: String, metadata: RoomReactionMetadata, headers: RoomReactionHeaders, createdAt: Date, clientID: String, isSelf: Bool) {
+    public init(name: String, metadata: RoomReactionMetadata, headers: RoomReactionHeaders, createdAt: Date, clientID: String, isSelf: Bool, userClaim: String? = nil) {
         self.name = name
         self.metadata = metadata
         self.headers = headers
         self.createdAt = createdAt
         self.clientID = clientID
         self.isSelf = isSelf
+        self.userClaim = userClaim
     }
 }
