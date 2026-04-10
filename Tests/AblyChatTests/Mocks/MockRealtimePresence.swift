@@ -3,17 +3,27 @@ import Ably
 
 final class MockRealtimePresence: InternalRealtimePresenceProtocol {
     let callRecorder = MockMethodCallRecorder()
+    private var subscriptions: [@MainActor (ARTPresenceMessage) -> Void] = []
 
-    func subscribe(_: @escaping @MainActor (ARTPresenceMessage) -> Void) -> ARTEventListener? {
-        ARTEventListener()
+    func subscribe(_ callback: @escaping @MainActor (ARTPresenceMessage) -> Void) -> ARTEventListener? {
+        subscriptions.append(callback)
+        return ARTEventListener()
     }
 
-    func subscribe(_: ARTPresenceAction, callback _: @escaping @MainActor (ARTPresenceMessage) -> Void) -> ARTEventListener? {
-        ARTEventListener()
+    func subscribe(_: ARTPresenceAction, callback: @escaping @MainActor (ARTPresenceMessage) -> Void) -> ARTEventListener? {
+        subscriptions.append(callback)
+        return ARTEventListener()
     }
 
     func unsubscribe(_: ARTEventListener) {
-        // no-op since it's called automatically
+        // Clear subscriptions when unsubscribing
+        subscriptions.removeAll()
+    }
+
+    func emitMessage(_ message: ARTPresenceMessage) {
+        for callback in subscriptions {
+            callback(message)
+        }
     }
 
     func get() async throws(ErrorInfo) -> [PresenceMessage] {
