@@ -3,18 +3,28 @@ import Ably
 
 final class MockHTTPPaginatedResponse: InternalHTTPPaginatedResponseProtocol {
     let items: [JSONValue]
-    let statusCode: Int
     let headers: [String: String]
     let hasNext: Bool
 
+    var success: Bool
+    let statusCode: Int
+    var errorCode: Int
+    var errorMessage: String?
+
     init(
         items: [[String: JSONValue]],
+        success: Bool = true,
         statusCode: Int = 200,
+        errorCode: Int = 0,
+        errorMessage: String? = nil,
         headers: [String: String] = [:],
         hasNext: Bool = false,
     ) {
         self.items = items.map { .object($0) }
+        self.success = success
         self.statusCode = statusCode
+        self.errorCode = errorCode
+        self.errorMessage = errorMessage
         self.headers = headers
         self.hasNext = hasNext
     }

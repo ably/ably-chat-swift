@@ -41,9 +41,9 @@ internal final class DefaultPaginatedResult<Underlying: InternalHTTPPaginatedRes
 
     /// Convenience initializer that checks status code and decodes items from the response.
     internal convenience init(response: Underlying) throws(ErrorInfo) {
-        // TODO: We've had this check since the start of the codebase, but it's not specified anywhere; rectify this in https://github.com/ably/ably-chat-swift/issues/453
-        guard response.statusCode == 200 else {
-            throw InternalError.paginatedResultStatusCode(response.statusCode).toErrorInfo()
+        // (CHA-M6b) If the REST API returns an error, then the method must throw its `ErrorInfo` representation.
+        guard response.success else {
+            throw InternalError.failedToGetPaginatedResult(cause: .init(code: response.errorCode, message: response.errorMessage ?? "<no error message in response>", statusCode: response.statusCode)).toErrorInfo()
         }
 
         let items = try response.items.map { jsonValue throws(ErrorInfo) in
