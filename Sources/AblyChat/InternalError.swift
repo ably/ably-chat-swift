@@ -78,6 +78,11 @@ internal enum InternalError {
     /// Error code is `invalidArgument`.
     case unableDeleteReactionWithoutName(reactionType: String)
 
+    /// The user tried to get a room from a client that has been disposed, per CHA-CL1.
+    ///
+    /// Error code is `resourceDisposed`.
+    case clientDisposed
+
     // MARK: - Errors not from the spec
 
     // TODO: Revisit the non-specified errors as part of https://github.com/ably/ably-chat-swift/issues/438
@@ -130,6 +135,7 @@ internal enum InternalError {
     internal enum ErrorCode: Int {
         case badRequest = 40000
         case invalidArgument = 40003
+        case resourceDisposed = 40014
         case roomDiscontinuity = 102_100
         case roomReleasedBeforeOperationCompleted = 102_106
         case roomExistsWithDifferentOptions = 102_107
@@ -141,6 +147,7 @@ internal enum InternalError {
             switch self {
             case .badRequest,
                  .invalidArgument,
+                 .resourceDisposed,
                  .roomReleasedBeforeOperationCompleted,
                  .roomInInvalidState,
                  .roomExistsWithDifferentOptions:
@@ -197,6 +204,8 @@ internal enum InternalError {
             .badRequest
         case .jsonValueDecodingError:
             .badRequest
+        case .clientDisposed:
+            .resourceDisposed
         }
     }
 
@@ -322,6 +331,9 @@ internal enum InternalError {
             case let .failedToDecodeFromRawValue(type: type, rawValue: rawValue):
                 reason = "could not decode \(type) from raw value \(rawValue)"
             }
+        case .clientDisposed:
+            op = "get room"
+            reason = "client has been disposed"
         }
 
         return "unable to \(op); \(reason)"
@@ -353,7 +365,8 @@ internal enum InternalError {
              .deleteMessageReactionEmptyMessageSerial,
              .noItemInResponse,
              .paginatedResultStatusCode,
-             .failedToResolveSubscriptionPointBecauseMessagesInstanceGone:
+             .failedToResolveSubscriptionPointBecauseMessagesInstanceGone,
+             .clientDisposed:
             nil
         }
     }

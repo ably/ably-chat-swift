@@ -53,6 +53,20 @@ public protocol ChatClientProtocol: AnyObject, Sendable {
      * - Returns: The client options.
      */
     var clientOptions: ChatClientOptions { get }
+
+    /**
+     * Disposes of the chat client and releases all associated resources.
+     *
+     * Calling this method will:
+     * - Release all rooms managed by this client
+     * - Clean up connection listeners and timers
+     *
+     * After calling this method, the client should not be used. Attempting to get a room
+     * after dispose has been called will throw an error.
+     *
+     * This method is idempotent - calling it multiple times has no additional effect.
+     */
+    func dispose() async
 }
 
 @MainActor
@@ -130,6 +144,26 @@ public class ChatClient: ChatClientProtocol {
     // swiftlint:disable:next missing_docs
     public var clientID: String? {
         realtime.clientId
+    }
+
+    /// Whether this ChatClient has been disposed.
+    private var isDisposed = false
+
+    // @spec CHA-CL1
+    // swiftlint:disable:next missing_docs
+    public func dispose() async {
+        // Idempotency check
+        if isDisposed {
+            return
+        }
+
+        isDisposed = true
+
+        // CHA-CL1a: First, dispose of all rooms
+        await _rooms.dispose()
+
+        // CHA-CL1b: Then, dispose of connection instance
+        _connection.dispose()
     }
 }
 

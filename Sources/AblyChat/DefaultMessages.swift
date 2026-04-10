@@ -12,9 +12,12 @@ internal final class DefaultMessages<Realtime: InternalRealtimeClientProtocol>: 
     private var currentSubscriptionPoint: String?
     private var subscriptionPoints: [UUID: String] = [:]
 
+    /// The channel state listener used to track subscription points.
+    private var channelStateListener: ARTEventListener?
+
     private func updateCurrentSubscriptionPoint() {
         currentSubscriptionPoint = channel.properties.attachSerial
-        _ = channel.on { [weak self] stateChange in
+        channelStateListener = channel.on { [weak self] stateChange in
             guard let self else {
                 return
             }
@@ -174,5 +177,21 @@ internal final class DefaultMessages<Realtime: InternalRealtimeClientProtocol>: 
 
     internal enum MessagesError: Error {
         case noReferenceToSelf
+    }
+
+    /// Disposes of the messages feature, cleaning up listeners and state.
+    internal func dispose() {
+        // Remove channel state listener
+        if let channelStateListener {
+            channel.off(channelStateListener)
+        }
+        channelStateListener = nil
+
+        // Clear subscription points
+        currentSubscriptionPoint = nil
+        subscriptionPoints.removeAll()
+
+        // Dispose of message reactions
+        reactions.dispose()
     }
 }
