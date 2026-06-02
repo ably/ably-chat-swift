@@ -20,6 +20,10 @@ class MockChatClient: ChatClientProtocol {
     var clientID: String? {
         "AblyTest"
     }
+
+    func dispose() async {
+        // No-op for mock
+    }
 }
 
 class MockRooms: Rooms {
