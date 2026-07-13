@@ -108,7 +108,7 @@ public enum ConnectionStatus: Sendable {
      */
     case failed
 
-    // (CHA-CS1g) The @CLOSING@ status is used when a user has called @close@ on the underlying Realtime client and it is attempting to close the connection with Ably. The library will not attempt to reconnect.
+    // (CHA-CS1g) The CLOSING status is used when a user has called close on the underlying Realtime client and it is attempting to close the connection with Ably. The library will not attempt to reconnect.
 
     /**
      * An explicit request by the developer to close the connection has been sent to the Ably service.
@@ -117,7 +117,7 @@ public enum ConnectionStatus: Sendable {
      */
     case closing
 
-    // (CHA-CS1h) The @CLOSED@ status is used when the @close@ call on the underlying Realtime client has succeeded, either via mutual agreement with the server or forced after a time out. The library will not attempt to reconnect.
+    // (CHA-CS1h) The CLOSED status is used when the close call on the underlying Realtime client has succeeded, either via mutual agreement with the server or forced after a time out. The library will not attempt to reconnect.
 
     /**
      * The connection has been explicitly closed by the client.
