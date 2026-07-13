@@ -109,10 +109,14 @@ internal protocol InternalHTTPPaginatedResponseProtocol: AnyObject, Sendable {
     var items: [JSONValue] { get }
     var hasNext: Bool { get }
     var isLast: Bool { get }
-    var statusCode: Int { get }
 
     func next() async throws(ErrorInfo) -> Self?
     func first() async throws(ErrorInfo) -> Self
+
+    var success: Bool { get }
+    var statusCode: Int { get }
+    var errorCode: Int { get }
+    var errorMessage: String? { get }
 }
 
 /// Converts a `@MainActor` callback into one that can be passed as a callback to ably-cocoa.
@@ -202,8 +206,20 @@ internal final class InternalHTTPPaginatedResponseAdapter: InternalHTTPPaginated
         underlying.isLast
     }
 
+    internal var success: Bool {
+        underlying.success
+    }
+
     internal var statusCode: Int {
         underlying.statusCode
+    }
+
+    internal var errorCode: Int {
+        underlying.errorCode
+    }
+
+    internal var errorMessage: String? {
+        underlying.errorMessage
     }
 
     internal func next() async throws(ErrorInfo) -> InternalHTTPPaginatedResponseAdapter? {

@@ -87,25 +87,16 @@ internal enum InternalError {
     /// Error code is `badRequest` (this is our own error, which is not specified by the spec).
     case failedToResolveSubscriptionPointBecauseMessagesInstanceGone
 
-    /// Unable to fetch `historyBeforeSubscribe` because a channel in the `ATTACHED` state has violated our expectations by its `attachSerial` not being populated, so we cannot resolve its "subscription point" per CHA-M5b.
-    ///
-    /// Error code is `badRequest` (this is not specified by the spec, which does not make it explicit that the SDK should throw an error in this scenario).
-    case failedToResolveSubscriptionPointBecauseAttachSerialNotDefined
-
-    /// Unable to fetch `historyBeforeSubscribe` because whilst waiting for a channel to become attached per CHA-M5b in order to resolve its "subscription point".
-    ///
-    /// Error code is `badRequest` (this is not specified by the spec, which does not make it explicit that the SDK should throw an error in this scenario).
-    case failedToResolveSubscriptionPointBecauseChannelFailedToAttach(cause: ErrorInfo?)
+    /// Unable to fetch `historyBeforeSubscribe` because a channel in the `ATTACHED` state has violated our expectations by its `channelSerial` or `attachSerial` not being populated, so we cannot resolve its "subscription point" per CHA-M5b.
+    case failedToResolveSubscriptionPointBecauseChannelSerialNotDefined
 
     /// Attempted to load a resource from the given `path`, expecting to get a single item back, but the returned `PaginatedResult` is empty.
-    ///
-    /// Error code is `badRequest` (this is not specified by the spec, which does not make it explicit that the SDK should throw an error in this scenario).
     case noItemInResponse(path: String)
 
     /// An ably-cocoa `ARTHTTPPaginatedResponse` was received with the given non-200 status code.
     ///
     /// Error code is `badRequest` (this is not specified by the spec, which does not make it explicit that the SDK should throw an error in this scenario).
-    case paginatedResultStatusCode(Int)
+    case failedToGetPaginatedResult(cause: ErrorInfo?)
 
     // Failed to decode a `HeadersValue` from a `JSONValue`.
     ///
@@ -130,9 +121,11 @@ internal enum InternalError {
     internal enum ErrorCode: Int {
         case badRequest = 40000
         case invalidArgument = 40003
+        case notFound = 40400
         case roomDiscontinuity = 102_100
         case roomReleasedBeforeOperationCompleted = 102_106
         case roomExistsWithDifferentOptions = 102_107
+        case channelSerialNotDefined = 102_110
         case roomInInvalidState = 102_112
 
         /// The ``ErrorInfo/statusCode`` that should be returned for this error.
@@ -145,7 +138,10 @@ internal enum InternalError {
                  .roomInInvalidState,
                  .roomExistsWithDifferentOptions:
                 400
-            case .roomDiscontinuity:
+            case .notFound:
+                404
+            case .roomDiscontinuity,
+                 .channelSerialNotDefined:
                 500
             }
         }
@@ -183,13 +179,11 @@ internal enum InternalError {
             .invalidArgument
         case .cannotApplyCreatedMessageEvent:
             .invalidArgument
-        case .failedToResolveSubscriptionPointBecauseAttachSerialNotDefined:
-            .badRequest
-        case .failedToResolveSubscriptionPointBecauseChannelFailedToAttach:
-            .badRequest
+        case .failedToResolveSubscriptionPointBecauseChannelSerialNotDefined:
+            .channelSerialNotDefined
         case .noItemInResponse:
-            .badRequest
-        case .paginatedResultStatusCode:
+            .notFound
+        case .failedToGetPaginatedResult:
             .badRequest
         case .failedToResolveSubscriptionPointBecauseMessagesInstanceGone:
             .badRequest
@@ -286,12 +280,9 @@ internal enum InternalError {
         case .failedToResolveSubscriptionPointBecauseMessagesInstanceGone:
             op = "fetch message history from before subscription"
             reason = "Messages instance has been deallocated"
-        case .failedToResolveSubscriptionPointBecauseAttachSerialNotDefined:
+        case .failedToResolveSubscriptionPointBecauseChannelSerialNotDefined:
             op = "fetch message history from before subscription"
-            reason = "channel is attached but attachSerial is not defined"
-        case let .failedToResolveSubscriptionPointBecauseChannelFailedToAttach(cause):
-            op = "fetch message history from before subscription"
-            reason = "channel failed to attach: \(cause, default: "(nil cause)")"
+            reason = "channel is attached but channelSerial is not defined"
         case .sendMessageReactionEmptyMessageSerial:
             op = "send message reaction"
             reason = "message serial must not be empty"
@@ -301,9 +292,9 @@ internal enum InternalError {
         case let .noItemInResponse(path):
             op = "load resource"
             reason = "paginated result from path \(path) is empty"
-        case let .paginatedResultStatusCode(statusCode):
+        case let .failedToGetPaginatedResult(cause):
             op = "load resource"
-            reason = "received status code \(statusCode)"
+            reason = "reason: \(cause, default: "<no reason>")"
         case let .headersValueJSONDecodingError(error):
             op = "decode headers"
             switch error {
@@ -334,7 +325,7 @@ internal enum InternalError {
             cause
         case let .roomDiscontinuity(cause):
             cause
-        case let .failedToResolveSubscriptionPointBecauseChannelFailedToAttach(cause):
+        case let .failedToGetPaginatedResult(cause):
             cause
         case .jsonValueDecodingError,
              .headersValueJSONDecodingError,
@@ -344,7 +335,7 @@ internal enum InternalError {
              .presenceOperationRequiresRoomAttach,
              .cannotApplyCreatedMessageEvent,
              .unableDeleteReactionWithoutName,
-             .failedToResolveSubscriptionPointBecauseAttachSerialNotDefined,
+             .failedToResolveSubscriptionPointBecauseChannelSerialNotDefined,
              .roomInInvalidStateForAttach,
              .roomInInvalidStateForDetach,
              .cannotApplyMessageEventForDifferentMessage,
@@ -352,7 +343,6 @@ internal enum InternalError {
              .sendMessageReactionEmptyMessageSerial,
              .deleteMessageReactionEmptyMessageSerial,
              .noItemInResponse,
-             .paginatedResultStatusCode,
              .failedToResolveSubscriptionPointBecauseMessagesInstanceGone:
             nil
         }
