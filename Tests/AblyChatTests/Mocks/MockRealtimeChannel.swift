@@ -2,7 +2,7 @@ import Ably
 @testable import AblyChat
 
 final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
-    let presence = MockRealtimePresence()
+    let presence: MockRealtimePresence
     let annotations: MockRealtimeAnnotations
     let proxied = MockAblyCocoaRealtime.Channel()
 
@@ -44,6 +44,7 @@ final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
         attachSerial = properties.attachSerial
         channelSerial = properties.channelSerial
         self.stateChangeToEmitForListener = stateChangeToEmitForListener
+        presence = MockRealtimePresence()
         annotations = MockRealtimeAnnotations(annotationToEmitOnSubscribe: annotationToEmitOnSubscribe)
     }
 
@@ -207,5 +208,9 @@ final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
 
     func publish(_ name: String?, data: JSONValue?, extras: [String: JSONValue]?) {
         publishedMessages.append(TestMessage(name: name, data: data, extras: extras))
+    }
+
+    func emitPresenceMessage(_ message: ARTPresenceMessage) {
+        presence.emitMessage(message)
     }
 }
