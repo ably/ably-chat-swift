@@ -90,6 +90,10 @@ jobs:
   build-and-test-spm:
     name: SPM (Xcode ${{ matrix.tooling.xcodeVersion }})
     runs-on: macos-26
+    # A healthy run takes a few minutes. The cap is here so that a test waiting
+    # on an event that never arrives fails the job rather than occupying a
+    # runner until GitHub's own six-hour limit.
+    timeout-minutes: 20
     needs: generate-matrices
     permissions:
       contents: read
@@ -135,6 +139,7 @@ jobs:
   build-and-test-xcode:
     name: Xcode, ${{matrix.platform}} (Xcode ${{ matrix.tooling.xcodeVersion }})
     runs-on: macos-26
+    timeout-minutes: 20
     needs: generate-matrices
 
     permissions:
