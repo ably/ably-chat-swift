@@ -1,4 +1,4 @@
-import Ably
+import AblyPubSubDevice
 
 // swiftlint:disable:next missing_docs
 public typealias PresenceData = JSONObject
@@ -206,7 +206,7 @@ public enum PresenceEventType: Sendable {
      */
     case present
 
-    internal init?(ablyCocoaValue: ARTPresenceAction) {
+    internal init?(ablyCocoaValue: PresenceAction) {
         switch ablyCocoaValue {
         case .present:
             self = .present
@@ -224,7 +224,7 @@ public enum PresenceEventType: Sendable {
         }
     }
 
-    internal func toARTPresenceAction() -> ARTPresenceAction {
+    internal func toARTPresenceAction() -> PresenceAction {
         switch self {
         case .present:
             .present
@@ -279,8 +279,8 @@ public struct PresenceParams: Sendable {
         self.waitForSync = waitForSync
     }
 
-    internal func asARTRealtimePresenceQuery() -> ARTRealtimePresenceQuery {
-        let query = ARTRealtimePresenceQuery()
+    internal func asARTRealtimePresenceQuery() -> RealtimePresenceQuery {
+        let query = RealtimePresenceQuery()
         query.clientId = clientID
         query.connectionId = connectionID
         query.waitForSync = waitForSync

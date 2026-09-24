@@ -1,4 +1,4 @@
-import Ably
+import AblyPubSubDevice
 
 // This disable of attributes can be removed once missing_docs fixed here
 // swiftlint:disable attributes
@@ -73,12 +73,12 @@ internal final class DefaultInternalRealtimeClientFactory<Underlying: ProxyRealt
  */
 public class ChatClient: ChatClientProtocol {
     // swiftlint:disable:next missing_docs
-    public let realtime: ARTRealtime
+    public let realtime: PubSubClient
     // swiftlint:disable:next missing_docs
     public let clientOptions: ChatClientOptions
-    private let _rooms: DefaultRooms<DefaultRoomFactory<InternalRealtimeClientAdapter<ARTWrapperSDKProxyRealtime>>>
+    private let _rooms: DefaultRooms<DefaultRoomFactory<InternalRealtimeClientAdapter<WrapperSDKProxyRealtime>>>
     // swiftlint:disable:next missing_docs
-    public var rooms: some Rooms<ARTRealtimeChannel> {
+    public var rooms: some Rooms<RealtimeChannel> {
         _rooms
     }
 
@@ -99,19 +99,19 @@ public class ChatClient: ChatClientProtocol {
      *   - realtime: The Ably Realtime client. Its `dispatchQueue` option must be the main queue (this is its default behaviour).
      *   - clientOptions: The client options.
      */
-    public convenience init(realtime: ARTRealtime, clientOptions: ChatClientOptions? = nil) {
+    public convenience init(realtime: PubSubClient, clientOptions: ChatClientOptions? = nil) {
         self.init(
             realtime: realtime,
             clientOptions: clientOptions,
-            internalRealtimeClientFactory: DefaultInternalRealtimeClientFactory<ARTWrapperSDKProxyRealtime>(),
+            internalRealtimeClientFactory: DefaultInternalRealtimeClientFactory<WrapperSDKProxyRealtime>(),
         )
     }
 
     internal init<RealtimeClientFactory: InternalRealtimeClientFactory>(
-        realtime suppliedRealtime: ARTRealtime,
+        realtime suppliedRealtime: PubSubClient,
         clientOptions: ChatClientOptions?,
         internalRealtimeClientFactory: RealtimeClientFactory,
-    ) where RealtimeClientFactory.Underlying == ARTWrapperSDKProxyRealtime, RealtimeClientFactory.Output == InternalRealtimeClientAdapter<ARTWrapperSDKProxyRealtime> {
+    ) where RealtimeClientFactory.Underlying == WrapperSDKProxyRealtime, RealtimeClientFactory.Output == InternalRealtimeClientAdapter<WrapperSDKProxyRealtime> {
         self.realtime = suppliedRealtime
         self.clientOptions = clientOptions ?? .init()
 
@@ -122,7 +122,7 @@ public class ChatClient: ChatClientProtocol {
         let internalRealtime = internalRealtimeClientFactory.createInternalRealtimeClient(realtime)
 
         logger = DefaultInternalLogger(logHandler: self.clientOptions.logHandler, logLevel: self.clientOptions.logLevel)
-        let roomFactory = DefaultRoomFactory<InternalRealtimeClientAdapter<ARTWrapperSDKProxyRealtime>>()
+        let roomFactory = DefaultRoomFactory<InternalRealtimeClientAdapter<WrapperSDKProxyRealtime>>()
         _rooms = DefaultRooms(realtime: internalRealtime, logger: logger, roomFactory: roomFactory)
         _connection = DefaultConnection(realtime: internalRealtime)
     }

@@ -1,5 +1,5 @@
-import Ably
 @testable import AblyChat
+import AblyPubSubDevice
 import Testing
 
 @MainActor
@@ -132,7 +132,7 @@ struct DefaultMessageReactionsTests {
         let channel = MockRealtimeChannel(
             initialState: .attached,
             messageToEmitOnSubscribe: {
-                let message = ARTMessage()
+                let message = AblyPubSubDevice.Message()
                 message.serial = "001"
                 message.action = .messageSummary
                 message.annotations = .init(
@@ -192,7 +192,7 @@ struct DefaultMessageReactionsTests {
         let channel = MockRealtimeChannel(
             initialState: .attached,
             messageToEmitOnSubscribe: {
-                let message = ARTMessage()
+                let message = AblyPubSubDevice.Message()
                 message.serial = "001"
                 message.action = .messageSummary
                 return message

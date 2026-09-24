@@ -1,4 +1,4 @@
-import Ably
+import AblyPubSubDevice
 
 internal final class DefaultMessages<Realtime: InternalRealtimeClientProtocol>: Messages {
     internal let reactions: DefaultMessageReactions<Realtime>

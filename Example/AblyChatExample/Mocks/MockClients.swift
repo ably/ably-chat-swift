@@ -1,5 +1,5 @@
-import Ably
 @testable import AblyChat
+import Foundation
 
 class MockChatClient: ChatClientProtocol {
     final class Realtime: Sendable {

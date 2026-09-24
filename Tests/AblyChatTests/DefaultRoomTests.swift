@@ -1,5 +1,5 @@
-import Ably
 @testable import AblyChat
+import AblyPubSubDevice
 import Testing
 
 @MainActor
@@ -107,14 +107,14 @@ struct DefaultRoomTests {
             (
                 enableEvents: true,
                 // i.e. it doesn't explicitly set any modes (so that Realtime will use the default modes)
-                expectedChannelModes: [.publish, .subscribe, .presence, .annotationPublish, .presenceSubscribe] as ARTChannelMode,
+                expectedChannelModes: [.publish, .subscribe, .presence, .annotationPublish, .presenceSubscribe] as ChannelMode,
             ),
             (
                 enableEvents: false,
-                expectedChannelModes: [.publish, .subscribe, .presence, .annotationPublish] as ARTChannelMode,
+                expectedChannelModes: [.publish, .subscribe, .presence, .annotationPublish] as ChannelMode,
             ),
         ])
-    func presenceEnableEvents(enableEvents: Bool, expectedChannelModes: ARTChannelMode) async throws {
+    func presenceEnableEvents(enableEvents: Bool, expectedChannelModes: ChannelMode) async throws {
         // Given: A DefaultRoom instance, with the presence.enableEvents room option set per the test argument
         let channelsList = [
             MockRealtimeChannel(name: "basketball::$chat"),

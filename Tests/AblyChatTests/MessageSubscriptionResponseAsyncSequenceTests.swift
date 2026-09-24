@@ -1,5 +1,5 @@
-import Ably
 @testable import AblyChat
+import AblyPubSubDevice
 import AsyncAlgorithms
 import Foundation
 import Testing

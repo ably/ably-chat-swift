@@ -1,4 +1,4 @@
-import Ably
+import AblyPubSubDevice
 
 /**
  * Enum representing different raw message reaction events in the chat system.
@@ -24,7 +24,7 @@ public enum MessageReactionRawEventType: Sendable {
 }
 
 internal extension MessageReactionRawEventType {
-    static func fromAnnotationAction(_ annotationAction: ARTAnnotationAction) -> Self? {
+    static func fromAnnotationAction(_ annotationAction: AnnotationAction) -> Self? {
         switch annotationAction {
         case .create:
             .create

@@ -1,4 +1,4 @@
-import Ably
+import AblyPubSubDevice
 
 internal final class DefaultOccupancy<Realtime: InternalRealtimeClientProtocol>: Occupancy {
     private let channel: any InternalRealtimeChannelProtocol

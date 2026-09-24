@@ -1,4 +1,4 @@
-import Ably
+import AblyPubSubDevice
 
 // This disable of attributes can be removed once missing_docs fixed here
 // swiftlint:disable attributes

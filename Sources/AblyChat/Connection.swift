@@ -1,4 +1,4 @@
-import Ably
+import AblyPubSubDevice
 
 /**
  * Represents a connection to Ably.
@@ -126,7 +126,7 @@ public enum ConnectionStatus: Sendable {
      */
     case closed
 
-    internal static func fromRealtimeConnectionState(_ state: ARTRealtimeConnectionState) -> Self {
+    internal static func fromRealtimeConnectionState(_ state: RealtimeConnectionState) -> Self {
         switch state {
         case .initialized:
             .initialized

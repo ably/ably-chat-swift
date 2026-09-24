@@ -1,4 +1,4 @@
-import Ably
+import AblyPubSubDevice
 
 /**
  * Manages the lifecycle of chat rooms.

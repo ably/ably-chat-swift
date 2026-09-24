@@ -1,21 +1,21 @@
-import Ably
 @testable import AblyChat
+import AblyPubSubDevice
 
 final class MockConnection: InternalConnectionProtocol {
-    let state: ARTRealtimeConnectionState
+    let state: RealtimeConnectionState
 
     let errorReason: ErrorInfo?
 
-    init(state: ARTRealtimeConnectionState = .initialized, errorReason: ErrorInfo? = nil) {
+    init(state: RealtimeConnectionState = .initialized, errorReason: ErrorInfo? = nil) {
         self.state = state
         self.errorReason = errorReason
     }
 
-    func on(_: @escaping @MainActor (ConnectionStateChange) -> Void) -> ARTEventListener {
+    func on(_: @escaping @MainActor (ConnectionStateChange) -> Void) -> EventListener {
         fatalError("Not implemented")
     }
 
-    func off(_: ARTEventListener) {
+    func off(_: EventListener) {
         fatalError("Not implemented")
     }
 }

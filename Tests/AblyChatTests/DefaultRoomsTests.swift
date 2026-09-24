@@ -1,5 +1,5 @@
-import Ably
 @testable import AblyChat
+import AblyPubSubDevice
 import Testing
 
 // The channel name of basketball::$chat is passed in to these tests due to `DefaultRoom` kicking off the `DefaultMessages` initialization. This in turn needs a valid `roomName` or else the `MockChannels` class will throw an error as it would be expecting a channel with the name \(roomName)::$chat to exist (where `roomName` is the property passed into `rooms.get`).

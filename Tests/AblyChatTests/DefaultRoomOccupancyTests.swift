@@ -1,5 +1,5 @@
-import Ably
 @testable import AblyChat
+import AblyPubSubDevice
 import Testing
 
 @MainActor
@@ -65,7 +65,7 @@ struct DefaultRoomOccupancyTests {
         let channel = MockRealtimeChannel(
             name: "basketball::$chat",
             messageToEmitOnSubscribe: {
-                let message = ARTMessage()
+                let message = AblyPubSubDevice.Message()
                 message.action = .create // arbitrary
                 message.serial = "" // arbitrary
                 message.clientId = "" // arbitrary
@@ -111,7 +111,7 @@ struct DefaultRoomOccupancyTests {
         let channel = MockRealtimeChannel(
             name: "basketball::$chat",
             messageToEmitOnSubscribe: {
-                let message = ARTMessage()
+                let message = AblyPubSubDevice.Message()
                 return message
             }(),
         )

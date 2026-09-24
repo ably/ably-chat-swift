@@ -1,4 +1,4 @@
-import Ably
+import AblyPubSubDevice
 
 /**
  * Represents a chat room.
@@ -345,7 +345,7 @@ internal class DefaultRoom<Realtime: InternalRealtimeClientProtocol, LifecycleMa
     }
 
     private static func createChannel(roomName: String, roomOptions: RoomOptions, realtime: Realtime) -> Realtime.Channels.Channel {
-        let channelOptions = ARTRealtimeChannelOptions()
+        let channelOptions = RealtimeChannelOptions()
 
         // CHA-GP2a
         channelOptions.attachOnSubscribe = false

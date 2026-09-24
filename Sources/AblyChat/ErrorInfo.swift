@@ -1,4 +1,4 @@
-import Ably
+import AblyPubSubDevice
 import Foundation
 
 /// A generic Ably error object that contains an Ably-specific error code, and a generic status code.
@@ -6,7 +6,7 @@ public struct ErrorInfo: Error, CustomStringConvertible {
     /// The source of an `ErrorInfo`'s public properties (`code`, `statusCode` etc).
     internal indirect enum Source {
         /// An error thrown by ably-cocoa that we wish to re-throw as an `ErrorInfo`, or an error thrown by ably-cocoa that we wish to use for the `cause` of an `ErrorInfo`, or the `cause` of an error thrown by ably-cocoa that we wish to use for the `cause` of an `ErrorInfo`.
-        case fromAblyCocoa(ARTErrorInfo)
+        case fromAblyCocoa(AblyPubSubDevice.ErrorInfo)
 
         /// The public properties come from an `InternalError`.
         case internalError(InternalError)
@@ -98,15 +98,15 @@ public struct ErrorInfo: Error, CustomStringConvertible {
         source = .internalError(internalError)
     }
 
-    /// Creates an `ErrorInfo` from an `ARTErrorInfo`.
-    internal init(ablyCocoaError: ARTErrorInfo) {
+    /// Creates an `ErrorInfo` from an `ErrorInfo`.
+    internal init(ablyCocoaError: AblyPubSubDevice.ErrorInfo) {
         source = .fromAblyCocoa(ablyCocoaError)
     }
 
-    /// Creates an `ErrorInfo` from an optional `ARTErrorInfo`, returning `nil` if the ably-cocoa error is `nil`.
+    /// Creates an `ErrorInfo` from an optional `ErrorInfo`, returning `nil` if the ably-cocoa error is `nil`.
     ///
     /// - Warning: Only use this if you truly do not know or care whether the ably-cocoa error is nil; otherwise, favour ``init(ablyCocoaError:)``.
-    internal init?(optionalAblyCocoaError: ARTErrorInfo?) {
+    internal init?(optionalAblyCocoaError: AblyPubSubDevice.ErrorInfo?) {
         guard let ablyCocoaError = optionalAblyCocoaError else {
             return nil
         }
