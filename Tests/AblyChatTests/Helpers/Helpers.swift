@@ -1,5 +1,5 @@
-import Ably
 @testable import AblyChat
+import AblyPubSubDevice
 
 extension ErrorInfo {
     /**
@@ -53,7 +53,7 @@ extension ErrorInfo {
     }
 }
 
-extension ARTPresenceMessage {
+extension AblyPubSubDevice.PresenceMessage {
     convenience init(clientId: String, data: Any? = [:], timestamp: Date = Date()) {
         self.init()
         self.clientId = clientId
@@ -144,14 +144,14 @@ extension [String: Any] {
     }
 }
 
-extension ARTMessageVersion {
+extension AblyPubSubDevice.MessageVersion {
     convenience init(serial: String) {
         self.init()
         self.serial = serial
     }
 }
 
-extension ARTMessageAnnotations {
+extension MessageAnnotations {
     convenience init(summary: [String: Any]) {
         self.init()
         self.summary = summary

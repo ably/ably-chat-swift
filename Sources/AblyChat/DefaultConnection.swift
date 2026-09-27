@@ -1,4 +1,4 @@
-import Ably
+import AblyPubSubDevice
 
 internal final class DefaultConnection: Connection {
     private let realtime: any InternalRealtimeClientProtocol

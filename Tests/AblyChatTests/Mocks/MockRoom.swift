@@ -1,5 +1,5 @@
-import Ably
 @testable import AblyChat
+import AblyPubSubDevice
 
 class MockRoom: InternalRoom {
     let options: RoomOptions

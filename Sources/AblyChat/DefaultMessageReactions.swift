@@ -1,4 +1,4 @@
-import Ably
+import AblyPubSubDevice
 
 @MainActor
 internal final class DefaultMessageReactions<Realtime: InternalRealtimeClientProtocol>: MessageReactions {
@@ -119,7 +119,7 @@ internal final class DefaultMessageReactions<Realtime: InternalRealtimeClientPro
 
             let reactionEvent = MessageReactionRawEvent(
                 type: reactionEventType,
-                // TODO: This is just a fallback value until ably-cocoa fixes the nullability of ARTAnnotation.timestamp. Remove in https://github.com/ably/ably-chat-swift/issues/395
+                // TODO: This is just a fallback value until ably-cocoa fixes the nullability of Annotation.timestamp. Remove in https://github.com/ably/ably-chat-swift/issues/395
                 timestamp: annotation.timestamp ?? Date(),
                 reaction: MessageReactionRawEvent.Reaction(
                     type: reactionType,

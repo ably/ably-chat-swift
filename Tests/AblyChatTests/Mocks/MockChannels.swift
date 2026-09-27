@@ -1,16 +1,16 @@
-import Ably
 @testable import AblyChat
+import AblyPubSubDevice
 
 final class MockChannels: InternalRealtimeChannelsProtocol {
     private let channels: [MockRealtimeChannel]
-    private(set) var getArguments: [(name: String, options: ARTRealtimeChannelOptions)] = []
+    private(set) var getArguments: [(name: String, options: RealtimeChannelOptions)] = []
     private(set) var releaseArguments: [String] = []
 
     init(channels: [MockRealtimeChannel]) {
         self.channels = channels
     }
 
-    func get(_ name: String, options: ARTRealtimeChannelOptions) -> MockRealtimeChannel {
+    func get(_ name: String, options: RealtimeChannelOptions) -> MockRealtimeChannel {
         getArguments.append((name: name, options: options))
 
         guard let channel = (channels.first { $0.name == name }) else {

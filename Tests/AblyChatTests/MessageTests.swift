@@ -1,5 +1,5 @@
-@testable import Ably
 @testable import AblyChat
+@testable import AblyPubSubDevice
 import Foundation
 import Testing
 

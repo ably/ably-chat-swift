@@ -1,48 +1,40 @@
-import Ably
+import AblyPubSubDevice
 
-/// A mock subclass of ably-cocoa's `ARTRealtime`.
+/// A mock subclass of ably-cocoa's `PubSubClient`.
 ///
 /// This is used very little in the tests (only in `ChatClientTests`); elsewhere we work with protocol mocks.
-class MockConcreteAblyCocoaRealtime: ARTRealtime, @unchecked Sendable {
-    required init(token _: String) {
-        fatalError("init(token:) has not been implemented")
-    }
-
-    required init(key _: String) {
-        fatalError("init(key:) has not been implemented")
-    }
-
-    required init(options _: ARTClientOptions) {
-        fatalError("init(options:) has not been implemented")
-    }
-
-    /// Provides a convenience method for creating an `ARTWrapperSDKProxyRealtime` (which doesn't have a public initializer).
+class MockConcreteAblyCocoaRealtime: PubSubClient, @unchecked Sendable {
+    /// Provides a convenience method for creating an `WrapperSDKProxyRealtime` (which doesn't have a public initializer).
     enum ProxyHelper {
-        static func createProxy() -> ARTWrapperSDKProxyRealtime {
-            let sacrificialRealtime = ARTRealtime(options: .forNoop())
+        static func createProxy() -> WrapperSDKProxyRealtime {
+            let sacrificialRealtime = PubSubDevice.createClient(options: .forNoop())
             // These agents are irrelevant
             return sacrificialRealtime.createWrapperSDKProxy(with: .init(agents: [:]))
         }
     }
 
-    let createWrapperSDKProxyReturnValue: ARTWrapperSDKProxyRealtime?
+    let createWrapperSDKProxyReturnValue: WrapperSDKProxyRealtime?
 
-    init(createWrapperSDKProxyReturnValue: ARTWrapperSDKProxyRealtime?) {
+    init(createWrapperSDKProxyReturnValue: WrapperSDKProxyRealtime?) {
         self.createWrapperSDKProxyReturnValue = createWrapperSDKProxyReturnValue
-        super.init(options: .forNoop())
+        // `PubSubClient` is built by `PubSubDevice.createClient`, and exposes no
+        // initializer to chain to, so this calls `NSObject`'s. The resulting
+        // instance answers `createWrapperSDKProxy(with:)` and nothing else; the
+        // tests that use it ask for nothing else.
+        super.init()
     }
 
     private let mutex = NSLock()
     /// Access must be synchronized via ``mutex``.
-    private(set) var _createWrapperSDKProxyOptionsArgument: ARTWrapperSDKProxyOptions?
+    private(set) var _createWrapperSDKProxyOptionsArgument: WrapperSDKProxyOptions?
 
-    var createWrapperSDKProxyOptionsArgument: ARTWrapperSDKProxyOptions? {
+    var createWrapperSDKProxyOptionsArgument: WrapperSDKProxyOptions? {
         mutex.withLock {
             _createWrapperSDKProxyOptionsArgument
         }
     }
 
-    override func createWrapperSDKProxy(with options: ARTWrapperSDKProxyOptions) -> ARTWrapperSDKProxyRealtime {
+    override func createWrapperSDKProxy(with options: WrapperSDKProxyOptions) -> WrapperSDKProxyRealtime {
         guard let createWrapperSDKProxyReturnValue else {
             fatalError("createWrapperSDKProxyReturnValue must be set in order to call createWrapperSDKProxy(with:)")
         }
@@ -55,10 +47,10 @@ class MockConcreteAblyCocoaRealtime: ARTRealtime, @unchecked Sendable {
     }
 }
 
-private extension ARTClientOptions {
-    /// Client options with which you can instantiate an `ARTRealtime` instance so that it will do nothing on instantiation.
-    static func forNoop() -> ARTClientOptions {
-        let result = ARTClientOptions()
+private extension ClientOptions {
+    /// Client options with which you can instantiate an `PubSubClient` instance so that it will do nothing on instantiation.
+    static func forNoop() -> ClientOptions {
+        let result = ClientOptions()
         result.autoConnect = false
         result.key = "fake:key"
         return result

@@ -1,4 +1,4 @@
-import Ably
+import AblyPubSubDevice
 
 /**
  * This interface is used to interact with messages in a chat room: subscribing
@@ -337,7 +337,7 @@ public struct HistoryBeforeSubscribeParams: Sendable {
 }
 
 internal extension HistoryParams {
-    // Same as `ARTDataQuery.asQueryItems` from ably-cocoa.
+    // Same as `DataQuery.asQueryItems` from ably-cocoa.
     func asQueryItems() -> [String: String] {
         var dict: [String: String] = [:]
         if let start {

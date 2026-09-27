@@ -1,4 +1,4 @@
-import Ably
+import AblyPubSubDevice
 
 /**
  * The different states that a room can be in throughout its lifecycle.

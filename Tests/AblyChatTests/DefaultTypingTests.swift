@@ -1,5 +1,5 @@
-import Ably
 @testable import AblyChat
+import AblyPubSubDevice
 import Clocks
 import Foundation
 import Testing
@@ -142,7 +142,7 @@ struct DefaultTypingTests {
         // Setup subscription and receive a typing event
         _ = typing.subscribe()
 
-        let message = ARTMessage(name: TypingEventType.started.rawValue, data: [], clientId: "test-client")
+        let message = AblyPubSubDevice.Message(name: TypingEventType.started.rawValue, data: [], clientId: "test-client")
         channel.simulateIncomingMessage(message, for: TypingEventType.started.rawValue)
 
         // When
@@ -275,7 +275,7 @@ struct DefaultTypingTests {
         let subscription = typing.subscribe()
 
         // Simulate someone started typing
-        let message = ARTMessage(name: TypingEventType.started.rawValue, data: [], clientId: "test-client")
+        let message = AblyPubSubDevice.Message(name: TypingEventType.started.rawValue, data: [], clientId: "test-client")
         channel.simulateIncomingMessage(message, for: TypingEventType.started.rawValue)
 
         // When - advance clock past heartbeat + grace period
@@ -307,7 +307,7 @@ struct DefaultTypingTests {
         }
 
         // Simulate someone started typing
-        let message = ARTMessage(name: TypingEventType.started.rawValue, data: [], clientId: "test-client")
+        let message = AblyPubSubDevice.Message(name: TypingEventType.started.rawValue, data: [], clientId: "test-client")
         channel.simulateIncomingMessage(message, for: TypingEventType.started.rawValue)
 
         // Verify we got the started event

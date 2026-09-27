@@ -1,4 +1,4 @@
-import Ably
+import AblyPubSubDevice
 
 /**
  * This interface is used to interact with occupancy in a chat room: subscribing to occupancy updates and

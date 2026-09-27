@@ -1,5 +1,5 @@
-import Ably
 @testable import AblyChat
+import AblyPubSubDevice
 import Testing
 
 @MainActor
@@ -39,33 +39,33 @@ struct ChatClientTests {
 
     @Test
     func preservesStaticTypeInformation() {
-        // This test doesn't have any assertions; it's just to test that the type system gives you ARTRealtime and ARTRealtimeChannel
+        // This test doesn't have any assertions; it's just to test that the type system gives you PubSubClient and RealtimeChannel
 
         func withChatClient(_ chatClient: ChatClient) async throws {
-            let _: ARTRealtime = chatClient.realtime
+            let _: PubSubClient = chatClient.realtime
             let room = try await chatClient.rooms.get(named: "room")
-            let _: ARTRealtimeChannel = room.channel
+            let _: RealtimeChannel = room.channel
         }
 
         @available(iOS 16.0, tvOS 16.0, *)
         func usingExistentials(_ chatClient: ChatClient) async throws {
-            // The compiler won't let you write `[some Room<ARTRealtimeChannel>]` here, which I guess isn't a surprise.
+            // The compiler won't let you write `[some Room<RealtimeChannel>]` here, which I guess isn't a surprise.
             // Nor will it let you write `[ChatClient.Rooms.Room]`, which surprised me.
             // But luckily we can still use existentials.
-            var rooms: [any Room<ARTRealtimeChannel>] = []
+            var rooms: [any Room<RealtimeChannel>] = []
             for roomName in ["foo", "bar"] {
                 try await rooms.append(chatClient.rooms.get(named: roomName))
             }
 
             // This crashes the compiler! (https://github.com/swiftlang/swift/issues/84744)
-            // let _: [ARTRealtimeChannel] = rooms.map(\.channel)
+            // let _: [RealtimeChannel] = rooms.map(\.channel)
 
             // Whereas this, which is functionally the same thing, does not.
             // swiftformat:disable:next preferKeyPath
-            let _: [ARTRealtimeChannel] = rooms.map { $0.channel }
+            let _: [RealtimeChannel] = rooms.map { $0.channel }
 
             // Nor this.
-            var realtimeChannels: [ARTRealtimeChannel] = []
+            var realtimeChannels: [RealtimeChannel] = []
             for room in rooms {
                 realtimeChannels.append(room.channel)
             }
@@ -109,7 +109,7 @@ struct ChatClientTests {
 
         let rooms = client.rooms
 
-        let defaultRooms = try #require(rooms as? DefaultRooms<DefaultRoomFactory<InternalRealtimeClientAdapter<ARTWrapperSDKProxyRealtime>>>)
+        let defaultRooms = try #require(rooms as? DefaultRooms<DefaultRoomFactory<InternalRealtimeClientAdapter<WrapperSDKProxyRealtime>>>)
         #expect(defaultRooms.testsOnly_realtime === internalRealtime)
     }
 }

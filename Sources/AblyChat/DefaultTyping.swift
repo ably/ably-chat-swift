@@ -1,4 +1,4 @@
-import Ably
+import AblyPubSubDevice
 
 internal final class DefaultTyping: Typing {
     private let channel: any InternalRealtimeChannelProtocol

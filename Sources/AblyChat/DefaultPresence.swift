@@ -1,4 +1,4 @@
-import Ably
+import AblyPubSubDevice
 
 internal final class DefaultPresence: Presence {
     private let channel: any InternalRealtimeChannelProtocol
@@ -71,7 +71,7 @@ internal final class DefaultPresence: Presence {
 
         let members: [PresenceMessage]
         do {
-            members = try await channel.presence.get(ARTRealtimePresenceQuery(clientId: clientID, connectionId: nil))
+            members = try await channel.presence.get(RealtimePresenceQuery(clientId: clientID, connectionId: nil))
         } catch {
             logger.log(message: error.message, level: .error)
             throw error

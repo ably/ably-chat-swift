@@ -14,11 +14,11 @@ extension RoomOptions: Equatable {
     }
 }
 
-extension ErrorInfo: Equatable {
+extension AblyChat.ErrorInfo: Equatable {
     /// Two `ErrorInfo` instances are considered equal if all of their public properties are equal.
     ///
-    /// - Note: We don't consider the internal data (i.e. the stored `ARTErrorInfo` or `InternalError` because these are difficult to compare; for example `InternalError` can store various types of associated values that's used to populate its error message, and this associated data is not necessarily `Equatable`).
-    public static func == (lhs: ErrorInfo, rhs: ErrorInfo) -> Bool {
+    /// - Note: We don't consider the internal data (i.e. the stored `ErrorInfo` or `InternalError` because these are difficult to compare; for example `InternalError` can store various types of associated values that's used to populate its error message, and this associated data is not necessarily `Equatable`).
+    public static func == (lhs: AblyChat.ErrorInfo, rhs: AblyChat.ErrorInfo) -> Bool {
         lhs.code == rhs.code
             && lhs.href == rhs.href
             && lhs.message == rhs.message

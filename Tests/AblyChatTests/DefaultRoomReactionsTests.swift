@@ -1,5 +1,5 @@
-import Ably
 @testable import AblyChat
+import AblyPubSubDevice
 import Testing
 
 @MainActor
@@ -34,8 +34,8 @@ struct DefaultRoomReactionsTests {
     @Test
     func subscriptionCanBeRegisteredToReceiveReactionEvents() async throws {
         // Given
-        func generateMessage(serial: String, reaction: String) -> ARTMessage {
-            let message = ARTMessage()
+        func generateMessage(serial: String, reaction: String) -> AblyPubSubDevice.Message {
+            let message = AblyPubSubDevice.Message()
             message.action = .create // arbitrary
             message.serial = serial // arbitrary
             message.clientId = "" // arbitrary
@@ -43,7 +43,7 @@ struct DefaultRoomReactionsTests {
                 "name": reaction,
             ]
             message.version = .init(serial: "0")
-            message.extras = [String: String]() as (any ARTJsonCompatible)
+            message.extras = [String: String]() as (any JsonCompatible)
             return message
         }
 
@@ -82,7 +82,7 @@ struct DefaultRoomReactionsTests {
         // Given
         let channel = MockRealtimeChannel(
             messageToEmitOnSubscribe: {
-                let message = ARTMessage()
+                let message = AblyPubSubDevice.Message()
                 message.action = .create // arbitrary
                 message.name = "roomReaction"
                 message.serial = "123" // arbitrary
@@ -93,7 +93,7 @@ struct DefaultRoomReactionsTests {
                 ]
                 message.extras = [
                     "headers": ["someKey2": "someValue2"], // arbitrary
-                ] as any ARTJsonCompatible
+                ] as any JsonCompatible
                 message.timestamp = Date(timeIntervalSinceReferenceDate: 0) // arbitrary
                 return message
             }(),
@@ -122,7 +122,7 @@ struct DefaultRoomReactionsTests {
             callbackCalls += 1
         }
         channel.simulateIncomingMessage(
-            ARTMessage(), // malformed message
+            AblyPubSubDevice.Message(), // malformed message
             for: RoomReactionEvents.reaction.rawValue,
         )
         #expect(callbackCalls == 2)

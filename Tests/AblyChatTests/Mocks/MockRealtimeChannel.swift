@@ -1,5 +1,5 @@
-import Ably
 @testable import AblyChat
+import AblyPubSubDevice
 
 final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
     let presence = MockRealtimePresence()
@@ -10,9 +10,9 @@ final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
     private let channelSerial: String?
     private let _name: String?
 
-    var properties: ARTChannelProperties { .init(attachSerial: attachSerial, channelSerial: channelSerial) }
+    var properties: ChannelProperties { .init(attachSerial: attachSerial, channelSerial: channelSerial) }
 
-    private var _state: ARTRealtimeChannelState?
+    private var _state: RealtimeChannelState?
     private let stateChangeToEmitForListener: ChannelStateChange?
     var errorReason: ErrorInfo?
 
@@ -26,13 +26,13 @@ final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
 
     init(
         name: String? = nil,
-        properties: ARTChannelProperties = .init(),
-        initialState: ARTRealtimeChannelState? = nil,
+        properties: ChannelProperties = .init(),
+        initialState: RealtimeChannelState? = nil,
         initialErrorReason: ErrorInfo? = nil,
         attachBehavior: AttachOrDetachBehavior? = nil,
         detachBehavior: AttachOrDetachBehavior? = nil,
-        messageToEmitOnSubscribe: ARTMessage? = nil,
-        annotationToEmitOnSubscribe: ARTAnnotation? = nil,
+        messageToEmitOnSubscribe: AblyPubSubDevice.Message? = nil,
+        annotationToEmitOnSubscribe: AblyPubSubDevice.Annotation? = nil,
         stateChangeToEmitForListener: ChannelStateChange? = nil,
     ) {
         _name = name
@@ -47,7 +47,7 @@ final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
         annotations = MockRealtimeAnnotations(annotationToEmitOnSubscribe: annotationToEmitOnSubscribe)
     }
 
-    var state: ARTRealtimeChannelState {
+    var state: RealtimeChannelState {
         guard let state = _state else {
             fatalError("Channel state not set")
         }
@@ -62,7 +62,7 @@ final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
         /// Receives an argument indicating how many times (including the current call) the method for which this is providing a mock implementation has been called.
         case fromFunction(@Sendable (Int) async -> AttachOrDetachBehavior)
         case complete(AttachOrDetachResult)
-        case completeAndChangeState(AttachOrDetachResult, newState: ARTRealtimeChannelState)
+        case completeAndChangeState(AttachOrDetachResult, newState: RealtimeChannelState)
 
         static var success: Self {
             .complete(.success)
@@ -135,56 +135,56 @@ final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
         try result.get()
     }
 
-    let messageToEmitOnSubscribe: ARTMessage?
-    private var channelSubscriptions: [(String, (ARTMessage) -> Void)] = []
+    let messageToEmitOnSubscribe: AblyPubSubDevice.Message?
+    private var channelSubscriptions: [(String, (AblyPubSubDevice.Message) -> Void)] = []
 
-    func subscribe(_ callback: @escaping @MainActor @Sendable (ARTMessage) -> Void) -> ARTEventListener? {
+    func subscribe(_ callback: @escaping @MainActor @Sendable (AblyPubSubDevice.Message) -> Void) -> EventListener? {
         subscribe("all", callback: callback) // "all" is arbitrary here, could be "". Due to `name` is not optional.
     }
 
     // Added the ability to emit a message whenever we want instead of just on subscribe... I didn't want to dig into what the messageToEmitOnSubscribe is too much so just if/else between the two.
-    func subscribe(_ name: String, callback: @escaping @MainActor (ARTMessage) -> Void) -> ARTEventListener? {
+    func subscribe(_ name: String, callback: @escaping @MainActor (AblyPubSubDevice.Message) -> Void) -> EventListener? {
         if let messageToEmitOnSubscribe {
             callback(messageToEmitOnSubscribe)
         }
         channelSubscriptions.append((name, callback))
-        return ARTEventListener()
+        return EventListener()
     }
 
-    func simulateIncomingMessage(_ with: ARTMessage, for name: String) {
+    func simulateIncomingMessage(_ with: AblyPubSubDevice.Message, for name: String) {
         for (messageName, callback) in channelSubscriptions where messageName == name {
             callback(with)
         }
     }
 
-    func unsubscribe(_: ARTEventListener?) {
+    func unsubscribe(_: EventListener?) {
         channelSubscriptions.removeAll() // make more strict when needed
     }
 
     private var stateSubscriptionCallbacks: [@MainActor (ChannelStateChange) -> Void] = []
 
-    func on(_: ARTChannelEvent, callback: @escaping @MainActor (ChannelStateChange) -> Void) -> ARTEventListener {
+    func on(_: ChannelEvent, callback: @escaping @MainActor (ChannelStateChange) -> Void) -> EventListener {
         stateSubscriptionCallbacks.append(callback)
-        return ARTEventListener()
+        return EventListener()
     }
 
-    func on(_ callback: @escaping @MainActor (ChannelStateChange) -> Void) -> ARTEventListener {
-        stateSubscriptionCallbacks.append(callback)
-        if let stateChangeToEmitForListener {
-            callback(stateChangeToEmitForListener)
-        }
-        return ARTEventListener()
-    }
-
-    func once(_ callback: @escaping @MainActor @Sendable (ChannelStateChange) -> Void) -> ARTEventListener {
+    func on(_ callback: @escaping @MainActor (ChannelStateChange) -> Void) -> EventListener {
         stateSubscriptionCallbacks.append(callback)
         if let stateChangeToEmitForListener {
             callback(stateChangeToEmitForListener)
         }
-        return ARTEventListener()
+        return EventListener()
     }
 
-    func once(_: ARTChannelEvent, callback _: @escaping @MainActor @Sendable (ChannelStateChange) -> Void) -> ARTEventListener {
+    func once(_ callback: @escaping @MainActor @Sendable (ChannelStateChange) -> Void) -> EventListener {
+        stateSubscriptionCallbacks.append(callback)
+        if let stateChangeToEmitForListener {
+            callback(stateChangeToEmitForListener)
+        }
+        return EventListener()
+    }
+
+    func once(_: ChannelEvent, callback _: @escaping @MainActor @Sendable (ChannelStateChange) -> Void) -> EventListener {
         fatalError("Not implemented")
     }
 
@@ -194,7 +194,7 @@ final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
         }
     }
 
-    func off(_: ARTEventListener) {
+    func off(_: EventListener) {
         // no-op; revisit if we need to test something that depends on this method actually stopping `on` from emitting more events
     }
 

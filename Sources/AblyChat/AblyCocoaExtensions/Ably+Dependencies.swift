@@ -1,22 +1,22 @@
-import Ably
+import AblyPubSubDevice
 
-extension ARTRealtime: RealtimeClientProtocol {}
-extension ARTWrapperSDKProxyRealtime: ProxyRealtimeClientProtocol {
-    internal typealias Proxied = ARTRealtime
+extension PubSubClient: RealtimeClientProtocol {}
+extension WrapperSDKProxyRealtime: ProxyRealtimeClientProtocol {
+    internal typealias Proxied = PubSubClient
 }
 
-extension ARTRealtimeChannels: RealtimeChannelsProtocol {}
-extension ARTWrapperSDKProxyRealtimeChannels: ProxyRealtimeChannelsProtocol {
-    internal typealias Proxied = ARTRealtimeChannels
+extension RealtimeChannels: RealtimeChannelsProtocol {}
+extension WrapperSDKProxyRealtimeChannels: ProxyRealtimeChannelsProtocol {
+    internal typealias Proxied = RealtimeChannels
 }
 
-extension ARTRealtimeChannel: RealtimeChannelProtocol {}
-extension ARTWrapperSDKProxyRealtimeChannel: ProxyRealtimeChannelProtocol {}
+extension RealtimeChannel: RealtimeChannelProtocol {}
+extension WrapperSDKProxyRealtimeChannel: ProxyRealtimeChannelProtocol {}
 
-extension ARTRealtimePresence: RealtimePresenceProtocol {}
-extension ARTWrapperSDKProxyRealtimePresence: RealtimePresenceProtocol {}
+extension RealtimePresence: RealtimePresenceProtocol {}
+extension WrapperSDKProxyRealtimePresence: RealtimePresenceProtocol {}
 
-extension ARTRealtimeAnnotations: RealtimeAnnotationsProtocol {}
-extension ARTWrapperSDKProxyRealtimeAnnotations: RealtimeAnnotationsProtocol {}
+extension RealtimeAnnotations: RealtimeAnnotationsProtocol {}
+extension WrapperSDKProxyRealtimeAnnotations: RealtimeAnnotationsProtocol {}
 
-extension ARTConnection: CoreConnectionProtocol {}
+extension AblyPubSubDevice.Connection: CoreConnectionProtocol {}

@@ -1,5 +1,5 @@
-import Ably
 @testable import AblyChat
+import AblyPubSubDevice
 import AsyncAlgorithms
 import Testing
 
@@ -47,7 +47,7 @@ struct DefaultRoomLifecycleManagerTests {
     }
 
     private func createChannel(
-        initialState: ARTRealtimeChannelState = .initialized,
+        initialState: RealtimeChannelState = .initialized,
         initialErrorReason: ErrorInfo? = nil,
         attachBehavior: MockRealtimeChannel.AttachOrDetachBehavior? = nil,
         detachBehavior: MockRealtimeChannel.AttachOrDetachBehavior? = nil,

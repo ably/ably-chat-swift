@@ -1,4 +1,4 @@
-import Ably
+import AblyPubSubDevice
 
 /// Information about the Chat SDK.
 internal enum ClientInformation {

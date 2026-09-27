@@ -1,4 +1,4 @@
-import Ably
+import AblyPubSubDevice
 
 internal protocol ProxyRealtimeClientProtocol: RealtimeClientProtocol where Channels: ProxyRealtimeChannelsProtocol {
     associatedtype Proxied: RealtimeClientProtocol where Channels.Proxied == Proxied.Channels
@@ -15,7 +15,7 @@ internal protocol ProxyRealtimeChannelProtocol: Sendable, RealtimeChannelProtoco
 }
 
 /// Expresses the requirements of the realtime client used by a ``ChatClientProtocol``.
-internal protocol RealtimeClientProtocol: ARTRealtimeInstanceMethodsProtocol, Sendable {
+internal protocol RealtimeClientProtocol: RealtimeInstanceMethodsProtocol, Sendable {
     associatedtype Channels: RealtimeChannelsProtocol
     associatedtype Connection: CoreConnectionProtocol
 
@@ -24,14 +24,14 @@ internal protocol RealtimeClientProtocol: ARTRealtimeInstanceMethodsProtocol, Se
 }
 
 /// Expresses the requirements of the object returned by ``RealtimeClientProtocol/channels``.
-internal protocol RealtimeChannelsProtocol: ARTRealtimeChannelsProtocol, Sendable {
+internal protocol RealtimeChannelsProtocol: AblyPubSubDevice.RealtimeChannelsProtocol, Sendable {
     associatedtype Channel: RealtimeChannelProtocol
 
-    func get(_ name: String, options: ARTRealtimeChannelOptions) -> Channel
+    func get(_ name: String, options: RealtimeChannelOptions) -> Channel
 }
 
 /// Expresses the requirements of the object returned by ``RealtimeChannelsProtocol/get(_:options:)``.
-internal protocol RealtimeChannelProtocol: ARTRealtimeChannelProtocol, Sendable {
+internal protocol RealtimeChannelProtocol: AblyPubSubDevice.RealtimeChannelProtocol, Sendable {
     associatedtype Presence: RealtimePresenceProtocol
     associatedtype Annotations: RealtimeAnnotationsProtocol
 
@@ -40,12 +40,12 @@ internal protocol RealtimeChannelProtocol: ARTRealtimeChannelProtocol, Sendable 
 }
 
 /// Expresses the requirements of the object returned by ``RealtimeChannelProtocol/presence``.
-internal protocol RealtimePresenceProtocol: ARTRealtimePresenceProtocol, Sendable {}
+internal protocol RealtimePresenceProtocol: AblyPubSubDevice.RealtimePresenceProtocol, Sendable {}
 
 /// Expresses the requirements of the object returned by ``RealtimeChannelProtocol/annotations``.
-internal protocol RealtimeAnnotationsProtocol: ARTRealtimeAnnotationsProtocol, Sendable {}
+internal protocol RealtimeAnnotationsProtocol: AblyPubSubDevice.RealtimeAnnotationsProtocol, Sendable {}
 
 /// Expresses the requirements of the object returned by ``RealtimeClientProtocol/connection``.
 ///
 /// - Note: `Core` here is to disambiguate from the `Connection` protocol that a `ChatClientProtocol` exposes.
-internal protocol CoreConnectionProtocol: ARTConnectionProtocol, Sendable {}
+internal protocol CoreConnectionProtocol: ConnectionProtocol, Sendable {}

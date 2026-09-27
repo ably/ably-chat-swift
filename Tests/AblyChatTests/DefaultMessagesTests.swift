@@ -1,5 +1,5 @@
-import Ably
 @testable import AblyChat
+import AblyPubSubDevice
 import Testing
 
 @MainActor
@@ -311,7 +311,7 @@ struct DefaultMessagesTests {
         let channelSerial = "123"
         let chatAPI = ChatAPI(realtime: realtime)
         let channel = MockRealtimeChannel(
-            properties: ARTChannelProperties(attachSerial: nil, channelSerial: channelSerial),
+            properties: ChannelProperties(attachSerial: nil, channelSerial: channelSerial),
             initialState: .attached,
         )
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basket/ball", logger: TestLogger())
@@ -335,7 +335,7 @@ struct DefaultMessagesTests {
         let attachSerial = "attach123"
         let chatAPI = ChatAPI(realtime: realtime)
         let channel = MockRealtimeChannel(
-            properties: ARTChannelProperties(attachSerial: attachSerial, channelSerial: nil),
+            properties: ChannelProperties(attachSerial: attachSerial, channelSerial: nil),
             initialState: .attaching,
             stateChangeToEmitForListener: ChannelStateChange(current: .attached, previous: .attaching, event: .attached, reason: nil, resumed: false /* arbitrary */ ),
         )
@@ -363,7 +363,7 @@ struct DefaultMessagesTests {
         }
         let chatAPI = ChatAPI(realtime: realtime)
         let channel = MockRealtimeChannel(
-            properties: ARTChannelProperties(attachSerial: attachSerial, channelSerial: channelSerial),
+            properties: ChannelProperties(attachSerial: attachSerial, channelSerial: channelSerial),
             initialState: .attached,
         )
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", logger: TestLogger())
@@ -405,7 +405,7 @@ struct DefaultMessagesTests {
         }
         let chatAPI = ChatAPI(realtime: realtime)
         let channel = MockRealtimeChannel(
-            properties: ARTChannelProperties(attachSerial: attachSerial, channelSerial: channelSerial),
+            properties: ChannelProperties(attachSerial: attachSerial, channelSerial: channelSerial),
             initialState: .attached,
         )
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", logger: TestLogger())
@@ -445,7 +445,7 @@ struct DefaultMessagesTests {
         }
         let chatAPI = ChatAPI(realtime: realtime)
         let channel = MockRealtimeChannel(
-            properties: ARTChannelProperties(attachSerial: nil, channelSerial: "123"),
+            properties: ChannelProperties(attachSerial: nil, channelSerial: "123"),
             initialState: .attached,
         )
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", logger: TestLogger())
@@ -483,7 +483,7 @@ struct DefaultMessagesTests {
         }
         let chatAPI = ChatAPI(realtime: realtime)
         let channel = MockRealtimeChannel(
-            properties: ARTChannelProperties(attachSerial: nil, channelSerial: "123"),
+            properties: ChannelProperties(attachSerial: nil, channelSerial: "123"),
             initialState: .attached,
         )
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", logger: TestLogger())
@@ -508,7 +508,7 @@ struct DefaultMessagesTests {
         }
         let chatAPI = ChatAPI(realtime: realtime)
         let channel = MockRealtimeChannel(
-            properties: ARTChannelProperties(attachSerial: nil, channelSerial: "123"),
+            properties: ChannelProperties(attachSerial: nil, channelSerial: "123"),
             initialState: .attached,
         )
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", logger: TestLogger())
@@ -537,7 +537,7 @@ struct DefaultMessagesTests {
         }
         let chatAPI = ChatAPI(realtime: realtime)
         let channel = MockRealtimeChannel(
-            properties: ARTChannelProperties(attachSerial: nil, channelSerial: "123"),
+            properties: ChannelProperties(attachSerial: nil, channelSerial: "123"),
             initialState: .attached,
         )
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", logger: TestLogger())
@@ -560,8 +560,8 @@ struct DefaultMessagesTests {
         let realtime = MockRealtime()
         let chatAPI = ChatAPI(realtime: realtime)
 
-        func generateMessage(serial: String, numberKey: Int, stringKey: String) -> ARTMessage {
-            let message = ARTMessage()
+        func generateMessage(serial: String, numberKey: Int, stringKey: String) -> AblyPubSubDevice.Message {
+            let message = AblyPubSubDevice.Message()
             message.action = .create // arbitrary
             message.serial = serial // arbitrary
             message.clientId = "" // arbitrary
@@ -571,7 +571,7 @@ struct DefaultMessagesTests {
             ]
             message.extras = [
                 "headers": ["numberKey": numberKey, "stringKey": stringKey],
-            ] as any ARTJsonCompatible
+            ] as any JsonCompatible
             message.version = .init(serial: "0")
             return message
         }
@@ -627,7 +627,7 @@ struct DefaultMessagesTests {
             ),
             initialState: .attached,
             messageToEmitOnSubscribe: {
-                let message = ARTMessage()
+                let message = AblyPubSubDevice.Message()
                 message.action = .update // arbitrary
                 message.serial = "123" // arbitrary
                 message.clientId = "c1" // arbitrary
@@ -637,7 +637,7 @@ struct DefaultMessagesTests {
                 ]
                 message.extras = [
                     "headers": ["someKey2": "someValue2"], // arbitrary
-                ] as any ARTJsonCompatible
+                ] as any JsonCompatible
                 message.version = .init(serial: "1") // arbitrary
                 message.timestamp = Date(timeIntervalSince1970: 0) // arbitrary
                 return message
@@ -672,7 +672,7 @@ struct DefaultMessagesTests {
             callbackCalls += 1
         }
         channel.simulateIncomingMessage(
-            ARTMessage(), // malformed message
+            AblyPubSubDevice.Message(), // malformed message
             for: RealtimeMessageName.chatMessage.rawValue,
         )
         #expect(callbackCalls == 2)

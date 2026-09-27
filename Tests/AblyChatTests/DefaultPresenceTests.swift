@@ -1,5 +1,5 @@
-import Ably
 @testable import AblyChat
+import AblyPubSubDevice
 import Testing
 
 struct DefaultPresenceTests {
@@ -291,7 +291,7 @@ struct DefaultPresenceTests {
         // Then
         #expect(channel.presence.callRecorder.hasRecord(
             matching: "get(_:)",
-            arguments: ["query": "\(ARTRealtimePresenceQuery(clientId: "client1", connectionId: "").callRecorderDescription)"],
+            arguments: ["query": "\(RealtimePresenceQuery(clientId: "client1", connectionId: "").callRecorderDescription)"],
         ))
     }
 
