@@ -298,10 +298,17 @@ struct SpecCoverage: AsyncParsableCommand {
 
             init?(specLine: String) {
                 // example line that corresponds to a testable spec point:
-                // ** @(CHA-RS4b)@ @[Testable]@ Room status update events must contain the previous room status.
+                //   - `(CHA-RS4b)` `[Testable]` Room status update events must contain the previous room status.
                 // (This `Testable` is a convention that's being used only in the Chat spec)
+                //
+                // The bullet is optional because a spec point can also sit on a continuation line
+                // of the list item above it, and where it is present the spec writes it as `-`, as
+                // `*`, or as `\*` escaped so that Markdown does not read it as emphasis. The
+                // identifier's shape is matched rather than accepting anything in parentheses, so
+                // that a line opening with something like `(deprecated)` is not read as a spec
+                // point.
 
-                let specPointLineRegex = /^\s*\*+ @\((.*?)\)@( @\[Testable\]@ )?/
+                let specPointLineRegex = /^\s*(?:\\?[-*] )?`\(([A-Z]{2,}-[A-Za-z0-9]+)\)`( `\[Testable\]`)?/
 
                 // swiftlint:disable:next force_try
                 guard let match = try! specPointLineRegex.firstMatch(in: specLine) else {
@@ -706,7 +713,7 @@ struct SpecCoverage: AsyncParsableCommand {
     }
 
     private func loadSpecFile(forCommitSHA commitSHA: String) async throws -> SpecFile {
-        let specFileURL = URL(string: "https://raw.githubusercontent.com/ably/specification/\(commitSHA)/textile/chat-features.textile")!
+        let specFileURL = URL(string: "https://raw.githubusercontent.com/ably/specification/\(commitSHA)/specifications/chat-features.md")!
         let (specData, response) = try await URLSession.shared.data(from: specFileURL)
 
         guard let httpResponse = response as? HTTPURLResponse else {
