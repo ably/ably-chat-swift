@@ -174,12 +174,43 @@ struct IntegrationTests {
 
         let rxMessageReactionsSubscription = rxRoom.messages.reactions.subscribe()
 
+        // A summary describes the whole set of reactions on a message, and the server aggregates
+        // it. Two changes made in quick succession can therefore be delivered as a single summary,
+        // so the number of summaries is not a function of the number of changes. Each change here
+        // waits for the summary that reflects it before the next one is made, and each assertion
+        // matches on the summary's contents rather than on its position in a stream.
+        func awaitSummary(
+            distinct expectedNames: [String],
+            line: Int = #line,
+        ) async throws -> MessageReactionSummaryEvent {
+            Self.logAwait("BEFORE summary distinct=\(expectedNames)")
+            let event = try await withTimeout(seconds: 30, line: line) {
+                await rxMessageReactionsSubscription.first { @Sendable event in
+                    event.messageSerial == messageToReact.serial
+                        && event.reactions.distinct.keys.sorted() == expectedNames
+                }
+            }
+            Self.logAwait("AFTER summary distinct=\(expectedNames)")
+            return try #require(event)
+        }
+
         Self.logAwait("BEFORE txRoom.messages.reactions.send (👍)")
         try await txRoom.messages.reactions.send(forMessageWithSerial: messageToReact.serial, params: .init(name: "👍"))
         Self.logAwait("AFTER txRoom.messages.reactions.send (👍)")
+
+        let summaryAfterFirstSend = try await awaitSummary(distinct: ["👍"])
+        #expect(summaryAfterFirstSend.reactions.unique.isEmpty)
+        #expect(summaryAfterFirstSend.reactions.multiple.isEmpty)
+        #expect(summaryAfterFirstSend.reactions.distinct["👍"]?.total == 1)
+        #expect(summaryAfterFirstSend.reactions.distinct["👍"]?.clientIDs == [messageToReact.clientID])
+
         Self.logAwait("BEFORE txRoom.messages.reactions.send (🎉)")
         try await txRoom.messages.reactions.send(forMessageWithSerial: messageToReact.serial, params: .init(name: "🎉"))
         Self.logAwait("AFTER txRoom.messages.reactions.send (🎉)")
+
+        let summaryAfterSecondSend = try await awaitSummary(distinct: ["🎉", "👍"])
+        #expect(summaryAfterSecondSend.reactions.unique.isEmpty)
+        #expect(summaryAfterSecondSend.reactions.multiple.isEmpty)
 
         // Before deleting, fetch the reactions summary for txClientID and check its contents
         Self.logAwait("BEFORE rxRoom.messages.reactions.clientReactions")
@@ -194,48 +225,20 @@ struct IntegrationTests {
         Self.logAwait("BEFORE txRoom.messages.reactions.delete (👍)")
         try await txRoom.messages.reactions.delete(fromMessageWithSerial: messageToReact.serial, params: .init(name: "👍"))
         Self.logAwait("AFTER txRoom.messages.reactions.delete (👍)")
+
+        let summaryAfterFirstDelete = try await awaitSummary(distinct: ["🎉"])
+        #expect(summaryAfterFirstDelete.reactions.unique.isEmpty)
+        #expect(summaryAfterFirstDelete.reactions.multiple.isEmpty)
+        #expect(summaryAfterFirstDelete.reactions.distinct["🎉"]?.total == 1)
+        #expect(summaryAfterFirstDelete.reactions.distinct["🎉"]?.clientIDs == [messageToReact.clientID])
+
         Self.logAwait("BEFORE txRoom.messages.reactions.delete (🎉)")
         try await txRoom.messages.reactions.delete(fromMessageWithSerial: messageToReact.serial, params: .init(name: "🎉"))
         Self.logAwait("AFTER txRoom.messages.reactions.delete (🎉)")
 
-        var reactionSummaryEvents = [MessageReactionSummaryEvent]()
-
-        for await event in rxMessageReactionsSubscription {
-            reactionSummaryEvents.append(event)
-            if reactionSummaryEvents.count == 4 {
-                break
-            }
-        }
-
-        #expect(reactionSummaryEvents[0].messageSerial == messageToReact.serial)
-        #expect(reactionSummaryEvents[0].reactions.unique.isEmpty)
-        #expect(reactionSummaryEvents[0].reactions.multiple.isEmpty)
-        #expect(reactionSummaryEvents[0].reactions.distinct.count == 1)
-        _ = reactionSummaryEvents[0].reactions.distinct.map { key, value in
-            #expect(key == "👍")
-            #expect(value.total == 1)
-            #expect(value.clientIDs == [messageToReact.clientID])
-        }
-
-        #expect(reactionSummaryEvents[1].messageSerial == messageToReact.serial)
-        #expect(reactionSummaryEvents[1].reactions.unique.isEmpty)
-        #expect(reactionSummaryEvents[1].reactions.multiple.isEmpty)
-        #expect(reactionSummaryEvents[1].reactions.distinct.count == 2)
-
-        #expect(reactionSummaryEvents[2].messageSerial == messageToReact.serial)
-        #expect(reactionSummaryEvents[2].reactions.unique.isEmpty)
-        #expect(reactionSummaryEvents[2].reactions.multiple.isEmpty)
-        #expect(reactionSummaryEvents[2].reactions.distinct.count == 1)
-        _ = reactionSummaryEvents[2].reactions.distinct.map { key, value in
-            #expect(key == "🎉")
-            #expect(value.total == 1)
-            #expect(value.clientIDs == [messageToReact.clientID])
-        }
-
-        #expect(reactionSummaryEvents[3].messageSerial == messageToReact.serial)
-        #expect(reactionSummaryEvents[3].reactions.unique.isEmpty)
-        #expect(reactionSummaryEvents[3].reactions.multiple.isEmpty)
-        #expect(reactionSummaryEvents[3].reactions.distinct.isEmpty)
+        let summaryAfterSecondDelete = try await awaitSummary(distinct: [])
+        #expect(summaryAfterSecondDelete.reactions.unique.isEmpty)
+        #expect(summaryAfterSecondDelete.reactions.multiple.isEmpty)
 
         // MARK: - Message Reactions (Raw)
 
@@ -251,14 +254,19 @@ struct IntegrationTests {
         try await txRoom.messages.reactions.delete(fromMessageWithSerial: messageToReact.serial, params: .init(name: "😆")) // not deleting 🔥 to check it later in history request
         Self.logAwait("AFTER txRoom.messages.reactions.delete (😆)")
 
-        var reactionRawEvents = [MessageReactionRawEvent]()
-
-        for await event in rxMessageRawReactionsSubscription {
-            reactionRawEvents.append(event)
-            if reactionRawEvents.count == 3 {
-                break
+        // Unlike a summary, a raw event is emitted per change, so three changes give three events.
+        Self.logAwait("BEFORE raw reaction events")
+        let reactionRawEvents = try await withTimeout(seconds: 30) {
+            var collected = [MessageReactionRawEvent]()
+            for await event in rxMessageRawReactionsSubscription {
+                collected.append(event)
+                if collected.count == 3 {
+                    break
+                }
             }
+            return collected
         }
+        Self.logAwait("AFTER raw reaction events")
 
         #expect(reactionRawEvents[0].type == .create)
         #expect(reactionRawEvents[0].reaction.name == "🔥")
