@@ -404,6 +404,10 @@ class MockTyping: Typing {
                         MockStrings.names.randomElement()!,
                         MockStrings.names.randomElement()!,
                     ],
+                    currentTypers: [
+                        TypingMember(clientID: MockStrings.names.randomElement()!),
+                        TypingMember(clientID: MockStrings.names.randomElement()!),
+                    ],
                     change: .init(clientID: MockStrings.names.randomElement()!, type: .started),
                 )
             },
@@ -416,11 +420,16 @@ class MockTyping: Typing {
         Set(MockStrings.names.shuffled().prefix(2))
     }
 
+    var currentTypers: [TypingMember] {
+        MockStrings.names.shuffled().prefix(2).map { TypingMember(clientID: $0) }
+    }
+
     func keystroke() async throws(ErrorInfo) {
         mockSubscriptions.emit(
             TypingSetEvent(
                 type: .setChanged,
                 currentlyTyping: [clientID],
+                currentTypers: [TypingMember(clientID: clientID)],
                 change: .init(clientID: clientID, type: .started),
             ),
         )
@@ -431,6 +440,7 @@ class MockTyping: Typing {
             TypingSetEvent(
                 type: .setChanged,
                 currentlyTyping: [],
+                currentTypers: [],
                 change: .init(clientID: clientID, type: .stopped),
             ),
         )

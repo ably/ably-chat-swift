@@ -207,6 +207,7 @@ internal final class DefaultPresence: Presence {
                 data: member.data,
                 extras: member.extras,
                 updatedAt: member.timestamp ?? Date(timeIntervalSince1970: 0), // CHA-M4k5
+                userClaim: member.extras?.userClaim, // CHA-PR6g
             )
 
             logger.log(message: "Returning presence member: \(presenceMember)", level: .debug)
@@ -222,6 +223,7 @@ internal final class DefaultPresence: Presence {
             data: message.data,
             extras: message.extras,
             updatedAt: message.timestamp ?? Date(timeIntervalSince1970: 0), // CHA-M4k5
+            userClaim: message.extras?.userClaim, // CHA-PR6g
         )
 
         let presenceEvent = PresenceEvent(

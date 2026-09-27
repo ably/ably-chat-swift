@@ -117,6 +117,13 @@ internal final class DefaultMessageReactions<Realtime: InternalRealtimeClientPro
 
             let annotationClientID = annotation.clientId ?? "" // CHA-MR7b3
 
+            // CHA-MR7d: Extract userClaim from annotation extras
+            let extras = if let ablyCocoaExtras = annotation.extras {
+                JSONValue.objectFromAblyCocoaExtras(ablyCocoaExtras)
+            } else {
+                [String: JSONValue]()
+            }
+
             let reactionEvent = MessageReactionRawEvent(
                 type: reactionEventType,
                 // TODO: This is just a fallback value until ably-cocoa fixes the nullability of ARTAnnotation.timestamp. Remove in https://github.com/ably/ably-chat-swift/issues/395
@@ -127,6 +134,7 @@ internal final class DefaultMessageReactions<Realtime: InternalRealtimeClientPro
                     messageSerial: annotation.messageSerial,
                     count: annotation.count?.intValue ?? (annotation.action == .create && reactionType == .multiple ? 1 : nil),
                     clientID: annotationClientID,
+                    userClaim: extras.userClaim, // CHA-MR7d
                 ),
             )
 

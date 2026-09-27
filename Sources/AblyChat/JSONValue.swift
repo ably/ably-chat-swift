@@ -234,4 +234,9 @@ internal extension JSONObject {
     var toARTJsonCompatible: any ARTJsonCompatible {
         toAblyCocoaDataDictionary as (any ARTJsonCompatible)
     }
+
+    /// Extracts the `userClaim` string from an extras dictionary, if present and a string.
+    var userClaim: String? {
+        self["userClaim"]?.stringValue
+    }
 }

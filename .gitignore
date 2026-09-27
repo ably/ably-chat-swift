@@ -11,3 +11,5 @@ DerivedData/
 
 /node_modules
 /.mint
+
+.claude/settings.local.json

@@ -61,6 +61,7 @@ internal final class DefaultMessages<Realtime: InternalRealtimeClientProtocol>: 
             }
 
             let headers = (try? extras.optionalObjectValueForKey("headers"))?.compactMapValues { try? HeadersValue(jsonValue: $0) } ?? [:] // CHA-M4k2
+            let userClaim = extras.userClaim // CHA-M2h
             let version = message.version ?? .init()
             let timestamp = message.timestamp ?? Date(timeIntervalSince1970: 0) // CHA-M4k5
             let serial = message.serial ?? "" // CHA-M4k1
@@ -82,6 +83,7 @@ internal final class DefaultMessages<Realtime: InternalRealtimeClientProtocol>: 
                 timestamp: timestamp,
                 // TODO: Not sure of correct behaviour here, see https://github.com/ably/ably-chat-swift/issues/391
                 reactions: .empty,
+                userClaim: userClaim, // CHA-M2h
             )
 
             let event = ChatMessageEvent(message: message)

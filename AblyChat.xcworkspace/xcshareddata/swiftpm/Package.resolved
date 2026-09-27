@@ -1,13 +1,13 @@
 {
-  "originHash" : "82bda97c4f4daad8b8e2d9624cfc24da13604afa4325528017e4068ead79b258",
+  "originHash" : "83c3fe70b23fcba31ad555b2a50e59661b3d87df10dc0eca2b812fb2066e4ad9",
   "pins" : [
     {
       "identity" : "ably-cocoa",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/ably/ably-cocoa",
       "state" : {
-        "revision" : "4e23a5136ecaf40fa7bad9b0df6bb5be5bb2b0c7",
-        "version" : "1.2.51"
+        "revision" : "14d2661824652d0c6065dfe4dcf8c2e3781502fc",
+        "version" : "1.2.58"
       }
     },
     {
@@ -15,8 +15,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/ably/ably-cocoa-plugin-support",
       "state" : {
-        "revision" : "8db4632b0664b7272d54f7b612ddad0a18d1758f",
-        "version" : "0.2.0"
+        "revision" : "dd118432a6e023c3d2c8a051299e8081a06db036",
+        "version" : "1.0.0"
       }
     },
     {
@@ -24,8 +24,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/ably/delta-codec-cocoa",
       "state" : {
-        "revision" : "3ee62ea40a63996b55818d44b3f0e56d8753be88",
-        "version" : "1.3.3"
+        "revision" : "d53eec08f9443c6160d941327a6f9d8bbb93cea2",
+        "version" : "1.3.5"
       }
     },
     {

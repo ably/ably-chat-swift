@@ -88,7 +88,7 @@ final class TypingTimerManagerTests {
         var handlerCalled = false
 
         let semaphoreSignalledByHandler = AsyncSemaphore(value: 0)
-        timerManager.startTypingTimer(for: "client1") {
+        timerManager.startTypingTimer(for: "client1") { _ in
             handlerCalled = true
             semaphoreSignalledByHandler.signal()
         }
@@ -112,7 +112,7 @@ final class TypingTimerManagerTests {
 
         var handlerCalled = false
 
-        timerManager.startTypingTimer(for: "client1") {
+        timerManager.startTypingTimer(for: "client1") { _ in
             handlerCalled = true
         }
 
@@ -120,7 +120,7 @@ final class TypingTimerManagerTests {
         await mockClock.advance(by: 1.0)
 
         // Reset timer before it expires
-        timerManager.startTypingTimer(for: "client1") {
+        timerManager.startTypingTimer(for: "client1") { _ in
             handlerCalled = true
         }
 
@@ -149,7 +149,7 @@ final class TypingTimerManagerTests {
         var handlerCalled = false
 
         let semaphoreSignalledByHandler = AsyncSemaphore(value: 0)
-        timerManager.startTypingTimer(for: "client1") {
+        timerManager.startTypingTimer(for: "client1") { _ in
             handlerCalled = true
             semaphoreSignalledByHandler.signal()
         }

@@ -152,12 +152,13 @@ public struct PresenceMember: Sendable {
     /// Memberwise initializer to create a `PresenceMember`.
     ///
     /// - Note: You should not need to use this initializer when using the Chat SDK. It is exposed only to allow users to create mock versions of the SDK's protocols.
-    public init(clientID: String, connectionID: String, data: PresenceData?, extras: [String: JSONValue]?, updatedAt: Date) {
+    public init(clientID: String, connectionID: String, data: PresenceData?, extras: [String: JSONValue]?, updatedAt: Date, userClaim: String? = nil) {
         self.clientID = clientID
         self.connectionID = connectionID
         self.data = data
         self.extras = extras
         self.updatedAt = updatedAt
+        self.userClaim = userClaim
     }
 
     /**
@@ -180,6 +181,15 @@ public struct PresenceMember: Sendable {
     public var extras: [String: JSONValue]?
     // swiftlint:disable:next missing_docs
     public var updatedAt: Date
+
+    // @spec CHA-PR6g
+    /**
+     * The user claim attached to this presence event by the server.
+     *
+     * Set automatically by the Ably server when a JWT contains a matching
+     * `ably.room.<roomName>` claim. This is a read-only, server-provided value.
+     */
+    public var userClaim: String?
 }
 
 /**
