@@ -1,8 +1,15 @@
 import Ably
 
+@MainActor
 internal final class DefaultConnection: Connection {
     private let realtime: any InternalRealtimeClientProtocol
     private let timerManager = TimerManager(clock: SystemClock())
+
+    /// Track all event listeners we've created so we can clean them up on dispose.
+    private var eventListeners: [ARTEventListener] = []
+
+    /// Whether this Connection instance has been disposed.
+    private var isDisposed = false
 
     // (CHA-CS2a) The chat client must expose its current connection status.
     internal var status: ConnectionStatus {
@@ -24,54 +31,59 @@ internal final class DefaultConnection: Connection {
     internal func onStatusChange(_ callback: @escaping @MainActor (ConnectionStatusChange) -> Void) -> some StatusSubscription {
         // (CHA-CS5) The chat client must monitor the underlying realtime connection for connection status changes.
         let eventListener = realtime.connection.on { [weak self] stateChange in
-            guard let self else {
-                return
-            }
-            let currentState = ConnectionStatus.fromRealtimeConnectionState(stateChange.current)
-            let previousState = ConnectionStatus.fromRealtimeConnectionState(stateChange.previous)
+            Task { @MainActor in
+                guard let self else {
+                    return
+                }
+                let currentState = ConnectionStatus.fromRealtimeConnectionState(stateChange.current)
+                let previousState = ConnectionStatus.fromRealtimeConnectionState(stateChange.previous)
 
-            // (CHA-CS4a) Connection status update events must contain the newly entered connection status.
-            // (CHA-CS4b) Connection status update events must contain the previous connection status.
-            // (CHA-CS4c) Connection status update events must contain the connection error (if any) that pertains to the newly entered connection status.
-            let statusChange = ConnectionStatusChange(
-                current: currentState,
-                previous: previousState,
-                error: stateChange.reason,
-                // TODO: Actually emit `nil` when appropriate (we can't currently since ably-cocoa's corresponding property is mis-typed): https://github.com/ably/ably-chat-swift/issues/394
-                retryIn: stateChange.retryIn,
-            )
+                // (CHA-CS4a) Connection status update events must contain the newly entered connection status.
+                // (CHA-CS4b) Connection status update events must contain the previous connection status.
+                // (CHA-CS4c) Connection status update events must contain the connection error (if any) that pertains to the newly entered connection status.
+                let statusChange = ConnectionStatusChange(
+                    current: currentState,
+                    previous: previousState,
+                    error: stateChange.reason,
+                    // TODO: Actually emit `nil` when appropriate (we can't currently since ably-cocoa's corresponding property is mis-typed): https://github.com/ably/ably-chat-swift/issues/394
+                    retryIn: stateChange.retryIn,
+                )
 
-            let isTimerRunning = timerManager.hasRunningTask()
-            //  (CHA-CS5a) The chat client must suppress transient disconnection events. It is not uncommon for Ably servers to perform connection shedding to balance load, or due to retiring. Clients should not need to concern themselves with transient events.
+                let isTimerRunning = self.timerManager.hasRunningTask()
+                //  (CHA-CS5a) The chat client must suppress transient disconnection events. It is not uncommon for Ably servers to perform connection shedding to balance load, or due to retiring. Clients should not need to concern themselves with transient events.
 
-            // (CHA-CS5a2) If a transient disconnect timer is active and the realtime connection status changes to `DISCONNECTED` or `CONNECTING`, the library must not emit a status change.
-            if isTimerRunning, currentState == .disconnected || currentState == .connecting {
-                return
-            }
+                // (CHA-CS5a2) If a transient disconnect timer is active and the realtime connection status changes to `DISCONNECTED` or `CONNECTING`, the library must not emit a status change.
+                if isTimerRunning, currentState == .disconnected || currentState == .connecting {
+                    return
+                }
 
-            // (CHA-CS5a3) If a transient disconnect timer is active and the realtime connections status changes to `CONNECTED`, `SUSPENDED` or `FAILED`, the library shall cancel the transient disconnect timer. The superseding status change shall be emitted.
-            if isTimerRunning, currentState == .connected || currentState == .suspended || currentState == .failed {
-                timerManager.cancelTimer()
-                callback(statusChange)
-            }
-
-            // (CHA-CS5a1) If the realtime connection status transitions from `CONNECTED` to `DISCONNECTED`, the chat client connection status must not change. A 5 second transient disconnect timer shall be started.
-            if previousState == .connected, currentState == .disconnected, !isTimerRunning {
-                timerManager.setTimer(interval: 5.0) { [timerManager] in
-                    // (CHA-CS5a4) If a transient disconnect timer expires the library shall emit a connection status change event. This event must contain the current status of of timer expiry, along with the original error that initiated the transient disconnect timer.
-                    timerManager.cancelTimer()
+                // (CHA-CS5a3) If a transient disconnect timer is active and the realtime connections status changes to `CONNECTED`, `SUSPENDED` or `FAILED`, the library shall cancel the transient disconnect timer. The superseding status change shall be emitted.
+                if isTimerRunning, currentState == .connected || currentState == .suspended || currentState == .failed {
+                    self.timerManager.cancelTimer()
                     callback(statusChange)
                 }
-                return
-            }
 
-            if isTimerRunning {
-                timerManager.cancelTimer()
-            }
+                // (CHA-CS5a1) If the realtime connection status transitions from `CONNECTED` to `DISCONNECTED`, the chat client connection status must not change. A 5 second transient disconnect timer shall be started.
+                if previousState == .connected, currentState == .disconnected, !isTimerRunning {
+                    self.timerManager.setTimer(interval: 5.0) { [timerManager = self.timerManager] in
+                        // (CHA-CS5a4) If a transient disconnect timer expires the library shall emit a connection status change event. This event must contain the current status of of timer expiry, along with the original error that initiated the transient disconnect timer.
+                        timerManager.cancelTimer()
+                        callback(statusChange)
+                    }
+                    return
+                }
 
-            // (CHA-CS5b) Not withstanding CHA-CS5a. If a connection state event is observed from the underlying realtime library, the client must emit a status change event. The current status of that event shall reflect the status change in the underlying realtime library, along with the accompanying error.
-            callback(statusChange)
+                if isTimerRunning {
+                    self.timerManager.cancelTimer()
+                }
+
+                // (CHA-CS5b) Not withstanding CHA-CS5a. If a connection state event is observed from the underlying realtime library, the client must emit a status change event. The current status of that event shall reflect the status change in the underlying realtime library, along with the accompanying error.
+                callback(statusChange)
+            }
         }
+
+        // Track this listener so we can clean it up on dispose
+        eventListeners.append(eventListener)
 
         return DefaultStatusSubscription { [weak self] in
             guard let self else {
@@ -79,6 +91,37 @@ internal final class DefaultConnection: Connection {
             }
             timerManager.cancelTimer()
             realtime.connection.off(eventListener)
+            // Remove from tracked list
+            eventListeners.removeAll { $0 === eventListener }
         }
+    }
+
+    // @spec CHA-CL1b
+    /// Disposes of the connection, cleaning up any listeners and timers.
+    ///
+    /// This method:
+    /// 1. Cancels any active transient disconnect timers
+    /// 2. Removes all connection state listeners we've registered
+    ///
+    /// Note: We do NOT close the underlying realtime connection. The ARTRealtime instance
+    /// is owned by the user and passed to ChatClient.
+    ///
+    /// This method is idempotent.
+    internal func dispose() {
+        // Idempotency check
+        if isDisposed {
+            return
+        }
+
+        isDisposed = true
+
+        // Cancel any active transient disconnect timer
+        timerManager.cancelTimer()
+
+        // Remove all connection state listeners we've registered
+        for listener in eventListeners {
+            realtime.connection.off(listener)
+        }
+        eventListeners.removeAll()
     }
 }

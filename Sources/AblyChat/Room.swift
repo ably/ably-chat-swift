@@ -386,6 +386,11 @@ internal class DefaultRoom<Realtime: InternalRealtimeClientProtocol, LifecycleMa
     internal func release() async {
         await lifecycleManager.performReleaseOperation()
 
+        // Dispose of room features to clean up any internal state
+        typing.dispose()
+        occupancy.dispose()
+        messages.dispose()
+
         // CHA-RL3h
         realtime.channels.release(internalChannel.name)
     }

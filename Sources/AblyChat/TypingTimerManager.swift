@@ -85,6 +85,19 @@ internal final class TypingTimerManager<AnyClock: ClockProtocol>: TypingTimerMan
     internal func currentlyTypingClientIDs() -> Set<String> {
         Set(whoIsTypingTimers.keys)
     }
+
+    // (CHA-CL1) Called during client dispose to clean up typing timers.
+    /// Disposes of the typing timer manager, cancelling all active timers and clearing state.
+    internal func dispose() {
+        // Cancel heartbeat timer
+        cancelHeartbeatTimer()
+
+        // Cancel all "who is typing" timers
+        for (_, timer) in whoIsTypingTimers {
+            timer.cancelTimer()
+        }
+        whoIsTypingTimers.removeAll()
+    }
 }
 
 // Whilst this protocol seems redundant seeing as there's only a single implementation,
@@ -106,4 +119,7 @@ internal protocol TypingTimerManagerProtocol {
     func isCurrentlyTyping(clientID: String) -> Bool
     /// Returns the set of client IDs that we consider to currently be typing (also referred to in the spec as the "typing set").
     func currentlyTypingClientIDs() -> Set<String>
+    // (CHA-CL1) Called during client dispose to clean up typing timers.
+    /// Disposes of the typing timer manager, cancelling all active timers and clearing state.
+    func dispose()
 }

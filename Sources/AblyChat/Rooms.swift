@@ -126,6 +126,9 @@ internal class DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
     /// The value for a given room name is the state that corresponds to that room name.
     private var roomStates: [String: RoomState] = [:]
 
+    /// Whether this Rooms instance has been disposed. Once true, `get` will throw.
+    private var isDisposed = false
+
     internal init(realtime: RoomFactory.Realtime, logger: any InternalLogger, roomFactory: RoomFactory) {
         self.realtime = realtime
         self.logger = logger
@@ -162,6 +165,11 @@ internal class DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
     #endif
 
     internal func get(named name: String, options: RoomOptions) async throws(ErrorInfo) -> RoomFactory.Room {
+        // CHA-CL1a: Check if disposed before proceeding
+        if isDisposed {
+            throw InternalError.clientDisposed.toErrorInfo()
+        }
+
         if let existingRoomState = roomStates[name] {
             switch existingRoomState {
             case let .roomMapEntry(existingRoomMapEntry):
@@ -354,5 +362,38 @@ internal class DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
 
             await releaseTask.value
         }
+    }
+
+    // @spec CHA-CL1a
+    /// Disposes of all rooms managed by this instance.
+    ///
+    /// This method:
+    /// 1. Sets the disposed flag to prevent new room gets
+    /// 2. Releases all rooms concurrently
+    /// 3. Clears the internal room states map
+    ///
+    /// This method is idempotent.
+    internal func dispose() async {
+        // Idempotency check
+        if isDisposed {
+            return
+        }
+
+        isDisposed = true
+
+        // Collect all room names to release
+        let roomNamesToRelease = Array(roomStates.keys)
+
+        // Release all rooms concurrently using TaskGroup
+        await withTaskGroup(of: Void.self) { group in
+            for roomName in roomNamesToRelease {
+                group.addTask { @Sendable in
+                    await self.release(named: roomName)
+                }
+            }
+        }
+
+        // Ensure map is cleared (should already be empty after releases, but ensure cleanup)
+        roomStates.removeAll()
     }
 }

@@ -150,4 +150,10 @@ internal final class DefaultMessageReactions<Realtime: InternalRealtimeClientPro
 
         return summary
     }
+
+    /// Disposes of the message reactions feature.
+    /// This is a no-op as the feature has no internal state to clean up.
+    internal func dispose() {
+        // No internal state to clean up
+    }
 }
