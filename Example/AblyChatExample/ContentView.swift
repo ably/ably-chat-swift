@@ -13,7 +13,7 @@ private enum Environment: Equatable {
     case live(key: String, clientID: String)
 
     @MainActor
-    func createChatClient() -> any ChatClientProtocol {
+    func makeChatClient() -> any ChatClientProtocol {
         switch self {
         case .mock:
             return MockChatClient(
@@ -25,7 +25,7 @@ private enum Environment: Equatable {
             clientOptions.clientId = clientID
             let pubSubClient = PubSubDevice.createClient(options: clientOptions)
 
-            return ChatClient(pubSubClient: pubSubClient, clientOptions: .init())
+            return createChatClient(pubSubClient: pubSubClient, clientOptions: .init())
         }
     }
 }
@@ -34,7 +34,7 @@ struct ContentView: View {
     // Can be replaced with your own room name
     private let roomName = "DemoRoom"
 
-    @State private var chatClient = Environment.current.createChatClient()
+    @State private var chatClient = Environment.current.makeChatClient()
     @State private var room: (any Room)?
     @State private var isLoading = true
     @State private var error: Error?

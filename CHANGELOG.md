@@ -1,5 +1,19 @@
 # Change Log
 
+## Unreleased
+
+### Breaking Changes
+
+- `ChatClient` no longer has a public initializer. Create a chat client with the new `createChatClient(pubSubClient:clientOptions:)` function instead. `ChatClientOptions` is unchanged.
+
+  ```swift
+  // Before
+  let chatClient = ChatClient(realtime: realtime, clientOptions: ChatClientOptions())
+
+  // After
+  let chatClient = createChatClient(pubSubClient: pubSubClient, clientOptions: ChatClientOptions())
+  ```
+
 ## [1.2.1](https://github.com/ably/ably-chat-swift/tree/1.2.1)
 
 ### Bug Fixes
