@@ -13,7 +13,7 @@ struct DefaultMessagesTests {
     @Test
     func sendMessage() async throws {
         // Given
-        let realtime = MockRealtime {
+        let pubSubClient = MockPubSubClient {
             MockHTTPPaginatedResponse(
                 items: [
                     [
@@ -34,7 +34,7 @@ struct DefaultMessagesTests {
                 headers: [:],
             )
         }
-        let chatAPI = ChatAPI(realtime: realtime)
+        let chatAPI = ChatAPI(pubSubClient: pubSubClient)
         let channel = MockRealtimeChannel(initialState: .attached)
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basket/ball", logger: TestLogger())
 
@@ -51,7 +51,7 @@ struct DefaultMessagesTests {
         #expect(sentMessage.metadata == ["key1": "val1"])
         #expect(sentMessage.headers == ["key2": "val2"])
         #expect(sentMessage.timestamp == Date(timeIntervalSince1970: 1_631_840_000_000 / 1000))
-        #expect(realtime.callRecorder.hasRecord(
+        #expect(pubSubClient.callRecorder.hasRecord(
             matching: "request(_:path:params:body:headers:)",
             arguments: ["method": "POST", "path": "/chat/v4/rooms/basket%2Fball/messages", "body": ["text": "hey", "metadata": ["key1": "val1"], "headers": ["key2": "val2"]], "params": [:], "headers": [:]],
         ))
@@ -64,7 +64,7 @@ struct DefaultMessagesTests {
     func updateMessage() async throws {
         // Given
         let text = "hey"
-        let realtime = MockRealtime {
+        let pubSubClient = MockPubSubClient {
             MockHTTPPaginatedResponse(
                 items: [
                     [
@@ -88,7 +88,7 @@ struct DefaultMessagesTests {
                 headers: [:],
             )
         }
-        let chatAPI = ChatAPI(realtime: realtime)
+        let chatAPI = ChatAPI(pubSubClient: pubSubClient)
         let channel = MockRealtimeChannel(initialState: .attached)
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basket/ball", logger: TestLogger())
 
@@ -112,7 +112,7 @@ struct DefaultMessagesTests {
         #expect(updatedMessage.version.description == "add exclamation")
         #expect(updatedMessage.version.clientID == "clientId2")
         #expect(updatedMessage.timestamp == Date(timeIntervalSince1970: 1_631_840_000_000 / 1000))
-        #expect(realtime.callRecorder.hasRecord(
+        #expect(pubSubClient.callRecorder.hasRecord(
             matching: "request(_:path:params:body:headers:)",
             arguments: ["method": "PUT", "path": "/chat/v4/rooms/basket%2Fball/messages/123456789-000@123456789:000", "body": ["message": ["text": "hey!", "metadata": [:], "headers": [:]], "description": "add exclamation", "metadata": ["key": "val"]], "params": [:], "headers": [:]],
         ))
@@ -125,7 +125,7 @@ struct DefaultMessagesTests {
     func deleteMessage() async throws {
         // Given
         let text = "hey"
-        let realtime = MockRealtime {
+        let pubSubClient = MockPubSubClient {
             MockHTTPPaginatedResponse(
                 items: [
                     [
@@ -147,7 +147,7 @@ struct DefaultMessagesTests {
                 headers: [:],
             )
         }
-        let chatAPI = ChatAPI(realtime: realtime)
+        let chatAPI = ChatAPI(pubSubClient: pubSubClient)
         let channel = MockRealtimeChannel(initialState: .attached)
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basket/ball", logger: TestLogger())
 
@@ -166,7 +166,7 @@ struct DefaultMessagesTests {
         #expect(deletedMessage.headers.isEmpty)
         #expect(deletedMessage.metadata.isEmpty)
         #expect(deletedMessage.timestamp == Date(timeIntervalSince1970: 1_631_840_000_000 / 1000))
-        #expect(realtime.callRecorder.hasRecord(
+        #expect(pubSubClient.callRecorder.hasRecord(
             matching: "request(_:path:params:body:headers:)",
             arguments: ["method": "POST", "path": "/chat/v4/rooms/basket%2Fball/messages/123456789-000@123456789:000/delete", "body": [:], "params": [:], "headers": [:]],
         ))
@@ -177,10 +177,10 @@ struct DefaultMessagesTests {
     func errorShouldBeThrownIfErrorIsReturnedFromSendRESTChatAPI() async throws {
         // Given
         let apiError = ErrorInfo.createArbitraryError()
-        let realtime = MockRealtime { @Sendable () throws(ErrorInfo) in
+        let pubSubClient = MockPubSubClient { @Sendable () throws(ErrorInfo) in
             throw apiError
         }
-        let chatAPI = ChatAPI(realtime: realtime)
+        let chatAPI = ChatAPI(pubSubClient: pubSubClient)
         let channel = MockRealtimeChannel()
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", logger: TestLogger())
 
@@ -196,10 +196,10 @@ struct DefaultMessagesTests {
     func errorShouldBeThrownIfErrorIsReturnedFromUpdateRESTChatAPI() async throws {
         // Given
         let apiError = ErrorInfo.createArbitraryError()
-        let realtime = MockRealtime { @Sendable () throws(ErrorInfo) in
+        let pubSubClient = MockPubSubClient { @Sendable () throws(ErrorInfo) in
             throw apiError
         }
-        let chatAPI = ChatAPI(realtime: realtime)
+        let chatAPI = ChatAPI(pubSubClient: pubSubClient)
         let channel = MockRealtimeChannel()
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", logger: TestLogger())
 
@@ -219,10 +219,10 @@ struct DefaultMessagesTests {
     func errorShouldBeThrownIfErrorIsReturnedFromDeleteRESTChatAPI() async throws {
         // Given
         let apiError = ErrorInfo.createArbitraryError()
-        let realtime = MockRealtime { @Sendable () throws(ErrorInfo) in
+        let pubSubClient = MockPubSubClient { @Sendable () throws(ErrorInfo) in
             throw apiError
         }
-        let chatAPI = ChatAPI(realtime: realtime)
+        let chatAPI = ChatAPI(pubSubClient: pubSubClient)
         let channel = MockRealtimeChannel()
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", logger: TestLogger())
 
@@ -237,7 +237,7 @@ struct DefaultMessagesTests {
     @Test
     func getMessage() async throws {
         // Given
-        let realtime = MockRealtime {
+        let pubSubClient = MockPubSubClient {
             MockHTTPPaginatedResponse(
                 items: [
                     [
@@ -258,7 +258,7 @@ struct DefaultMessagesTests {
                 headers: [:],
             )
         }
-        let chatAPI = ChatAPI(realtime: realtime)
+        let chatAPI = ChatAPI(pubSubClient: pubSubClient)
         let channel = MockRealtimeChannel(initialState: .attached)
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", logger: TestLogger())
 
@@ -275,7 +275,7 @@ struct DefaultMessagesTests {
         #expect(retrievedMessage.metadata == ["key1": "val1"])
         #expect(retrievedMessage.headers == ["key2": "val2"])
         #expect(retrievedMessage.timestamp == Date(timeIntervalSince1970: 1_631_840_000_000 / 1000))
-        #expect(realtime.callRecorder.hasRecord(
+        #expect(pubSubClient.callRecorder.hasRecord(
             matching: "request(_:path:params:body:headers:)",
             arguments: ["method": "GET", "path": "/chat/v4/rooms/basketball/messages/123456789-000@123456789:000", "body": [:], "params": [:], "headers": [:]],
         ))
@@ -286,10 +286,10 @@ struct DefaultMessagesTests {
     func errorShouldBeThrownIfErrorIsReturnedFromGetRESTChatAPI() async throws {
         // Given
         let apiError = ErrorInfo.createArbitraryError()
-        let realtime = MockRealtime { @Sendable () throws(ErrorInfo) in
+        let pubSubClient = MockPubSubClient { @Sendable () throws(ErrorInfo) in
             throw apiError
         }
-        let chatAPI = ChatAPI(realtime: realtime)
+        let chatAPI = ChatAPI(pubSubClient: pubSubClient)
         let channel = MockRealtimeChannel()
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", logger: TestLogger())
 
@@ -305,11 +305,11 @@ struct DefaultMessagesTests {
     @Test
     func subscriptionPointIsChannelSerialWhenUnderlyingRealtimeChannelIsAttached() async throws {
         // Given
-        let realtime = MockRealtime {
+        let pubSubClient = MockPubSubClient {
             MockHTTPPaginatedResponse.successGetMessagesWithNoItems
         }
         let channelSerial = "123"
-        let chatAPI = ChatAPI(realtime: realtime)
+        let chatAPI = ChatAPI(pubSubClient: pubSubClient)
         let channel = MockRealtimeChannel(
             properties: ChannelProperties(attachSerial: nil, channelSerial: channelSerial),
             initialState: .attached,
@@ -319,7 +319,7 @@ struct DefaultMessagesTests {
         _ = try await subscription.historyBeforeSubscribe(withParams: .init())
 
         // Then: subscription point is the current channelSerial of the realtime channel
-        #expect(realtime.callRecorder.hasRecord(
+        #expect(pubSubClient.callRecorder.hasRecord(
             matching: "request(_:path:params:body:headers:)",
             arguments: ["method": "GET", "path": "/chat/v4/rooms/basket%2Fball/messages", "body": [:], "params": ["direction": "backwards", "fromSerial": "\(channelSerial)"], "headers": [:]],
         ))
@@ -329,11 +329,11 @@ struct DefaultMessagesTests {
     @Test
     func subscriptionPointIsAttachSerialWhenUnderlyingRealtimeChannelIsNotAttached() async throws {
         // Given
-        let realtime = MockRealtime {
+        let pubSubClient = MockPubSubClient {
             MockHTTPPaginatedResponse.successGetMessagesWithNoItems
         }
         let attachSerial = "attach123"
-        let chatAPI = ChatAPI(realtime: realtime)
+        let chatAPI = ChatAPI(pubSubClient: pubSubClient)
         let channel = MockRealtimeChannel(
             properties: ChannelProperties(attachSerial: attachSerial, channelSerial: nil),
             initialState: .attaching,
@@ -346,7 +346,7 @@ struct DefaultMessagesTests {
         _ = try await subscription.historyBeforeSubscribe(withParams: .init())
 
         // Then: subscription point is the attachSerial of the realtime channel
-        #expect(realtime.callRecorder.hasRecord(
+        #expect(pubSubClient.callRecorder.hasRecord(
             matching: "request(_:path:params:body:headers:)",
             arguments: ["method": "GET", "path": "/chat/v4/rooms/basketball/messages", "body": [:], "params": ["direction": "backwards", "fromSerial": "\(attachSerial)"], "headers": [:]],
         ))
@@ -358,10 +358,10 @@ struct DefaultMessagesTests {
         // Given
         let attachSerial = "attach123"
         let channelSerial = "channel456"
-        let realtime = MockRealtime {
+        let pubSubClient = MockPubSubClient {
             MockHTTPPaginatedResponse.successGetMessagesWithNoItems
         }
-        let chatAPI = ChatAPI(realtime: realtime)
+        let chatAPI = ChatAPI(pubSubClient: pubSubClient)
         let channel = MockRealtimeChannel(
             properties: ChannelProperties(attachSerial: attachSerial, channelSerial: channelSerial),
             initialState: .attached,
@@ -372,7 +372,7 @@ struct DefaultMessagesTests {
         let subscription = defaultMessages.subscribe()
         _ = try await subscription.historyBeforeSubscribe(withParams: .init())
 
-        #expect(realtime.callRecorder.hasRecord(
+        #expect(pubSubClient.callRecorder.hasRecord(
             matching: "request(_:path:params:body:headers:)",
             arguments: ["method": "GET", "path": "/chat/v4/rooms/basketball/messages", "body": [:], "params": ["direction": "backwards", "fromSerial": "\(channelSerial)"], "headers": [:]],
         ))
@@ -388,7 +388,7 @@ struct DefaultMessagesTests {
         _ = try await subscription.historyBeforeSubscribe(withParams: .init())
 
         // Then: subscription point is the attachSerial of the realtime channel
-        #expect(realtime.callRecorder.hasRecord(
+        #expect(pubSubClient.callRecorder.hasRecord(
             matching: "request(_:path:params:body:headers:)",
             arguments: ["method": "GET", "path": "/chat/v4/rooms/basketball/messages", "body": [:], "params": ["direction": "backwards", "fromSerial": "\(attachSerial)"], "headers": [:]],
         ))
@@ -400,10 +400,10 @@ struct DefaultMessagesTests {
         // Given
         let attachSerial = "attach123"
         let channelSerial = "channel456"
-        let realtime = MockRealtime {
+        let pubSubClient = MockPubSubClient {
             MockHTTPPaginatedResponse.successGetMessagesWithNoItems
         }
-        let chatAPI = ChatAPI(realtime: realtime)
+        let chatAPI = ChatAPI(pubSubClient: pubSubClient)
         let channel = MockRealtimeChannel(
             properties: ChannelProperties(attachSerial: attachSerial, channelSerial: channelSerial),
             initialState: .attached,
@@ -414,7 +414,7 @@ struct DefaultMessagesTests {
         let subscription = defaultMessages.subscribe()
         _ = try await subscription.historyBeforeSubscribe(withParams: .init())
 
-        #expect(realtime.callRecorder.hasRecord(
+        #expect(pubSubClient.callRecorder.hasRecord(
             matching: "request(_:path:params:body:headers:)",
             arguments: ["method": "GET", "path": "/chat/v4/rooms/basketball/messages", "body": [:], "params": ["direction": "backwards", "fromSerial": "\(channelSerial)"], "headers": [:]],
         ))
@@ -427,7 +427,7 @@ struct DefaultMessagesTests {
         _ = try await subscription.historyBeforeSubscribe(withParams: .init())
 
         // Then: subscription point is the attachSerial of the realtime channel
-        #expect(realtime.callRecorder.hasRecord(
+        #expect(pubSubClient.callRecorder.hasRecord(
             matching: "request(_:path:params:body:headers:)",
             arguments: ["method": "GET", "path": "/chat/v4/rooms/basketball/messages", "body": [:], "params": ["direction": "backwards", "fromSerial": "\(attachSerial)"], "headers": [:]],
         ))
@@ -440,10 +440,10 @@ struct DefaultMessagesTests {
     @Test
     func subscriptionhistoryBeforeSubscribeAcceptsStandardHistoryQueryOptionsExceptForDirection() async throws {
         // Given
-        let realtime = MockRealtime {
+        let pubSubClient = MockPubSubClient {
             MockHTTPPaginatedResponse.successGetMessagesWithItems
         }
-        let chatAPI = ChatAPI(realtime: realtime)
+        let chatAPI = ChatAPI(pubSubClient: pubSubClient)
         let channel = MockRealtimeChannel(
             properties: ChannelProperties(attachSerial: nil, channelSerial: "123"),
             initialState: .attached,
@@ -454,7 +454,7 @@ struct DefaultMessagesTests {
         let subscription = defaultMessages.subscribe()
         let paginatedResult = try await subscription.historyBeforeSubscribe(withParams: .init())
 
-        let requestParams = try #require(realtime.requestArguments.first?.params)
+        let requestParams = try #require(pubSubClient.requestArguments.first?.params)
 
         // Then
 
@@ -478,10 +478,10 @@ struct DefaultMessagesTests {
     func subscriptionhistoryBeforeSubscribeThrowsErrorInfoInCaseOfServerError() async throws {
         // Given
         let restError = ErrorInfo.createArbitraryError()
-        let realtime = MockRealtime { @Sendable () throws(ErrorInfo) in
+        let pubSubClient = MockPubSubClient { @Sendable () throws(ErrorInfo) in
             throw restError
         }
-        let chatAPI = ChatAPI(realtime: realtime)
+        let chatAPI = ChatAPI(pubSubClient: pubSubClient)
         let channel = MockRealtimeChannel(
             properties: ChannelProperties(attachSerial: nil, channelSerial: "123"),
             initialState: .attached,
@@ -503,10 +503,10 @@ struct DefaultMessagesTests {
     @Test
     func getMessagesAcceptsStandardHistoryQueryOptions() async throws {
         // Given
-        let realtime = MockRealtime {
+        let pubSubClient = MockPubSubClient {
             MockHTTPPaginatedResponse.successGetMessagesWithItems
         }
-        let chatAPI = ChatAPI(realtime: realtime)
+        let chatAPI = ChatAPI(pubSubClient: pubSubClient)
         let channel = MockRealtimeChannel(
             properties: ChannelProperties(attachSerial: nil, channelSerial: "123"),
             initialState: .attached,
@@ -532,10 +532,10 @@ struct DefaultMessagesTests {
     func getMessagesThrowsErrorInfoInCaseOfServerError() async throws {
         // Given
         let restError = ErrorInfo.createArbitraryError()
-        let realtime = MockRealtime { @Sendable () throws(ErrorInfo) in
+        let pubSubClient = MockPubSubClient { @Sendable () throws(ErrorInfo) in
             throw restError
         }
-        let chatAPI = ChatAPI(realtime: realtime)
+        let chatAPI = ChatAPI(pubSubClient: pubSubClient)
         let channel = MockRealtimeChannel(
             properties: ChannelProperties(attachSerial: nil, channelSerial: "123"),
             initialState: .attached,
@@ -557,8 +557,8 @@ struct DefaultMessagesTests {
     @Test
     func subscriptionCanBeRegisteredToReceiveIncomingMessages() async throws {
         // Given
-        let realtime = MockRealtime()
-        let chatAPI = ChatAPI(realtime: realtime)
+        let pubSubClient = MockPubSubClient()
+        let chatAPI = ChatAPI(pubSubClient: pubSubClient)
 
         func generateMessage(serial: String, numberKey: Int, stringKey: String) -> AblyPubSubDevice.Message {
             let message = AblyPubSubDevice.Message()
@@ -617,8 +617,8 @@ struct DefaultMessagesTests {
     @Test
     func malformedEventsWithIncompleteDataStillEmittedWithDefaultValues() async throws {
         // Given
-        let realtime = MockRealtime()
-        let chatAPI = ChatAPI(realtime: realtime)
+        let pubSubClient = MockPubSubClient()
+        let chatAPI = ChatAPI(pubSubClient: pubSubClient)
 
         let channel = MockRealtimeChannel(
             properties: .init(

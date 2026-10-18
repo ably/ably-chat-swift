@@ -1,14 +1,14 @@
 import AblyPubSubDevice
 
 @MainActor
-internal final class DefaultMessageReactions<Realtime: InternalRealtimeClientProtocol>: MessageReactions {
+internal final class DefaultMessageReactions<PubSubClient: InternalPubSubClientProtocol>: MessageReactions {
     private let channel: any InternalRealtimeChannelProtocol
     private let roomName: String
     private let logger: any InternalLogger
-    private let chatAPI: ChatAPI<Realtime>
+    private let chatAPI: ChatAPI<PubSubClient>
     private let options: MessagesOptions
 
-    internal init(channel: any InternalRealtimeChannelProtocol, chatAPI: ChatAPI<Realtime>, roomName: String, options: MessagesOptions, logger: any InternalLogger) {
+    internal init(channel: any InternalRealtimeChannelProtocol, chatAPI: ChatAPI<PubSubClient>, roomName: String, options: MessagesOptions, logger: any InternalLogger) {
         self.channel = channel
         self.chatAPI = chatAPI
         self.roomName = roomName

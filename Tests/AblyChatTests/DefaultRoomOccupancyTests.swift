@@ -10,7 +10,7 @@ struct DefaultRoomOccupancyTests {
     @Test
     func occupancyGet() async throws {
         // Given
-        let realtime = MockRealtime {
+        let pubSubClient = MockPubSubClient {
             MockHTTPPaginatedResponse(
                 items: [
                     [
@@ -20,7 +20,7 @@ struct DefaultRoomOccupancyTests {
                 ],
             )
         }
-        let chatAPI = ChatAPI(realtime: realtime)
+        let chatAPI = ChatAPI(pubSubClient: pubSubClient)
         let channel = MockRealtimeChannel(name: "basketball::$chat")
         let defaultOccupancy = DefaultOccupancy(
             channel: channel,
@@ -40,7 +40,7 @@ struct DefaultRoomOccupancyTests {
         let currentOccupancy = defaultOccupancy.current
         #expect(currentOccupancy == nil)
 
-        #expect(realtime.callRecorder.hasRecord(
+        #expect(pubSubClient.callRecorder.hasRecord(
             matching: "request(_:path:params:body:headers:)",
             arguments: [
                 "method": "GET",
@@ -60,8 +60,8 @@ struct DefaultRoomOccupancyTests {
     @Test
     func usersCanSubscribeToRealtimeOccupancyUpdates() async throws {
         // Given
-        let realtime = MockRealtime()
-        let chatAPI = ChatAPI(realtime: realtime)
+        let pubSubClient = MockPubSubClient()
+        let chatAPI = ChatAPI(pubSubClient: pubSubClient)
         let channel = MockRealtimeChannel(
             name: "basketball::$chat",
             messageToEmitOnSubscribe: {
@@ -106,8 +106,8 @@ struct DefaultRoomOccupancyTests {
     @Test
     func ifInvalidOccupancyEventReceivedItMustBeEmittedWithZeroValues() async throws {
         // Given
-        let realtime = MockRealtime()
-        let chatAPI = ChatAPI(realtime: realtime)
+        let pubSubClient = MockPubSubClient()
+        let chatAPI = ChatAPI(pubSubClient: pubSubClient)
         let channel = MockRealtimeChannel(
             name: "basketball::$chat",
             messageToEmitOnSubscribe: {

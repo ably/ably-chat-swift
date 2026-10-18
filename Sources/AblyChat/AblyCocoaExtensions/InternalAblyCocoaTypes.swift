@@ -2,7 +2,7 @@ import AblyPubSubDevice
 
 /// The interface that the Chat SDK uses to access ably-cocoa's realtime functionality.
 ///
-/// The idea is to translate ably-cocoa's `RealtimeProtocol` interface into something that's more pleasant to use from Swift (and easier to mock), by using:
+/// The idea is to translate ably-cocoa's `PubSubProtocol` interface into something that's more pleasant to use from Swift (and easier to mock), by using:
 ///
 /// - `async` methods instead of callbacks
 /// - typed throws (of our error type `ErrorInfo`)
@@ -12,11 +12,11 @@ import AblyPubSubDevice
 ///
 /// This protocol only contains the functionality from ably-cocoa that we're actually currently using in the Chat SDK, so you might need to add new properties and methods to it over time.
 ///
-/// The default implementation of this protocol is ``InternalRealtimeClientAdapter``, which uses an underlying ably-cocoa `RealtimeProtocol` object.
+/// The default implementation of this protocol is ``InternalPubSubClientAdapter``, which uses an underlying ably-cocoa `PubSubProtocol` object.
 ///
 /// All of the types here are @MainActor to make it easy to write mocks for them (the SDK code that uses them, as well as the tests that would use their mocks, is all @MainActor).
 @MainActor
-internal protocol InternalRealtimeClientProtocol: AnyObject, Sendable {
+internal protocol InternalPubSubClientProtocol: AnyObject, Sendable {
     associatedtype Channels: InternalRealtimeChannelsProtocol
     associatedtype Connection: InternalConnectionProtocol
     associatedtype HTTPPaginatedResponse: InternalHTTPPaginatedResponseProtocol
@@ -28,7 +28,7 @@ internal protocol InternalRealtimeClientProtocol: AnyObject, Sendable {
     var connection: Connection { get }
 }
 
-/// Expresses the requirements of the object returned by ``InternalRealtimeClientProtocol/channels``.
+/// Expresses the requirements of the object returned by ``InternalPubSubClientProtocol/channels``.
 @MainActor
 internal protocol InternalRealtimeChannelsProtocol: AnyObject, Sendable {
     associatedtype Channel: InternalRealtimeChannelProtocol
@@ -93,7 +93,7 @@ internal protocol InternalRealtimeAnnotationsProtocol: AnyObject, Sendable {
     func subscribe(_ type: String, callback: @escaping @MainActor (AblyPubSubDevice.Annotation) -> Void) -> EventListener?
 }
 
-/// Expresses the requirements of the object returned by ``InternalRealtimeClientProtocol/connection``.
+/// Expresses the requirements of the object returned by ``InternalPubSubClientProtocol/connection``.
 @MainActor
 internal protocol InternalConnectionProtocol: AnyObject, Sendable {
     var state: RealtimeConnectionState { get }
@@ -103,7 +103,7 @@ internal protocol InternalConnectionProtocol: AnyObject, Sendable {
     func off(_ listener: EventListener)
 }
 
-/// Expresses the requirements of the paginated response returned by ``InternalRealtimeClientProtocol/request(_:path:params:body:headers:)``.
+/// Expresses the requirements of the paginated response returned by ``InternalPubSubClientProtocol/request(_:path:params:body:headers:)``.
 @MainActor
 internal protocol InternalHTTPPaginatedResponseProtocol: AnyObject, Sendable {
     var items: [JSONValue] { get }
@@ -127,7 +127,7 @@ private func toAblyCocoaCallback<Arg>(_ callback: @escaping @MainActor (Arg) -> 
         let sendingBox = UnsafeSendingBox(value: arg)
 
         // We use `preconditionIsolated` in addition to `assumeIsolated` because only the former accepts a message.
-        MainActor.preconditionIsolated("The Ably Chat SDK requires that your ARTRealtime instance be using the main queue as its dispatchQueue.")
+        MainActor.preconditionIsolated("The Ably Chat SDK requires that your PubSubClient instance be using the main queue as its dispatchQueue.")
         MainActor.assumeIsolated {
             callback(sendingBox.value)
         }
@@ -143,7 +143,7 @@ private final class UnsafeSendingBox<T>: @unchecked Sendable {
     }
 }
 
-internal final class InternalRealtimeClientAdapter<Underlying: ProxyRealtimeClientProtocol>: InternalRealtimeClientProtocol {
+internal final class InternalPubSubClientAdapter<Underlying: ProxyPubSubClientProtocol>: InternalPubSubClientProtocol {
     private let underlying: Underlying
     internal let channels: InternalRealtimeChannelsAdapter<Underlying.Channels>
     internal let connection: InternalConnectionAdapter<Underlying.Connection>

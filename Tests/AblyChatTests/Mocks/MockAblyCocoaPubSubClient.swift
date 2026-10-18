@@ -2,8 +2,8 @@
 import AblyPubSubDevice
 import Foundation
 
-// This mock isn't used much in the tests, since inside the SDK we mainly use `InternalRealtimeClientProtocol` (whose mock is ``MockRealtime``).
-final class MockAblyCocoaRealtime: NSObject, RealtimeClientProtocol, @unchecked Sendable {
+// This mock isn't used much in the tests, since inside the SDK we mainly use `InternalPubSubClientProtocol` (whose mock is ``MockPubSubClient``).
+final class MockAblyCocoaPubSubClient: NSObject, PubSubClientProtocol, @unchecked Sendable {
     let connection: Connection
     let channels: Channels
 
@@ -68,8 +68,8 @@ final class MockAblyCocoaRealtime: NSObject, RealtimeClientProtocol, @unchecked 
     }
 
     final class Channel: RealtimeChannelProtocol {
-        let presence = MockAblyCocoaRealtime.Presence()
-        let annotations = MockAblyCocoaRealtime.Annotations()
+        let presence = MockAblyCocoaPubSubClient.Presence()
+        let annotations = MockAblyCocoaPubSubClient.Annotations()
 
         var state: RealtimeChannelState {
             fatalError("Not implemented")

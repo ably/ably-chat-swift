@@ -11,8 +11,8 @@ struct DefaultRoomTests {
         // Given: a DefaultRoom instance
         let channel = MockRealtimeChannel(name: "basketball::$chat")
         let channels = MockChannels(channels: [channel])
-        let realtime = MockRealtime(channels: channels)
-        let room = try DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), name: "basketball", options: .init(), logger: TestLogger(), lifecycleManagerFactory: MockRoomLifecycleManagerFactory())
+        let pubSubClient = MockPubSubClient(channels: channels)
+        let room = try DefaultRoom(pubSubClient: pubSubClient, chatAPI: ChatAPI(pubSubClient: pubSubClient), name: "basketball", options: .init(), logger: TestLogger(), lifecycleManagerFactory: MockRoomLifecycleManagerFactory())
 
         // Then: Its `channel` property returns the user-facing ably-cocoa channel (i.e. as opposed to the proxy client created by `createWrapperSDKProxy(with:)` that the SDK uses internally)
         #expect(room.channel === channel.proxied)
@@ -28,8 +28,8 @@ struct DefaultRoomTests {
             MockRealtimeChannel(name: "basketball::$chat"),
         ]
         let channels = MockChannels(channels: channelsList)
-        let realtime = MockRealtime(channels: channels)
-        let room = try DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), name: "basketball", options: .init(), logger: TestLogger(), lifecycleManagerFactory: MockRoomLifecycleManagerFactory())
+        let pubSubClient = MockPubSubClient(channels: channels)
+        let room = try DefaultRoom(pubSubClient: pubSubClient, chatAPI: ChatAPI(pubSubClient: pubSubClient), name: "basketball", options: .init(), logger: TestLogger(), lifecycleManagerFactory: MockRoomLifecycleManagerFactory())
 
         // Then
         #expect(room.testsOnly_internalChannel.name == "basketball::$chat")
@@ -43,8 +43,8 @@ struct DefaultRoomTests {
             MockRealtimeChannel(name: "basketball::$chat"),
         ]
         let channels = MockChannels(channels: channelsList)
-        let realtime = MockRealtime(channels: channels)
-        _ = try DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), name: "basketball", options: .init(), logger: TestLogger(), lifecycleManagerFactory: MockRoomLifecycleManagerFactory())
+        let pubSubClient = MockPubSubClient(channels: channels)
+        _ = try DefaultRoom(pubSubClient: pubSubClient, chatAPI: ChatAPI(pubSubClient: pubSubClient), name: "basketball", options: .init(), logger: TestLogger(), lifecycleManagerFactory: MockRoomLifecycleManagerFactory())
 
         // Then: When it fetches a channel, it does so with the `attachOnSubscribe` channel option set to false
         let channelsGetArguments = channels.getArguments
@@ -61,8 +61,8 @@ struct DefaultRoomTests {
         ]
         let channels = MockChannels(channels: channelsList)
         let roomOptions = RoomOptions(presence: .init(enableEvents: false), occupancy: .init(enableEvents: true))
-        let realtime = MockRealtime(channels: channels)
-        _ = try DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), name: "basketball", options: roomOptions, logger: TestLogger(), lifecycleManagerFactory: MockRoomLifecycleManagerFactory())
+        let pubSubClient = MockPubSubClient(channels: channels)
+        _ = try DefaultRoom(pubSubClient: pubSubClient, chatAPI: ChatAPI(pubSubClient: pubSubClient), name: "basketball", options: roomOptions, logger: TestLogger(), lifecycleManagerFactory: MockRoomLifecycleManagerFactory())
 
         // Then: It fetches the …$chat channel only once, and the options with which it does so are the result of merging the options used by the presence feature and those used by the occupancy feature
         let channelsGetArguments = channels.getArguments
@@ -93,8 +93,8 @@ struct DefaultRoomTests {
         ]
         let channels = MockChannels(channels: channelsList)
         let roomOptions = RoomOptions(occupancy: .init(enableEvents: enableEvents))
-        let realtime = MockRealtime(channels: channels)
-        _ = try DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), name: "basketball", options: roomOptions, logger: TestLogger(), lifecycleManagerFactory: MockRoomLifecycleManagerFactory())
+        let pubSubClient = MockPubSubClient(channels: channels)
+        _ = try DefaultRoom(pubSubClient: pubSubClient, chatAPI: ChatAPI(pubSubClient: pubSubClient), name: "basketball", options: roomOptions, logger: TestLogger(), lifecycleManagerFactory: MockRoomLifecycleManagerFactory())
 
         // Then: When fetching the realtime channel, it sets the "occupancy" channel param accordingly
         let chatMessagesChannelGetOptions = try #require(channels.getArguments.first?.options)
@@ -121,8 +121,8 @@ struct DefaultRoomTests {
         ]
         let channels = MockChannels(channels: channelsList)
         let roomOptions = RoomOptions(presence: .init(enableEvents: enableEvents))
-        let realtime = MockRealtime(channels: channels)
-        _ = try DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), name: "basketball", options: roomOptions, logger: TestLogger(), lifecycleManagerFactory: MockRoomLifecycleManagerFactory())
+        let pubSubClient = MockPubSubClient(channels: channels)
+        _ = try DefaultRoom(pubSubClient: pubSubClient, chatAPI: ChatAPI(pubSubClient: pubSubClient), name: "basketball", options: roomOptions, logger: TestLogger(), lifecycleManagerFactory: MockRoomLifecycleManagerFactory())
 
         // Then: When fetching the realtime channel, it sets the channel modes accordingly
         let chatMessagesChannelGetOptions = try #require(channels.getArguments.first?.options)
@@ -136,9 +136,9 @@ struct DefaultRoomTests {
         // Given: a DefaultRoom instance
         let channel = MockRealtimeChannel(name: "basketball::$chat")
         let channels = MockChannels(channels: [channel])
-        let realtime = MockRealtime(channels: channels)
+        let pubSubClient = MockPubSubClient(channels: channels)
         let lifecycleManagerFactory = MockRoomLifecycleManagerFactory()
-        _ = try DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), name: "basketball", options: .init(), logger: TestLogger(), lifecycleManagerFactory: lifecycleManagerFactory)
+        _ = try DefaultRoom(pubSubClient: pubSubClient, chatAPI: ChatAPI(pubSubClient: pubSubClient), name: "basketball", options: .init(), logger: TestLogger(), lifecycleManagerFactory: lifecycleManagerFactory)
 
         // Then: It creates a lifecycle manager using the fetched channel
         let lifecycleManagerCreationArguments = try #require(lifecycleManagerFactory.createManagerArguments.first)
@@ -159,12 +159,12 @@ struct DefaultRoomTests {
             MockRealtimeChannel(name: "basketball::$chat"),
         ]
         let channels = MockChannels(channels: channelsList)
-        let realtime = MockRealtime(channels: channels)
+        let pubSubClient = MockPubSubClient(channels: channels)
 
         let lifecycleManager = MockRoomLifecycleManager(attachResult: managerAttachResult)
         let lifecycleManagerFactory = MockRoomLifecycleManagerFactory(manager: lifecycleManager)
 
-        let room = try DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), name: "basketball", options: .init(), logger: TestLogger(), lifecycleManagerFactory: lifecycleManagerFactory)
+        let room = try DefaultRoom(pubSubClient: pubSubClient, chatAPI: ChatAPI(pubSubClient: pubSubClient), name: "basketball", options: .init(), logger: TestLogger(), lifecycleManagerFactory: lifecycleManagerFactory)
 
         // When: `attach()` is called on the room
         let result = await Result { @Sendable () async throws(ErrorInfo) in
@@ -190,12 +190,12 @@ struct DefaultRoomTests {
             MockRealtimeChannel(name: "basketball::$chat"),
         ]
         let channels = MockChannels(channels: channelsList)
-        let realtime = MockRealtime(channels: channels)
+        let pubSubClient = MockPubSubClient(channels: channels)
 
         let lifecycleManager = MockRoomLifecycleManager(detachResult: managerDetachResult)
         let lifecycleManagerFactory = MockRoomLifecycleManagerFactory(manager: lifecycleManager)
 
-        let room = try DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), name: "basketball", options: .init(), logger: TestLogger(), lifecycleManagerFactory: lifecycleManagerFactory)
+        let room = try DefaultRoom(pubSubClient: pubSubClient, chatAPI: ChatAPI(pubSubClient: pubSubClient), name: "basketball", options: .init(), logger: TestLogger(), lifecycleManagerFactory: lifecycleManagerFactory)
 
         // When: `detach()` is called on the room
         let result = await Result { @Sendable () async throws(ErrorInfo) in
@@ -217,12 +217,12 @@ struct DefaultRoomTests {
             MockRealtimeChannel(name: "basketball::$chat"),
         ]
         let channels = MockChannels(channels: channelsList)
-        let realtime = MockRealtime(channels: channels)
+        let pubSubClient = MockPubSubClient(channels: channels)
 
         let lifecycleManager = MockRoomLifecycleManager()
         let lifecycleManagerFactory = MockRoomLifecycleManagerFactory(manager: lifecycleManager)
 
-        let room = try DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), name: "basketball", options: .init(), logger: TestLogger(), lifecycleManagerFactory: lifecycleManagerFactory)
+        let room = try DefaultRoom(pubSubClient: pubSubClient, chatAPI: ChatAPI(pubSubClient: pubSubClient), name: "basketball", options: .init(), logger: TestLogger(), lifecycleManagerFactory: lifecycleManagerFactory)
 
         // When: `release()` is called on the room
         await room.release()
@@ -243,7 +243,7 @@ struct DefaultRoomTests {
             MockRealtimeChannel(name: "basketball::$chat"),
         ]
         let channels = MockChannels(channels: channelsList)
-        let realtime = MockRealtime(channels: channels)
+        let pubSubClient = MockPubSubClient(channels: channels)
 
         let lifecycleManagerRoomStatus = RoomStatus.attached // arbitrary
         let lifecycleManagerError = ErrorInfo.createArbitraryError()
@@ -251,7 +251,7 @@ struct DefaultRoomTests {
         let lifecycleManager = MockRoomLifecycleManager(roomStatus: lifecycleManagerRoomStatus, error: lifecycleManagerError)
         let lifecycleManagerFactory = MockRoomLifecycleManagerFactory(manager: lifecycleManager)
 
-        let room = try DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), name: "basketball", options: .init(), logger: TestLogger(), lifecycleManagerFactory: lifecycleManagerFactory)
+        let room = try DefaultRoom(pubSubClient: pubSubClient, chatAPI: ChatAPI(pubSubClient: pubSubClient), name: "basketball", options: .init(), logger: TestLogger(), lifecycleManagerFactory: lifecycleManagerFactory)
 
         // Then: The `status` and `error` properties return those of the room lifecycle manager
         #expect(room.status == lifecycleManagerRoomStatus)
@@ -265,12 +265,12 @@ struct DefaultRoomTests {
             MockRealtimeChannel(name: "basketball::$chat"),
         ]
         let channels = MockChannels(channels: channelsList)
-        let realtime = MockRealtime(channels: channels)
+        let pubSubClient = MockPubSubClient(channels: channels)
 
         let lifecycleManager = MockRoomLifecycleManager()
         let lifecycleManagerFactory = MockRoomLifecycleManagerFactory(manager: lifecycleManager)
 
-        let room = try DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), name: "basketball", options: .init(), logger: TestLogger(), lifecycleManagerFactory: lifecycleManagerFactory)
+        let room = try DefaultRoom(pubSubClient: pubSubClient, chatAPI: ChatAPI(pubSubClient: pubSubClient), name: "basketball", options: .init(), logger: TestLogger(), lifecycleManagerFactory: lifecycleManagerFactory)
 
         // When: The room lifecycle manager emits a status change through `onRoomStatusChange`
         let managerStatusChange = RoomStatusChange(current: .detached, previous: .detaching) // arbitrary
@@ -292,12 +292,12 @@ struct DefaultRoomTests {
             MockRealtimeChannel(name: "basketball::$chat"),
         ]
         let channels = MockChannels(channels: channelsList)
-        let realtime = MockRealtime(channels: channels)
+        let pubSubClient = MockPubSubClient(channels: channels)
 
         let lifecycleManager = MockRoomLifecycleManager()
         let lifecycleManagerFactory = MockRoomLifecycleManagerFactory(manager: lifecycleManager)
 
-        let room = try DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), name: "basketball", options: .init(), logger: TestLogger(), lifecycleManagerFactory: lifecycleManagerFactory)
+        let room = try DefaultRoom(pubSubClient: pubSubClient, chatAPI: ChatAPI(pubSubClient: pubSubClient), name: "basketball", options: .init(), logger: TestLogger(), lifecycleManagerFactory: lifecycleManagerFactory)
 
         // When: The room lifecycle manager emits a discontinuity event through `onDiscontinuity`
         let managerDiscontinuityError = ErrorInfo.createArbitraryError()

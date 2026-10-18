@@ -16,10 +16,10 @@ struct DefaultMessageReactionsTests {
     @Test
     func sendAndDeleteReactionForMessage() async throws {
         // Given
-        let realtime = MockRealtime {
+        let pubSubClient = MockPubSubClient {
             MockHTTPPaginatedResponse.successSendMessage
         }
-        let chatAPI = ChatAPI(realtime: realtime)
+        let chatAPI = ChatAPI(pubSubClient: pubSubClient)
         let channel = MockRealtimeChannel(initialState: .attached)
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basket/ball", logger: TestLogger())
 
@@ -29,7 +29,7 @@ struct DefaultMessageReactionsTests {
         try await defaultMessages.reactions.delete(fromMessageWithSerial: message.serial, params: .init(name: "😆", type: .multiple))
 
         // Then
-        #expect(realtime.callRecorder.hasRecord(
+        #expect(pubSubClient.callRecorder.hasRecord(
             matching: "request(_:path:params:body:headers:)",
             arguments: [
                 "method": "POST",
@@ -43,7 +43,7 @@ struct DefaultMessageReactionsTests {
                 "headers": [:],
             ],
         ))
-        #expect(realtime.callRecorder.hasRecord(
+        #expect(pubSubClient.callRecorder.hasRecord(
             matching: "request(_:path:params:body:headers:)",
             arguments: [
                 "method": "DELETE",
@@ -62,10 +62,10 @@ struct DefaultMessageReactionsTests {
     @Test
     func errorShouldBeThrownIfMessageSerialIsEmptyWhenSend() async throws {
         // Given
-        let realtime = MockRealtime {
+        let pubSubClient = MockPubSubClient {
             MockHTTPPaginatedResponse.successSendMessage
         }
-        let chatAPI = ChatAPI(realtime: realtime)
+        let chatAPI = ChatAPI(pubSubClient: pubSubClient)
         let channel = MockRealtimeChannel(initialState: .attached)
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", logger: TestLogger())
 
@@ -82,10 +82,10 @@ struct DefaultMessageReactionsTests {
     @Test
     func errorShouldBeThrownIfMessageSerialIsEmptyWhenDelete() async throws {
         // Given
-        let realtime = MockRealtime {
+        let pubSubClient = MockPubSubClient {
             MockHTTPPaginatedResponse.successSendMessage
         }
-        let chatAPI = ChatAPI(realtime: realtime)
+        let chatAPI = ChatAPI(pubSubClient: pubSubClient)
         let channel = MockRealtimeChannel(initialState: .attached)
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", logger: TestLogger())
 
@@ -102,10 +102,10 @@ struct DefaultMessageReactionsTests {
     @Test
     func errorShouldBeThrownIfNameNotSuppliedWhenDeletingNonUniqueReaction() async throws {
         // Given
-        let realtime = MockRealtime {
+        let pubSubClient = MockPubSubClient {
             MockHTTPPaginatedResponse.successSendMessage
         }
-        let chatAPI = ChatAPI(realtime: realtime)
+        let chatAPI = ChatAPI(pubSubClient: pubSubClient)
         let channel = MockRealtimeChannel(initialState: .attached)
         let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", logger: TestLogger())
 
@@ -126,8 +126,8 @@ struct DefaultMessageReactionsTests {
     @Test
     func subscribeToMessageReactionSummaries() async throws {
         // Given
-        let realtime = MockRealtime()
-        let chatAPI = ChatAPI(realtime: realtime)
+        let pubSubClient = MockPubSubClient()
+        let chatAPI = ChatAPI(pubSubClient: pubSubClient)
 
         let channel = MockRealtimeChannel(
             initialState: .attached,
@@ -186,8 +186,8 @@ struct DefaultMessageReactionsTests {
     @Test
     func invalidReactionSummaryEventsMustStillProduceEventWithDefaultValues() async throws {
         // Given
-        let realtime = MockRealtime()
-        let chatAPI = ChatAPI(realtime: realtime)
+        let pubSubClient = MockPubSubClient()
+        let chatAPI = ChatAPI(pubSubClient: pubSubClient)
 
         let channel = MockRealtimeChannel(
             initialState: .attached,
@@ -236,11 +236,11 @@ struct DefaultMessageReactionsTests {
             ),
         )
         let channels = MockChannels(channels: [channel])
-        let realtime = MockRealtime(channels: channels) {
+        let pubSubClient = MockPubSubClient(channels: channels) {
             MockHTTPPaginatedResponse.successSendMessage
         }
         let roomOptions = RoomOptions(messages: .init(rawMessageReactions: true))
-        let room = try DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), name: "basketball", options: roomOptions, logger: TestLogger(), lifecycleManagerFactory: MockRoomLifecycleManagerFactory())
+        let room = try DefaultRoom(pubSubClient: pubSubClient, chatAPI: ChatAPI(pubSubClient: pubSubClient), name: "basketball", options: roomOptions, logger: TestLogger(), lifecycleManagerFactory: MockRoomLifecycleManagerFactory())
 
         let defaultMessages = room.messages
 
@@ -283,11 +283,11 @@ struct DefaultMessageReactionsTests {
             ),
         )
         let channels = MockChannels(channels: [channel])
-        let realtime = MockRealtime(channels: channels) {
+        let pubSubClient = MockPubSubClient(channels: channels) {
             MockHTTPPaginatedResponse.successSendMessage
         }
         let roomOptions = RoomOptions(messages: .init(rawMessageReactions: true))
-        let room = try DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), name: "basketball", options: roomOptions, logger: TestLogger(), lifecycleManagerFactory: MockRoomLifecycleManagerFactory())
+        let room = try DefaultRoom(pubSubClient: pubSubClient, chatAPI: ChatAPI(pubSubClient: pubSubClient), name: "basketball", options: roomOptions, logger: TestLogger(), lifecycleManagerFactory: MockRoomLifecycleManagerFactory())
 
         let defaultMessages = room.messages
 
@@ -325,11 +325,11 @@ struct DefaultMessageReactionsTests {
             ),
         )
         let channels = MockChannels(channels: [channel])
-        let realtime = MockRealtime(channels: channels) {
+        let pubSubClient = MockPubSubClient(channels: channels) {
             MockHTTPPaginatedResponse.successSendMessage
         }
         let roomOptions = RoomOptions(messages: .init(rawMessageReactions: true))
-        let room = try DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), name: "basketball", options: roomOptions, logger: TestLogger(), lifecycleManagerFactory: MockRoomLifecycleManagerFactory())
+        let room = try DefaultRoom(pubSubClient: pubSubClient, chatAPI: ChatAPI(pubSubClient: pubSubClient), name: "basketball", options: roomOptions, logger: TestLogger(), lifecycleManagerFactory: MockRoomLifecycleManagerFactory())
 
         let defaultMessages = room.messages
 
@@ -351,11 +351,11 @@ struct DefaultMessageReactionsTests {
             initialState: .attached,
         )
         let channels = MockChannels(channels: [channel])
-        let realtime = MockRealtime(channels: channels) {
+        let pubSubClient = MockPubSubClient(channels: channels) {
             MockHTTPPaginatedResponse.successSendMessage
         }
         let roomOptions = RoomOptions(messages: .init(defaultMessageReactionType: .multiple))
-        let room = try DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), name: "basketball", options: roomOptions, logger: TestLogger(), lifecycleManagerFactory: MockRoomLifecycleManagerFactory())
+        let room = try DefaultRoom(pubSubClient: pubSubClient, chatAPI: ChatAPI(pubSubClient: pubSubClient), name: "basketball", options: roomOptions, logger: TestLogger(), lifecycleManagerFactory: MockRoomLifecycleManagerFactory())
 
         let defaultMessages = room.messages
 
@@ -364,7 +364,7 @@ struct DefaultMessageReactionsTests {
         try await defaultMessages.reactions.send(forMessageWithSerial: message.serial, params: .init(name: "😆"))
 
         // Then
-        #expect(realtime.callRecorder.hasRecord(
+        #expect(pubSubClient.callRecorder.hasRecord(
             matching: "request(_:path:params:body:headers:)",
             arguments: [
                 "method": "POST",
@@ -389,11 +389,11 @@ struct DefaultMessageReactionsTests {
             initialState: .attached,
         )
         let channels = MockChannels(channels: [channel])
-        let realtime = MockRealtime(channels: channels) {
+        let pubSubClient = MockPubSubClient(channels: channels) {
             MockHTTPPaginatedResponse.successSendMessage
         }
         let roomOptions = RoomOptions()
-        let room = try DefaultRoom(realtime: realtime, chatAPI: ChatAPI(realtime: realtime), name: "basketball", options: roomOptions, logger: TestLogger(), lifecycleManagerFactory: MockRoomLifecycleManagerFactory())
+        let room = try DefaultRoom(pubSubClient: pubSubClient, chatAPI: ChatAPI(pubSubClient: pubSubClient), name: "basketball", options: roomOptions, logger: TestLogger(), lifecycleManagerFactory: MockRoomLifecycleManagerFactory())
 
         // Then
         let defaultMessages = room.messages
@@ -403,7 +403,7 @@ struct DefaultMessageReactionsTests {
         try await defaultMessages.reactions.send(forMessageWithSerial: message.serial, params: .init(name: "😆"))
 
         // Then
-        #expect(realtime.callRecorder.hasRecord(
+        #expect(pubSubClient.callRecorder.hasRecord(
             matching: "request(_:path:params:body:headers:)",
             arguments: [
                 "method": "POST",
@@ -432,7 +432,7 @@ struct DefaultMessageReactionsTests {
         @Test
         func getClientReactionsForMessage() async throws {
             // Given
-            let realtime = MockRealtime {
+            let pubSubClient = MockPubSubClient {
                 MockHTTPPaginatedResponse(
                     items: [
                         [
@@ -451,7 +451,7 @@ struct DefaultMessageReactionsTests {
                     headers: [:],
                 )
             }
-            let chatAPI = ChatAPI(realtime: realtime)
+            let chatAPI = ChatAPI(pubSubClient: pubSubClient)
             let channel = MockRealtimeChannel(initialState: .attached)
             let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", logger: TestLogger())
 
@@ -462,7 +462,7 @@ struct DefaultMessageReactionsTests {
             #expect(summary.unique["like"]?.total == 1)
             #expect(summary.distinct["love"]?.total == 1)
             #expect(summary.multiple["fire"]?.total == 5)
-            #expect(realtime.callRecorder.hasRecord(
+            #expect(pubSubClient.callRecorder.hasRecord(
                 matching: "request(_:path:params:body:headers:)",
                 arguments: [
                     "method": "GET",
@@ -479,7 +479,7 @@ struct DefaultMessageReactionsTests {
         @Test
         func getClientReactionsForMessageWithSpecificClientID() async throws {
             // Given
-            let realtime = MockRealtime {
+            let pubSubClient = MockPubSubClient {
                 MockHTTPPaginatedResponse(
                     items: [
                         [
@@ -492,7 +492,7 @@ struct DefaultMessageReactionsTests {
                     headers: [:],
                 )
             }
-            let chatAPI = ChatAPI(realtime: realtime)
+            let chatAPI = ChatAPI(pubSubClient: pubSubClient)
             let channel = MockRealtimeChannel(initialState: .attached)
             let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", logger: TestLogger())
 
@@ -501,7 +501,7 @@ struct DefaultMessageReactionsTests {
 
             // Then
             #expect(summary.unique["like"]?.total == 1)
-            #expect(realtime.callRecorder.hasRecord(
+            #expect(pubSubClient.callRecorder.hasRecord(
                 matching: "request(_:path:params:body:headers:)",
                 arguments: [
                     "method": "GET",
@@ -518,14 +518,14 @@ struct DefaultMessageReactionsTests {
         @Test
         func getClientReactionsThrowsErrorOnAPIFailure() async throws {
             // Given
-            let realtime = MockRealtime { @Sendable () throws(ErrorInfo) in
+            let pubSubClient = MockPubSubClient { @Sendable () throws(ErrorInfo) in
                 throw .init(
                     code: 40400,
                     message: "Some message", // arbitrary
                     statusCode: 404, // arbitrary
                 )
             }
-            let chatAPI = ChatAPI(realtime: realtime)
+            let chatAPI = ChatAPI(pubSubClient: pubSubClient)
             let channel = MockRealtimeChannel(initialState: .attached)
             let defaultMessages = DefaultMessages(channel: channel, chatAPI: chatAPI, roomName: "basketball", logger: TestLogger())
 

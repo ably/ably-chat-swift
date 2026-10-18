@@ -1,29 +1,29 @@
 import AblyPubSubDevice
 
 internal final class DefaultConnection: Connection {
-    private let realtime: any InternalRealtimeClientProtocol
+    private let pubSubClient: any InternalPubSubClientProtocol
     private let timerManager = TimerManager(clock: SystemClock())
 
     // (CHA-CS2a) The chat client must expose its current connection status.
     internal var status: ConnectionStatus {
-        .fromRealtimeConnectionState(realtime.connection.state)
+        .fromRealtimeConnectionState(pubSubClient.connection.state)
     }
 
     // (CHA-CS2b) The chat client must expose the latest error, if any, associated with its current status.
     internal var error: ErrorInfo? {
-        realtime.connection.errorReason
+        pubSubClient.connection.errorReason
     }
 
-    internal init(realtime: any InternalRealtimeClientProtocol) {
+    internal init(pubSubClient: any InternalPubSubClientProtocol) {
         // (CHA-CS3) The initial status and error of the connection will be whatever status the realtime client returns whilst the connection status object is constructed.
-        self.realtime = realtime
+        self.pubSubClient = pubSubClient
     }
 
     // (CHA-CS4d) Clients must be able to register a listener for connection status events and receive such events.
     @discardableResult
     internal func onStatusChange(_ callback: @escaping @MainActor (ConnectionStatusChange) -> Void) -> some StatusSubscription {
         // (CHA-CS5) The chat client must monitor the underlying realtime connection for connection status changes.
-        let eventListener = realtime.connection.on { [weak self] stateChange in
+        let eventListener = pubSubClient.connection.on { [weak self] stateChange in
             guard let self else {
                 return
             }
@@ -78,7 +78,7 @@ internal final class DefaultConnection: Connection {
                 return
             }
             timerManager.cancelTimer()
-            realtime.connection.off(eventListener)
+            pubSubClient.connection.off(eventListener)
         }
     }
 }

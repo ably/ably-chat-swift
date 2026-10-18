@@ -64,12 +64,12 @@ public extension Rooms {
 }
 
 internal class DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
-    private let realtime: RoomFactory.Realtime
-    private let chatAPI: ChatAPI<RoomFactory.Realtime>
+    private let pubSubClient: RoomFactory.PubSubClient
+    private let chatAPI: ChatAPI<RoomFactory.PubSubClient>
 
     #if DEBUG
-        internal var testsOnly_realtime: RoomFactory.Realtime {
-            realtime
+        internal var testsOnly_pubSubClient: RoomFactory.PubSubClient {
+            pubSubClient
         }
     #endif
 
@@ -126,11 +126,11 @@ internal class DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
     /// The value for a given room name is the state that corresponds to that room name.
     private var roomStates: [String: RoomState] = [:]
 
-    internal init(realtime: RoomFactory.Realtime, logger: any InternalLogger, roomFactory: RoomFactory) {
-        self.realtime = realtime
+    internal init(pubSubClient: RoomFactory.PubSubClient, logger: any InternalLogger, roomFactory: RoomFactory) {
+        self.pubSubClient = pubSubClient
         self.logger = logger
         self.roomFactory = roomFactory
-        chatAPI = ChatAPI(realtime: realtime)
+        chatAPI = ChatAPI(pubSubClient: pubSubClient)
     }
 
     /// The types of operation that this instance can perform.
@@ -297,7 +297,7 @@ internal class DefaultRooms<RoomFactory: AblyChat.RoomFactory>: Rooms {
 
     private func createRoom(name: String, options: RoomOptions) throws(ErrorInfo) -> RoomFactory.Room {
         logger.log(message: "Creating room with name \(name), options \(options)", level: .debug)
-        let room = try roomFactory.createRoom(realtime: realtime, chatAPI: chatAPI, name: name, options: options, logger: logger)
+        let room = try roomFactory.createRoom(pubSubClient: pubSubClient, chatAPI: chatAPI, name: name, options: options, logger: logger)
         roomStates[name] = .roomMapEntry(.created(room: room))
         return room
     }

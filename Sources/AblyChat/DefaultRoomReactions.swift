@@ -1,13 +1,13 @@
 import AblyPubSubDevice
 
 internal final class DefaultRoomReactions: RoomReactions {
-    private let realtime: any InternalRealtimeClientProtocol
+    private let pubSubClient: any InternalPubSubClientProtocol
     private let channel: any InternalRealtimeChannelProtocol
     private let roomName: String
     private let logger: any InternalLogger
 
-    internal init(realtime: any InternalRealtimeClientProtocol, channel: any InternalRealtimeChannelProtocol, roomName: String, logger: any InternalLogger) {
-        self.realtime = realtime
+    internal init(pubSubClient: any InternalPubSubClientProtocol, channel: any InternalRealtimeChannelProtocol, roomName: String, logger: any InternalLogger) {
+        self.pubSubClient = pubSubClient
         self.channel = channel
         self.roomName = roomName
         self.logger = logger
@@ -61,7 +61,7 @@ internal final class DefaultRoomReactions: RoomReactions {
                 headers: dto?.headers ?? [:],
                 createdAt: message.timestamp ?? Date(), // CHA-ER4e4
                 clientID: messageClientID,
-                isSelf: messageClientID == realtime.clientId,
+                isSelf: messageClientID == pubSubClient.clientId,
             )
 
             let event = RoomReactionEvent(type: .reaction, reaction: reaction)

@@ -4,7 +4,7 @@ import AblyPubSubDevice
 final class MockRealtimeChannel: InternalRealtimeChannelProtocol {
     let presence = MockRealtimePresence()
     let annotations: MockRealtimeAnnotations
-    let proxied = MockAblyCocoaRealtime.Channel()
+    let proxied = MockAblyCocoaPubSubClient.Channel()
 
     private let attachSerial: String?
     private let channelSerial: String?

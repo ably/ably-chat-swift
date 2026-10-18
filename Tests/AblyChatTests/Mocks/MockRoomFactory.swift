@@ -3,7 +3,7 @@
 class MockRoomFactory: RoomFactory {
     private var room: MockRoom?
     private(set) var createRoomCallCount = 0
-    private(set) var createRoomArguments: (realtime: MockRealtime, chatAPI: ChatAPI<MockRealtime>, name: String, options: RoomOptions, logger: any InternalLogger)?
+    private(set) var createRoomArguments: (pubSubClient: MockPubSubClient, chatAPI: ChatAPI<MockPubSubClient>, name: String, options: RoomOptions, logger: any InternalLogger)?
 
     init(room: MockRoom? = nil) {
         self.room = room
@@ -13,9 +13,9 @@ class MockRoomFactory: RoomFactory {
         self.room = room
     }
 
-    func createRoom(realtime: MockRealtime, chatAPI: ChatAPI<MockRealtime>, name: String, options: RoomOptions, logger: any InternalLogger) throws(ErrorInfo) -> MockRoom {
+    func createRoom(pubSubClient: MockPubSubClient, chatAPI: ChatAPI<MockPubSubClient>, name: String, options: RoomOptions, logger: any InternalLogger) throws(ErrorInfo) -> MockRoom {
         createRoomCallCount += 1
-        createRoomArguments = (realtime: realtime, chatAPI: chatAPI, name: name, options: options, logger: logger)
+        createRoomArguments = (pubSubClient: pubSubClient, chatAPI: chatAPI, name: name, options: options, logger: logger)
 
         guard let room else {
             fatalError("MockRoomFactory.createRoom called, but the mock factory has not been set up with a room to return")

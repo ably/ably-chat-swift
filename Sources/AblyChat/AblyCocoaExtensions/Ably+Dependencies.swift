@@ -1,7 +1,7 @@
 import AblyPubSubDevice
 
-extension PubSubClient: RealtimeClientProtocol {}
-extension WrapperSDKProxyRealtime: ProxyRealtimeClientProtocol {
+extension PubSubClient: PubSubClientProtocol {}
+extension WrapperSDKProxyRealtime: ProxyPubSubClientProtocol {
     internal typealias Proxied = PubSubClient
 }
 

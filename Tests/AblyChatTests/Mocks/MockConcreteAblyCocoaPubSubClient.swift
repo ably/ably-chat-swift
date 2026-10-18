@@ -3,13 +3,13 @@ import AblyPubSubDevice
 /// A mock subclass of ably-cocoa's `PubSubClient`.
 ///
 /// This is used very little in the tests (only in `ChatClientTests`); elsewhere we work with protocol mocks.
-class MockConcreteAblyCocoaRealtime: PubSubClient, @unchecked Sendable {
+class MockConcreteAblyCocoaPubSubClient: PubSubClient, @unchecked Sendable {
     /// Provides a convenience method for creating an `WrapperSDKProxyRealtime` (which doesn't have a public initializer).
     enum ProxyHelper {
         static func createProxy() -> WrapperSDKProxyRealtime {
-            let sacrificialRealtime = PubSubDevice.createClient(options: .forNoop())
+            let sacrificialPubSubClient = PubSubDevice.createClient(options: .forNoop())
             // These agents are irrelevant
-            return sacrificialRealtime.createWrapperSDKProxy(with: .init(agents: [:]))
+            return sacrificialPubSubClient.createWrapperSDKProxy(with: .init(agents: [:]))
         }
     }
 

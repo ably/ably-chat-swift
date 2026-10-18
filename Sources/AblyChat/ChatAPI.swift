@@ -20,18 +20,18 @@ internal struct ChatAPIMessageReactionResponse: JSONObjectDecodable {
 }
 
 @MainActor
-internal final class ChatAPI<Realtime: InternalRealtimeClientProtocol> {
+internal final class ChatAPI<PubSubClient: InternalPubSubClientProtocol> {
     internal enum RequestBody {
         case jsonObject([String: JSONValue])
         /// Contains an object that can be used the same way as a value returned from `JSONValue.object(…).toAblyCocoaData`. Workaround for JSONValue not being able to indicate to ably-cocoa that a property should be serialized as a MessagePack integer type; TODO revisit in (create an issue for this)
         case ablyCocoaData(Any)
     }
 
-    private let realtime: Realtime
+    private let pubSubClient: PubSubClient
     private let apiVersionV4 = "/chat/v4"
 
-    internal init(realtime: Realtime) {
-        self.realtime = realtime
+    internal init(pubSubClient: PubSubClient) {
+        self.pubSubClient = pubSubClient
     }
 
     private func escapePathSegment(_ segment: String) -> String {
@@ -47,7 +47,7 @@ internal final class ChatAPI<Realtime: InternalRealtimeClientProtocol> {
     }
 
     // (CHA-M6) Messages should be queryable from a paginated REST API.
-    internal func getMessages(roomName: String, params: HistoryParams) async throws(ErrorInfo) -> DefaultPaginatedResult<Realtime.HTTPPaginatedResponse, Message> {
+    internal func getMessages(roomName: String, params: HistoryParams) async throws(ErrorInfo) -> DefaultPaginatedResult<PubSubClient.HTTPPaginatedResponse, Message> {
         let endpoint = roomUrl(roomName: roomName, suffix: "/messages")
         return try await makePaginatedRequest(endpoint, params: params.asQueryItems())
     }
@@ -206,7 +206,7 @@ internal final class ChatAPI<Realtime: InternalRealtimeClientProtocol> {
         }
 
         // (CHA-M3e & CHA-M8d & CHA-M9c) If an error is returned from the REST API, its ErrorInfo representation shall be thrown as the result of the send call.
-        let paginatedResponse = try await realtime.request(method, path: path, params: params, body: ablyCocoaBody, headers: [:])
+        let paginatedResponse = try await pubSubClient.request(method, path: path, params: params, body: ablyCocoaBody, headers: [:])
 
         guard let firstItemJSONValue = paginatedResponse.items.first else {
             throw InternalError.noItemInResponse(path: path).toErrorInfo()
@@ -218,8 +218,8 @@ internal final class ChatAPI<Realtime: InternalRealtimeClientProtocol> {
     private func makePaginatedRequest<Item: JSONDecodable & Sendable>(
         _ url: String,
         params: [String: String]? = nil,
-    ) async throws(ErrorInfo) -> DefaultPaginatedResult<Realtime.HTTPPaginatedResponse, Item> {
-        let paginatedResponse = try await realtime.request("GET", path: url, params: params, body: nil, headers: [:])
+    ) async throws(ErrorInfo) -> DefaultPaginatedResult<PubSubClient.HTTPPaginatedResponse, Item> {
+        let paginatedResponse = try await pubSubClient.request("GET", path: url, params: params, body: nil, headers: [:])
         return try DefaultPaginatedResult(response: paginatedResponse)
     }
 }

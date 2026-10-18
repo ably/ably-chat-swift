@@ -72,13 +72,13 @@ import AblyChat
 import AblyPubSubDevice
 
 // Initialize the Ably Pub/Sub client
-let realtimeOptions = ClientOptions()
-realtimeOptions.key = "<your-ably-api-key>"
-realtimeOptions.clientId = "your-client-id"
-let realtime = PubSubDevice.createClient(options: realtimeOptions)
+let clientOptions = ClientOptions()
+clientOptions.key = "<your-ably-api-key>"
+clientOptions.clientId = "your-client-id"
+let pubSubClient = PubSubDevice.createClient(options: clientOptions)
 
 // Create a chat client
-let chatClient = ChatClient(realtime: realtime, clientOptions: ChatClientOptions())
+let chatClient = ChatClient(pubSubClient: pubSubClient, clientOptions: ChatClientOptions())
 
 // Get a chat room
 let room = try await chatClient.rooms.get(named: "my-room", options: RoomOptions())

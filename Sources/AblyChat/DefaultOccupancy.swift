@@ -1,15 +1,15 @@
 import AblyPubSubDevice
 
-internal final class DefaultOccupancy<Realtime: InternalRealtimeClientProtocol>: Occupancy {
+internal final class DefaultOccupancy<PubSubClient: InternalPubSubClientProtocol>: Occupancy {
     private let channel: any InternalRealtimeChannelProtocol
-    private let chatAPI: ChatAPI<Realtime>
+    private let chatAPI: ChatAPI<PubSubClient>
     private let roomName: String
     private let logger: any InternalLogger
     private let options: OccupancyOptions
 
     private var lastOccupancyData: OccupancyData?
 
-    internal init(channel: any InternalRealtimeChannelProtocol, chatAPI: ChatAPI<Realtime>, roomName: String, logger: any InternalLogger, options: OccupancyOptions) {
+    internal init(channel: any InternalRealtimeChannelProtocol, chatAPI: ChatAPI<PubSubClient>, roomName: String, logger: any InternalLogger, options: OccupancyOptions) {
         self.channel = channel
         self.chatAPI = chatAPI
         self.roomName = roomName

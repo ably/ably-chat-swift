@@ -20,12 +20,12 @@ private enum Environment: Equatable {
                 clientOptions: ChatClientOptions(),
             )
         case let .live(key: key, clientID: clientID):
-            let realtimeOptions = ClientOptions()
-            realtimeOptions.key = key
-            realtimeOptions.clientId = clientID
-            let realtime = PubSubDevice.createClient(options: realtimeOptions)
+            let clientOptions = ClientOptions()
+            clientOptions.key = key
+            clientOptions.clientId = clientID
+            let pubSubClient = PubSubDevice.createClient(options: clientOptions)
 
-            return ChatClient(realtime: realtime, clientOptions: .init())
+            return ChatClient(pubSubClient: pubSubClient, clientOptions: .init())
         }
     }
 }

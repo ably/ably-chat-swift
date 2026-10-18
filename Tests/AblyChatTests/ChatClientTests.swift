@@ -7,12 +7,12 @@ struct ChatClientTests {
     @Test
     func init_withoutClientOptions() {
         // Given: An instance of ChatClient is created with nil clientOptions
-        let proxyClient = MockConcreteAblyCocoaRealtime.ProxyHelper.createProxy()
-        let internalRealtime = InternalRealtimeClientAdapter(underlying: proxyClient)
+        let proxyClient = MockConcreteAblyCocoaPubSubClient.ProxyHelper.createProxy()
+        let internalPubSubClient = InternalPubSubClientAdapter(underlying: proxyClient)
         let client = ChatClient(
-            realtime: MockConcreteAblyCocoaRealtime(createWrapperSDKProxyReturnValue: proxyClient),
+            pubSubClient: MockConcreteAblyCocoaPubSubClient(createWrapperSDKProxyReturnValue: proxyClient),
             clientOptions: nil,
-            internalRealtimeClientFactory: MockInternalRealtimeClientFactory(createInternalRealtimeClientReturnValue: internalRealtime),
+            internalPubSubClientFactory: MockInternalPubSubClientFactory(createInternalPubSubClientReturnValue: internalPubSubClient),
         )
 
         // Then: It uses the default client options
@@ -21,20 +21,20 @@ struct ChatClientTests {
     }
 
     @Test
-    func test_realtime() {
+    func test_pubSubClient() {
         // Given: An instance of ChatClient
-        let proxyClient = MockConcreteAblyCocoaRealtime.ProxyHelper.createProxy()
-        let realtime = MockConcreteAblyCocoaRealtime(createWrapperSDKProxyReturnValue: proxyClient)
-        let internalRealtime = InternalRealtimeClientAdapter(underlying: proxyClient)
+        let proxyClient = MockConcreteAblyCocoaPubSubClient.ProxyHelper.createProxy()
+        let pubSubClient = MockConcreteAblyCocoaPubSubClient(createWrapperSDKProxyReturnValue: proxyClient)
+        let internalPubSubClient = InternalPubSubClientAdapter(underlying: proxyClient)
         let options = ChatClientOptions()
         let client = ChatClient(
-            realtime: realtime,
+            pubSubClient: pubSubClient,
             clientOptions: options,
-            internalRealtimeClientFactory: MockInternalRealtimeClientFactory(createInternalRealtimeClientReturnValue: internalRealtime),
+            internalPubSubClientFactory: MockInternalPubSubClientFactory(createInternalPubSubClientReturnValue: internalPubSubClient),
         )
 
-        // Then: Its `realtime` property returns the client that was passed to the initializer (i.e. as opposed to the proxy client created by `createWrapperSDKProxy(with:)`
-        #expect(client.realtime === realtime)
+        // Then: Its `pubSubClient` property returns the client that was passed to the initializer (i.e. as opposed to the proxy client created by `createWrapperSDKProxy(with:)`
+        #expect(client.pubSubClient === pubSubClient)
     }
 
     @Test
@@ -42,7 +42,7 @@ struct ChatClientTests {
         // This test doesn't have any assertions; it's just to test that the type system gives you PubSubClient and RealtimeChannel
 
         func withChatClient(_ chatClient: ChatClient) async throws {
-            let _: PubSubClient = chatClient.realtime
+            let _: PubSubClient = chatClient.pubSubClient
             let room = try await chatClient.rooms.get(named: "room")
             let _: RealtimeChannel = room.channel
         }
@@ -75,41 +75,41 @@ struct ChatClientTests {
     // @spec CHA-IN1a
     // @spec CHA-IN1b
     @Test
-    func createsWrapperSDKProxyRealtimeClientWithAgents() throws {
-        let proxyClient = MockConcreteAblyCocoaRealtime.ProxyHelper.createProxy()
-        let realtime = MockConcreteAblyCocoaRealtime(createWrapperSDKProxyReturnValue: proxyClient)
-        let internalRealtine = InternalRealtimeClientAdapter(underlying: proxyClient)
+    func createsWrapperSDKProxyPubSubClientWithAgents() throws {
+        let proxyClient = MockConcreteAblyCocoaPubSubClient.ProxyHelper.createProxy()
+        let pubSubClient = MockConcreteAblyCocoaPubSubClient(createWrapperSDKProxyReturnValue: proxyClient)
+        let internalRealtine = InternalPubSubClientAdapter(underlying: proxyClient)
         let options = ChatClientOptions()
         _ = ChatClient(
-            realtime: realtime,
+            pubSubClient: pubSubClient,
             clientOptions: options,
-            internalRealtimeClientFactory: MockInternalRealtimeClientFactory(createInternalRealtimeClientReturnValue: internalRealtine),
+            internalPubSubClientFactory: MockInternalPubSubClientFactory(createInternalPubSubClientReturnValue: internalRealtine),
         )
 
-        #expect(realtime.createWrapperSDKProxyOptionsArgument?.agents == ["chat-swift": ClientInformation.version])
+        #expect(pubSubClient.createWrapperSDKProxyOptionsArgument?.agents == ["chat-swift": ClientInformation.version])
     }
 
     // @spec CHA-IN1d
     @Test
     func rooms() throws {
         // Given: An instance of ChatClient
-        let proxyClient = MockConcreteAblyCocoaRealtime.ProxyHelper.createProxy()
-        let realtime = MockConcreteAblyCocoaRealtime(createWrapperSDKProxyReturnValue: proxyClient)
-        let internalRealtime = InternalRealtimeClientAdapter(underlying: proxyClient)
-        let internalRealtimeClientFactory = MockInternalRealtimeClientFactory(createInternalRealtimeClientReturnValue: internalRealtime)
+        let proxyClient = MockConcreteAblyCocoaPubSubClient.ProxyHelper.createProxy()
+        let pubSubClient = MockConcreteAblyCocoaPubSubClient(createWrapperSDKProxyReturnValue: proxyClient)
+        let internalPubSubClient = InternalPubSubClientAdapter(underlying: proxyClient)
+        let internalPubSubClientFactory = MockInternalPubSubClientFactory(createInternalPubSubClientReturnValue: internalPubSubClient)
         let options = ChatClientOptions()
         let client = ChatClient(
-            realtime: realtime,
+            pubSubClient: pubSubClient,
             clientOptions: options,
-            internalRealtimeClientFactory: internalRealtimeClientFactory,
+            internalPubSubClientFactory: internalPubSubClientFactory,
         )
 
-        // Then: Its `rooms` property returns an instance of DefaultRooms with the wrapper SDK proxy realtime client
-        #expect(internalRealtimeClientFactory.createInternalRealtimeClientArgument === proxyClient)
+        // Then: Its `rooms` property returns an instance of DefaultRooms with the wrapper SDK proxy Pub/Sub client
+        #expect(internalPubSubClientFactory.createInternalPubSubClientArgument === proxyClient)
 
         let rooms = client.rooms
 
-        let defaultRooms = try #require(rooms as? DefaultRooms<DefaultRoomFactory<InternalRealtimeClientAdapter<WrapperSDKProxyRealtime>>>)
-        #expect(defaultRooms.testsOnly_realtime === internalRealtime)
+        let defaultRooms = try #require(rooms as? DefaultRooms<DefaultRoomFactory<InternalPubSubClientAdapter<WrapperSDKProxyRealtime>>>)
+        #expect(defaultRooms.testsOnly_pubSubClient === internalPubSubClient)
     }
 }
