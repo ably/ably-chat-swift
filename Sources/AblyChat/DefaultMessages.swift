@@ -61,7 +61,7 @@ internal final class DefaultMessages<Realtime: InternalRealtimeClientProtocol>: 
             }
 
             let headers = (try? extras.optionalObjectValueForKey("headers"))?.compactMapValues { try? HeadersValue(jsonValue: $0) } ?? [:] // CHA-M4k2
-            let version = message.version ?? .init()
+            let version = message.version
             let timestamp = message.timestamp ?? Date(timeIntervalSince1970: 0) // CHA-M4k5
             let serial = message.serial ?? "" // CHA-M4k1
 

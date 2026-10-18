@@ -4,8 +4,14 @@ import Foundation
 
 // This mock isn't used much in the tests, since inside the SDK we mainly use `InternalRealtimeClientProtocol` (whose mock is ``MockRealtime``).
 final class MockAblyCocoaRealtime: NSObject, RealtimeClientProtocol, @unchecked Sendable {
-    let connection = Connection()
-    let channels = Channels()
+    let connection: Connection
+    let channels: Channels
+
+    // `PubSubProtocol` marks `init()` unavailable, so this mock can't inherit `NSObject`'s.
+    init(connection: Connection, channels: Channels) {
+        self.connection = connection
+        self.channels = channels
+    }
 
     var device: LocalDevice {
         fatalError("Not implemented")
@@ -15,8 +21,6 @@ final class MockAblyCocoaRealtime: NSObject, RealtimeClientProtocol, @unchecked 
         fatalError("Not implemented")
     }
 
-    override init() {}
-
     func time(_: @escaping DateTimeCallback) {
         fatalError("Not implemented")
     }
@@ -25,11 +29,11 @@ final class MockAblyCocoaRealtime: NSObject, RealtimeClientProtocol, @unchecked 
         fatalError("Not implemented")
     }
 
-    func stats(_: @escaping PaginatedStatsCallback) -> Bool {
+    func stats(_: @escaping PaginatedStatsCallback) {
         fatalError("Not implemented")
     }
 
-    func stats(_: StatsQuery?, callback _: @escaping PaginatedStatsCallback) throws {
+    func stats(_: StatsQuery?, callback _: @escaping PaginatedStatsCallback) {
         fatalError("Not implemented")
     }
 
@@ -41,7 +45,7 @@ final class MockAblyCocoaRealtime: NSObject, RealtimeClientProtocol, @unchecked 
         fatalError("Not implemented")
     }
 
-    func request(_: String, path _: String, params _: [String: String]?, body _: Any?, headers _: [String: String]?, callback _: @escaping HTTPPaginatedCallback) throws {
+    func request(_: String, path _: String, params _: [String: String]?, body _: Any?, headers _: [String: String]?, callback _: @escaping HTTPPaginatedCallback) {
         fatalError("Not implemented")
     }
 
@@ -99,19 +103,19 @@ final class MockAblyCocoaRealtime: NSObject, RealtimeClientProtocol, @unchecked 
             fatalError("Not implemented")
         }
 
-        func subscribe(_: @escaping MessageCallback) -> EventListener? {
+        func subscribe(_: @escaping MessageCallback) -> EventListener {
             fatalError("Not implemented")
         }
 
-        func subscribe(attachCallback _: Callback?, callback _: @escaping MessageCallback) -> EventListener? {
+        func subscribe(attachCallback _: Callback?, callback _: @escaping MessageCallback) -> EventListener {
             fatalError("Not implemented")
         }
 
-        func subscribe(_: String, callback _: @escaping MessageCallback) -> EventListener? {
+        func subscribe(_: String, callback _: @escaping MessageCallback) -> EventListener {
             fatalError("Not implemented")
         }
 
-        func subscribe(_: String, onAttach _: Callback?, callback _: @escaping MessageCallback) -> EventListener? {
+        func subscribe(_: String, onAttach _: Callback?, callback _: @escaping MessageCallback) -> EventListener {
             fatalError("Not implemented")
         }
 
@@ -127,7 +131,7 @@ final class MockAblyCocoaRealtime: NSObject, RealtimeClientProtocol, @unchecked 
             fatalError("Not implemented")
         }
 
-        func history(_: RealtimeHistoryQuery?, callback _: @escaping PaginatedMessagesCallback) throws {
+        func history(_: RealtimeHistoryQuery?, callback _: @escaping PaginatedMessagesCallback) {
             fatalError("Not implemented")
         }
 
@@ -176,30 +180,6 @@ final class MockAblyCocoaRealtime: NSObject, RealtimeClientProtocol, @unchecked 
         }
 
         func publish(_: String?, data _: Any?, callback _: Callback? = nil) {
-            fatalError("Not implemented")
-        }
-
-        func publish(_: String?, data _: Any?, clientId _: String) {
-            fatalError("Not implemented")
-        }
-
-        func publish(_: String?, data _: Any?, clientId _: String, callback _: Callback? = nil) {
-            fatalError("Not implemented")
-        }
-
-        func publish(_: String?, data _: Any?, extras _: (any JsonCompatible)?) {
-            fatalError("Not implemented")
-        }
-
-        func publish(_: String?, data _: Any?, extras _: (any JsonCompatible)?, callback _: Callback? = nil) {
-            fatalError("Not implemented")
-        }
-
-        func publish(_: String?, data _: Any?, clientId _: String, extras _: (any JsonCompatible)?) {
-            fatalError("Not implemented")
-        }
-
-        func publish(_: String?, data _: Any?, clientId _: String, extras _: (any JsonCompatible)?, callback _: Callback? = nil) {
             fatalError("Not implemented")
         }
 
@@ -305,19 +285,19 @@ final class MockAblyCocoaRealtime: NSObject, RealtimeClientProtocol, @unchecked 
             fatalError("Not implemented")
         }
 
-        func subscribe(_: @escaping PresenceMessageCallback) -> EventListener? {
+        func subscribe(_: @escaping PresenceMessageCallback) -> EventListener {
             fatalError("Not implemented")
         }
 
-        func subscribe(attachCallback _: Callback?, callback _: @escaping PresenceMessageCallback) -> EventListener? {
+        func subscribe(attachCallback _: Callback?, callback _: @escaping PresenceMessageCallback) -> EventListener {
             fatalError("Not implemented")
         }
 
-        func subscribe(_: PresenceAction, callback _: @escaping PresenceMessageCallback) -> EventListener? {
+        func subscribe(_: PresenceAction, callback _: @escaping PresenceMessageCallback) -> EventListener {
             fatalError("Not implemented")
         }
 
-        func subscribe(_: PresenceAction, onAttach _: Callback?, callback _: @escaping PresenceMessageCallback) -> EventListener? {
+        func subscribe(_: PresenceAction, onAttach _: Callback?, callback _: @escaping PresenceMessageCallback) -> EventListener {
             fatalError("Not implemented")
         }
 
@@ -337,17 +317,17 @@ final class MockAblyCocoaRealtime: NSObject, RealtimeClientProtocol, @unchecked 
             fatalError("Not implemented")
         }
 
-        func history(_: RealtimeHistoryQuery?, callback _: @escaping PaginatedPresenceCallback) throws {
+        func history(_: RealtimeHistoryQuery?, callback _: @escaping PaginatedPresenceCallback) {
             fatalError("Not implemented")
         }
     }
 
     final class Annotations: RealtimeAnnotationsProtocol {
-        func subscribe(_: @escaping AnnotationCallback) -> EventListener? {
+        func subscribe(_: @escaping AnnotationCallback) -> EventListener {
             fatalError("Not implemented")
         }
 
-        func subscribe(_: String, callback _: @escaping AnnotationCallback) -> EventListener? {
+        func subscribe(_: String, callback _: @escaping AnnotationCallback) -> EventListener {
             fatalError("Not implemented")
         }
 
@@ -387,11 +367,11 @@ final class MockAblyCocoaRealtime: NSObject, RealtimeClientProtocol, @unchecked 
             fatalError("Not implemented")
         }
 
-        func subscribe(attachCallback _: Callback?, callback _: @escaping AnnotationCallback) -> EventListener? {
+        func subscribe(attachCallback _: Callback?, callback _: @escaping AnnotationCallback) -> EventListener {
             fatalError("Not implemented")
         }
 
-        func subscribe(_: String, onAttach _: Callback?, callback _: @escaping AnnotationCallback) -> EventListener? {
+        func subscribe(_: String, onAttach _: Callback?, callback _: @escaping AnnotationCallback) -> EventListener {
             fatalError("Not implemented")
         }
     }
@@ -414,10 +394,6 @@ final class MockAblyCocoaRealtime: NSObject, RealtimeClientProtocol, @unchecked 
         }
 
         var errorReason: AblyPubSubDevice.ErrorInfo? {
-            fatalError("Not implemented")
-        }
-
-        var recoveryKey: String? {
             fatalError("Not implemented")
         }
 

@@ -571,7 +571,7 @@ struct DefaultMessagesTests {
             ]
             message.extras = [
                 "headers": ["numberKey": numberKey, "stringKey": stringKey],
-            ] as any JsonCompatible
+            ]
             message.version = .init(serial: "0")
             return message
         }
@@ -637,7 +637,7 @@ struct DefaultMessagesTests {
                 ]
                 message.extras = [
                     "headers": ["someKey2": "someValue2"], // arbitrary
-                ] as any JsonCompatible
+                ]
                 message.version = .init(serial: "1") // arbitrary
                 message.timestamp = Date(timeIntervalSince1970: 0) // arbitrary
                 return message

@@ -55,7 +55,7 @@ struct IntegrationTests {
 
     private static func createSandboxRealtime(apiKey: String, loggingLabel: String) -> PubSubClient {
         let realtimeOptions = ClientOptions(key: apiKey)
-        realtimeOptions.environment = "sandbox"
+        realtimeOptions.endpoint = "nonprod:sandbox"
         realtimeOptions.clientId = UUID().uuidString
 
         if TestLogger.loggingEnabled {

@@ -15,7 +15,7 @@ internal protocol ProxyRealtimeChannelProtocol: Sendable, RealtimeChannelProtoco
 }
 
 /// Expresses the requirements of the realtime client used by a ``ChatClientProtocol``.
-internal protocol RealtimeClientProtocol: RealtimeInstanceMethodsProtocol, Sendable {
+internal protocol RealtimeClientProtocol: PubSubProtocol, Sendable {
     associatedtype Channels: RealtimeChannelsProtocol
     associatedtype Connection: CoreConnectionProtocol
 

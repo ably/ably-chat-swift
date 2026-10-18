@@ -161,19 +161,14 @@ internal final class InternalRealtimeClientAdapter<Underlying: ProxyRealtimeClie
     internal func request(_ method: String, path: String, params: [String: String]?, body: Any?, headers: [String: String]?) async throws(ErrorInfo) -> InternalHTTPPaginatedResponseAdapter {
         do {
             let artResponse = try await withCheckedContinuation { (continuation: CheckedContinuation<Result<AblyPubSubDevice.HTTPPaginatedResponse, AblyPubSubDevice.ErrorInfo>, _>) in
-                do {
-                    try underlying.request(method, path: path, params: params, body: body, headers: headers) { response, error in
-                        if let error {
-                            continuation.resume(returning: .failure(error))
-                        } else if let response {
-                            continuation.resume(returning: .success(response))
-                        } else {
-                            preconditionFailure("There is no error, so expected a response")
-                        }
+                underlying.request(method, path: path, params: params, body: body, headers: headers) { response, error in
+                    if let error {
+                        continuation.resume(returning: .failure(error))
+                    } else if let response {
+                        continuation.resume(returning: .success(response))
+                    } else {
+                        preconditionFailure("There is no error, so expected a response")
                     }
-                } catch {
-                    // This is a weird bit of API design in ably-cocoa (see https://github.com/ably/ably-cocoa/issues/2043 for fixing it); it throws an error to indicate a programmer error (it should be using exceptions). Since the type of the thrown error is NSError and not ErrorInfo, which would mess up our typed throw, let's not try and propagate it.
-                    fatalError("ably-cocoa request threw an error - this indicates a programmer error")
                 }
             }.get()
             return InternalHTTPPaginatedResponseAdapter(underlying: artResponse)
@@ -456,8 +451,13 @@ internal final class InternalRealtimeChannelAdapter<Underlying: ProxyRealtimeCha
 
     internal func publish(_ name: String?, data: JSONValue?, extras: [String: JSONValue]?) async throws(ErrorInfo) {
         do {
+            let message = AblyPubSubDevice.Message()
+            message.name = name
+            message.data = data?.toAblyCocoaData
+            message.extras = extras?.toAblyCocoaDataDictionary
+
             try await withCheckedContinuation { (continuation: CheckedContinuation<Result<Void, AblyPubSubDevice.ErrorInfo>, _>) in
-                underlying.publish(name, data: data?.toAblyCocoaData, extras: extras?.toARTJsonCompatible) { error in
+                underlying.publish([message]) { error in
                     if let error {
                         continuation.resume(returning: .failure(error))
                     } else {

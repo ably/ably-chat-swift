@@ -63,7 +63,7 @@ internal final class DefaultMessageReactions<Realtime: InternalRealtimeClientPro
             }
 
             var summaryJson: [String: JSONValue]?
-            if let summaryData = message.annotations?.summary {
+            if let summaryData = message.annotations.summary {
                 summaryJson = JSONValue(ablyCocoaData: summaryData).objectValue
             }
 
@@ -119,8 +119,7 @@ internal final class DefaultMessageReactions<Realtime: InternalRealtimeClientPro
 
             let reactionEvent = MessageReactionRawEvent(
                 type: reactionEventType,
-                // TODO: This is just a fallback value until ably-cocoa fixes the nullability of Annotation.timestamp. Remove in https://github.com/ably/ably-chat-swift/issues/395
-                timestamp: annotation.timestamp ?? Date(),
+                timestamp: annotation.timestamp,
                 reaction: MessageReactionRawEvent.Reaction(
                     type: reactionType,
                     name: annotation.name ?? "", // CHA-MR7b3

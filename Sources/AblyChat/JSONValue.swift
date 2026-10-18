@@ -176,16 +176,8 @@ internal extension JSONValue {
     }
 
     /// Creates a `JSONValue` from an ably-cocoa deserialized JSON message extras object. Specifically, `ablyCocoaExtras` can be a non-`nil` value of `BaseMessage`'s `extras` property.
-    static func objectFromAblyCocoaExtras(_ ablyCocoaExtras: any JsonCompatible) -> [String: JSONValue] {
-        // (This is based on the fact that, in reality, I believe that `extras` is always a JSON object; see https://github.com/ably/ably-cocoa/issues/2002 for improving ably-cocoa's API to reflect this)
-
-        let jsonValue = JSONValue(ablyCocoaData: ablyCocoaExtras)
-        guard case let .object(jsonObject) = jsonValue else {
-            // ably-cocoa is not conforming to our assumptions; either its behaviour is wrong or our assumptions are wrong. Either way, bring this loudly to our attention instead of trying to carry on
-            preconditionFailure("JSONValue.objectFromAblyCocoaExtras(_:) was given \(ablyCocoaExtras)")
-        }
-
-        return jsonObject
+    static func objectFromAblyCocoaExtras(_ ablyCocoaExtras: [String: Any]) -> [String: JSONValue] {
+        ablyCocoaExtras.mapValues { .init(ablyCocoaData: $0) }
     }
 
     /// Creates an ably-cocoa deserialized JSON object from a `JSONValue`.
@@ -228,10 +220,5 @@ internal extension JSONObject {
     /// Creates an ably-cocoa data object from a dictionary that has string keys and `JSONValue` values.
     var toAblyCocoaData: Any {
         toAblyCocoaDataDictionary
-    }
-
-    /// Creates an ably-cocoa `JsonCompatible` object from a dictionary that has string keys and `JSONValue` values.
-    var toARTJsonCompatible: any JsonCompatible {
-        toAblyCocoaDataDictionary as (any JsonCompatible)
     }
 }

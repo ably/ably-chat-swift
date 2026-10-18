@@ -146,15 +146,7 @@ extension [String: Any] {
 
 extension AblyPubSubDevice.MessageVersion {
     convenience init(serial: String) {
-        self.init()
-        self.serial = serial
-    }
-}
-
-extension MessageAnnotations {
-    convenience init(summary: [String: Any]) {
-        self.init()
-        self.summary = summary
+        self.init(serial: serial, timestamp: nil, clientId: nil, descriptionText: nil, metadata: nil)
     }
 }
 

@@ -43,7 +43,7 @@ struct DefaultRoomReactionsTests {
                 "name": reaction,
             ]
             message.version = .init(serial: "0")
-            message.extras = [String: String]() as (any JsonCompatible)
+            message.extras = [String: Any]()
             return message
         }
 
@@ -93,7 +93,7 @@ struct DefaultRoomReactionsTests {
                 ]
                 message.extras = [
                     "headers": ["someKey2": "someValue2"], // arbitrary
-                ] as any JsonCompatible
+                ]
                 message.timestamp = Date(timeIntervalSinceReferenceDate: 0) // arbitrary
                 return message
             }(),
