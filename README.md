@@ -78,7 +78,7 @@ clientOptions.clientId = "your-client-id"
 let pubSubClient = PubSubDevice.createClient(options: clientOptions)
 
 // Create a chat client
-let chatClient = ChatClient(pubSubClient: pubSubClient, clientOptions: ChatClientOptions())
+let chatClient = createChatClient(pubSubClient: pubSubClient, clientOptions: ChatClientOptions())
 
 // Get a chat room
 let room = try await chatClient.rooms.get(named: "my-room", options: RoomOptions())
