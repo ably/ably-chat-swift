@@ -1,4 +1,4 @@
-import Ably
+import AblyPubSubDevice
 
 /// An error thrown by the Chat SDK itself (as opposed to a re-thrown ably-cocoa error).
 ///
@@ -102,7 +102,7 @@ internal enum InternalError {
     /// Error code is `badRequest` (this is not specified by the spec, which does not make it explicit that the SDK should throw an error in this scenario).
     case noItemInResponse(path: String)
 
-    /// An ably-cocoa `ARTHTTPPaginatedResponse` was received with the given non-200 status code.
+    /// An ably-cocoa `HTTPPaginatedResponse` was received with the given non-200 status code.
     ///
     /// Error code is `badRequest` (this is not specified by the spec, which does not make it explicit that the SDK should throw an error in this scenario).
     case paginatedResultStatusCode(Int)

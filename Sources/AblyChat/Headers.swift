@@ -1,4 +1,4 @@
-import Ably
+import AblyPubSubDevice
 
 /// A value that can be used in ``Headers``. It is the same as ``JSONValue`` except it does not have the `object` or `array` cases.
 public enum HeadersValue: Sendable, Equatable {

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Ably Chat Swift SDK - A Swift SDK for building chat applications on top of Ably's realtime infrastructure. Supports iOS 14+, macOS 11+, and tvOS 14+. Built as a Swift Package with dependencies on ably-cocoa.
+Ably Chat Swift SDK - A Swift SDK for building chat applications on top of Ably's realtime infrastructure. Supports iOS 15+, macOS 12+, and tvOS 15+. Built as a Swift Package with dependencies on ably-cocoa.
 
 **Example app:** The repo includes an example SwiftUI app in `Example/` that demonstrates core SDK functionality. Open `AblyChat.xcworkspace` to access both the library and example app.
 

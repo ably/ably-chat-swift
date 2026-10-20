@@ -1,5 +1,5 @@
-import Ably
 import AblyChat
+import Foundation
 
 // This is copied from ably-chat's internal class `SubscriptionStorage`.
 @MainActor

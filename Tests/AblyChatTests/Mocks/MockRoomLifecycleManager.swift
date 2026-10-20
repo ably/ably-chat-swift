@@ -1,5 +1,5 @@
-import Ably
 @testable import AblyChat
+import AblyPubSubDevice
 
 class MockRoomLifecycleManager: RoomLifecycleManager {
     let callRecorder = MockMethodCallRecorder()

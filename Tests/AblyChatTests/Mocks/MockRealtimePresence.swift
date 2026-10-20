@@ -1,18 +1,18 @@
-import Ably
 @testable import AblyChat
+import AblyPubSubDevice
 
 final class MockRealtimePresence: InternalRealtimePresenceProtocol {
     let callRecorder = MockMethodCallRecorder()
 
-    func subscribe(_: @escaping @MainActor (ARTPresenceMessage) -> Void) -> ARTEventListener? {
-        ARTEventListener()
+    func subscribe(_: @escaping @MainActor (AblyPubSubDevice.PresenceMessage) -> Void) -> EventListener? {
+        EventListener()
     }
 
-    func subscribe(_: ARTPresenceAction, callback _: @escaping @MainActor (ARTPresenceMessage) -> Void) -> ARTEventListener? {
-        ARTEventListener()
+    func subscribe(_: PresenceAction, callback _: @escaping @MainActor (AblyPubSubDevice.PresenceMessage) -> Void) -> EventListener? {
+        EventListener()
     }
 
-    func unsubscribe(_: ARTEventListener) {
+    func unsubscribe(_: EventListener) {
         // no-op since it's called automatically
     }
 
@@ -24,7 +24,7 @@ final class MockRealtimePresence: InternalRealtimePresenceProtocol {
         return []
     }
 
-    func get(_ query: ARTRealtimePresenceQuery) async throws(ErrorInfo) -> [PresenceMessage] {
+    func get(_ query: RealtimePresenceQuery) async throws(ErrorInfo) -> [PresenceMessage] {
         callRecorder.addRecord(
             signature: "get(_:)",
             arguments: ["query": "\(query.callRecorderDescription)"],
@@ -54,7 +54,7 @@ final class MockRealtimePresence: InternalRealtimePresenceProtocol {
     }
 }
 
-extension ARTRealtimePresenceQuery {
+extension RealtimePresenceQuery {
     var callRecorderDescription: String {
         "clientId=\(clientId!)"
     }

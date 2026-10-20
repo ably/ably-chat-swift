@@ -28,7 +28,7 @@ enum Sandbox {
     }
 
     static func createAPIKey() async throws -> String {
-        var request = URLRequest(url: .init(string: "https://sandbox-rest.ably.io/apps")!)
+        var request = URLRequest(url: .init(string: "https://sandbox.realtime.ably-nonprod.net/apps")!)
         request.httpMethod = "POST"
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try await loadAppCreationRequestBody()

@@ -1,4 +1,4 @@
-import Ably
+import AblyPubSubDevice
 
 /**
  * Represents a chat room.
@@ -239,18 +239,18 @@ public struct RoomStatusChange: Sendable {
 
 @MainActor
 internal protocol RoomFactory: Sendable {
-    associatedtype Realtime: InternalRealtimeClientProtocol where Realtime.Channels.Channel.Proxied == Room.Channel
+    associatedtype PubSubClient: InternalPubSubClientProtocol where PubSubClient.Channels.Channel.Proxied == Room.Channel
     associatedtype Room: AblyChat.InternalRoom
 
-    func createRoom(realtime: Realtime, chatAPI: ChatAPI<Realtime>, name: String, options: RoomOptions, logger: any InternalLogger) throws(ErrorInfo) -> Room
+    func createRoom(pubSubClient: PubSubClient, chatAPI: ChatAPI<PubSubClient>, name: String, options: RoomOptions, logger: any InternalLogger) throws(ErrorInfo) -> Room
 }
 
-internal final class DefaultRoomFactory<Realtime: InternalRealtimeClientProtocol>: Sendable, RoomFactory {
+internal final class DefaultRoomFactory<PubSubClient: InternalPubSubClientProtocol>: Sendable, RoomFactory {
     private let lifecycleManagerFactory = DefaultRoomLifecycleManagerFactory()
 
-    internal func createRoom(realtime: Realtime, chatAPI: ChatAPI<Realtime>, name: String, options: RoomOptions, logger: any InternalLogger) throws(ErrorInfo) -> DefaultRoom<Realtime, DefaultRoomLifecycleManager> {
+    internal func createRoom(pubSubClient: PubSubClient, chatAPI: ChatAPI<PubSubClient>, name: String, options: RoomOptions, logger: any InternalLogger) throws(ErrorInfo) -> DefaultRoom<PubSubClient, DefaultRoomLifecycleManager> {
         try DefaultRoom(
-            realtime: realtime,
+            pubSubClient: pubSubClient,
             chatAPI: chatAPI,
             name: name,
             options: options,
@@ -260,44 +260,44 @@ internal final class DefaultRoomFactory<Realtime: InternalRealtimeClientProtocol
     }
 }
 
-internal class DefaultRoom<Realtime: InternalRealtimeClientProtocol, LifecycleManager: RoomLifecycleManager>: InternalRoom {
+internal class DefaultRoom<PubSubClient: InternalPubSubClientProtocol, LifecycleManager: RoomLifecycleManager>: InternalRoom {
     internal let name: String
     internal let options: RoomOptions
-    private let chatAPI: ChatAPI<Realtime>
+    private let chatAPI: ChatAPI<PubSubClient>
 
-    internal let messages: DefaultMessages<Realtime>
+    internal let messages: DefaultMessages<PubSubClient>
     internal let reactions: DefaultRoomReactions
     internal let presence: DefaultPresence
-    internal let occupancy: DefaultOccupancy<Realtime>
+    internal let occupancy: DefaultOccupancy<PubSubClient>
     internal let typing: DefaultTyping
 
     // Exposed for testing.
-    private let realtime: Realtime
+    private let pubSubClient: PubSubClient
 
     private let lifecycleManager: LifecycleManager
-    private let internalChannel: Realtime.Channels.Channel
+    private let internalChannel: PubSubClient.Channels.Channel
 
     // Note: This property only exists to satisfy the `Room` interface. Do not use this property inside this class; use `internalChannel`.
-    internal var channel: Realtime.Channels.Channel.Proxied {
+    internal var channel: PubSubClient.Channels.Channel.Proxied {
         internalChannel.proxied
     }
 
     #if DEBUG
-        internal var testsOnly_internalChannel: Realtime.Channels.Channel {
+        internal var testsOnly_internalChannel: PubSubClient.Channels.Channel {
             internalChannel
         }
     #endif
 
     private let logger: any InternalLogger
 
-    internal init<LifecycleManagerFactory: RoomLifecycleManagerFactory>(realtime: Realtime, chatAPI: ChatAPI<Realtime>, name: String, options: RoomOptions, logger: any InternalLogger, lifecycleManagerFactory: LifecycleManagerFactory) throws(ErrorInfo) where LifecycleManagerFactory.Manager == LifecycleManager {
-        self.realtime = realtime
+    internal init<LifecycleManagerFactory: RoomLifecycleManagerFactory>(pubSubClient: PubSubClient, chatAPI: ChatAPI<PubSubClient>, name: String, options: RoomOptions, logger: any InternalLogger, lifecycleManagerFactory: LifecycleManagerFactory) throws(ErrorInfo) where LifecycleManagerFactory.Manager == LifecycleManager {
+        self.pubSubClient = pubSubClient
         self.name = name
         self.options = options
         self.logger = logger
         self.chatAPI = chatAPI
 
-        internalChannel = Self.createChannel(roomName: name, roomOptions: options, realtime: realtime)
+        internalChannel = Self.createChannel(roomName: name, roomOptions: options, pubSubClient: pubSubClient)
 
         lifecycleManager = lifecycleManagerFactory.createManager(
             channel: internalChannel,
@@ -313,7 +313,7 @@ internal class DefaultRoom<Realtime: InternalRealtimeClientProtocol, LifecycleMa
         )
 
         reactions = DefaultRoomReactions(
-            realtime: realtime,
+            pubSubClient: pubSubClient,
             channel: internalChannel,
             roomName: name,
             logger: logger,
@@ -344,8 +344,8 @@ internal class DefaultRoom<Realtime: InternalRealtimeClientProtocol, LifecycleMa
         )
     }
 
-    private static func createChannel(roomName: String, roomOptions: RoomOptions, realtime: Realtime) -> Realtime.Channels.Channel {
-        let channelOptions = ARTRealtimeChannelOptions()
+    private static func createChannel(roomName: String, roomOptions: RoomOptions, pubSubClient: PubSubClient) -> PubSubClient.Channels.Channel {
+        let channelOptions = RealtimeChannelOptions()
 
         // CHA-GP2a
         channelOptions.attachOnSubscribe = false
@@ -370,7 +370,7 @@ internal class DefaultRoom<Realtime: InternalRealtimeClientProtocol, LifecycleMa
         }
 
         // CHA-RC3c
-        return realtime.channels.get("\(roomName)::$chat", options: channelOptions)
+        return pubSubClient.channels.get("\(roomName)::$chat", options: channelOptions)
     }
 
     // swiftlint:disable:next missing_docs
@@ -387,7 +387,7 @@ internal class DefaultRoom<Realtime: InternalRealtimeClientProtocol, LifecycleMa
         await lifecycleManager.performReleaseOperation()
 
         // CHA-RL3h
-        realtime.channels.release(internalChannel.name)
+        pubSubClient.channels.release(internalChannel.name)
     }
 
     // MARK: - Room status

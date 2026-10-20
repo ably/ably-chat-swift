@@ -1,5 +1,5 @@
-import Ably
 @testable import AblyChat
+import AblyPubSubDevice
 
 final class MockHTTPPaginatedResponse: InternalHTTPPaginatedResponseProtocol {
     let items: [JSONValue]

@@ -1,4 +1,4 @@
-import Ably
+import AblyPubSubDevice
 
 /**
  * This interface is used to interact with typing in a chat room including subscribing to typing events and
