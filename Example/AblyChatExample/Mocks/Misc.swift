@@ -1,5 +1,5 @@
-import Ably
 import AblyChat
+import Foundation
 
 final class MockMessagesPaginatedResult: PaginatedResult {
     typealias Item = Message

@@ -1,14 +1,14 @@
-import Ably
+import AblyPubSubDevice
 
 @MainActor
-internal final class DefaultMessageReactions<Realtime: InternalRealtimeClientProtocol>: MessageReactions {
+internal final class DefaultMessageReactions<PubSubClient: InternalPubSubClientProtocol>: MessageReactions {
     private let channel: any InternalRealtimeChannelProtocol
     private let roomName: String
     private let logger: any InternalLogger
-    private let chatAPI: ChatAPI<Realtime>
+    private let chatAPI: ChatAPI<PubSubClient>
     private let options: MessagesOptions
 
-    internal init(channel: any InternalRealtimeChannelProtocol, chatAPI: ChatAPI<Realtime>, roomName: String, options: MessagesOptions, logger: any InternalLogger) {
+    internal init(channel: any InternalRealtimeChannelProtocol, chatAPI: ChatAPI<PubSubClient>, roomName: String, options: MessagesOptions, logger: any InternalLogger) {
         self.channel = channel
         self.chatAPI = chatAPI
         self.roomName = roomName
@@ -63,7 +63,7 @@ internal final class DefaultMessageReactions<Realtime: InternalRealtimeClientPro
             }
 
             var summaryJson: [String: JSONValue]?
-            if let summaryData = message.annotations?.summary {
+            if let summaryData = message.annotations.summary {
                 summaryJson = JSONValue(ablyCocoaData: summaryData).objectValue
             }
 
@@ -119,8 +119,7 @@ internal final class DefaultMessageReactions<Realtime: InternalRealtimeClientPro
 
             let reactionEvent = MessageReactionRawEvent(
                 type: reactionEventType,
-                // TODO: This is just a fallback value until ably-cocoa fixes the nullability of ARTAnnotation.timestamp. Remove in https://github.com/ably/ably-chat-swift/issues/395
-                timestamp: annotation.timestamp ?? Date(),
+                timestamp: annotation.timestamp,
                 reaction: MessageReactionRawEvent.Reaction(
                     type: reactionType,
                     name: annotation.name ?? "", // CHA-MR7b3

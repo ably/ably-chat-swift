@@ -1,4 +1,4 @@
-import Ably
+import AblyPubSubDevice
 
 @MainActor
 internal protocol RoomLifecycleManager: Sendable {
@@ -51,7 +51,7 @@ internal final class DefaultRoomLifecycleManagerFactory: RoomLifecycleManagerFac
 }
 
 private extension RoomStatus {
-    init(channelState: ARTRealtimeChannelState) {
+    init(channelState: RealtimeChannelState) {
         switch channelState {
         case .initialized:
             self = .initialized
@@ -98,7 +98,7 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
         isExplicitlyDetached
     }
 
-    private var channelStateEventListener: ARTEventListener!
+    private var channelStateEventListener: EventListener!
     private let roomStatusChangeSubscriptions = StatusSubscriptionStorage<RoomStatusChange>()
     private let discontinuitySubscriptions = StatusSubscriptionStorage<ErrorInfo>()
     private var operationResultContinuations = OperationResultContinuations()
@@ -164,7 +164,7 @@ internal class DefaultRoomLifecycleManager: RoomLifecycleManager {
     deinit {
         // This was a case of "do something that the compiler accepts"; there might be a better way.
         // (https://github.com/swiftlang/swift-evolution/blob/main/proposals/0371-isolated-synchronous-deinit.md sounds relevant too.)
-        let (channelStateEventListener, channel) = (self.channelStateEventListener as ARTEventListener, self.channel)
+        let (channelStateEventListener, channel) = (self.channelStateEventListener as EventListener, self.channel)
         Task { @MainActor in
             channel.off(channelStateEventListener)
         }

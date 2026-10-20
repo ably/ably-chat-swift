@@ -1,4 +1,4 @@
-import Ably
+import AblyPubSubDevice
 import Foundation
 
 /// Implemements the CHA-T14 queueing behaviour for ``DefaultTyping``'s `keystroke()` and `stop()` operations.

@@ -1,4 +1,4 @@
-import Ably
+import AblyPubSubDevice
 
 /**
  * Chat Message Actions.
@@ -13,7 +13,7 @@ public enum ChatMessageAction: Sendable {
     // swiftlint:disable:next missing_docs
     case messageDelete
 
-    internal static func fromRealtimeAction(_ action: ARTMessageAction) -> Self? {
+    internal static func fromRealtimeAction(_ action: MessageAction) -> Self? {
         switch action {
         case .create:
             .messageCreate
@@ -22,7 +22,8 @@ public enum ChatMessageAction: Sendable {
         case .delete:
             .messageDelete
         // ignore any other actions for now (CHA-M4k11)
-        case .meta,
+        case .append,
+             .meta,
              .messageSummary:
             nil
         @unknown default:

@@ -1,4 +1,4 @@
-import Ably
+import AblyPubSubDevice
 
 /**
  * This interface is used to interact with room-level reactions in a chat room: subscribing to reactions and sending them.
