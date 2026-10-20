@@ -69,7 +69,27 @@ internal final class DefaultInternalPubSubClientFactory<Underlying: ProxyPubSubC
 }
 
 /**
+ * Creates a chat client.
+ *
+ * - Parameters:
+ *   - pubSubClient: The Ably Pub/Sub client. Its `dispatchQueue` option must be the main queue (this is its default behaviour).
+ *   - clientOptions: The client options.
+ *
+ * - Returns: A chat client that uses `pubSubClient` to communicate with Ably.
+ */
+@MainActor
+public func createChatClient(pubSubClient: PubSubClient, clientOptions: ChatClientOptions? = nil) -> ChatClient {
+    ChatClient(
+        pubSubClient: pubSubClient,
+        clientOptions: clientOptions,
+        internalPubSubClientFactory: DefaultInternalPubSubClientFactory<WrapperSDKProxyRealtime>(),
+    )
+}
+
+/**
  * This is the core client for Ably chat. It provides access to chat rooms.
+ *
+ * Use ``createChatClient(pubSubClient:clientOptions:)`` to create one.
  */
 public class ChatClient: ChatClientProtocol {
     // swiftlint:disable:next missing_docs
@@ -90,21 +110,6 @@ public class ChatClient: ChatClientProtocol {
     // swiftlint:disable:next missing_docs
     public var connection: some Connection {
         _connection
-    }
-
-    /**
-     * Constructor for Chat
-     *
-     * - Parameters:
-     *   - pubSubClient: The Ably Pub/Sub client. Its `dispatchQueue` option must be the main queue (this is its default behaviour).
-     *   - clientOptions: The client options.
-     */
-    public convenience init(pubSubClient: AblyPubSubDevice.PubSubClient, clientOptions: ChatClientOptions? = nil) {
-        self.init(
-            pubSubClient: pubSubClient,
-            clientOptions: clientOptions,
-            internalPubSubClientFactory: DefaultInternalPubSubClientFactory<WrapperSDKProxyRealtime>(),
-        )
     }
 
     internal init<PubSubClientFactory: InternalPubSubClientFactory>(

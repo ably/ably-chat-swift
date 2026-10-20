@@ -70,7 +70,7 @@ struct IntegrationTests {
         let pubSubClient = createSandboxPubSubClient(apiKey: apiKey, loggingLabel: loggingLabel)
         let clientOptions = TestLogger.loggingEnabled ? ChatClientOptions(logHandler: .simple(ChatLogger(label: loggingLabel)), logLevel: .trace) : nil
 
-        return ChatClient(pubSubClient: pubSubClient, clientOptions: clientOptions)
+        return createChatClient(pubSubClient: pubSubClient, clientOptions: clientOptions)
     }
 
     @Test
