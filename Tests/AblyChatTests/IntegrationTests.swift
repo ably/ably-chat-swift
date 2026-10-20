@@ -7,8 +7,8 @@
 // logging includes timestamps and function names to help identify where hangs
 // occur.
 
-import Ably
 @testable import AblyChat
+import AblyPubSubDevice
 import Testing
 
 extension Tag {
@@ -28,14 +28,14 @@ struct IntegrationTests {
         print("[\(timestamp)] [await] \(function) \(file):\(line) - \(message)")
     }
 
-    private class AblyCocoaLogger: ARTLog {
+    private class AblyCocoaLogger: Log {
         private let label: String
 
         init(label: String) {
             self.label = label
         }
 
-        override func log(_ message: String, with level: ARTLogLevel) {
+        override func log(_ message: String, with level: AblyPubSubDevice.LogLevel) {
             super.log("\(label): \(message)", with: level)
         }
     }
@@ -53,24 +53,24 @@ struct IntegrationTests {
         }
     }
 
-    private static func createSandboxRealtime(apiKey: String, loggingLabel: String) -> ARTRealtime {
-        let realtimeOptions = ARTClientOptions(key: apiKey)
-        realtimeOptions.environment = "sandbox"
-        realtimeOptions.clientId = UUID().uuidString
+    private static func createSandboxPubSubClient(apiKey: String, loggingLabel: String) -> PubSubClient {
+        let clientOptions = ClientOptions(key: apiKey)
+        clientOptions.endpoint = "nonprod:sandbox"
+        clientOptions.clientId = UUID().uuidString
 
         if TestLogger.loggingEnabled {
-            realtimeOptions.logLevel = .verbose
-            realtimeOptions.logHandler = AblyCocoaLogger(label: loggingLabel)
+            clientOptions.logLevel = .verbose
+            clientOptions.logHandler = AblyCocoaLogger(label: loggingLabel)
         }
 
-        return ARTRealtime(options: realtimeOptions)
+        return PubSubDevice.createClient(options: clientOptions)
     }
 
     private static func createSandboxChatClient(apiKey: String, loggingLabel: String) -> ChatClient {
-        let realtime = createSandboxRealtime(apiKey: apiKey, loggingLabel: loggingLabel)
+        let pubSubClient = createSandboxPubSubClient(apiKey: apiKey, loggingLabel: loggingLabel)
         let clientOptions = TestLogger.loggingEnabled ? ChatClientOptions(logHandler: .simple(ChatLogger(label: loggingLabel)), logLevel: .trace) : nil
 
-        return ChatClient(realtime: realtime, clientOptions: clientOptions)
+        return ChatClient(pubSubClient: pubSubClient, clientOptions: clientOptions)
     }
 
     @Test

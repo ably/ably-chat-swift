@@ -31,9 +31,9 @@ This SDK supports the following platforms:
 
 | Platform | Support |
 | -------- | ------- |
-| iOS      | >= 14.0 |
-| macOS    | >= 11.0 |
-| tvOS     | >= 14.0 |
+| iOS      | >= 15.0 |
+| macOS    | >= 12.0 |
+| tvOS     | >= 15.0 |
 
 > [!NOTE]
 > Xcode 26.0 or later is required.
@@ -68,17 +68,17 @@ To install the `ably-chat-swift` package in another Swift Package, add the follo
 The following code connects to Ably's chat service, subscribes to a chat room, and sends a message to that room:
 
 ```swift
-import Ably
 import AblyChat
+import AblyPubSubDevice
 
-// Initialize Ably Realtime client
-let realtimeOptions = ARTClientOptions()
-realtimeOptions.key = "<your-ably-api-key>"
-realtimeOptions.clientId = "your-client-id"
-let realtime = ARTRealtime(options: realtimeOptions)
+// Initialize the Ably Pub/Sub client
+let clientOptions = ClientOptions()
+clientOptions.key = "<your-ably-api-key>"
+clientOptions.clientId = "your-client-id"
+let pubSubClient = PubSubDevice.createClient(options: clientOptions)
 
 // Create a chat client
-let chatClient = ChatClient(realtime: realtime, clientOptions: ChatClientOptions())
+let chatClient = ChatClient(pubSubClient: pubSubClient, clientOptions: ChatClientOptions())
 
 // Get a chat room
 let room = try await chatClient.rooms.get(named: "my-room", options: RoomOptions())

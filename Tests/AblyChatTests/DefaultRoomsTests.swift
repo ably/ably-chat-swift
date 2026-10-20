@@ -1,5 +1,5 @@
-import Ably
 @testable import AblyChat
+import AblyPubSubDevice
 import Testing
 
 // The channel name of basketball::$chat is passed in to these tests due to `DefaultRoom` kicking off the `DefaultMessages` initialization. This in turn needs a valid `roomName` or else the `MockChannels` class will throw an error as it would be expecting a channel with the name \(roomName)::$chat to exist (where `roomName` is the property passed into `rooms.get`).
@@ -37,13 +37,13 @@ struct DefaultRoomsTests {
     @Test
     func get_withoutOptions_usesDefaultOptions() async throws {
         // Given: an instance of DefaultRooms
-        let realtime = MockRealtime(channels: .init(channels: [
+        let pubSubClient = MockPubSubClient(channels: .init(channels: [
             .init(name: "basketball::$chat"),
         ]))
         let options = RoomOptions()
         let roomToReturn = MockRoom(options: options)
         let roomFactory = MockRoomFactory(room: roomToReturn)
-        let rooms = DefaultRooms(realtime: realtime, logger: TestLogger(), roomFactory: roomFactory)
+        let rooms = DefaultRooms(pubSubClient: pubSubClient, logger: TestLogger(), roomFactory: roomFactory)
 
         // When: get(name:) is called
         let name = "basketball"
@@ -61,13 +61,13 @@ struct DefaultRoomsTests {
     @Test
     func get_returnsRoomWithGivenNameAndOptions() async throws {
         // Given: an instance of DefaultRooms
-        let realtime = MockRealtime(channels: .init(channels: [
+        let pubSubClient = MockPubSubClient(channels: .init(channels: [
             .init(name: "basketball::$chat"),
         ]))
         let options = RoomOptions()
         let roomToReturn = MockRoom(options: options)
         let roomFactory = MockRoomFactory(room: roomToReturn)
-        let rooms = DefaultRooms(realtime: realtime, logger: TestLogger(), roomFactory: roomFactory)
+        let rooms = DefaultRooms(pubSubClient: pubSubClient, logger: TestLogger(), roomFactory: roomFactory)
 
         // When: get(name:options:) is called
         let name = "basketball"
@@ -79,7 +79,7 @@ struct DefaultRoomsTests {
         #expect(rooms.testsOnly_hasRoomMapEntryWithName(name))
 
         let createRoomArguments = try #require(roomFactory.createRoomArguments)
-        #expect(createRoomArguments.realtime === realtime)
+        #expect(createRoomArguments.pubSubClient === pubSubClient)
         #expect(createRoomArguments.name == name)
         #expect(createRoomArguments.options == options)
     }
@@ -88,13 +88,13 @@ struct DefaultRoomsTests {
     @Test
     func get_whenRoomExistsInRoomMap_returnsExistingRoomWithGivenName() async throws {
         // Given: an instance of DefaultRooms, which has, per CHA-RC1f3, a room in the room map with a given name
-        let realtime = MockRealtime(channels: .init(channels: [
+        let pubSubClient = MockPubSubClient(channels: .init(channels: [
             .init(name: "basketball::$chat"),
         ]))
         let options = RoomOptions()
         let roomToReturn = MockRoom(options: options)
         let roomFactory = MockRoomFactory(room: roomToReturn)
-        let rooms = DefaultRooms(realtime: realtime, logger: TestLogger(), roomFactory: roomFactory)
+        let rooms = DefaultRooms(pubSubClient: pubSubClient, logger: TestLogger(), roomFactory: roomFactory)
 
         let name = "basketball"
         let firstRoom = try await rooms.get(named: name, options: options)
@@ -111,7 +111,7 @@ struct DefaultRoomsTests {
     @Test
     func get_whenFutureExistsInRoomMap_returnsExistingRoomWithGivenName() async throws {
         // Given: an instance of DefaultRooms, for which, per CHA-RC1f4, a previous call to get(name:options:) with a given name is waiting for a CHA-RC1g release operation to complete
-        let realtime = MockRealtime(channels: .init(channels: [
+        let pubSubClient = MockPubSubClient(channels: .init(channels: [
             .init(name: "basketball::$chat"),
         ]))
         let options = RoomOptions()
@@ -120,7 +120,7 @@ struct DefaultRoomsTests {
         let roomToReturn = MockRoom(options: options, releaseImplementation: roomReleaseOperation.releaseImplementation)
 
         let roomFactory = MockRoomFactory(room: roomToReturn)
-        let rooms = DefaultRooms(realtime: realtime, logger: TestLogger(), roomFactory: roomFactory)
+        let rooms = DefaultRooms(pubSubClient: pubSubClient, logger: TestLogger(), roomFactory: roomFactory)
 
         let name = "basketball"
 
@@ -159,13 +159,13 @@ struct DefaultRoomsTests {
     @Test
     func get_whenRoomExistsInRoomMap_throwsErrorWhenOptionsDoNotMatch() async throws {
         // Given: an instance of DefaultRooms, which has, per CHA-RC1f3, a room in the room map with a given name and options
-        let realtime = MockRealtime(channels: .init(channels: [
+        let pubSubClient = MockPubSubClient(channels: .init(channels: [
             .init(name: "basketball::$chat"),
         ]))
         let options = RoomOptions()
 
         let roomToReturn = MockRoom(options: options)
-        let rooms = DefaultRooms(realtime: realtime, logger: TestLogger(), roomFactory: MockRoomFactory(room: roomToReturn))
+        let rooms = DefaultRooms(pubSubClient: pubSubClient, logger: TestLogger(), roomFactory: MockRoomFactory(room: roomToReturn))
 
         let name = "basketball"
         _ = try await rooms.get(named: name, options: options)
@@ -184,7 +184,7 @@ struct DefaultRoomsTests {
     @Test
     func get_whenFutureExistsInRoomMap_throwsErrorWhenOptionsDoNotMatch() async throws {
         // Given: an instance of DefaultRooms, for which, per CHA-RC1f4, a previous call to get(name:options:) with a given name and options is waiting for a CHA-RC1g release operation to complete
-        let realtime = MockRealtime(channels: .init(channels: [
+        let pubSubClient = MockPubSubClient(channels: .init(channels: [
             .init(name: "basketball::$chat"),
         ]))
         let options = RoomOptions()
@@ -192,7 +192,7 @@ struct DefaultRoomsTests {
         let roomReleaseOperation = SignallableReleaseOperation()
         let roomToReturn = MockRoom(options: options, releaseImplementation: roomReleaseOperation.releaseImplementation)
 
-        let rooms = DefaultRooms(realtime: realtime, logger: TestLogger(), roomFactory: MockRoomFactory(room: roomToReturn))
+        let rooms = DefaultRooms(pubSubClient: pubSubClient, logger: TestLogger(), roomFactory: MockRoomFactory(room: roomToReturn))
 
         let name = "basketball"
 
@@ -228,7 +228,7 @@ struct DefaultRoomsTests {
     @Test
     func get_whenReleaseInProgress() async throws {
         // Given: an instance of DefaultRooms, for which a CHA-RC1g release operation is in progrss
-        let realtime = MockRealtime(channels: .init(channels: [
+        let pubSubClient = MockPubSubClient(channels: .init(channels: [
             .init(name: "basketball::$chat"),
         ]))
 
@@ -236,7 +236,7 @@ struct DefaultRoomsTests {
         let options = RoomOptions()
         let roomToReturn = MockRoom(options: options, releaseImplementation: roomReleaseOperation.releaseImplementation)
 
-        let rooms = DefaultRooms(realtime: realtime, logger: TestLogger(), roomFactory: MockRoomFactory(room: roomToReturn))
+        let rooms = DefaultRooms(pubSubClient: pubSubClient, logger: TestLogger(), roomFactory: MockRoomFactory(room: roomToReturn))
 
         let name = "basketball"
 
@@ -272,11 +272,11 @@ struct DefaultRoomsTests {
     @Test
     func release_withNoRoomMapEntry_andNoReleaseInProgress() async throws {
         // Given: An instance of DefaultRooms, with neither a room map entry nor a release operation in progress for a given room name
-        let realtime = MockRealtime(channels: .init(channels: [
+        let pubSubClient = MockPubSubClient(channels: .init(channels: [
             .init(name: "basketball::$chat"),
         ]))
         let roomFactory = MockRoomFactory()
-        let rooms = DefaultRooms(realtime: realtime, logger: TestLogger(), roomFactory: roomFactory)
+        let rooms = DefaultRooms(pubSubClient: pubSubClient, logger: TestLogger(), roomFactory: roomFactory)
 
         // When: `release(name:)` is called with this room name
         // Then: The call to `release(name:)` completes (this is as much as I can do to test the spec's "no-op"; i.e. check it doesn't seem to wait for anything or have any obvious side effects)
@@ -288,7 +288,7 @@ struct DefaultRoomsTests {
     @Test
     func release_withNoRoomMapEntry_andReleaseInProgress() async throws {
         // Given: an instance of DefaultRooms, for which a release operation is in progress
-        let realtime = MockRealtime(channels: .init(channels: [
+        let pubSubClient = MockPubSubClient(channels: .init(channels: [
             .init(name: "basketball::$chat"),
         ]))
 
@@ -296,7 +296,7 @@ struct DefaultRoomsTests {
         let options = RoomOptions()
         let roomToReturn = MockRoom(options: options, releaseImplementation: roomReleaseOperation.releaseImplementation)
 
-        let rooms = DefaultRooms(realtime: realtime, logger: TestLogger(), roomFactory: MockRoomFactory(room: roomToReturn))
+        let rooms = DefaultRooms(pubSubClient: pubSubClient, logger: TestLogger(), roomFactory: MockRoomFactory(room: roomToReturn))
 
         let name = "basketball"
 
@@ -330,7 +330,7 @@ struct DefaultRoomsTests {
     @Test
     func release_withReleaseInProgress_failsPendingGetOperations() async throws {
         // Given: an instance of DefaultRooms, for which there is a release operation already in progress, and a CHA-RC1f4 future in the room map awaiting the completion of this release operation
-        let realtime = MockRealtime(channels: .init(channels: [
+        let pubSubClient = MockPubSubClient(channels: .init(channels: [
             .init(name: "basketball::$chat"),
         ]))
 
@@ -338,7 +338,7 @@ struct DefaultRoomsTests {
         let options = RoomOptions()
         let roomToReturn = MockRoom(options: options, releaseImplementation: roomReleaseOperation.releaseImplementation)
 
-        let rooms = DefaultRooms(realtime: realtime, logger: TestLogger(), roomFactory: MockRoomFactory(room: roomToReturn))
+        let rooms = DefaultRooms(pubSubClient: pubSubClient, logger: TestLogger(), roomFactory: MockRoomFactory(room: roomToReturn))
 
         let name = "basketball"
 
@@ -386,13 +386,13 @@ struct DefaultRoomsTests {
     @Test
     func release() async throws {
         // Given: an instance of DefaultRooms, which has a room map entry for a given room name and has no release operation in progress for that room name
-        let realtime = MockRealtime(channels: .init(channels: [
+        let pubSubClient = MockPubSubClient(channels: .init(channels: [
             .init(name: "basketball::$chat"),
         ]))
         let options = RoomOptions()
         let hasExistingRoomAtMomentRoomReleaseCalledStreamComponents = AsyncStream.makeStream(of: Bool.self)
         let roomFactory = MockRoomFactory()
-        let rooms = DefaultRooms(realtime: realtime, logger: TestLogger(), roomFactory: roomFactory)
+        let rooms = DefaultRooms(pubSubClient: pubSubClient, logger: TestLogger(), roomFactory: roomFactory)
 
         let name = "basketball"
 

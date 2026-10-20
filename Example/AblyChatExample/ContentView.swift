@@ -1,5 +1,5 @@
-import Ably
 import AblyChat
+import AblyPubSubDevice
 import SwiftUI
 
 private enum Environment: Equatable {
@@ -20,12 +20,12 @@ private enum Environment: Equatable {
                 clientOptions: ChatClientOptions(),
             )
         case let .live(key: key, clientID: clientID):
-            let realtimeOptions = ARTClientOptions()
-            realtimeOptions.key = key
-            realtimeOptions.clientId = clientID
-            let realtime = ARTRealtime(options: realtimeOptions)
+            let clientOptions = ClientOptions()
+            clientOptions.key = key
+            clientOptions.clientId = clientID
+            let pubSubClient = PubSubDevice.createClient(options: clientOptions)
 
-            return ChatClient(realtime: realtime, clientOptions: .init())
+            return ChatClient(pubSubClient: pubSubClient, clientOptions: .init())
         }
     }
 }

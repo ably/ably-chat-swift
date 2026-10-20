@@ -1,5 +1,5 @@
-import Ably
 @testable import AblyChat
+import AblyPubSubDevice
 
 /// `AsyncSequence` variant of `Room` status changes.
 extension RoomLifecycleManager {

@@ -1,12 +1,12 @@
-import Ably
 @testable import AblyChat
+import Foundation
 
 class MockChatClient: ChatClientProtocol {
-    final class Realtime: Sendable {
+    final class PubSubClient: Sendable {
         init() {}
     }
 
-    let realtime = Realtime()
+    let pubSubClient = PubSubClient()
     let clientOptions: ChatClientOptions
     let rooms: MockRooms
     let connection: MockConnection

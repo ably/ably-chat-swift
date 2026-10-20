@@ -1,12 +1,12 @@
-import Ably
+import AblyPubSubDevice
 
-internal final class DefaultMessages<Realtime: InternalRealtimeClientProtocol>: Messages {
-    internal let reactions: DefaultMessageReactions<Realtime>
+internal final class DefaultMessages<PubSubClient: InternalPubSubClientProtocol>: Messages {
+    internal let reactions: DefaultMessageReactions<PubSubClient>
 
     private let channel: any InternalRealtimeChannelProtocol
 
     private let roomName: String
-    private let chatAPI: ChatAPI<Realtime>
+    private let chatAPI: ChatAPI<PubSubClient>
     private let logger: any InternalLogger
 
     private var currentSubscriptionPoint: String?
@@ -25,7 +25,7 @@ internal final class DefaultMessages<Realtime: InternalRealtimeClientProtocol>: 
         }
     }
 
-    internal init(channel: any InternalRealtimeChannelProtocol, chatAPI: ChatAPI<Realtime>, roomName: String, options: MessagesOptions = .init(), logger: any InternalLogger) {
+    internal init(channel: any InternalRealtimeChannelProtocol, chatAPI: ChatAPI<PubSubClient>, roomName: String, options: MessagesOptions = .init(), logger: any InternalLogger) {
         self.channel = channel
         self.chatAPI = chatAPI
         self.roomName = roomName
@@ -61,7 +61,7 @@ internal final class DefaultMessages<Realtime: InternalRealtimeClientProtocol>: 
             }
 
             let headers = (try? extras.optionalObjectValueForKey("headers"))?.compactMapValues { try? HeadersValue(jsonValue: $0) } ?? [:] // CHA-M4k2
-            let version = message.version ?? .init()
+            let version = message.version
             let timestamp = message.timestamp ?? Date(timeIntervalSince1970: 0) // CHA-M4k5
             let serial = message.serial ?? "" // CHA-M4k1
 
