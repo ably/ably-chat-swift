@@ -1,18 +1,65 @@
 # Change Log
 
-## Unreleased
+## [2.0.0](https://github.com/ably/ably-chat-swift/tree/2.0.0)
 
-### Breaking Changes
+The 2.0.0 release moves the Chat SDK onto version 2 of the Ably Pub/Sub SDK, which is now published as [ably-pubsub-cocoa](https://github.com/ably/ably-pubsub-cocoa). ably-pubsub-cocoa 2 is a device-side SDK, so a chat client built on it tells Ably that it runs on an end user's device. On an account billed by monthly active users, that traffic counts toward the total, the connection must carry a `clientId`, and that `clientId` is subject to a concurrency limit.
 
-- `ChatClient` no longer has a public initializer. Create a chat client with the new `createChatClient(pubSubClient:clientOptions:)` function instead. `ChatClientOptions` is unchanged.
+A chat client is now created through the `createChatClient(pubSubClient:clientOptions:)` function, in the same way that a Pub/Sub client is created through `PubSubDevice.createClient(options:)`. This matches the Chat SDKs for other platforms.
 
-  ```swift
-  // Before
-  let chatClient = ChatClient(realtime: realtime, clientOptions: ChatClientOptions())
+Below is an overview of the major changes in this release.
 
-  // After
-  let chatClient = createChatClient(pubSubClient: pubSubClient, clientOptions: ChatClientOptions())
-  ```
+For the changes to the Pub/Sub SDK itself, please refer to the [ably-pubsub-cocoa v2 migration guide](https://github.com/ably/ably-pubsub-cocoa/blob/2.0.0/Docs/migration-guides/v2.md).
+
+### Package and dependencies
+
+- The SDK depends on `ably-pubsub-cocoa` 2.x, in place of `ably-cocoa` 1.x.
+- Import `AblyPubSubDevice`, which replaces `Ably`.
+
+### Creating clients
+
+- Create a Pub/Sub client with `PubSubDevice.createClient(options:)`. The `ARTRealtime` initializer is no longer available.
+- Create a chat client with `createChatClient(pubSubClient:clientOptions:)`. `ChatClient`'s public initializer is removed, and `ChatClientOptions` is unchanged.
+
+### Chat client API
+
+- `ChatClient.realtime` is renamed to `pubSubClient`, and its type is `PubSubClient` in place of `ARTRealtime`.
+- On `ChatClientProtocol`, the `realtime` property is renamed to `pubSubClient`, and the `Realtime` associated type is renamed to `PubSubClient`.
+- `ChatClient.rooms` is `some Rooms<RealtimeChannel>`, in place of `some Rooms<ARTRealtimeChannel>`.
+
+### Swift API
+
+- Swift sees the Pub/Sub SDK's types without the `ART` prefix: `ARTClientOptions` is `ClientOptions`, `ARTRealtimeChannel` is `RealtimeChannel`, and so on.
+- Some of these names are also used by the Chat SDK, such as `Message`, `ErrorInfo` and `Presence`. In a file that imports both `AblyChat` and `AblyPubSubDevice`, qualify the type with its module name, for example `AblyChat.Message`.
+
+### Migration example
+
+```swift
+// Before
+import Ably
+import AblyChat
+
+let realtimeOptions = ARTClientOptions()
+realtimeOptions.key = "<your-ably-api-key>"
+realtimeOptions.clientId = "your-client-id"
+let realtime = ARTRealtime(options: realtimeOptions)
+let chatClient = ChatClient(realtime: realtime, clientOptions: ChatClientOptions())
+
+// After
+import AblyChat
+import AblyPubSubDevice
+
+let clientOptions = ClientOptions()
+clientOptions.key = "<your-ably-api-key>"
+clientOptions.clientId = "your-client-id"
+let pubSubClient = PubSubDevice.createClient(options: clientOptions)
+let chatClient = createChatClient(pubSubClient: pubSubClient, clientOptions: ChatClientOptions())
+```
+
+### Supported platforms changes
+
+- Support for macOS earlier than 12, iOS earlier than 15 and tvOS earlier than 15 has been dropped.
+
+[Full Changelog](https://github.com/ably/ably-chat-swift/compare/1.2.1...2.0.0)
 
 ## [1.2.1](https://github.com/ably/ably-chat-swift/tree/1.2.1)
 
