@@ -1,4 +1,4 @@
-import Ably
+import AblyPubSubDevice
 
 /**
  * Represents a subscription that can be unsubscribed from.
@@ -81,8 +81,8 @@ internal struct DefaultStatusSubscription: StatusSubscription, Sendable {
     }
 }
 
-internal struct DefaultMessageSubscriptionResponse<Realtime: InternalRealtimeClientProtocol>: MessageSubscriptionResponse, Sendable {
-    private let chatAPI: ChatAPI<Realtime>
+internal struct DefaultMessageSubscriptionResponse<PubSubClient: InternalPubSubClientProtocol>: MessageSubscriptionResponse, Sendable {
+    private let chatAPI: ChatAPI<PubSubClient>
     private let roomName: String
     private let subscriptionStartSerial: @MainActor @Sendable () async throws(ErrorInfo) -> String
     private let _unsubscribe: () -> Void
@@ -104,7 +104,7 @@ internal struct DefaultMessageSubscriptionResponse<Realtime: InternalRealtimeCli
     }
 
     internal init(
-        chatAPI: ChatAPI<Realtime>,
+        chatAPI: ChatAPI<PubSubClient>,
         roomName: String,
         subscriptionStartSerial: @MainActor @escaping @Sendable () async throws(ErrorInfo) -> String,
         unsubscribe: @MainActor @Sendable @escaping () -> Void,

@@ -10,9 +10,9 @@ let commonSwiftSettings: [SwiftSetting] = [
 let package = Package(
     name: "AblyChat",
     platforms: [
-        .macOS(.v11),
-        .iOS(.v14),
-        .tvOS(.v14),
+        .macOS(.v12),
+        .iOS(.v15),
+        .tvOS(.v15),
     ],
     products: [
         .library(
@@ -25,8 +25,8 @@ let package = Package(
     dependencies: [
         // This is the SDK's only dependency.
         .package(
-            url: "https://github.com/ably/ably-cocoa",
-            from: "1.2.51",
+            url: "https://github.com/ably/ably-pubsub-cocoa",
+            from: "2.0.0",
         ),
 
         // All of the following dependencies are only used for internal purposes (testing or build tooling).
@@ -65,8 +65,8 @@ let package = Package(
             name: "AblyChat",
             dependencies: [
                 .product(
-                    name: "Ably",
-                    package: "ably-cocoa",
+                    name: "AblyPubSubDevice",
+                    package: "ably-pubsub-cocoa",
                 ),
             ],
             swiftSettings: commonSwiftSettings,

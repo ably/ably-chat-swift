@@ -1,5 +1,5 @@
-import Ably
 @testable import AblyChat
+import AblyPubSubDevice
 import Testing
 
 struct ErrorInfoTests {
@@ -7,10 +7,10 @@ struct ErrorInfoTests {
     func whenUnderlyingErrorIsAblyCocoaError() {
         // Given: An ErrorInfo based on an ably-cocoa error
 
-        // Note: The facts that ARTErrorInfoStatusCode populates `statusCode`, that NSUnderlyingErrorKey populates `cause`, and that NSLocalizedDescriptionKey populates `message` are implementation details of ably-cocoa that we rely on in this test (but not in our implementation of ErrorInfo).
+        // Note: The facts that ARTErrorInfoStatusCode populates `statusCode`, that NSUnderlyingErrorKey populates `cause` (only for an error in `ablyErrorDomain`), and that NSLocalizedDescriptionKey populates `message` are implementation details of ably-cocoa that we rely on in this test (but not in our implementation of ErrorInfo).
 
-        let ablyCocoaCause = ARTErrorInfo(
-            domain: "SomeDomain", // irrelevant
+        let ablyCocoaCause = AblyPubSubDevice.ErrorInfo(
+            domain: ablyErrorDomain,
             code: 52000,
             userInfo: [
                 "ARTErrorInfoStatusCode": 520,
@@ -18,7 +18,7 @@ struct ErrorInfoTests {
             ],
         )
 
-        let ablyCocoaError = ARTErrorInfo(
+        let ablyCocoaError = AblyPubSubDevice.ErrorInfo(
             domain: "SomeOtherDomain", // irrelevant
             code: 41000,
             userInfo: [

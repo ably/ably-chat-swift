@@ -1,5 +1,5 @@
-import Ably
 @testable import AblyChat
+import AblyPubSubDevice
 
 class MockRoom: InternalRoom {
     let options: RoomOptions
@@ -16,7 +16,7 @@ class MockRoom: InternalRoom {
         fatalError("Not implemented")
     }
 
-    var messages: DefaultMessages<MockRealtime> {
+    var messages: DefaultMessages<MockPubSubClient> {
         fatalError("Not implemented")
     }
 
@@ -32,7 +32,7 @@ class MockRoom: InternalRoom {
         fatalError("Not implemented")
     }
 
-    var occupancy: DefaultOccupancy<MockRealtime> {
+    var occupancy: DefaultOccupancy<MockPubSubClient> {
         fatalError("Not implemented")
     }
 
@@ -78,7 +78,7 @@ class MockRoom: InternalRoom {
         fatalError("Not implemented")
     }
 
-    var channel: MockAblyCocoaRealtime.Channel {
+    var channel: MockAblyCocoaPubSubClient.Channel {
         fatalError("Not implemented")
     }
 }

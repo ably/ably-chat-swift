@@ -1,5 +1,5 @@
-import Ably
 @testable import AblyChat
+import AblyPubSubDevice
 import Testing
 
 @MainActor
@@ -9,10 +9,10 @@ struct ChatAPITests {
     @Test
     func sendMessage_whenSendMessageReturnsNoItems_throwsNoItemInResponse() async {
         // Given
-        let realtime = MockRealtime {
+        let pubSubClient = MockPubSubClient {
             MockHTTPPaginatedResponse.successSendMessageWithNoItems
         }
-        let chatAPI = ChatAPI(realtime: realtime)
+        let chatAPI = ChatAPI(pubSubClient: pubSubClient)
         let roomName = "basketball"
 
         let thrownError = await #expect(throws: ErrorInfo.self) {
@@ -34,10 +34,10 @@ struct ChatAPITests {
     @Test
     func sendMessage_returnsMessage() async throws {
         // Given
-        let realtime = MockRealtime {
+        let pubSubClient = MockPubSubClient {
             MockHTTPPaginatedResponse.successSendMessage
         }
-        let chatAPI = ChatAPI(realtime: realtime)
+        let chatAPI = ChatAPI(pubSubClient: pubSubClient)
         let roomName = "basketball"
 
         // When
@@ -61,10 +61,10 @@ struct ChatAPITests {
     @Test
     func sendMessage_includesHeadersInBody() async throws {
         // Given
-        let realtime = MockRealtime {
+        let pubSubClient = MockPubSubClient {
             MockHTTPPaginatedResponse.successSendMessage
         }
-        let chatAPI = ChatAPI(realtime: realtime)
+        let chatAPI = ChatAPI(pubSubClient: pubSubClient)
 
         // When
         _ = try await chatAPI.sendMessage(
@@ -77,17 +77,17 @@ struct ChatAPITests {
         )
 
         // Then
-        let requestBody = try #require(realtime.requestArguments.first?.body as? NSDictionary)
+        let requestBody = try #require(pubSubClient.requestArguments.first?.body as? NSDictionary)
         #expect(try #require(requestBody["headers"] as? NSObject) == ["numberKey": 10, "stringKey": "hello"] as NSObject)
     }
 
     @Test
     func sendMessage_includesMetadataInBody() async throws {
         // Given
-        let realtime = MockRealtime {
+        let pubSubClient = MockPubSubClient {
             MockHTTPPaginatedResponse.successSendMessage
         }
-        let chatAPI = ChatAPI(realtime: realtime)
+        let chatAPI = ChatAPI(pubSubClient: pubSubClient)
 
         // When
         _ = try await chatAPI.sendMessage(
@@ -100,7 +100,7 @@ struct ChatAPITests {
         )
 
         // Then
-        let requestBody = try #require(realtime.requestArguments.first?.body as? NSDictionary)
+        let requestBody = try #require(pubSubClient.requestArguments.first?.body as? NSDictionary)
         #expect(try #require(requestBody["metadata"] as? NSObject) == ["numberKey": 10, "stringKey": "hello"] as NSObject)
     }
 
@@ -111,10 +111,10 @@ struct ChatAPITests {
     func getMessages_whenGetMessagesReturnsNoItems_returnsEmptyPaginatedResult() async throws {
         // Given
         let paginatedResponse = MockHTTPPaginatedResponse.successGetMessagesWithNoItems
-        let realtime = MockRealtime {
+        let pubSubClient = MockPubSubClient {
             paginatedResponse
         }
-        let chatAPI = ChatAPI(realtime: realtime)
+        let chatAPI = ChatAPI(pubSubClient: pubSubClient)
         let roomName = "basketball"
         let expectedPaginatedResult = DefaultPaginatedResult<MockHTTPPaginatedResponse, Message>(
             underlying: paginatedResponse,
@@ -133,10 +133,10 @@ struct ChatAPITests {
     func getMessages_whenGetMessagesReturnsItems_returnsItemsInPaginatedResult() async throws {
         // Given
         let paginatedResponse = MockHTTPPaginatedResponse.successGetMessagesWithItems
-        let realtime = MockRealtime {
+        let pubSubClient = MockPubSubClient {
             paginatedResponse
         }
-        let chatAPI = ChatAPI(realtime: realtime)
+        let chatAPI = ChatAPI(pubSubClient: pubSubClient)
         let roomName = "basketball"
         let expectedPaginatedResult = DefaultPaginatedResult<MockHTTPPaginatedResponse, Message>(
             underlying: paginatedResponse,
@@ -178,10 +178,10 @@ struct ChatAPITests {
     func getMessages_whenGetMessagesReturnsServerError_throwsARTError() async throws {
         // Given
         let error = ErrorInfo.createArbitraryError()
-        let realtime = MockRealtime { () throws(ErrorInfo) in
+        let pubSubClient = MockPubSubClient { () throws(ErrorInfo) in
             throw error
         }
-        let chatAPI = ChatAPI(realtime: realtime)
+        let chatAPI = ChatAPI(pubSubClient: pubSubClient)
         let roomName = "basketball"
 
         let thrownError = try await #require(throws: ErrorInfo.self) {

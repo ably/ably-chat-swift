@@ -1,5 +1,5 @@
-import Ably
 import AblyChat
+import AblyPubSubDevice
 import SwiftUI
 
 private enum Environment: Equatable {
@@ -13,19 +13,19 @@ private enum Environment: Equatable {
     case live(key: String, clientID: String)
 
     @MainActor
-    func createChatClient() -> any ChatClientProtocol {
+    func makeChatClient() -> any ChatClientProtocol {
         switch self {
         case .mock:
             return MockChatClient(
                 clientOptions: ChatClientOptions(),
             )
         case let .live(key: key, clientID: clientID):
-            let realtimeOptions = ARTClientOptions()
-            realtimeOptions.key = key
-            realtimeOptions.clientId = clientID
-            let realtime = ARTRealtime(options: realtimeOptions)
+            let clientOptions = ClientOptions()
+            clientOptions.key = key
+            clientOptions.clientId = clientID
+            let pubSubClient = PubSubDevice.createClient(options: clientOptions)
 
-            return ChatClient(realtime: realtime, clientOptions: .init())
+            return createChatClient(pubSubClient: pubSubClient, clientOptions: .init())
         }
     }
 }
@@ -34,7 +34,7 @@ struct ContentView: View {
     // Can be replaced with your own room name
     private let roomName = "DemoRoom"
 
-    @State private var chatClient = Environment.current.createChatClient()
+    @State private var chatClient = Environment.current.makeChatClient()
     @State private var room: (any Room)?
     @State private var isLoading = true
     @State private var error: Error?

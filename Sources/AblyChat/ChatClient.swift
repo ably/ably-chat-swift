@@ -1,4 +1,4 @@
-import Ably
+import AblyPubSubDevice
 
 // This disable of attributes can be removed once missing_docs fixed here
 // swiftlint:disable attributes
@@ -8,7 +8,7 @@ public protocol ChatClientProtocol: AnyObject, Sendable {
     // swiftlint:enable attributes
 
     // swiftlint:disable:next missing_docs
-    associatedtype Realtime
+    associatedtype PubSubClient
     // swiftlint:disable:next missing_docs
     associatedtype Connection: AblyChat.Connection
     // swiftlint:disable:next missing_docs
@@ -41,11 +41,11 @@ public protocol ChatClientProtocol: AnyObject, Sendable {
     var clientID: String? { get }
 
     /**
-     * Returns the underlying Ably Realtime client.
+     * Returns the underlying Ably Pub/Sub client.
      *
-     * - Returns: The Ably Realtime client.
+     * - Returns: The Ably Pub/Sub client.
      */
-    var realtime: Realtime { get }
+    var pubSubClient: PubSubClient { get }
 
     /**
      * Returns the resolved client options for the client, including any defaults that have been set.
@@ -56,29 +56,49 @@ public protocol ChatClientProtocol: AnyObject, Sendable {
 }
 
 @MainActor
-internal protocol InternalRealtimeClientFactory {
-    associatedtype Underlying: RealtimeClientProtocol
-    associatedtype Output: InternalRealtimeClientProtocol
-    func createInternalRealtimeClient(_ ablyCocoaRealtime: Underlying) -> Output
+internal protocol InternalPubSubClientFactory {
+    associatedtype Underlying: PubSubClientProtocol
+    associatedtype Output: InternalPubSubClientProtocol
+    func createInternalPubSubClient(_ ablyCocoaPubSubClient: Underlying) -> Output
 }
 
-internal final class DefaultInternalRealtimeClientFactory<Underlying: ProxyRealtimeClientProtocol>: InternalRealtimeClientFactory {
-    internal func createInternalRealtimeClient(_ ablyCocoaRealtime: Underlying) -> InternalRealtimeClientAdapter<Underlying> {
-        .init(underlying: ablyCocoaRealtime)
+internal final class DefaultInternalPubSubClientFactory<Underlying: ProxyPubSubClientProtocol>: InternalPubSubClientFactory {
+    internal func createInternalPubSubClient(_ ablyCocoaPubSubClient: Underlying) -> InternalPubSubClientAdapter<Underlying> {
+        .init(underlying: ablyCocoaPubSubClient)
     }
 }
 
 /**
+ * Creates a chat client.
+ *
+ * - Parameters:
+ *   - pubSubClient: The Ably Pub/Sub client. Its `dispatchQueue` option must be the main queue (this is its default behaviour).
+ *   - clientOptions: The client options.
+ *
+ * - Returns: A chat client that uses `pubSubClient` to communicate with Ably.
+ */
+@MainActor
+public func createChatClient(pubSubClient: PubSubClient, clientOptions: ChatClientOptions? = nil) -> ChatClient {
+    ChatClient(
+        pubSubClient: pubSubClient,
+        clientOptions: clientOptions,
+        internalPubSubClientFactory: DefaultInternalPubSubClientFactory<WrapperSDKProxyRealtime>(),
+    )
+}
+
+/**
  * This is the core client for Ably chat. It provides access to chat rooms.
+ *
+ * Use ``createChatClient(pubSubClient:clientOptions:)`` to create one.
  */
 public class ChatClient: ChatClientProtocol {
     // swiftlint:disable:next missing_docs
-    public let realtime: ARTRealtime
+    public let pubSubClient: AblyPubSubDevice.PubSubClient
     // swiftlint:disable:next missing_docs
     public let clientOptions: ChatClientOptions
-    private let _rooms: DefaultRooms<DefaultRoomFactory<InternalRealtimeClientAdapter<ARTWrapperSDKProxyRealtime>>>
+    private let _rooms: DefaultRooms<DefaultRoomFactory<InternalPubSubClientAdapter<WrapperSDKProxyRealtime>>>
     // swiftlint:disable:next missing_docs
-    public var rooms: some Rooms<ARTRealtimeChannel> {
+    public var rooms: some Rooms<RealtimeChannel> {
         _rooms
     }
 
@@ -92,44 +112,29 @@ public class ChatClient: ChatClientProtocol {
         _connection
     }
 
-    /**
-     * Constructor for Chat
-     *
-     * - Parameters:
-     *   - realtime: The Ably Realtime client. Its `dispatchQueue` option must be the main queue (this is its default behaviour).
-     *   - clientOptions: The client options.
-     */
-    public convenience init(realtime: ARTRealtime, clientOptions: ChatClientOptions? = nil) {
-        self.init(
-            realtime: realtime,
-            clientOptions: clientOptions,
-            internalRealtimeClientFactory: DefaultInternalRealtimeClientFactory<ARTWrapperSDKProxyRealtime>(),
-        )
-    }
-
-    internal init<RealtimeClientFactory: InternalRealtimeClientFactory>(
-        realtime suppliedRealtime: ARTRealtime,
+    internal init<PubSubClientFactory: InternalPubSubClientFactory>(
+        pubSubClient suppliedPubSubClient: AblyPubSubDevice.PubSubClient,
         clientOptions: ChatClientOptions?,
-        internalRealtimeClientFactory: RealtimeClientFactory,
-    ) where RealtimeClientFactory.Underlying == ARTWrapperSDKProxyRealtime, RealtimeClientFactory.Output == InternalRealtimeClientAdapter<ARTWrapperSDKProxyRealtime> {
-        self.realtime = suppliedRealtime
+        internalPubSubClientFactory: PubSubClientFactory,
+    ) where PubSubClientFactory.Underlying == WrapperSDKProxyRealtime, PubSubClientFactory.Output == InternalPubSubClientAdapter<WrapperSDKProxyRealtime> {
+        self.pubSubClient = suppliedPubSubClient
         self.clientOptions = clientOptions ?? .init()
 
         // CHA-IN1a
-        let realtime = suppliedRealtime.createWrapperSDKProxy(
+        let pubSubClient = suppliedPubSubClient.createWrapperSDKProxy(
             with: .init(agents: ClientInformation.agents),
         )
-        let internalRealtime = internalRealtimeClientFactory.createInternalRealtimeClient(realtime)
+        let internalPubSubClient = internalPubSubClientFactory.createInternalPubSubClient(pubSubClient)
 
         logger = DefaultInternalLogger(logHandler: self.clientOptions.logHandler, logLevel: self.clientOptions.logLevel)
-        let roomFactory = DefaultRoomFactory<InternalRealtimeClientAdapter<ARTWrapperSDKProxyRealtime>>()
-        _rooms = DefaultRooms(realtime: internalRealtime, logger: logger, roomFactory: roomFactory)
-        _connection = DefaultConnection(realtime: internalRealtime)
+        let roomFactory = DefaultRoomFactory<InternalPubSubClientAdapter<WrapperSDKProxyRealtime>>()
+        _rooms = DefaultRooms(pubSubClient: internalPubSubClient, logger: logger, roomFactory: roomFactory)
+        _connection = DefaultConnection(pubSubClient: internalPubSubClient)
     }
 
     // swiftlint:disable:next missing_docs
     public var clientID: String? {
-        realtime.clientId
+        pubSubClient.clientId
     }
 }
 

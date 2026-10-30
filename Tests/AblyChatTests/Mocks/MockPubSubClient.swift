@@ -1,9 +1,9 @@
-import Ably
 @testable import AblyChat
+import AblyPubSubDevice
 import Foundation
 
-/// A mock implementation of `InternalRealtimeClientProtocol`. We'll figure out how to do mocking in tests properly in https://github.com/ably-labs/ably-chat-swift/issues/5.
-final class MockRealtime: InternalRealtimeClientProtocol {
+/// A mock implementation of `InternalPubSubClientProtocol`. We'll figure out how to do mocking in tests properly in https://github.com/ably-labs/ably-chat-swift/issues/5.
+final class MockPubSubClient: InternalPubSubClientProtocol {
     let callRecorder = MockMethodCallRecorder()
 
     let connection: MockConnection
